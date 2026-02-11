@@ -1,4 +1,4 @@
-# Copyright (c) - Mallory SCOTTON. All rights reserved.
+# Copyright (c) - Graphical Playground. All rights reserved.
 
 function(gp_add_executable)
     cmake_parse_arguments(

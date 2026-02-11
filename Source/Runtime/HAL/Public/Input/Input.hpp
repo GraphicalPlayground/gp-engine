@@ -1,3 +1,3 @@
-// Copyright (c) - Mallory SCOTTON. All rights reserved.
+// Copyright (c) - Graphical Playground. All rights reserved.
 
 #pragma once

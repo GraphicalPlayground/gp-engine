@@ -1,4 +1,4 @@
-# Copyright (c) - Mallory SCOTTON. All rights reserved.
+# Copyright (c) - Graphical Playground. All rights reserved.
 
 # List of modules in the preferred order of dependency
 set(GP_RUNTIME_MODULES

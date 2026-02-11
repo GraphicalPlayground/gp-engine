@@ -1,4 +1,4 @@
-// Copyright (c) - Mallory SCOTTON. All rights reserved.
+// Copyright (c) - Graphical Playground. All rights reserved.
 
 #include "Crypto/Hash/FNV1a.hpp"
 #include <catch2/catch_test_macros.hpp>

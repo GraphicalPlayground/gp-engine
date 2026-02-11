@@ -1,4 +1,4 @@
-// Copyright (c) - Mallory SCOTTON. All rights reserved.
+// Copyright (c) - Graphical Playground. All rights reserved.
 
 #pragma once
 
@@ -581,7 +581,7 @@
 
 // Assertions
 #if GP_ENABLE_ASSERTS
-    #define GP_ASSERT_IMPL(expr, msg, file, line, func)// \
+    #define GP_ASSERT_IMPL(expr, msg, file, line, func)   // \
         //do { \
         //    if (GP_UNLIKELY(!(expr))) { \
         //        ::GP::AssertAction action = ::GP::DefaultAssertHandler( \
@@ -597,7 +597,7 @@
 
     #define GP_ASSERT(expr, ...) GP_ASSERT_IMPL(expr, GP_FORMAT_MSG(__VA_ARGS__), __FILE__, __LINE__, GP_FUNCSIG)
 
-    #define GP_ASSERT_FATAL(expr, ...) //\
+    #define GP_ASSERT_FATAL(expr, ...)   //\
         //do { \
         //    if (GP_UNLIKELY(!(expr))) { \
         //        ::GP::Log::Write(::GP::Log::Level::Fatal, __FILE__, __LINE__, GP_FUNCSIG, \
@@ -612,7 +612,7 @@
 
     #define GP_CHECK(expr, ...) GP_ASSERT(expr, __VA_ARGS__)
 
-    #define GP_ENSURE(expr, ...)// \
+    #define GP_ENSURE(expr, ...)   // \
         //do { \
         //    if (GP_UNLIKELY(!(expr))) { \
         //        ::GP::Log::Write(::GP::Log::Level::Warning, __FILE__, __LINE__, GP_FUNCSIG, \
