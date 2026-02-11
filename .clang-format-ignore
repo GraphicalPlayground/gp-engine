@@ -1,0 +1,9 @@
+# Clang-Format Ignore File
+
+Build/
+Binaries/
+*/Build/
+*/Binaries/
+Docs/
+*.md
+*.txt

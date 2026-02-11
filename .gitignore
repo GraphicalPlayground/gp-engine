@@ -1,0 +1,177 @@
+# ============================================================================
+# Graphical Playground Engine - .gitignore
+# ============================================================================
+
+# ====================
+# Build Directories
+# ====================
+Build/
+build/
+cmake-build-*/
+out/
+
+# ====================
+# Binary Output
+# ====================
+Binaries/
+binaries/
+*.dll
+*.exe
+*.so
+*.dylib
+*.a
+*.lib
+*.exp
+*.pdb
+*.ilk
+
+# ====================
+# Visual Studio / MSBuild
+# ====================
+.vs/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+*.opendb
+ipch/
+x64/
+x86/
+Release/
+Debug/
+RelWithDebInfo/
+MinSizeRel/
+
+# ====================
+# CMake Generated Files
+# ====================
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+_deps/
+CMakeScripts/
+compile_commands.json
+CPackConfig.cmake
+CPackSourceConfig.cmake
+
+# ====================
+# Output SDK (if you want to ignore it)
+# ====================
+OutputSDK/
+
+# ====================
+# IDE Specific
+# ====================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# CLion
+.idea/
+cmake-build-*/
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+
+# Qt Creator
+CMakeLists.txt.user
+CMakeLists.txt.user.*
+
+# ====================
+# Compiler Output
+# ====================
+*.o
+*.obj
+*.dSYM/
+*.su
+*.idb
+*.ipdb
+*.iobj
+*.pch
+
+# ====================
+# OS Specific
+# ====================
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ====================
+# Logs and Temporary Files
+# ====================
+*.log
+*.tlog
+*.tmp
+*.temp
+*.cache
+*.swp
+*.swo
+*~.nib
+
+# ====================
+# Package Managers
+# ====================
+vcpkg_installed/
+conan_imports_manifest.txt
+conanbuildinfo.*
+conaninfo.txt
+
+# ====================
+# Profiling / Testing
+# ====================
+*.gcda
+*.gcno
+*.gcov
+coverage/
+*.profdata
+*.profraw
+
+# ====================
+# Backup Files
+# ====================
+*.bak
+*.backup
+*~
+
+# ====================
+# Documentation Generated
+# ====================
+docs/html/
+docs/latex/
+Doxyfile.bak
+
+# ====================
+# Clang Specific
+# ====================
+.clangd.*
+
+# ====================
+# Custom Project Specific
+# ====================
+# Add any project-specific ignores here

@@ -1,0 +1,30 @@
+// Copyright (c) - Mallory SCOTTON. All rights reserved.
+
+#ifndef __VECTOR4_ISPH__
+    #define __VECTOR4_ISPH__
+
+#ifndef GP_USE_EXPLICIT_VECTOR4
+    #define GP_USE_EXPLICIT_VECTOR4 0
+#endif
+
+/// \brief A 4D vector of single-precision floating-point numbers.
+struct FVector4f
+{
+#if GP_USE_EXPLICIT_VECTOR4
+    float data[4];
+#else
+    float<4> data;
+#endif
+};
+
+/// \brief A 4D vector of double-precision floating-point numbers.
+struct FVector4d
+{
+#if GP_USE_EXPLICIT_VECTOR4
+    double data[4];
+#else
+    double<4> data;
+#endif
+};
+
+#endif // __VECTOR4_ISPH__

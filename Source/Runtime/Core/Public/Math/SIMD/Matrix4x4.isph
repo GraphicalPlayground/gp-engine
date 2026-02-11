@@ -1,0 +1,116 @@
+// Copyright (c) - Mallory SCOTTON. All rights reserved.
+
+#ifndef __MATRIX4X4_ISPH__
+    #define __MATRIX4X4_ISPH__
+
+#include "Math/SIMD/Vector4.isph"
+
+#ifndef GP_USE_EXPLICIT_MATRIX4X4
+    #define GP_USE_EXPLICIT_MATRIX4X4 0
+#endif
+
+/// \brief A 4x4 matrix of single-precision floating-point numbers.
+struct FMatrix4x4f
+{
+#if GP_USE_EXPLICIT_MATRIX4X4
+    float data[16];
+#else
+    float<16> data;
+#endif
+};
+
+/// \brief A 4x4 matrix of double-precision floating-point numbers.
+struct FMatrix4x4d
+{
+#if GP_USE_EXPLICIT_MATRIX4X4
+    double data[16];
+#else
+    double<16> data;
+#endif
+};
+
+/// \brief Identity matrices for single and double precision.
+static const uniform struct FMatrix4x4f FloatMatrixIdentity = {{ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}};
+static const uniform struct FMatrix4x4d DoubleMatrixIdentity = {{ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}};
+
+/// \brief Creates a 4x4 matrix from four row vectors.
+/// \param r0 The first row of the matrix.
+/// \param r1 The second row of the matrix.
+/// \param r2 The third row of the matrix.
+/// \param r3 The fourth row of the matrix.
+/// \return A 4x4 matrix constructed from the provided row vectors.
+inline uniform FMatrix4x4f SetMatrix(
+    const uniform FVector4f& r0, const uniform FVector4f& r1,
+    const uniform FVector4f& r2, const uniform FVector4f& r3
+)
+{
+    const uniform FMatrix4x4f result = {{
+        r0.data[0], r0.data[1], r0.data[2], r0.data[3],
+        r1.data[0], r1.data[1], r1.data[2], r1.data[3],
+        r2.data[0], r2.data[1], r2.data[2], r2.data[3],
+        r3.data[0], r3.data[1], r3.data[2], r3.data[3]
+    }};
+    return result;
+}
+
+/// \brief Creates a 4x4 matrix from four row vectors.
+/// \param r0 The first row of the matrix.
+/// \param r1 The second row of the matrix.
+/// \param r2 The third row of the matrix.
+/// \param r3 The fourth row of the matrix.
+/// \return A 4x4 matrix constructed from the provided row vectors.
+inline FMatrix4x4f SetMatrix(
+    const FVector4f& r0, const FVector4f& r1,
+    const FVector4f& r2, const FVector4f& r3
+)
+{
+    const FMatrix4x4f result = {{
+        r0.data[0], r0.data[1], r0.data[2], r0.data[3],
+        r1.data[0], r1.data[1], r1.data[2], r1.data[3],
+        r2.data[0], r2.data[1], r2.data[2], r2.data[3],
+        r3.data[0], r3.data[1], r3.data[2], r3.data[3]
+    }};
+    return result;
+}
+
+/// \brief Creates a 4x4 matrix from four row vectors.
+/// \param r0 The first row of the matrix.
+/// \param r1 The second row of the matrix.
+/// \param r2 The third row of the matrix.
+/// \param r3 The fourth row of the matrix.
+/// \return A 4x4 matrix constructed from the provided row vectors.
+inline uniform FMatrix4x4d SetMatrix(
+    const uniform FVector4d& r0, const uniform FVector4d& r1,
+    const uniform FVector4d& r2, const uniform FVector4d& r3
+)
+{
+    const uniform FMatrix4x4d result = {{
+        r0.data[0], r0.data[1], r0.data[2], r0.data[3],
+        r1.data[0], r1.data[1], r1.data[2], r1.data[3],
+        r2.data[0], r2.data[1], r2.data[2], r2.data[3],
+        r3.data[0], r3.data[1], r3.data[2], r3.data[3]
+    }};
+    return result;
+}
+
+/// \brief Creates a 4x4 matrix from four row vectors.
+/// \param r0 The first row of the matrix.
+/// \param r1 The second row of the matrix.
+/// \param r2 The third row of the matrix.
+/// \param r3 The fourth row of the matrix.
+/// \return A 4x4 matrix constructed from the provided row vectors.
+inline FMatrix4x4d SetMatrix(
+    const FVector4d& r0, const FVector4d& r1,
+    const FVector4d& r2, const FVector4d& r3
+)
+{
+    const FMatrix4x4d result = {{
+        r0.data[0], r0.data[1], r0.data[2], r0.data[3],
+        r1.data[0], r1.data[1], r1.data[2], r1.data[3],
+        r2.data[0], r2.data[1], r2.data[2], r2.data[3],
+        r3.data[0], r3.data[1], r3.data[2], r3.data[3]
+    }};
+    return result;
+}
+
+#endif // __MATRIX4X4_ISPH__

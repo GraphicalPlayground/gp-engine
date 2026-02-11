@@ -1,0 +1,110 @@
+# Controls how Git treats the contents of the repository.
+# See https://git-scm.com/docs/gitattributes for details.
+
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Mark image files as binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.dds   binary
+*.tga   binary
+*.bmp   binary
+
+# Mark model files as binary
+*.fbx   binary
+*.obj   binary
+*.3ds   binary
+*.dae   binary
+*.blend binary
+*.stl   binary
+*.ply   binary
+*.gltf  binary
+*.glb   binary
+*.abc   binary
+*.usd   binary
+*.usda  binary
+*.usdc  binary
+*.usdz  binary
+
+# Mark audio files as binary
+*.wav   binary
+*.mp3   binary
+*.ogg   binary
+*.flac  binary
+*.aiff  binary
+*.m4a   binary
+*.wma   binary
+*.aac   binary
+*.mid   binary
+*.midi  binary
+*.aif   binary
+*.aifc  binary
+*.au    binary
+*.ra    binary
+*.rm    binary
+*.ram   binary
+*.wpl   binary
+*.pls   binary
+*.cda   binary
+*.m3u   binary
+*.m3u8  binary
+*.xm    binary
+*.mod   binary
+*.it    binary
+*.s3m   binary
+*.mtm   binary
+*.669   binary
+*.amf   binary
+*.dsm   binary
+*.far   binary
+*.med   binary
+*.ult   binary
+*.sfx   binary
+*.voc   binary
+*.snd   binary
+*.iff   binary
+*.8svx  binary
+*.caf   binary
+*.adpcm binary
+*.bwf   binary
+*.dsd   binary
+*.pcm   binary
+*.w64   binary
+*.flp   binary
+
+# Mark video files as binary
+*.mp4   binary
+*.avi   binary
+*.mov   binary
+*.wmv   binary
+*.flv   binary
+*.mkv   binary
+*.webm  binary
+*.mpg   binary
+*.mpeg  binary
+*.3gp   binary
+*.vob   binary
+
+# Mark archive files as binary
+*.zip   binary
+*.rar   binary
+*.7z    binary
+*.tar   binary
+*.gz    binary
+*.bz2   binary
+*.xz    binary
+
+# Mark compiled files as binary
+*.exe   binary
+*.dll   binary
+*.so    binary
+*.dylib binary
+*.class binary
+*.o     binary
+*.obj   binary
+*.a     binary
+*.lib   binary
