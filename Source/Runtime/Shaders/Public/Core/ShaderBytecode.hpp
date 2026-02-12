@@ -25,7 +25,12 @@ public:
     FString entryPoint;       //<! Entry point function name in the shader, typically "main"
 
 public:
+    /// \brief Check if the shader bytecode is valid by ensuring that it contains data and has a valid target and stage.
+    /// \return True if the bytecode is valid, false otherwise.
     GP_NODISCARD bool IsValid() const noexcept;
+
+    /// \brief Get the size of the shader bytecode data in bytes.
+    /// \return The size of the bytecode data array.
     GP_NODISCARD SizeT GetSize() const noexcept;
 };
 
