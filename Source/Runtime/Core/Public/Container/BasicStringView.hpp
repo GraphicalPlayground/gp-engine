@@ -24,8 +24,8 @@ public:
     using ConstPointer = const ValueType*;
     using Reference = ValueType&;
     using ConstReference = const ValueType&;
-    using SizeType = Size;
-    using DifferenceType = Offset;
+    using SizeType = SizeT;
+    using DifferenceType = OffsetT;
     using Iterator = const CharType*;
     using ConstIterator = const CharType*;
     using ReverseIterator = std::reverse_iterator<Iterator>;

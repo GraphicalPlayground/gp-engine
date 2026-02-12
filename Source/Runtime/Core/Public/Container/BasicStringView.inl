@@ -4,6 +4,7 @@
 
 #include "Container/BasicStringView.hpp"
 #include "Crypto/Hash/FNV1a.hpp"
+#include <algorithm>
 
 namespace GP::Container
 {
