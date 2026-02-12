@@ -80,7 +80,7 @@ function(gp_add_executable)
     endif()
 
     # Ensure C++20 standard
-    target_compile_features(${EXPORT_NAME} PRIVATE cxx_std_20)
+    target_compile_features(${EXPORT_NAME} PRIVATE cxx_std_23)
 
     # Installation
     install(TARGETS ${EXPORT_NAME}

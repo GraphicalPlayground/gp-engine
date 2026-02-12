@@ -223,7 +223,7 @@ function(gp_add_module)
     endif()
 
     # Ensure C++20 standard
-    target_compile_features(${EXPORT_NAME} PUBLIC cxx_std_20)
+    target_compile_features(${EXPORT_NAME} PUBLIC cxx_std_23)
 
     # Installation rules
     install(TARGETS ${EXPORT_NAME}
