@@ -51,7 +51,7 @@ private:
     /// \param data Pointer to the byte buffer.
     /// \param offset Byte offset to read from.
     /// \return 32-bit unsigned integer value.
-    GP_NODISCARD static constexpr UInt32 ReadU32(const char* data, Size offset) noexcept
+    GP_NODISCARD static constexpr UInt32 ReadU32(const char* data, SizeT offset) noexcept
     {
         return static_cast<UInt32>(static_cast<UInt8>(data[offset])) |
                (static_cast<UInt32>(static_cast<UInt8>(data[offset + 1])) << 8) |
@@ -63,7 +63,7 @@ private:
     /// \param data Pointer to the byte buffer.
     /// \param offset Byte offset to read from.
     /// \return 64-bit unsigned integer value.
-    GP_NODISCARD static constexpr UInt64 ReadU64(const char* data, Size offset) noexcept
+    GP_NODISCARD static constexpr UInt64 ReadU64(const char* data, SizeT offset) noexcept
     {
         return static_cast<UInt64>(static_cast<UInt8>(data[offset])) |
                (static_cast<UInt64>(static_cast<UInt8>(data[offset + 1])) << 8) |
@@ -143,10 +143,10 @@ public:
     /// \param length Number of bytes to hash.
     /// \param seed Optional seed value (defaults to zero).
     /// \return 32-bit hash value.
-    GP_NODISCARD static constexpr UInt32 Hash32(const char* data, Size length, UInt32 seed = DefaultSeed32) noexcept
+    GP_NODISCARD static constexpr UInt32 Hash32(const char* data, SizeT length, UInt32 seed = DefaultSeed32) noexcept
     {
         UInt32 h;
-        Size offset = 0;
+        SizeT offset = 0;
 
         if (length >= 16)
         {
@@ -155,7 +155,7 @@ public:
             UInt32 v3 = seed;
             UInt32 v4 = seed - Prime32_1;
 
-            const Size limit = length - 16;
+            const SizeT limit = length - 16;
             do {
                 v1 = Round32(v1, ReadU32(data, offset));
                 offset += 4;
@@ -196,7 +196,7 @@ public:
     /// \param length Number of bytes to hash.
     /// \param seed Optional seed value.
     /// \return 32-bit hash value.
-    GP_NODISCARD static constexpr UInt32 Hash32(const void* data, Size length, UInt32 seed = DefaultSeed32) noexcept
+    GP_NODISCARD static constexpr UInt32 Hash32(const void* data, SizeT length, UInt32 seed = DefaultSeed32) noexcept
     {
         return Hash32(static_cast<const char*>(data), length, seed);
     }
@@ -223,10 +223,10 @@ public:
     /// \param length Number of bytes to hash.
     /// \param seed Optional seed value (defaults to zero).
     /// \return 64-bit hash value.
-    GP_NODISCARD static constexpr UInt64 Hash64(const char* data, Size length, UInt64 seed = DefaultSeed64) noexcept
+    GP_NODISCARD static constexpr UInt64 Hash64(const char* data, SizeT length, UInt64 seed = DefaultSeed64) noexcept
     {
         UInt64 h;
-        Size offset = 0;
+        SizeT offset = 0;
 
         if (length >= 32)
         {
@@ -235,7 +235,7 @@ public:
             UInt64 v3 = seed;
             UInt64 v4 = seed - Prime64_1;
 
-            const Size limit = length - 32;
+            const SizeT limit = length - 32;
             do {
                 v1 = Round64(v1, ReadU64(data, offset));
                 offset += 8;
@@ -287,7 +287,7 @@ public:
     /// \param length Number of bytes to hash.
     /// \param seed Optional seed value.
     /// \return 64-bit hash value.
-    GP_NODISCARD static constexpr UInt64 Hash64(const void* data, Size length, UInt64 seed = DefaultSeed64) noexcept
+    GP_NODISCARD static constexpr UInt64 Hash64(const void* data, SizeT length, UInt64 seed = DefaultSeed64) noexcept
     {
         return Hash64(static_cast<const char*>(data), length, seed);
     }
@@ -313,7 +313,7 @@ public:
     /// \param data Pointer to bytes.
     /// \param length Number of bytes.
     /// \return Architecture-sized hash.
-    GP_NODISCARD static constexpr HashType Hash(const char* data, Size length) noexcept
+    GP_NODISCARD static constexpr HashType Hash(const char* data, SizeT length) noexcept
     {
 #if GP_ARCHITECTURE_64BIT
         return Hash64(data, length, DefaultSeed64);
@@ -326,7 +326,7 @@ public:
     /// \param data Pointer to bytes.
     /// \param length Number of bytes.
     /// \return Architecture-sized hash.
-    GP_NODISCARD static constexpr HashType Hash(const void* data, Size length) noexcept
+    GP_NODISCARD static constexpr HashType Hash(const void* data, SizeT length) noexcept
     {
         return Hash(static_cast<const char*>(data), length);
     }
@@ -354,7 +354,7 @@ public:
 /// \param str String literal to hash.
 /// \param len Length of the string literal (automatically provided).
 /// \return Compile-time computed xxHash value.
-inline constexpr GP::Crypto::xxHash::HashType operator""_xxhash(const char* str, GP::Size len) noexcept
+inline constexpr GP::Crypto::xxHash::HashType operator""_xxhash(const char* str, GP::SizeT len) noexcept
 {
     return GP::Crypto::xxHash::Hash(str, len);
 }

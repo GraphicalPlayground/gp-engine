@@ -37,10 +37,10 @@ private:
     /// \param prime FNV prime for the hash size.
     /// \return Computed hash value.
     template <typename T>
-    GP_NODISCARD static constexpr T Core(const char* data, Size length, T basis, T prime) noexcept
+    GP_NODISCARD static constexpr T Core(const char* data, SizeT length, T basis, T prime) noexcept
     {
         T hash = basis;
-        for (Size i = 0; i < length; ++i)
+        for (SizeT i = 0; i < length; ++i)
         {
             hash ^= static_cast<UInt8>(data[i]);
             hash *= prime;
@@ -53,7 +53,7 @@ public:
     /// \param data Pointer to the input bytes.
     /// \param length Number of bytes to hash.
     /// \return Computed hash value (architecture-sized).
-    GP_NODISCARD static constexpr HashType Hash(const char* data, Size length) noexcept
+    GP_NODISCARD static constexpr HashType Hash(const char* data, SizeT length) noexcept
     {
         return Core<HashType>(data, length, OffsetBasis, Prime);
     }
@@ -62,7 +62,7 @@ public:
     /// \param data Pointer to the input bytes.
     /// \param length Number of bytes to hash.
     /// \return Computed hash value (architecture-sized).
-    GP_NODISCARD static constexpr HashType Hash(const void* data, Size length) noexcept
+    GP_NODISCARD static constexpr HashType Hash(const void* data, SizeT length) noexcept
     {
         return Hash(static_cast<const char*>(data), length);
     }
@@ -87,7 +87,7 @@ public:
     /// \param data Pointer to the input bytes.
     /// \param length Number of bytes to hash.
     /// \return 32-bit hash value.
-    GP_NODISCARD static constexpr UInt32 Hash32(const char* data, Size length) noexcept
+    GP_NODISCARD static constexpr UInt32 Hash32(const char* data, SizeT length) noexcept
     {
         return Core<UInt32>(data, length, OffsetBasis32, Prime32);
     }
@@ -96,7 +96,7 @@ public:
     /// \param data Pointer to the input bytes.
     /// \param length Number of bytes to hash.
     /// \return 32-bit hash value.
-    GP_NODISCARD static constexpr UInt32 Hash32(const void* data, Size length) noexcept
+    GP_NODISCARD static constexpr UInt32 Hash32(const void* data, SizeT length) noexcept
     {
         return Hash32(static_cast<const char*>(data), length);
     }
@@ -121,7 +121,7 @@ public:
     /// \param data Pointer to the input bytes.
     /// \param length Number of bytes to hash.
     /// \return 64-bit hash value.
-    GP_NODISCARD static constexpr UInt64 Hash64(const char* data, Size length) noexcept
+    GP_NODISCARD static constexpr UInt64 Hash64(const char* data, SizeT length) noexcept
     {
         return Core<UInt64>(data, length, OffsetBasis64, Prime64);
     }
@@ -130,7 +130,7 @@ public:
     /// \param data Pointer to the input bytes.
     /// \param length Number of bytes to hash.
     /// \return 64-bit hash value.
-    GP_NODISCARD static constexpr UInt64 Hash64(const void* data, Size length) noexcept
+    GP_NODISCARD static constexpr UInt64 Hash64(const void* data, SizeT length) noexcept
     {
         return Hash64(static_cast<const char*>(data), length);
     }
@@ -158,7 +158,7 @@ public:
 /// \param str String literal to hash.
 /// \param len Length of the string literal (automatically provided).
 /// \return Computed FNV-1a hash value.
-inline constexpr GP::Crypto::FNV1a::HashType operator""_fnv1a(const char* str, GP::Size len) noexcept
+inline constexpr GP::Crypto::FNV1a::HashType operator""_fnv1a(const char* str, GP::SizeT len) noexcept
 {
     return GP::Crypto::FNV1a::Hash(str, len);
 }

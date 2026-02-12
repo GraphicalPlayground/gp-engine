@@ -167,14 +167,14 @@ constexpr TVector3<T>::TVector3(const TVector4<T>& inXYZW) noexcept
 {}
 
 template <Concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr T& TVector3<T>::operator[](Size index) noexcept
+GP_NODISCARD constexpr T& TVector3<T>::operator[](SizeT index) noexcept
 {
     GP_ASSUME(index < 3);
     return data[index];
 }
 
 template <Concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr const T& TVector3<T>::operator[](Size index) const noexcept
+GP_NODISCARD constexpr const T& TVector3<T>::operator[](SizeT index) const noexcept
 {
     GP_ASSUME(index < 3);
     return data[index];

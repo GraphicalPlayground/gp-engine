@@ -26,7 +26,7 @@ private:
     /// \return Reference to the CRC-32 lookup table.
     GP_NODISCARD static constexpr const std::array<UInt32, 256>& Table() noexcept
     {
-        constexpr auto kTable = []
+        constexpr static auto kTable = []
         {
             std::array<UInt32, 256> t{};
             for (UInt32 i = 0; i < 256; ++i)
@@ -45,10 +45,10 @@ public:
     /// \param data Pointer to the input bytes.
     /// \param length Number of bytes to process.
     /// \return CRC-32 value.
-    GP_NODISCARD static constexpr HashType Hash(const char* data, Size length) noexcept
+    GP_NODISCARD static constexpr HashType Hash(const char* data, SizeT length) noexcept
     {
         UInt32 crc = InitialValue;
-        for (Size i = 0; i < length; ++i) { crc = Table()[static_cast<UInt8>(crc ^ data[i])] ^ (crc >> 8); }
+        for (SizeT i = 0; i < length; ++i) { crc = Table()[static_cast<UInt8>(crc ^ data[i])] ^ (crc >> 8); }
         return crc ^ InitialValue;
     }
 
@@ -56,7 +56,7 @@ public:
     /// \param data Pointer to the input bytes.
     /// \param length Number of bytes to process.
     /// \return CRC-32 value.
-    GP_NODISCARD static constexpr HashType Hash(const void* data, Size length) noexcept
+    GP_NODISCARD static constexpr HashType Hash(const void* data, SizeT length) noexcept
     {
         return Hash(static_cast<const char*>(data), length);
     }
@@ -82,10 +82,10 @@ public:
     /// \param data Pointer to additional bytes.
     /// \param length Number of additional bytes.
     /// \return Updated CRC-32 value.
-    GP_NODISCARD static constexpr HashType Append(HashType crc, const char* data, Size length) noexcept
+    GP_NODISCARD static constexpr HashType Append(HashType crc, const char* data, SizeT length) noexcept
     {
         crc ^= InitialValue;
-        for (Size i = 0; i < length; ++i) { crc = Table()[static_cast<UInt8>(crc ^ data[i])] ^ (crc >> 8); }
+        for (SizeT i = 0; i < length; ++i) { crc = Table()[static_cast<UInt8>(crc ^ data[i])] ^ (crc >> 8); }
         return crc ^ InitialValue;
     }
 
@@ -94,7 +94,7 @@ public:
     /// \param data Pointer to additional bytes.
     /// \param length Number of additional bytes.
     /// \return Updated CRC-32 value.
-    GP_NODISCARD static constexpr HashType Append(HashType crc, const void* data, Size length) noexcept
+    GP_NODISCARD static constexpr HashType Append(HashType crc, const void* data, SizeT length) noexcept
     {
         return Append(crc, static_cast<const char*>(data), length);
     }
@@ -104,7 +104,7 @@ public:
     /// \param length Number of bytes to verify.
     /// \param expected Expected CRC-32 value.
     /// \return True if computed CRC equals expected value.
-    GP_NODISCARD static constexpr bool Verify(const char* data, Size length, HashType expected) noexcept
+    GP_NODISCARD static constexpr bool Verify(const char* data, SizeT length, HashType expected) noexcept
     {
         return Hash(data, length) == expected;
     }
@@ -114,7 +114,7 @@ public:
     /// \param length Number of bytes to verify.
     /// \param expected Expected CRC-32 value.
     /// \return True if computed CRC equals expected value.
-    GP_NODISCARD static constexpr bool Verify(const void* data, Size length, HashType expected) noexcept
+    GP_NODISCARD static constexpr bool Verify(const void* data, SizeT length, HashType expected) noexcept
     {
         return Hash(data, length) == expected;
     }
@@ -126,7 +126,7 @@ public:
 /// \param str String literal to hash.
 /// \param len Length of the string literal (automatically provided).
 /// \return Computed CRC-32 hash value.
-inline constexpr GP::Crypto::CRC32::HashType operator""_crc32(const char* str, GP::Size len) noexcept
+inline constexpr GP::Crypto::CRC32::HashType operator""_crc32(const char* str, GP::SizeT len) noexcept
 {
     return GP::Crypto::CRC32::Hash(str, len);
 }

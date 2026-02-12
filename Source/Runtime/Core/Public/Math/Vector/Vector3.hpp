@@ -132,13 +132,13 @@ public:
     /// \param index The index of the component (0 for x, 1 for y, 2 for z).
     /// \return Reference to the component at the specified index.
     /// \warning No bounds checking is performed; ensure index is valid.
-    GP_NODISCARD constexpr T& operator[](Size index) noexcept;
+    GP_NODISCARD constexpr T& operator[](SizeT index) noexcept;
 
     /// \brief Subscript operator for accessing components by index (const version).
     /// \param index The index of the component (0 for x, 1 for y, 2 for z).
     /// \return Const reference to the component at the specified index.
     /// \warning No bounds checking is performed; ensure index is valid.
-    GP_NODISCARD constexpr const T& operator[](Size index) const noexcept;
+    GP_NODISCARD constexpr const T& operator[](SizeT index) const noexcept;
 
 public:
     /// \brief Getter for the X component.
