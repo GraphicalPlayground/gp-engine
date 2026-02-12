@@ -7,7 +7,7 @@
 namespace GP::Shaders
 {
 
-class FShaderDefine
+struct FShaderDefine
 {};
 
 }   // namespace GP::Shaders

@@ -7,7 +7,7 @@
 namespace GP::Shaders
 {
 
-class FShaderDiagnostic
+struct FShaderDiagnostic
 {};
 
 }   // namespace GP::Shaders

@@ -8,10 +8,10 @@ namespace GP::Shaders
 {
 
 // Core Forward Declarations
-class FShaderHash;
-class FShaderSource;
-class FShaderBytecode;
-class FShaderDefine;
-class FShaderDiagnostic;
+struct FShaderHash;
+struct FShaderSource;
+struct FShaderBytecode;
+struct FShaderDefine;
+struct FShaderDiagnostic;
 
 }   // namespace GP::Shaders

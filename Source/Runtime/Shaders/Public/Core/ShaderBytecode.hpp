@@ -7,7 +7,7 @@
 namespace GP::Shaders
 {
 
-class FShaderBytecode
+struct FShaderBytecode
 {};
 
 }   // namespace GP::Shaders
