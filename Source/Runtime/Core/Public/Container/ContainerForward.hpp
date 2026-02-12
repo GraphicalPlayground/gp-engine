@@ -3,8 +3,6 @@
 #pragma once
 
 #include "CoreBuild.hpp"
-#include "Memory/Allocator.hpp"
-#include "Memory/MemoryForward.hpp"
 #include "Templates/Concepts.hpp"
 
 namespace GP::Container
@@ -16,20 +14,23 @@ class TBasicStringView;
 template <Concepts::IsCharacter CharType>
 class TBasicString;
 
-template <typename T, typename Alloc = Memory::TAllocator<T>>
+template <typename T, typename Alloc>
 class TArray;
-template <typename T, SizeT N, typename Alloc = Memory::TAllocator<T>>
+template <typename T, SizeT N, typename Alloc>
 class TStaticArray;
-template <typename T, typename Alloc = Memory::TAllocator<T>>
+template <typename T, typename Alloc>
 class TSet;
-template <typename T, typename Alloc = Memory::TAllocator<T>>
+template <typename T, typename Alloc>
 class TMap;
-template <typename T, typename Alloc = Memory::TAllocator<T>>
+template <typename T, typename Alloc>
 class TList;
-template <typename T, typename Alloc = Memory::TAllocator<T>>
+template <typename T, typename Alloc>
 class TQueue;
-template <typename T, typename Alloc = Memory::TAllocator<T>>
+template <typename T, typename Alloc>
 class TDeque;
+
+template <typename T, SizeT Extent>
+class TSpan;
 
 }   // namespace GP::Container
 

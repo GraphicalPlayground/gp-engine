@@ -14,5 +14,6 @@
 #include "Container/Map.hpp"
 #include "Container/Queue.hpp"
 #include "Container/Set.hpp"
+#include "Container/Span.hpp"
 #include "Container/Stack.hpp"
 #include "Container/StaticArray.hpp"
