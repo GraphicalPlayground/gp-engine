@@ -45,6 +45,7 @@ x64/
 x86/
 Release/
 Debug/
+!Source/**/Debug/
 RelWithDebInfo/
 MinSizeRel/
 
