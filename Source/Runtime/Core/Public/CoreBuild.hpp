@@ -818,9 +818,9 @@ using WideChar = wchar_t;
 
 // System / Memory Types
 
-using Size = std::size_t;
-using SSize = std::ptrdiff_t;
-using Offset = std::ptrdiff_t;
+using SizeT = std::size_t;
+using SSizeT = std::ptrdiff_t;
+using OffsetT = std::ptrdiff_t;
 using Byte = std::uint8_t;
 using UIntPtr = std::uintptr_t;
 using IntPtr = std::intptr_t;
@@ -837,9 +837,9 @@ static_assert(sizeof(Float64) == 8, "Float64 must be 8 bytes");
 
 // Architecture-specific validation
 #if GP_ARCHITECTURE_64BIT
-static_assert(sizeof(Size) == 8, "Size must be 8 bytes on 64-bit platforms");
+static_assert(sizeof(SizeT) == 8, "Size must be 8 bytes on 64-bit platforms");
 #else
-static_assert(sizeof(Size) == 4, "Size must be 4 bytes on 32-bit platforms");
+static_assert(sizeof(SizeT) == 4, "Size must be 4 bytes on 32-bit platforms");
 #endif
 
 // Real type definition
