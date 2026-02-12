@@ -9,8 +9,8 @@ project(GraphicalPlayground
     DESCRIPTION "Graphical Playground Engine, learning and prototyping platform for graphics programming."
 )
 
-# Enforce C++20 globally
-set(CMAKE_CXX_STANDARD 20)
+# Enforce C++23 globally
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF) # Forces standard C++ (no GCC extensions)
 
