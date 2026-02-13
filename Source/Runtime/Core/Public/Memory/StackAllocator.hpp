@@ -43,27 +43,24 @@ public:
     static constexpr bool HasInternalBuffer = (BufferSize > 0);
 
 private:
-    /// \brief Internal buffer storage type. If BufferSize > 0, we use an aligned byte array. Otherwise, we use an empty
-    /// struct.
-    struct Empty
-    {};
-
-    // If we have an internal buffer, this will be an aligned byte array of the specified size. Otherwise, it's just an
-    // empty struct.
-    using BufferStorage = std::conditional_t<HasInternalBuffer, alignas(Alignment) Byte[BufferSize], Empty>;
+    /// \brief Buffer storage type. An aligned byte array if we have an internal buffer, or an empty struct if we don't.
+    struct BufferStorage
+    {
+        alignas(Alignment) Byte data[HasInternalBuffer ? BufferSize : 1];
+    };
 
 private:
-    Byte* m_bufferStart;   //<! Start of the buffer (internal or external).
-    Byte* m_bufferEnd;     //<! End of the buffer (one past the last byte).
-    Byte* m_current;       //<! Current allocation position (moves forward with each allocation).
     GP_MAYBE_UNUSED BufferStorage m_internalBuffer;   //<! Internal buffer storage (only used if BufferSize > 0).
+    Byte* m_bufferStart;                              //<! Start of the buffer (internal or external).
+    Byte* m_bufferEnd;                                //<! End of the buffer (one past the last byte).
+    Byte* m_current;   //<! Current allocation position (moves forward with each allocation).
 
 public:
     /// \brief Construct with internal fixed-size buffer.
     TStackAllocator() requires(HasInternalBuffer)
-        : m_bufferStart(m_internalBuffer)
-        , m_bufferEnd(m_internalBuffer + BufferSize)
-        , m_current(m_internalBuffer)
+        : m_bufferStart(m_internalBuffer.data)
+        , m_bufferEnd(m_internalBuffer.data + BufferSize)
+        , m_current(m_internalBuffer.data)
     {}
 
     /// \brief Construct from an externally-owned buffer.
@@ -138,12 +135,12 @@ public:
     void FreeToMarker(FMarker marker) noexcept
     {
         GP_ASSERT(
-            marker.Offset <= GetUsedBytes(),
+            marker.offset <= GetUsedBytes(),
             "Invalid marker: offset %zu exceeds current usage %zu",
-            marker.Offset,
+            marker.offset,
             GetUsedBytes()
         );
-        m_current = m_bufferStart + marker.Offset;
+        m_current = m_bufferStart + marker.offset;
     }
 
     /// \brief Reset to empty (equivalent to FreeToMarker at position 0).

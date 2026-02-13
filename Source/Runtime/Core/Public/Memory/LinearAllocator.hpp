@@ -38,26 +38,25 @@ public:
     static constexpr bool HasInternalBuffer = (BufferSize > 0);   //<! Whether the allocator has an internal buffer.
 
 private:
-    /// \brief Storage for the internal buffer if BufferSize > 0. Otherwise, an empty struct to avoid unused member.
-    struct Empty
-    {};
-
-    // Use conditional storage: if we have an internal buffer, allocate it; otherwise, use an empty struct.
-    using BufferStorage = std::conditional_t<HasInternalBuffer, alignas(Alignment) Byte[BufferSize], Empty>;
+    /// \brief Buffer storage type. An aligned byte array if we have an internal buffer, or an empty struct if we don't.
+    struct BufferStorage
+    {
+        alignas(Alignment) Byte data[HasInternalBuffer ? BufferSize : 1];   //<! Aligned buffer storage
+    };
 
 private:
+    GP_MAYBE_UNUSED BufferStorage m_internalBuffer;   //<! Internal buffer storage (only if BufferSize > 0).
     Byte* m_bufferStart;                              //<! Start of the buffer.
     Byte* m_bufferEnd;                                //<! End of the buffer (one past last byte).
     Byte* m_current;                                  //<! Current allocation pointer (bump).
     SizeType m_peakUsage;                             //<! Peak usage for statistics.
-    GP_MAYBE_UNUSED BufferStorage m_internalBuffer;   //<! Internal buffer storage (only if BufferSize > 0).
 
 public:
     /// \brief Construct a linear allocator with an internal fixed-size buffer. Only available when BufferSize > 0.
     TLinearAllocator() requires(HasInternalBuffer)
-        : m_bufferStart(m_internalBuffer)
-        , m_bufferEnd(m_internalBuffer + BufferSize)
-        , m_current(m_internalBuffer)
+        : m_bufferStart(m_internalBuffer.data)
+        , m_bufferEnd(m_internalBuffer.data + BufferSize)
+        , m_current(m_internalBuffer.data)
         , m_peakUsage(0)
     {}
 
