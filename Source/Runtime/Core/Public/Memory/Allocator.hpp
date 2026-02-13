@@ -9,6 +9,10 @@ namespace GP::Memory
 
 template <typename T>
 class TAllocator
-{};
+{
+public:
+    GP_NODISCARD void* Allocate(SizeT size, SizeT align = alignof(T));
+    void Deallocate(void* ptr);
+};
 
 }   // namespace GP::Memory
