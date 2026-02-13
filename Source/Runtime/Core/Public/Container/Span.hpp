@@ -16,11 +16,18 @@ namespace GP::Container
 /// it indicates that the span can have any size and is not fixed at compile time.
 static inline constexpr SizeT DynamicExtent = static_cast<SizeT>(-1);
 
-/// \brief A view over a contiguous sequence of objects. It does not own the underlying data and is typically used for
-/// read-only access to a range of elements.
-/// \tparam T The type of elements in the span.
-/// \tparam Extent The number of elements in the span. If set to `static_cast<SizeT>(-1)`, the span is dynamic and can
-/// have any size.
+/// \brief A non-owning view over a contiguous sequence of objects. TSpan is the array equivalent of TBasicStringView.
+/// It provides safe, bounds-checked access to a contiguous range of elements without ownership.
+///
+/// **When to use**:
+///   - Function parameters: use TSpan<const T> instead of const T* + count
+///   - Returning sub-ranges without copying
+///   - Interfacing between different container types
+///
+/// \note Spans are the modern C++ replacement for "pointer + size" function parameters. They prevent buffer overflows
+/// and make intent clear. std::span (C++20) is the standard version; TSpan mirrors it with engine conventions.
+/// \tparam T Element type.
+/// \tparam Extent Compile-time extent, or DynamicExtent for runtime-sized spans.
 template <typename T, SizeT Extent = DynamicExtent>
 class TSpan
 {
