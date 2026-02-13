@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreBuild.hpp"
+#include <cstdlib>
 
 namespace GP::Memory
 {
