@@ -12,67 +12,67 @@ namespace GP::Math
 {
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::Zero() noexcept
+constexpr TVector3<T> TVector3<T>::Zero() noexcept
 {
     return { static_cast<T>(0), static_cast<T>(0), static_cast<T>(0) };
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::One() noexcept
+constexpr TVector3<T> TVector3<T>::One() noexcept
 {
     return { static_cast<T>(1), static_cast<T>(1), static_cast<T>(1) };
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::UnitX() noexcept
+constexpr TVector3<T> TVector3<T>::UnitX() noexcept
 {
     return { static_cast<T>(1), static_cast<T>(0), static_cast<T>(0) };
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::UnitY() noexcept
+constexpr TVector3<T> TVector3<T>::UnitY() noexcept
 {
     return { static_cast<T>(0), static_cast<T>(1), static_cast<T>(0) };
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::UnitZ() noexcept
+constexpr TVector3<T> TVector3<T>::UnitZ() noexcept
 {
     return { static_cast<T>(0), static_cast<T>(0), static_cast<T>(1) };
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::NegUnitX() noexcept
+constexpr TVector3<T> TVector3<T>::NegUnitX() noexcept
 {
     return { static_cast<T>(-1), static_cast<T>(0), static_cast<T>(0) };
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::NegUnitY() noexcept
+constexpr TVector3<T> TVector3<T>::NegUnitY() noexcept
 {
     return { static_cast<T>(0), static_cast<T>(-1), static_cast<T>(0) };
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::NegUnitZ() noexcept
+constexpr TVector3<T> TVector3<T>::NegUnitZ() noexcept
 {
     return { static_cast<T>(0), static_cast<T>(0), static_cast<T>(-1) };
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::Max() noexcept
+constexpr TVector3<T> TVector3<T>::Max() noexcept
 {
     return { std::numeric_limits<T>::max(), std::numeric_limits<T>::max(), std::numeric_limits<T>::max() };
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::Min() noexcept
+constexpr TVector3<T> TVector3<T>::Min() noexcept
 {
     return { std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest() };
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::NaN() noexcept
+constexpr TVector3<T> TVector3<T>::NaN() noexcept
 {
     return { std::numeric_limits<T>::quiet_NaN(),
              std::numeric_limits<T>::quiet_NaN(),
@@ -80,7 +80,7 @@ static constexpr TVector3<T> TVector3<T>::NaN() noexcept
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::Infinity() noexcept
+constexpr TVector3<T> TVector3<T>::Infinity() noexcept
 {
     return { std::numeric_limits<T>::infinity(),
              std::numeric_limits<T>::infinity(),
@@ -88,7 +88,7 @@ static constexpr TVector3<T> TVector3<T>::Infinity() noexcept
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::NegInfinity() noexcept
+constexpr TVector3<T> TVector3<T>::NegInfinity() noexcept
 {
     return { -std::numeric_limits<T>::infinity(),
              -std::numeric_limits<T>::infinity(),
@@ -96,37 +96,37 @@ static constexpr TVector3<T> TVector3<T>::NegInfinity() noexcept
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::Left() noexcept
+constexpr TVector3<T> TVector3<T>::Left() noexcept
 {
     return NegUnitX();
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::Right() noexcept
+constexpr TVector3<T> TVector3<T>::Right() noexcept
 {
     return UnitX();
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::Up() noexcept
+constexpr TVector3<T> TVector3<T>::Up() noexcept
 {
     return UnitY();
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::Down() noexcept
+constexpr TVector3<T> TVector3<T>::Down() noexcept
 {
     return NegUnitY();
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::Forward() noexcept
+constexpr TVector3<T> TVector3<T>::Forward() noexcept
 {
     return UnitZ();
 }
 
 template <Concepts::IsFloatingPoint T>
-static constexpr TVector3<T> TVector3<T>::Backward() noexcept
+constexpr TVector3<T> TVector3<T>::Backward() noexcept
 {
     return NegUnitZ();
 }
