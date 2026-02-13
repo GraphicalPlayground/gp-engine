@@ -10,4 +10,5 @@
 
 // Implementation
 #include "Memory/Allocator.hpp"
+#include "Memory/LinearAllocator.hpp"
 #include "Memory/MemoryUtilities.hpp"
