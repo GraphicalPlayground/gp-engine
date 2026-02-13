@@ -22,4 +22,6 @@ class TPoolAllocator;
 template <typename T, SizeT InlineCount, typename FallbackAllocator>
 class TInlineAllocator;
 
+struct FMemoryTracker;
+
 }   // namespace GP::Memory
