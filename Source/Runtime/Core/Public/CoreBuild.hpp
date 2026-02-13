@@ -821,10 +821,14 @@ using WideChar = wchar_t;
 using SizeT = std::size_t;
 using SSizeT = std::ptrdiff_t;
 using OffsetT = std::ptrdiff_t;
-using Byte = std::uint8_t;
 using UIntPtr = std::uintptr_t;
 using IntPtr = std::intptr_t;
 using NullPtr = std::nullptr_t;
+#if GP_INTERNAL_CXX20
+using Byte = std::byte;
+#else
+using Byte = std::uint8_t;
+#endif
 
 // Validations
 
