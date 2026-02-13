@@ -163,4 +163,11 @@ concept IsCharacter = std::same_as<std::remove_cv_t<T>, char> || std::same_as<st
                       std::same_as<std::remove_cv_t<T>, char16_t> || std::same_as<std::remove_cv_t<T>, char32_t> ||
                       std::same_as<std::remove_cv_t<T>, wchar_t>;
 
+/// \brief Concept to check if a type is a valid Allocator type (has allocate and deallocate member functions).
+template <typename T>
+concept IsAllocator = requires(T allocator, SizeT size, SizeT align) {
+    { allocator.Allocate(size, align) } -> std::same_as<void*>;
+    { allocator.Deallocate(std::declval<void*>()) };
+};
+
 }   // namespace GP::Concepts

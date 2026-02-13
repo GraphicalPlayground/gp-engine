@@ -5,6 +5,7 @@
 #include "CoreBuild.hpp"
 #include "Memory/Allocator.hpp"
 #include "Memory/MemoryForward.hpp"
+#include "Templates/Concepts.hpp"
 
 namespace GP::Container
 {
@@ -13,7 +14,7 @@ namespace GP::Container
 /// \tparam T
 /// \tparam N
 /// \tparam Alloc
-template <typename T, SizeT N, typename Alloc = Memory::TAllocator<T>>
+template <typename T, SizeT N, Concepts::IsAllocator Alloc = Memory::TAllocator<T>>
 class TStaticArray
 {
 private:
