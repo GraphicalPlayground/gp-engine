@@ -10,6 +10,7 @@
 
 // Implementation
 #include "Memory/Allocator.hpp"
+#include "Memory/InlineAllocator.hpp"
 #include "Memory/LinearAllocator.hpp"
 #include "Memory/MemoryUtilities.hpp"
 #include "Memory/PoolAllocator.hpp"
