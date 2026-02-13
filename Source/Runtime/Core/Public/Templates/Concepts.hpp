@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreBuild.hpp"
+#include <compare>
 #include <concepts>
 #include <type_traits>
 
@@ -80,6 +81,10 @@ concept IsMoveAssignable = std::is_move_assignable_v<T>;
 /// \brief Concept to check if a type is copy assignable.
 template <typename T>
 concept IsCopyAssignable = std::is_copy_assignable_v<T>;
+
+/// \brief Concept to check if a type is tree-way comparable.
+template <typename T>
+concept IsThreeWayComparable = std::three_way_comparable<T>;
 
 /// \brief Concept to check if a type is swappable.
 template <typename T>
@@ -168,6 +173,20 @@ template <typename T>
 concept IsAllocator = requires(T allocator, SizeT size, SizeT align) {
     { allocator.Allocate(size, align) } -> std::same_as<void*>;
     { allocator.Deallocate(std::declval<void*>()) };
+};
+
+/// \brief Concept to check if a type is a valid Container type (has Data() and Size() member functions).
+template <typename T>
+concept IsContainer = requires(T container) {
+    { container.Data() } -> std::same_as<typename T::Pointer>;
+    { container.Size() } -> std::same_as<typename T::SizeType>;
+};
+
+/// \brief Concept to check if a type is a valid STL Container type (has Data() and Size() member functions).
+template <typename T>
+concept IsSTLContainer = requires(T container) {
+    { container.data() } -> std::same_as<typename T::pointer>;
+    { container.size() } -> std::same_as<typename T::size_type>;
 };
 
 }   // namespace GP::Concepts
