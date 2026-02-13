@@ -12,4 +12,5 @@
 #include "Memory/Allocator.hpp"
 #include "Memory/LinearAllocator.hpp"
 #include "Memory/MemoryUtilities.hpp"
+#include "Memory/PoolAllocator.hpp"
 #include "Memory/StackAllocator.hpp"
