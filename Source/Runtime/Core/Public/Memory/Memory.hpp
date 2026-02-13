@@ -10,3 +10,4 @@
 
 // Implementation
 #include "Memory/Allocator.hpp"
+#include "Memory/MemoryUtilities.hpp"
