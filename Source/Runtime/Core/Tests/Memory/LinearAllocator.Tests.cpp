@@ -432,7 +432,7 @@ TEST_CASE("TLinearAllocator Stress Test", "[GP][Core][Memory][LinearAllocator][S
         size_t totalAllocated = 0;
         int count = 0;
 
-        while (totalAllocated < 8000)
+        while (true)
         {
             void* ptr = allocator.Allocate(8);
             if (ptr == nullptr) { break; }

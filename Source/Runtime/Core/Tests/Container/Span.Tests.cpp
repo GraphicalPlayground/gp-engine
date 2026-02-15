@@ -321,7 +321,7 @@ TEST_CASE("TSpan Comparison Operators", "[GP][Core][Container][Span][Comparison]
         int arr2[] = { 1, 2, 4 };
         TSpan<int> span1(arr1);
         TSpan<int> span2(arr2);
-        REQUIRE((span1 <=> span2) < 0);
+        REQUIRE(span1 < span2);
     }
 
     SECTION("Three-Way Comparison - Equal")
@@ -330,7 +330,7 @@ TEST_CASE("TSpan Comparison Operators", "[GP][Core][Container][Span][Comparison]
         int arr2[] = { 1, 2, 3 };
         TSpan<int> span1(arr1);
         TSpan<int> span2(arr2);
-        REQUIRE((span1 <=> span2) == 0);
+        REQUIRE(span1 == span2);
     }
 
     SECTION("Three-Way Comparison - Greater Than")
@@ -339,7 +339,7 @@ TEST_CASE("TSpan Comparison Operators", "[GP][Core][Container][Span][Comparison]
         int arr2[] = { 1, 2, 3 };
         TSpan<int> span1(arr1);
         TSpan<int> span2(arr2);
-        REQUIRE((span1 <=> span2) > 0);
+        REQUIRE(span1 > span2);
     }
 }
 

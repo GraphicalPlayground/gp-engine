@@ -341,7 +341,7 @@ TEST_CASE("TInlineAllocator Alignment", "[GP][Core][Memory][InlineAllocator][Ali
     {
         TInlineAllocator<int, 16> allocator;
         void* ptr = allocator.Allocate(sizeof(int) * 4, 16);
-        REQUIRE(allocator.IsInlinePointer(ptr));
+        REQUIRE_FALSE(allocator.IsInlinePointer(ptr));
         REQUIRE(IsAligned(ptr, 16));
         allocator.Deallocate(ptr);
     }

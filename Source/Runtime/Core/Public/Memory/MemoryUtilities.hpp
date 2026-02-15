@@ -48,7 +48,7 @@ GP_NODISCARD GP_FORCEINLINE constexpr bool IsPowerOfTwo(SizeT value) noexcept
 /// \param ptr The pointer to check.
 /// \param alignment The alignment to check against (must be a power of two).
 /// \return True if the pointer is aligned, false otherwise.
-GP_NODISCARD GP_FORCEINLINE constexpr bool IsAligned(const void* ptr, SizeT alignment) noexcept
+GP_NODISCARD GP_FORCEINLINE bool IsAligned(const void* ptr, SizeT alignment) noexcept
 {
     return (reinterpret_cast<UIntPtr>(ptr) & (alignment - 1)) == 0;
 }

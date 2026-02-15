@@ -48,7 +48,10 @@ private:
 
 public:
     /// \brief Default constructor. Initializes the inline buffer and the fallback allocator.
-    TInlineAllocator() = default;
+    TInlineAllocator()
+        : m_inlineBuffer{}
+        , m_fallback()
+    {}
 
     /// \brief Destructor. Defaulted since the inline buffer is trivially destructible and the fallback allocator is
     /// also default-constructible and doesn't require special cleanup.
@@ -71,7 +74,7 @@ public:
     /// \return Pointer to the allocated memory block, or nullptr on failure.
     GP_NODISCARD void* Allocate(SizeType size, SizeType align = alignof(T))
     {
-        if (size <= InlineBufferSize) { return static_cast<void*>(m_inlineBuffer); }
+        if (size <= InlineBufferSize && align <= alignof(T)) { return static_cast<void*>(m_inlineBuffer); }
 
         return m_fallback.Allocate(size, align);
     }
