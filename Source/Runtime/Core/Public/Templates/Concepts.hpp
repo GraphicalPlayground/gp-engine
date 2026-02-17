@@ -189,4 +189,10 @@ concept IsSTLContainer = requires(T container) {
     { container.size() } -> std::same_as<typename T::size_type>;
 };
 
+/// \brief Concept to check if a type is printable (can be streamed to an output stream).
+template <typename T>
+concept IsPrintable = requires(T a) {
+    { std::declval<std::ostream&>() << a } -> std::same_as<std::ostream&>;
+};
+
 }   // namespace GP::Concepts
