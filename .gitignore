@@ -90,6 +90,13 @@ CMakeLists.txt.user
 CMakeLists.txt.user.*
 
 # ====================
+# Agentic Specific
+# ====================
+
+CLAUDE.md
+.claude/
+
+# ====================
 # Compiler Output
 # ====================
 *.o
