@@ -5,6 +5,7 @@
 #include "CoreBuild.hpp"
 #include <compare>
 #include <concepts>
+#include <iostream>
 #include <type_traits>
 
 namespace GP::Concepts
