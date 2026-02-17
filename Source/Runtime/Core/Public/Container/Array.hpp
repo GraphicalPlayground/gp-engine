@@ -76,7 +76,7 @@ public:
     /// \param first The beginning of the range to copy from.
     /// \param last The end of the range to copy from. The range includes all elements in the half-open interval.
     template <typename InputIt>
-    TArray(InputIt first, InputIt last)
+    requires(!Concepts::IsIntegral<InputIt>) TArray(InputIt first, InputIt last)
     {
         for (; first != last; ++first) { EmplaceBack(*first); }
     }
