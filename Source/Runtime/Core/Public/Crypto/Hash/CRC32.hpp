@@ -72,6 +72,7 @@ public:
     /// \brief Compute CRC-32 from a string view.
     /// \param view String view to process.
     /// \return CRC-32 value.
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
     GP_NODISCARD static constexpr HashType Hash(std::string_view view) noexcept
     {
         return Hash(view.data(), view.size());
