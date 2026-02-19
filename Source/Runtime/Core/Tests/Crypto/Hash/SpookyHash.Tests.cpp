@@ -52,7 +52,7 @@ TEST_CASE("SpookyHash Hashing", "[GP][Core][Crypto][Hash][SpookyHash]")
     SECTION("Hash128 Non-Trivial Results")
     {
         auto hash1 = SpookyHash::Hash128("hello");
-        REQUIRE((hash1.low != 0 || hash1.high != 0));
+        REQUIRE(hash1.low != 0 || hash1.high != 0);
 
         auto hash2 = SpookyHash::Hash128("world");
         REQUIRE(hash1 != hash2);
@@ -134,6 +134,58 @@ TEST_CASE("SpookyHash Hashing", "[GP][Core][Crypto][Hash][SpookyHash]")
         REQUIRE(hash64 != 0);
 
         auto hash128 = SpookyHash::Hash128(longStr.data(), longStr.size());
+        // clang-format off
         REQUIRE((hash128.low != 0 || hash128.high != 0));
+        // clang-format on
+    }
+
+    SECTION("ShortHash Branch - 16 to 31 Bytes")
+    {
+        // Exercises the nRounds > 0 path inside ShortHash.
+        for (GP::SizeT len = 16; len < 32; ++len)
+        {
+            std::string a(len, 'Q');
+            std::string b(len, 'Q');
+            b.back() = 'R';
+            REQUIRE(SpookyHash::Hash64(a.data(), a.size()) != SpookyHash::Hash64(b.data(), b.size()));
+        }
+    }
+
+    SECTION("ShortHash Branch - 32 to 191 Bytes")
+    {
+        // Exercises multiple full 32-byte rounds in ShortHash.
+        std::string base(128, 'Z');
+        auto h1 = SpookyHash::Hash64(base.data(), base.size());
+        base[64] = 'A';
+        auto h2 = SpookyHash::Hash64(base.data(), base.size());
+        REQUIRE(h1 != h2);
+    }
+
+    SECTION("Binary Data with Nulls")
+    {
+        const char data[] = { 'a', '\0', 'b', '\0', 'c' };
+        auto hash64 = SpookyHash::Hash64(data, 5);
+        auto hash128 = SpookyHash::Hash128(data, 5);
+        REQUIRE(hash64 != SpookyHash::Hash64("abc"));
+        REQUIRE(hash128 != SpookyHash::Hash128("abc", 3));
+    }
+
+    SECTION("Hash128 Different Seed Pairs")
+    {
+        const char* str = "seed pairs";
+        auto h1 = SpookyHash::Hash128(str, std::char_traits<char>::length(str), 1, 2);
+        auto h2 = SpookyHash::Hash128(str, std::char_traits<char>::length(str), 2, 1);
+        auto h3 = SpookyHash::Hash128(str, std::char_traits<char>::length(str), 0, 0);
+        REQUIRE(h1 != h2);
+        REQUIRE(h1 != h3);
+        REQUIRE(h2 != h3);
+    }
+
+    SECTION("Hash128 Void-Pointer Overload")
+    {
+        const char* str = "void ptr 128";
+        auto h1 = SpookyHash::Hash128(str, std::char_traits<char>::length(str));
+        auto h2 = SpookyHash::Hash128(static_cast<const void*>(str), std::char_traits<char>::length(str));
+        REQUIRE(h1 == h2);
     }
 }
