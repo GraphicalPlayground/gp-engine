@@ -22,10 +22,8 @@ TEST_CASE("SipHash Hashing", "[GP][Core][Crypto][Hash][SipHash]")
         // Message: 0x00 0x01 0x02 ... 0x0E (15 bytes)
         // Expected: 0xA129CA6149BE45E5
         SipHashKey key = { 0x0706050403020100ULL, 0x0F0E0D0C0B0A0908ULL };
-        const char message[] = {
-            '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07',
-            '\x08', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x0E'
-        };
+        const char message[] = { '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07',
+                                 '\x08', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x0E' };
 
         auto hash = SipHash::Hash64(message, 15, key);
         REQUIRE(hash == 0xA129CA6149BE45E5ULL);
@@ -64,15 +62,13 @@ TEST_CASE("SipHash Hashing", "[GP][Core][Crypto][Hash][SipHash]")
         REQUIRE(SipHash::Hash64(str) == SipHash::Hash64(sv));
         REQUIRE(SipHash::Hash64(str, std::char_traits<char>::length(str)) == SipHash::Hash64(str));
         REQUIRE(
-            SipHash::Hash64(static_cast<const void*>(str), std::char_traits<char>::length(str)) ==
-            SipHash::Hash64(str)
+            SipHash::Hash64(static_cast<const void*>(str), std::char_traits<char>::length(str)) == SipHash::Hash64(str)
         );
 
         REQUIRE(SipHash::Hash(str) == SipHash::Hash(sv));
         REQUIRE(SipHash::Hash(str, std::char_traits<char>::length(str)) == SipHash::Hash(str));
         REQUIRE(
-            SipHash::Hash(static_cast<const void*>(str), std::char_traits<char>::length(str)) ==
-            SipHash::Hash(str)
+            SipHash::Hash(static_cast<const void*>(str), std::char_traits<char>::length(str)) == SipHash::Hash(str)
         );
     }
 
@@ -82,9 +78,7 @@ TEST_CASE("SipHash Hashing", "[GP][Core][Crypto][Hash][SipHash]")
         SipHashKey key = { 0ULL, 0ULL };
 
         auto hash1 = SipHash::Hash64Fast(str, std::char_traits<char>::length(str), key);
-        auto hash2 = SipHash::Hash64Fast(
-            static_cast<const void*>(str), std::char_traits<char>::length(str), key
-        );
+        auto hash2 = SipHash::Hash64Fast(static_cast<const void*>(str), std::char_traits<char>::length(str), key);
         REQUIRE(hash1 == hash2);
     }
 
@@ -94,9 +88,7 @@ TEST_CASE("SipHash Hashing", "[GP][Core][Crypto][Hash][SipHash]")
         SipHashKey key = { 0ULL, 0ULL };
 
         auto hash1 = SipHash::Hash64Strong(str, std::char_traits<char>::length(str), key);
-        auto hash2 = SipHash::Hash64Strong(
-            static_cast<const void*>(str), std::char_traits<char>::length(str), key
-        );
+        auto hash2 = SipHash::Hash64Strong(static_cast<const void*>(str), std::char_traits<char>::length(str), key);
         REQUIRE(hash1 == hash2);
     }
 
@@ -132,5 +124,56 @@ TEST_CASE("SipHash Hashing", "[GP][Core][Crypto][Hash][SipHash]")
         std::string longStr(1000, 'z');
         auto hash = SipHash::Hash64(longStr.data(), longStr.size());
         REQUIRE(hash != 0);
+    }
+
+    SECTION("Hash64Fast Null-Terminated and StringView Overloads")
+    {
+        const char* str = "fast string";
+        std::string_view sv(str);
+        SipHashKey key = { 0x1111ULL, 0x2222ULL };
+
+        auto h1 = SipHash::Hash64Fast(str, std::char_traits<char>::length(str), key);
+        auto h2 = SipHash::Hash64Fast(sv, key);
+        REQUIRE(h1 == h2);
+        REQUIRE(h1 == SipHash::Hash64Fast(static_cast<const void*>(str), std::char_traits<char>::length(str), key));
+    }
+
+    SECTION("Hash64Strong Null-Terminated and StringView Overloads")
+    {
+        const char* str = "strong string";
+        std::string_view sv(str);
+        SipHashKey key = { 0xAAAAULL, 0xBBBBULL };
+
+        auto h1 = SipHash::Hash64Strong(str, std::char_traits<char>::length(str), key);
+        auto h2 = SipHash::Hash64Strong(sv, key);
+        REQUIRE(h1 == h2);
+        REQUIRE(h1 == SipHash::Hash64Strong(static_cast<const void*>(str), std::char_traits<char>::length(str), key));
+    }
+
+    SECTION("Multi-Block Input (> 8 bytes) Consistency")
+    {
+        // Exercises the full-block compression path in SipHashCore.
+        const char* str = "sixteen bytes!!";
+        SipHashKey key = { 0x0706050403020100ULL, 0x0F0E0D0C0B0A0908ULL };
+        auto h1 = SipHash::Hash64(str, 16, key);
+        auto h2 = SipHash::Hash64(str, 16, key);
+        REQUIRE(h1 == h2);
+        REQUIRE(h1 != SipHash::Hash64(str, 15, key));
+        REQUIRE(h1 != SipHash::Hash64("seventeen bytes!!", 17, key));
+    }
+
+    SECTION("Default Key Overloads Use Zero Key")
+    {
+        const char* str = "default key";
+        SipHashKey zeroKey = { 0ULL, 0ULL };
+        REQUIRE(SipHash::Hash64(str) == SipHash::Hash64(str, std::char_traits<char>::length(str), zeroKey));
+        REQUIRE(
+            SipHash::Hash64Fast(str, std::char_traits<char>::length(str)) ==
+            SipHash::Hash64Fast(str, std::char_traits<char>::length(str), zeroKey)
+        );
+        REQUIRE(
+            SipHash::Hash64Strong(str, std::char_traits<char>::length(str)) ==
+            SipHash::Hash64Strong(str, std::char_traits<char>::length(str), zeroKey)
+        );
     }
 }
