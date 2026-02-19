@@ -78,6 +78,7 @@ public:
     /// \brief Compute hash from a string view.
     /// \param view String view to hash.
     /// \return Computed hash value (architecture-sized).
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
     GP_NODISCARD static constexpr HashType Hash(std::string_view view) noexcept
     {
         return Hash(view.data(), view.size());
@@ -112,6 +113,7 @@ public:
     /// \brief Compute 32-bit hash from a string view.
     /// \param view String view to hash.
     /// \return 32-bit hash value.
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
     GP_NODISCARD static constexpr UInt32 Hash32(std::string_view view) noexcept
     {
         return Hash32(view.data(), view.size());
@@ -146,6 +148,7 @@ public:
     /// \brief Compute 64-bit hash from a string view.
     /// \param view String view to hash.
     /// \return 64-bit hash value.
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
     GP_NODISCARD static constexpr UInt64 Hash64(std::string_view view) noexcept
     {
         return Hash64(view.data(), view.size());
