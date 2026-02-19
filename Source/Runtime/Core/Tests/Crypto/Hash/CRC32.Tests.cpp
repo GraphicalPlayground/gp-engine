@@ -112,4 +112,74 @@ TEST_CASE("CRC32 Hashing", "[GP][Core][Crypto][Hash][CRC32]")
         auto hash2 = CRC32::Hash(input);
         REQUIRE(hash1 == hash2);
     }
+
+    SECTION("Constants Accessible")
+    {
+        REQUIRE(CRC32::Polynomial == 0xEDB88320U);
+        REQUIRE(CRC32::InitialValue == 0xFFFFFFFFU);
+    }
+
+    SECTION("String View Overload")
+    {
+        std::string_view sv("hello world");
+        REQUIRE(CRC32::Hash(sv) == CRC32::Hash("hello world"));
+        REQUIRE(CRC32::Hash(sv) == CRC32::Hash("hello world", 11));
+    }
+
+    SECTION("Single Byte Sensitivity")
+    {
+        // Flipping one byte anywhere must change the CRC.
+        std::string data(20, 'A');
+        auto base = CRC32::Hash(data.data(), data.size());
+        for (GP::SizeT i = 0; i < data.size(); ++i)
+        {
+            std::string modified = data;
+            modified[i] = 'B';
+            REQUIRE(CRC32::Hash(modified.data(), modified.size()) != base);
+        }
+    }
+
+    SECTION("Append Idempotence with Zero-Length Chunk")
+    {
+        const char* str = "base string";
+        auto hash = CRC32::Hash(str);
+        auto appended = CRC32::Append(hash, "", 0);
+        REQUIRE(appended == hash);
+    }
+
+    SECTION("Compile-time Evaluation")
+    {
+        constexpr auto hash = CRC32::Hash("constexpr", 9);
+        REQUIRE(hash == CRC32::Hash("constexpr"));
+        REQUIRE(hash != 0);
+    }
+
+    SECTION("Block Boundary Sensitivity")
+    {
+        // Lengths that straddle the table-lookup loop boundaries.
+        for (GP::SizeT len = 1; len <= 32; ++len)
+        {
+            std::string a(len, 'Q');
+            std::string b(len, 'Q');
+            b.back() = 'R';
+            REQUIRE(CRC32::Hash(a.data(), a.size()) != CRC32::Hash(b.data(), b.size()));
+        }
+    }
+
+    SECTION("Long String Sensitivity")
+    {
+        std::string longStr(10000, 'X');
+        auto hash1 = CRC32::Hash(longStr.data(), longStr.size());
+        longStr[9999] = 'Y';
+        auto hash2 = CRC32::Hash(longStr.data(), longStr.size());
+        REQUIRE(hash1 != hash2);
+    }
+
+    SECTION("Verify - String View Overload")
+    {
+        std::string_view sv("view verify");
+        auto hash = CRC32::Hash(sv);
+        REQUIRE(CRC32::Verify(sv.data(), sv.size(), hash));
+        REQUIRE_FALSE(CRC32::Verify(sv.data(), sv.size(), hash ^ 1U));
+    }
 }
