@@ -53,8 +53,7 @@ TEST_CASE("FarmHash Hashing", "[GP][Core][Crypto][Hash][FarmHash]")
         REQUIRE(FarmHash::Hash(str) == FarmHash::Hash(sv));
         REQUIRE(FarmHash::Hash(str, std::char_traits<char>::length(str)) == FarmHash::Hash(str));
         REQUIRE(
-            FarmHash::Hash(static_cast<const void*>(str), std::char_traits<char>::length(str)) ==
-            FarmHash::Hash(str)
+            FarmHash::Hash(static_cast<const void*>(str), std::char_traits<char>::length(str)) == FarmHash::Hash(str)
         );
     }
 
@@ -136,5 +135,63 @@ TEST_CASE("FarmHash Hashing", "[GP][Core][Crypto][Hash][FarmHash]")
         const char data[] = { 'a', '\0', 'b', '\0', 'c' };
         auto hash = FarmHash::Hash32(data, 5);
         REQUIRE(hash != FarmHash::Hash32("abc"));
+    }
+
+    SECTION("Hash32 Length Boundary Coverage")
+    {
+        // Exercises the 0-4, 5-12, 13-24, and > 24 internal branches.
+        const char* str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        for (GP::SizeT len = 0; len <= 26; ++len)
+        {
+            std::string a(len, 'Z');
+            std::string b(len, 'Z');
+            if (len > 0) { b.back() = 'Y'; }
+            if (len > 0) { REQUIRE(FarmHash::Hash32(a.data(), a.size()) != FarmHash::Hash32(b.data(), b.size())); }
+            // Deterministic at each length.
+            REQUIRE(FarmHash::Hash32(a.data(), a.size()) == FarmHash::Hash32(a.data(), a.size()));
+        }
+    }
+
+    SECTION("Hash64 Length Boundary Coverage")
+    {
+        // Exercises <= 8, 8-16, 17-32, 33-64, and > 64 branches.
+        for (GP::SizeT len: { GP::SizeT(0),
+                              GP::SizeT(4),
+                              GP::SizeT(8),
+                              GP::SizeT(16),
+                              GP::SizeT(17),
+                              GP::SizeT(32),
+                              GP::SizeT(33),
+                              GP::SizeT(64),
+                              GP::SizeT(65),
+                              GP::SizeT(128) })
+        {
+            std::string a(len, 'F');
+            REQUIRE(FarmHash::Hash64(a.data(), a.size()) == FarmHash::Hash64(a.data(), a.size()));
+        }
+    }
+
+    SECTION("Single Byte Sensitivity - 32-bit")
+    {
+        std::string data(30, 'K');
+        auto base = FarmHash::Hash32(data.data(), data.size());
+        for (GP::SizeT i = 0; i < data.size(); ++i)
+        {
+            std::string modified = data;
+            modified[i] = 'L';
+            REQUIRE(FarmHash::Hash32(modified.data(), modified.size()) != base);
+        }
+    }
+
+    SECTION("Single Byte Sensitivity - 64-bit")
+    {
+        std::string data(80, 'K');
+        auto base = FarmHash::Hash64(data.data(), data.size());
+        for (GP::SizeT i = 0; i < data.size(); ++i)
+        {
+            std::string modified = data;
+            modified[i] = 'L';
+            REQUIRE(FarmHash::Hash64(modified.data(), modified.size()) != base);
+        }
     }
 }
