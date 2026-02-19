@@ -4,6 +4,7 @@
 
 #include "Container/BasicStringView.hpp"
 #include "Container/ContainerForward.hpp"
+#include "Container/Span.hpp"
 #include "ShadersBuild.hpp"
 #include <compare>
 
@@ -41,6 +42,11 @@ public:
     /// \param length Number of bytes to process for hashing.
     /// \return A new FShaderHash computed from the input data.
     GP_NODISCARD static FShaderHash FromData(const void* data, SizeT length);
+
+    /// \brief Static factory method to create a shader hash from a span.
+    /// \param data Span of to process for hashing.
+    /// \return A new FShaderHash computed from the input byte span.
+    GP_NODISCARD static FShaderHash FromData(Container::TSpan<Byte> data);
 
     /// \brief Static factory method to create a shader hash from a string view.
     /// \param str String view containing the data to hash.
