@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreBuild.hpp"
+#include "Crypto/CryptoForward.hpp"
+#include "Crypto/Hash/HashUtilities.hpp"
 #include "Templates/Generic.hpp"
 #include <string_view>
 
@@ -20,37 +22,13 @@ public:
     using HashType = UInt32;   //<! 32-bit hash type for 32-bit architectures.
 #endif
 
-    /// \brief 128-bit hash result structure for Murmur3 128-bit variant.
-    struct Hash128Result
-    {
-    public:
-        UInt64 low;    //<! Lower 64 bits of the 128-bit hash.
-        UInt64 high;   //<! Upper 64 bits of the 128-bit hash.
-
-    public:
-        /// \brief Equality operator for Hash128Result to allow comparison of hash results.
-        /// \param other Another Hash128Result to compare with.
-        /// \return True if both low and high parts are equal, false otherwise.
-        GP_NODISCARD constexpr bool operator==(const Hash128Result&) const noexcept = default;
-    };
+    using Hash128Result = GP::Crypto::Hash128Result;
 
 public:
     static constexpr UInt32 DefaultSeed32 = 0U;     //<! Default seed for 32-bit Murmur3.
     static constexpr UInt64 DefaultSeed64 = 0ULL;   //<! Default seed for 64-bit Murmur3.
 
 private:
-    /// \brief Rotate left for 32-bit values.
-    /// \param x Value to rotate.
-    /// \param r Number of bits to rotate.
-    /// \return Rotated value.
-    GP_NODISCARD static constexpr UInt32 Rotl32(UInt32 x, Int32 r) noexcept { return (x << r) | (x >> (32 - r)); }
-
-    /// \brief Rotate left for 64-bit values.
-    /// \param x Value to rotate.
-    /// \param r Number of bits to rotate.
-    /// \return Rotated value.
-    GP_NODISCARD static constexpr UInt64 Rotl64(UInt64 x, Int32 r) noexcept { return (x << r) | (x >> (64 - r)); }
-
     /// \brief Finalization mix function for 32-bit Murmur3 to avalanche the bits.
     /// \param h Hash value to mix.
     /// \return Mixed hash value.
@@ -77,34 +55,6 @@ private:
         return k;
     }
 
-    /// \brief Read a 32-bit unsigned integer from a byte buffer in little-endian order.
-    /// \param data Pointer to the byte buffer.
-    /// \param offset Byte offset to read from.
-    /// \return 32-bit unsigned integer value.
-    GP_NODISCARD static constexpr UInt32 ReadU32(const char* data, SizeT offset) noexcept
-    {
-        return static_cast<UInt32>(static_cast<UInt8>(data[offset])) |
-               (static_cast<UInt32>(static_cast<UInt8>(data[offset + 1])) << 8) |
-               (static_cast<UInt32>(static_cast<UInt8>(data[offset + 2])) << 16) |
-               (static_cast<UInt32>(static_cast<UInt8>(data[offset + 3])) << 24);
-    }
-
-    /// \brief Read a 64-bit unsigned integer from a byte buffer in little-endian order.
-    /// \param data Pointer to the byte buffer.
-    /// \param offset Byte offset to read from.
-    /// \return 64-bit unsigned integer value.
-    GP_NODISCARD static constexpr UInt64 ReadU64(const char* data, SizeT offset) noexcept
-    {
-        return static_cast<UInt64>(static_cast<UInt8>(data[offset])) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 1])) << 8) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 2])) << 16) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 3])) << 24) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 4])) << 32) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 5])) << 40) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 6])) << 48) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 7])) << 56);
-    }
-
 public:
     /// \brief Compute 32-bit Murmur3 hash for a buffer.
     /// \param data Pointer to the input bytes.
@@ -121,13 +71,13 @@ public:
 
         for (SizeT i = 0; i < nblocks; ++i)
         {
-            UInt32 k1 = ReadU32(data, i * 4);
+            UInt32 k1 = Detail::HashUtilities::ReadU32LE(data, i * 4);
             k1 *= c1;
-            k1 = Rotl32(k1, 15);
+            k1 = Detail::HashUtilities::Rotl32(k1, 15);
             k1 *= c2;
 
             h1 ^= k1;
-            h1 = Rotl32(h1, 13);
+            h1 = Detail::HashUtilities::Rotl32(h1, 13);
             h1 = h1 * 5 + 0xE6546B64U;
         }
 
@@ -141,7 +91,7 @@ public:
         case 1:
             k1 ^= static_cast<UInt32>(static_cast<UInt8>(data[tail]));
             k1 *= c1;
-            k1 = Rotl32(k1, 15);
+            k1 = Detail::HashUtilities::Rotl32(k1, 15);
             k1 *= c2;
             h1 ^= k1;
         }
@@ -173,6 +123,7 @@ public:
     /// \param view String view to hash.
     /// \param seed Optional seed value.
     /// \return 32-bit hash value.
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
     GP_NODISCARD static constexpr UInt32 Hash32(std::string_view view, UInt32 seed = DefaultSeed32) noexcept
     {
         return Hash32(view.data(), view.size(), seed);
@@ -195,22 +146,22 @@ public:
 
         for (SizeT i = 0; i < nblocks; ++i)
         {
-            UInt64 k1 = ReadU64(data, i * 16);
-            UInt64 k2 = ReadU64(data, i * 16 + 8);
+            UInt64 k1 = Detail::HashUtilities::ReadU64LE(data, i * 16);
+            UInt64 k2 = Detail::HashUtilities::ReadU64LE(data, i * 16 + 8);
 
             k1 *= c1;
-            k1 = Rotl64(k1, 31);
+            k1 = Detail::HashUtilities::Rotl64(k1, 31);
             k1 *= c2;
             h1 ^= k1;
-            h1 = Rotl64(h1, 27);
+            h1 = Detail::HashUtilities::Rotl64(h1, 27);
             h1 += h2;
             h1 = h1 * 5 + 0x52DCE729;
 
             k2 *= c2;
-            k2 = Rotl64(k2, 33);
+            k2 = Detail::HashUtilities::Rotl64(k2, 33);
             k2 *= c1;
             h2 ^= k2;
-            h2 = Rotl64(h2, 31);
+            h2 = Detail::HashUtilities::Rotl64(h2, 31);
             h2 += h1;
             h2 = h2 * 5 + 0x38495AB5;
         }
@@ -230,7 +181,7 @@ public:
         case 9:
             k2 ^= static_cast<UInt64>(static_cast<UInt8>(data[tail + 8]));
             k2 *= c2;
-            k2 = Rotl64(k2, 33);
+            k2 = Detail::HashUtilities::Rotl64(k2, 33);
             k2 *= c1;
             h2 ^= k2;
             [[fallthrough]];
@@ -244,7 +195,7 @@ public:
         case 1:
             k1 ^= static_cast<UInt64>(static_cast<UInt8>(data[tail]));
             k1 *= c1;
-            k1 = Rotl64(k1, 31);
+            k1 = Detail::HashUtilities::Rotl64(k1, 31);
             k1 *= c2;
             h1 ^= k1;
         }
@@ -287,6 +238,7 @@ public:
     /// \param view String view to hash.
     /// \param seed Optional 64-bit seed.
     /// \return 128-bit hash result (low/high).
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
     GP_NODISCARD static constexpr Hash128Result Hash128(std::string_view view, UInt64 seed = DefaultSeed64) noexcept
     {
         return Hash128(view.data(), view.size(), seed);
@@ -325,6 +277,7 @@ public:
     /// \brief Convenience overload for string views.
     /// \param view String view to hash.
     /// \return Architecture-sized hash.
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
     GP_NODISCARD static constexpr HashType Hash(std::string_view view) noexcept
     {
         return Hash(view.data(), view.size());
