@@ -1,12 +1,8 @@
 # Copyright (c) - Graphical Playground. All rights reserved.
 
-# List of modules in the preferred order of dependency
-set(GP_RUNTIME_MODULES
-    "Core"
-    "HAL"
-    "RHI"
-    "Platform"
-)
+# Automatically find all subdirectories with a CMakeLists.txt and add them as modules
+file(GLOB GP_RUNTIME_MODULES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} */CMakeLists.txt)
+list(TRANSFORM GP_RUNTIME_MODULES REPLACE "/CMakeLists.txt$" "")
 
 message(STATUS "[GP] Configuring Runtime modules...")
 
