@@ -156,6 +156,16 @@ public:
         return Hash64Fast(static_cast<const char*>(data), length, key);
     }
 
+    /// \brief Compute SipHash-1-3 from a string view.
+    /// \param view String view to hash.
+    /// \param key 128-bit key.
+    /// \return 64-bit hash value.
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
+    GP_NODISCARD static constexpr UInt64 Hash64Fast(std::string_view view, SipHashKey key = DefaultKey) noexcept
+    {
+        return Hash64Fast(view.data(), view.size(), key);
+    }
+
     /// \brief Compute SipHash-4-8 for a data buffer (conservative variant, higher security margin).
     /// \param data Pointer to the input bytes.
     /// \param length Number of bytes to hash.
@@ -176,6 +186,16 @@ public:
         Hash64Strong(const void* data, SizeT length, SipHashKey key = DefaultKey) noexcept
     {
         return Hash64Strong(static_cast<const char*>(data), length, key);
+    }
+
+    /// \brief Compute SipHash-4-8 from a string view.
+    /// \param view String view to hash.
+    /// \param key 128-bit key.
+    /// \return 64-bit hash value.
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
+    GP_NODISCARD static constexpr UInt64 Hash64Strong(std::string_view view, SipHashKey key = DefaultKey) noexcept
+    {
+        return Hash64Strong(view.data(), view.size(), key);
     }
 
     /// \brief Convenience entry point (SipHash-2-4 with default key).
