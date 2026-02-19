@@ -56,9 +56,7 @@ TEST_CASE("WyHash Hashing", "[GP][Core][Crypto][Hash][WyHash]")
 
         REQUIRE(WyHash::Hash(str) == WyHash::Hash(sv));
         REQUIRE(WyHash::Hash(str, std::char_traits<char>::length(str)) == WyHash::Hash(str));
-        REQUIRE(
-            WyHash::Hash(static_cast<const void*>(str), std::char_traits<char>::length(str)) == WyHash::Hash(str)
-        );
+        REQUIRE(WyHash::Hash(static_cast<const void*>(str), std::char_traits<char>::length(str)) == WyHash::Hash(str));
     }
 
     SECTION("Short Strings")
@@ -113,5 +111,48 @@ TEST_CASE("WyHash Hashing", "[GP][Core][Crypto][Hash][WyHash]")
         const char data[] = { 'a', '\0', 'b', '\0', 'c' };
         auto hash = WyHash::Hash64(data, 5);
         REQUIRE(hash != WyHash::Hash64("abc"));
+    }
+
+    SECTION("Large Input - Three-Lane Path (> 48 bytes)")
+    {
+        // Exercises the do-while loop in Hash64 that uses see1/see2 alongside seed.
+        std::string large(200, 'W');
+        auto h1 = WyHash::Hash64(large.data(), large.size());
+        auto h2 = WyHash::Hash64(large.data(), large.size());
+        REQUIRE(h1 == h2);
+        large[100] = 'X';
+        auto h3 = WyHash::Hash64(large.data(), large.size());
+        REQUIRE(h1 != h3);
+    }
+
+    SECTION("Large Input - Single Byte Sensitivity In > 48 Byte Block")
+    {
+        std::string data(96, 'P');
+        auto base = WyHash::Hash64(data.data(), data.size());
+        for (GP::SizeT i = 0; i < data.size(); ++i)
+        {
+            std::string mod = data;
+            mod[i] = 'Q';
+            REQUIRE(WyHash::Hash64(mod.data(), mod.size()) != base);
+        }
+    }
+
+    SECTION("Block Boundary - 17-48 byte range")
+    {
+        // Exercises the length <= 48 branch that uses WyMix with optional second block.
+        for (GP::SizeT len = 17; len <= 48; ++len)
+        {
+            std::string a(len, 'R');
+            std::string b(len, 'R');
+            b.back() = 'S';
+            REQUIRE(WyHash::Hash64(a.data(), a.size()) != WyHash::Hash64(b.data(), b.size()));
+        }
+    }
+
+    SECTION("Null-Terminated C-String Overload for Hash")
+    {
+        const char* str = "null terminated";
+        REQUIRE(WyHash::Hash(str) == WyHash::Hash64(str));
+        REQUIRE(WyHash::Hash(str) == WyHash::Hash(std::string_view(str)));
     }
 }
