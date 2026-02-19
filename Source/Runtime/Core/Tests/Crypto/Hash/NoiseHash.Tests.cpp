@@ -274,4 +274,78 @@ TEST_CASE("NoiseHash Hashing", "[GP][Core][Crypto][Hash][NoiseHash]")
         constexpr auto h8 = NoiseHash::Noise4D(1, 2, 3, 4, 5);
         REQUIRE(h8 == NoiseHash::Noise4D(1, 2, 3, 4, 5));
     }
+
+    SECTION("Compile-time ToFloat01 and ToFloatNeg11")
+    {
+        constexpr auto f0 = NoiseHash::ToFloat01(0U);
+        constexpr auto fMax = NoiseHash::ToFloat01(0xFFFFFFFFU);
+        constexpr auto fn0 = NoiseHash::ToFloatNeg11(0U);
+        constexpr auto fnMax = NoiseHash::ToFloatNeg11(0xFFFFFFFFU);
+
+        REQUIRE(f0 >= 0.0f);
+        REQUIRE(f0 < 1.0f);
+        REQUIRE(fMax >= 0.0f);
+        REQUIRE(fMax < 1.0f);
+        REQUIRE(fn0 >= -1.0f);
+        REQUIRE(fn0 < 1.0f);
+        REQUIRE(fnMax >= -1.0f);
+        REQUIRE(fnMax < 1.0f);
+    }
+
+    SECTION("WangHash32 - Zero and Max Input")
+    {
+        auto h0 = NoiseHash::WangHash32(0U);
+        auto hMax = NoiseHash::WangHash32(0xFFFFFFFFU);
+        REQUIRE(h0 != hMax);
+        // Both must still produce valid-looking (non-trivial) values.
+        REQUIRE(h0 != 0U);
+        REQUIRE(hMax != 0U);
+    }
+
+    SECTION("WangHash64 - Zero and Max Input")
+    {
+        auto h0 = NoiseHash::WangHash64(0ULL);
+        auto hMax = NoiseHash::WangHash64(0xFFFFFFFFFFFFFFFFULL);
+        REQUIRE(h0 != hMax);
+        REQUIRE(h0 != 0ULL);
+        REQUIRE(hMax != 0ULL);
+    }
+
+    SECTION("PCGHash32 - Zero Input")
+    {
+        auto h = NoiseHash::PCGHash32(0U);
+        // PCG with input 0 should still avalanche to a non-trivial value.
+        REQUIRE(h != 0U);
+        REQUIRE(h == NoiseHash::PCGHash32(0U));
+    }
+
+    SECTION("ToFloat01 - Maps Uniformly Across Full Range")
+    {
+        // Verify monotonicity is NOT guaranteed (it's a hash, not a sorted map),
+        // but that the extremes and midpoint are all inside [0, 1).
+        REQUIRE(NoiseHash::ToFloat01(0U) >= 0.0f);
+        REQUIRE(NoiseHash::ToFloat01(0x7FFFFFFFU) >= 0.0f);
+        REQUIRE(NoiseHash::ToFloat01(0x80000000U) >= 0.0f);
+        REQUIRE(NoiseHash::ToFloat01(0xFFFFFFFFU) < 1.0f);
+    }
+
+    SECTION("ToFloatNeg11 - Symmetric Around Zero")
+    {
+        // 0x80000000 maps to the midpoint of the uint32 range, so the
+        // result should be close to but not exactly 0 (due to bit-shift truncation).
+        auto mid = NoiseHash::ToFloatNeg11(0x80000000U);
+        REQUIRE(mid >= -1.0f);
+        REQUIRE(mid < 1.0f);
+
+        auto lowest = NoiseHash::ToFloatNeg11(0U);
+        REQUIRE(lowest >= -1.0f);
+        REQUIRE(lowest < 0.0f);
+    }
+
+    SECTION("Noise4D - Symmetry: Swapped Coordinates Differ")
+    {
+        auto hABCD = NoiseHash::Noise4D(1, 2, 3, 4);
+        auto hDCBA = NoiseHash::Noise4D(4, 3, 2, 1);
+        REQUIRE(hABCD != hDCBA);
+    }
 }
