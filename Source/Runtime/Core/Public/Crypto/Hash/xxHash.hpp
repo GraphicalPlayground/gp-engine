@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreBuild.hpp"
+#include "Crypto/Hash/HashUtilities.hpp"
 #include "Templates/Generic.hpp"
 #include <string_view>
 
@@ -35,46 +36,6 @@ public:
     static constexpr UInt64 DefaultSeed64 = 0ULL;                //<! Default seed for 64-bit xxHash.
 
 private:
-    /// \brief Rotate left for 32-bit values.
-    /// \param x Value to rotate.
-    /// \param r Number of bits to rotate.
-    /// \return Rotated value.
-    GP_NODISCARD static constexpr UInt32 Rotl32(UInt32 x, Int32 r) noexcept { return (x << r) | (x >> (32 - r)); }
-
-    /// \brief Rotate left for 64-bit values.
-    /// \param x Value to rotate.
-    /// \param r Number of bits to rotate.
-    /// \return Rotated value.
-    GP_NODISCARD static constexpr UInt64 Rotl64(UInt64 x, Int32 r) noexcept { return (x << r) | (x >> (64 - r)); }
-
-    /// \brief Read a 32-bit unsigned integer from a byte buffer in little-endian order.
-    /// \param data Pointer to the byte buffer.
-    /// \param offset Byte offset to read from.
-    /// \return 32-bit unsigned integer value.
-    GP_NODISCARD static constexpr UInt32 ReadU32(const char* data, SizeT offset) noexcept
-    {
-        return static_cast<UInt32>(static_cast<UInt8>(data[offset])) |
-               (static_cast<UInt32>(static_cast<UInt8>(data[offset + 1])) << 8) |
-               (static_cast<UInt32>(static_cast<UInt8>(data[offset + 2])) << 16) |
-               (static_cast<UInt32>(static_cast<UInt8>(data[offset + 3])) << 24);
-    }
-
-    /// \brief Read a 64-bit unsigned integer from a byte buffer in little-endian order.
-    /// \param data Pointer to the byte buffer.
-    /// \param offset Byte offset to read from.
-    /// \return 64-bit unsigned integer value.
-    GP_NODISCARD static constexpr UInt64 ReadU64(const char* data, SizeT offset) noexcept
-    {
-        return static_cast<UInt64>(static_cast<UInt8>(data[offset])) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 1])) << 8) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 2])) << 16) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 3])) << 24) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 4])) << 32) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 5])) << 40) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 6])) << 48) |
-               (static_cast<UInt64>(static_cast<UInt8>(data[offset + 7])) << 56);
-    }
-
     /// \brief Round function for 32-bit xxHash.
     /// \param acc Accumulator value.
     /// \param input Input value to mix.
@@ -82,7 +43,7 @@ private:
     GP_NODISCARD static constexpr UInt32 Round32(UInt32 acc, UInt32 input) noexcept
     {
         acc += input * Prime32_2;
-        acc = Rotl32(acc, 13);
+        acc = Detail::HashUtilities::Rotl32(acc, 13);
         acc *= Prime32_1;
         return acc;
     }
@@ -107,7 +68,7 @@ private:
     GP_NODISCARD static constexpr UInt64 Round64(UInt64 acc, UInt64 input) noexcept
     {
         acc += input * Prime64_2;
-        acc = Rotl64(acc, 31);
+        acc = Detail::HashUtilities::Rotl64(acc, 31);
         acc *= Prime64_1;
         return acc;
     }
@@ -157,18 +118,19 @@ public:
 
             const SizeT limit = length - 16;
             do {
-                v1 = Round32(v1, ReadU32(data, offset));
+                v1 = Round32(v1, Detail::HashUtilities::ReadU32LE(data, offset));
                 offset += 4;
-                v2 = Round32(v2, ReadU32(data, offset));
+                v2 = Round32(v2, Detail::HashUtilities::ReadU32LE(data, offset));
                 offset += 4;
-                v3 = Round32(v3, ReadU32(data, offset));
+                v3 = Round32(v3, Detail::HashUtilities::ReadU32LE(data, offset));
                 offset += 4;
-                v4 = Round32(v4, ReadU32(data, offset));
+                v4 = Round32(v4, Detail::HashUtilities::ReadU32LE(data, offset));
                 offset += 4;
             }
             while (offset <= limit);
 
-            h = Rotl32(v1, 1) + Rotl32(v2, 7) + Rotl32(v3, 12) + Rotl32(v4, 18);
+            h = Detail::HashUtilities::Rotl32(v1, 1) + Detail::HashUtilities::Rotl32(v2, 7) +
+                Detail::HashUtilities::Rotl32(v3, 12) + Detail::HashUtilities::Rotl32(v4, 18);
         }
         else { h = seed + Prime32_5; }
 
@@ -176,15 +138,15 @@ public:
 
         while (offset + 4 <= length)
         {
-            h += ReadU32(data, offset) * Prime32_3;
-            h = Rotl32(h, 17) * Prime32_4;
+            h += Detail::HashUtilities::ReadU32LE(data, offset) * Prime32_3;
+            h = Detail::HashUtilities::Rotl32(h, 17) * Prime32_4;
             offset += 4;
         }
 
         while (offset < length)
         {
             h += static_cast<UInt32>(static_cast<UInt8>(data[offset])) * Prime32_5;
-            h = Rotl32(h, 11) * Prime32_1;
+            h = Detail::HashUtilities::Rotl32(h, 11) * Prime32_1;
             ++offset;
         }
 
@@ -213,6 +175,7 @@ public:
     /// \param view String view to hash.
     /// \param seed Optional seed value.
     /// \return 32-bit hash value.
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
     GP_NODISCARD static constexpr UInt32 Hash32(std::string_view view, UInt32 seed = DefaultSeed32) noexcept
     {
         return Hash32(view.data(), view.size(), seed);
@@ -237,18 +200,19 @@ public:
 
             const SizeT limit = length - 32;
             do {
-                v1 = Round64(v1, ReadU64(data, offset));
+                v1 = Round64(v1, Detail::HashUtilities::ReadU64LE(data, offset));
                 offset += 8;
-                v2 = Round64(v2, ReadU64(data, offset));
+                v2 = Round64(v2, Detail::HashUtilities::ReadU64LE(data, offset));
                 offset += 8;
-                v3 = Round64(v3, ReadU64(data, offset));
+                v3 = Round64(v3, Detail::HashUtilities::ReadU64LE(data, offset));
                 offset += 8;
-                v4 = Round64(v4, ReadU64(data, offset));
+                v4 = Round64(v4, Detail::HashUtilities::ReadU64LE(data, offset));
                 offset += 8;
             }
             while (offset <= limit);
 
-            h = Rotl64(v1, 1) + Rotl64(v2, 7) + Rotl64(v3, 12) + Rotl64(v4, 18);
+            h = Detail::HashUtilities::Rotl64(v1, 1) + Detail::HashUtilities::Rotl64(v2, 7) +
+                Detail::HashUtilities::Rotl64(v3, 12) + Detail::HashUtilities::Rotl64(v4, 18);
             h = MergeRound64(h, v1);
             h = MergeRound64(h, v2);
             h = MergeRound64(h, v3);
@@ -260,22 +224,22 @@ public:
 
         while (offset + 8 <= length)
         {
-            h ^= Round64(0, ReadU64(data, offset));
-            h = Rotl64(h, 27) * Prime64_1 + Prime64_4;
+            h ^= Round64(0, Detail::HashUtilities::ReadU64LE(data, offset));
+            h = Detail::HashUtilities::Rotl64(h, 27) * Prime64_1 + Prime64_4;
             offset += 8;
         }
 
         while (offset + 4 <= length)
         {
-            h ^= static_cast<UInt64>(ReadU32(data, offset)) * Prime64_1;
-            h = Rotl64(h, 23) * Prime64_2 + Prime64_3;
+            h ^= static_cast<UInt64>(Detail::HashUtilities::ReadU32LE(data, offset)) * Prime64_1;
+            h = Detail::HashUtilities::Rotl64(h, 23) * Prime64_2 + Prime64_3;
             offset += 4;
         }
 
         while (offset < length)
         {
             h ^= static_cast<UInt64>(static_cast<UInt8>(data[offset])) * Prime64_5;
-            h = Rotl64(h, 11) * Prime64_1;
+            h = Detail::HashUtilities::Rotl64(h, 11) * Prime64_1;
             ++offset;
         }
 
@@ -304,6 +268,7 @@ public:
     /// \param view String view to hash.
     /// \param seed Optional seed value.
     /// \return 64-bit hash value.
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
     GP_NODISCARD static constexpr UInt64 Hash64(std::string_view view, UInt64 seed = DefaultSeed64) noexcept
     {
         return Hash64(view.data(), view.size(), seed);
@@ -342,6 +307,7 @@ public:
     /// \brief Convenience overload for string views.
     /// \param view String view to hash.
     /// \return Architecture-sized hash.
+    /// \note Accepts FStringView implicitly via its conversion to std::string_view.
     GP_NODISCARD static constexpr HashType Hash(std::string_view view) noexcept
     {
         return Hash(view.data(), view.size());
