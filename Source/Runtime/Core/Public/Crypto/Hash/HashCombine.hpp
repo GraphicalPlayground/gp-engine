@@ -32,7 +32,7 @@ public:
     }
 
     /// \brief Combine multiple values into a single hash (variadic).
-    /// 	param Args Types of values to combine (will be cast to HashType).
+    /// \tparam Args Types of values to combine (will be cast to HashType).
     /// \param seed Initial seed value.
     /// \param values Values to fold into the seed.
     /// \return Final combined hash.
