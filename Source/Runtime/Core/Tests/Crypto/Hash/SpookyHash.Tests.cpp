@@ -52,7 +52,9 @@ TEST_CASE("SpookyHash Hashing", "[GP][Core][Crypto][Hash][SpookyHash]")
     SECTION("Hash128 Non-Trivial Results")
     {
         auto hash1 = SpookyHash::Hash128("hello");
-        REQUIRE(hash1.low != 0 || hash1.high != 0);
+        // clang-format off
+        REQUIRE((hash1.low != 0 || hash1.high != 0));
+        // clang-format on
 
         auto hash2 = SpookyHash::Hash128("world");
         REQUIRE(hash1 != hash2);
