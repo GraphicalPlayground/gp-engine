@@ -1,12 +1,12 @@
 blank_issues_enabled: false
 
 contact_links:
-  - name: Graphical Playground proposals
-    url: https://github.com/GraphicalPlayground/gp-proposals
-    about: Please submit feature proposals on the GP proposals repository, not here.
+  - name: GP Platform issues
+    url: https://github.com/GraphicalPlayground/gp-platform/issues
+    about: For bugs or feature requests related to the web platform (courses, cloud GPU execution, web UI), please open an issue on the gp-platform repository, not here.
 
   - name: Graphical Playground documentation repository
-    url: https://github.com/GraphicalPlayground/gp-docs
+    url: https://github.com/GraphicalPlayground/gp-docs/issues
     about: Please report issues with documentation on the GP documentation repository, not here.
 
   - name: Graphical Playground community channels
