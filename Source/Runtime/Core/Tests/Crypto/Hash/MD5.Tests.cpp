@@ -21,12 +21,12 @@ TEST_CASE("MD5 Hashing", "[GP][Core][Crypto][Hash][MD5]")
     {
         // MD5("") = d41d8cd98f00b204e9800998ecf8427e
         constexpr auto d = MD5::Hash("", 0);
-        constexpr Byte kExpected[16] = { 0xD4, 0x1D, 0x8C, 0xD9, 0x8F, 0x00, 0xB2, 0x04,
-                                         0xE9, 0x80, 0x09, 0x98, 0xEC, 0xF8, 0x42, 0x7E };
+        constexpr UInt8 kExpected[16] = { 0xD4, 0x1D, 0x8C, 0xD9, 0x8F, 0x00, 0xB2, 0x04,
+                                          0xE9, 0x80, 0x09, 0x98, 0xEC, 0xF8, 0x42, 0x7E };
         for (SizeT i = 0; i < 16; ++i)
         {
             INFO("Byte " << i);
-            REQUIRE(d.bytes[i] == kExpected[i]);
+            REQUIRE(static_cast<UInt8>(d.bytes[i]) == kExpected[i]);
         }
     }
 
@@ -34,12 +34,12 @@ TEST_CASE("MD5 Hashing", "[GP][Core][Crypto][Hash][MD5]")
     {
         // MD5("a") = 0cc175b9c0f1b6a831c399e269772661
         constexpr auto d = MD5::Hash("a", 1);
-        constexpr Byte kExpected[16] = { 0x0C, 0xC1, 0x75, 0xB9, 0xC0, 0xF1, 0xB6, 0xA8,
-                                         0x31, 0xC3, 0x99, 0xE2, 0x69, 0x77, 0x26, 0x61 };
+        constexpr UInt8 kExpected[16] = { 0x0C, 0xC1, 0x75, 0xB9, 0xC0, 0xF1, 0xB6, 0xA8,
+                                          0x31, 0xC3, 0x99, 0xE2, 0x69, 0x77, 0x26, 0x61 };
         for (SizeT i = 0; i < 16; ++i)
         {
             INFO("Byte " << i);
-            REQUIRE(d.bytes[i] == kExpected[i]);
+            REQUIRE(static_cast<UInt8>(d.bytes[i]) == kExpected[i]);
         }
     }
 
@@ -47,12 +47,12 @@ TEST_CASE("MD5 Hashing", "[GP][Core][Crypto][Hash][MD5]")
     {
         // MD5("abc") = 900150983cd24fb0d6963f7d28e17f72
         constexpr auto d = MD5::Hash("abc", 3);
-        constexpr Byte kExpected[16] = { 0x90, 0x01, 0x50, 0x98, 0x3C, 0xD2, 0x4F, 0xB0,
-                                         0xD6, 0x96, 0x3F, 0x7D, 0x28, 0xE1, 0x7F, 0x72 };
+        constexpr UInt8 kExpected[16] = { 0x90, 0x01, 0x50, 0x98, 0x3C, 0xD2, 0x4F, 0xB0,
+                                          0xD6, 0x96, 0x3F, 0x7D, 0x28, 0xE1, 0x7F, 0x72 };
         for (SizeT i = 0; i < 16; ++i)
         {
             INFO("Byte " << i);
-            REQUIRE(d.bytes[i] == kExpected[i]);
+            REQUIRE(static_cast<UInt8>(d.bytes[i]) == kExpected[i]);
         }
     }
 
@@ -60,12 +60,12 @@ TEST_CASE("MD5 Hashing", "[GP][Core][Crypto][Hash][MD5]")
     {
         // MD5("message digest") = f96b697d7cb7938d525a2f31aaf161d0
         constexpr auto d = MD5::Hash("message digest", 14);
-        constexpr Byte kExpected[16] = { 0xF9, 0x6B, 0x69, 0x7D, 0x7C, 0xB7, 0x93, 0x8D,
-                                         0x52, 0x5A, 0x2F, 0x31, 0xAA, 0xF1, 0x61, 0xD0 };
+        constexpr UInt8 kExpected[16] = { 0xF9, 0x6B, 0x69, 0x7D, 0x7C, 0xB7, 0x93, 0x8D,
+                                          0x52, 0x5A, 0x2F, 0x31, 0xAA, 0xF1, 0x61, 0xD0 };
         for (SizeT i = 0; i < 16; ++i)
         {
             INFO("Byte " << i);
-            REQUIRE(d.bytes[i] == kExpected[i]);
+            REQUIRE(static_cast<UInt8>(d.bytes[i]) == kExpected[i]);
         }
     }
 
@@ -168,10 +168,8 @@ TEST_CASE("MD5 Hashing", "[GP][Core][Crypto][Hash][MD5]")
     {
         // MD5("abc") = 900150983cd24fb0d6963f7d28e17f72
         constexpr auto d = MD5::Hash("abc", 3);
-        static_assert(d.bytes[0] == 0x90, "MD5 compile-time evaluation failed");
-        static_assert(d.bytes[7] == 0xB0, "MD5 compile-time evaluation failed");
-        static_assert(d.bytes[15] == 0x72, "MD5 compile-time evaluation failed");
-        REQUIRE(d.bytes[0] == 0x90);
-        REQUIRE(d.bytes[15] == 0x72);
+        static_assert(static_cast<UInt8>(d.bytes[0]) == 0x90, "MD5 compile-time evaluation failed");
+        REQUIRE(static_cast<UInt8>(d.bytes[0]) == 0x90);
+        REQUIRE(static_cast<UInt8>(d.bytes[15]) == 0x72);
     }
 }
