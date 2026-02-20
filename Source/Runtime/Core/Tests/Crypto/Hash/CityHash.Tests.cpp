@@ -41,7 +41,9 @@ TEST_CASE("CityHash Hashing", "[GP][Core][Crypto][Hash][CityHash]")
         REQUIRE(hash64 != 0);
 
         auto hash128 = CityHash::Hash128(longStr.data(), longStr.size());
-        REQUIRE(hash128.low != 0 || hash128.high != 0);
+        // clang-format off
+        REQUIRE((hash128.low != 0 || hash128.high != 0));
+        // clang-format on
     }
 
     SECTION("Different Overloads Consistency")
