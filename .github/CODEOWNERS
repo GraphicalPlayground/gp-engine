@@ -1,0 +1,46 @@
+# Lines starting with '#' are comments.
+# Each line is a file pattern followed by one or more owners.
+# Owners can be @users, @org/teams or emails.
+
+# Avaiable teams:
+#   - @GraphicalPlayground/engine-architecture
+#   - @GraphicalPlayground/graphics-engineering
+#   - @GraphicalPlayground/documentation-knowledge
+#   - @GraphicalPlayground/curriculum-learning-design
+#   - @GraphicalPlayground/infrastructure-devops
+
+# Main Modules
+
+/Source/Runtime/                        @GraphicalPlayground/engine-architecture
+/Source/Developer/                      @GraphicalPlayground/engine-architecture
+/Source/Editor/                         @GraphicalPlayground/engine-architecture
+/Source/Programs/                       @GraphicalPlayground/engine-architecture
+/Source/Shaders/                        @GraphicalPlayground/graphics-engineering
+/Source/Launch/                         @GraphicalPlayground/engine-architecture
+
+# Third Party
+
+/ThirdParty/                            @GraphicalPlayground/engine-architecture
+
+# Documentation
+
+/Source/**/Docs/                        @GraphicalPlayground/documentation-knowledge
+/Docs/                                  @GraphicalPlayground/documentation-knowledge
+/Examples/                              @GraphicalPlayground/documentation-knowledge
+/Guides/                                @GraphicalPlayground/documentation-knowledge
+
+# CI/CD
+
+/.github/workflows/                     @GraphicalPlayground/infrastructure-devops
+/.github/ISSUE_TEMPLATE/                @GraphicalPlayground/infrastructure-devops
+/.github/PULL_REQUEST_TEMPLATE/         @GraphicalPlayground/infrastructure-devops
+
+# Runtime Specific
+
+/Source/Runtime/RHI/                     @GraphicalPlayground/graphics-engineering
+/Source/Runtime/Renderer/                @GraphicalPlayground/graphics-engineering
+/Source/Runtime/Audio/                   @GraphicalPlayground/engine-architecture
+/Source/Runtime/Core/                    @GraphicalPlayground/engine-architecture
+/Source/Runtime/HAL/                     @GraphicalPlayground/engine-architecture
+/Source/Runtime/Shaders/                 @GraphicalPlayground/engine-architecture
+/Source/Runtime/Platform/                @GraphicalPlayground/engine-architecture
