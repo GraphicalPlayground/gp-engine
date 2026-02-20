@@ -50,27 +50,41 @@
 // after Platform.hlsli. Ordered by dependency: MathCommon has no math dependencies,
 // Packing uses UIntToUNorm from MathCommon, ColorSpace uses pow/log from MathCommon.
 
-// TODO: Add mathematical includes here as needed.
+#include "Math/MathCommon.hlsli"
+#include "Math/Packing.hlsli"
+#include "Math/ColorSpace.hlsli"
+#include "Math/Noise.hlsli"
+#include "Math/Fibonacci.hlsli"
+#include "Math/Halton.hlsli"
+#include "Math/SphericalHarmonics.hlsli"
+#include "Math/Quaternion.hlsli"
+#include "Math/Transform.hlsli"
+#include "Math/Intersection.hlsli"
 
 // ─── Layer 5: Encoding ────────────────────────────────────────────────────────────────────────
 // Higher-level encode/decode built on top of Math layer. NormalEncoding uses
 // GP_OctEncode* defined in Packing.hlsli (included above for convenience, canonical
 // versions with full documentation live here in Encoding/).
 
-// TODO: Add encoding includes here as needed.
+#include "Encoding/NormalEncoding.hlsli"
+#include "Encoding/DepthEncoding.hlsli"
+#include "Encoding/BCCompression.hlsli"
 
 // ─── Layer 6: Vertex Utilities ────────────────────────────────────────────────────────────────
 // Vertex fetch and transform helpers. Depend on Math (Transform, MathCommon) and
 // BindlessResources (for manual vertex fetch from bindless byte buffers).
 
-// TODO: Add vertex utility includes here as needed.
+#include "Vertex/VertexLayouts.hlsli"
+#include "Vertex/VertexFetch.hlsli"
+#include "Vertex/VertexTransform.hlsli"
 
 // ─── Layer 7: Debug ───────────────────────────────────────────────────────────────────────────
 // Compiled out in Release builds (GP_BUILD_SHIPPING) by the shader compile flags.
 // In Debug/Development, these add ~0 overhead unless explicitly called.
 
 #ifndef GP_BUILD_SHIPPING
-// TODO: Add debug includes here as needed.
+    #include "Debug/ShaderDebug.hlsli"
+    #include "Debug/ColorRamp.hlsli"
 #endif
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
