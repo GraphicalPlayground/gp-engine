@@ -15,6 +15,7 @@ add_subdirectory(Vulkan-Headers)
 add_subdirectory(VulkanMemoryAllocator) # Can be replaced by in-house implementation.
 add_subdirectory(glslang)
 add_subdirectory(Tracy) # Can be replaced by in-house implementation.
+add_subdirectory(Zstandard)
 
 if(WIN32)
     add_subdirectory(DirectX-Headers)
