@@ -10,3 +10,9 @@
 #define GP_RHI_VERSION_MINOR 0
 #define GP_RHI_VERSION_PATCH 0
 #define GP_RHI_VERSION GP_VERSION(GP_RHI_VERSION_MAJOR, GP_RHI_VERSION_MINOR, GP_RHI_VERSION_PATCH)
+
+// Include RHI common headers
+#include "RHIEnums.hpp"
+#include "RHIForward.hpp"
+
+// Include RHI interface headers
