@@ -7,20 +7,20 @@ message(STATUS "[GP] Configuring Third-Party Dependencies")
 
 add_subdirectory(ISPC)
 add_subdirectory(Catch2)
-add_subdirectory(SDL3)
+add_subdirectory(SDL3) # Can be replaced by in-house implementation.
 add_subdirectory(SPIRV-Cross)
 add_subdirectory(SPIRV-Headers)
 add_subdirectory(SPIRV-Tools)
 add_subdirectory(Vulkan-Headers)
-add_subdirectory(VulkanMemoryAllocator)
+add_subdirectory(VulkanMemoryAllocator) # Can be replaced by in-house implementation.
 add_subdirectory(glslang)
-add_subdirectory(Tracy)
+add_subdirectory(Tracy) # Can be replaced by in-house implementation.
 
 if(WIN32)
     add_subdirectory(DirectX-Headers)
     add_subdirectory(DirectX-Agility)
     add_subdirectory(DirectXShaderCompiler)
-    add_subdirectory(D3D12MemoryAllocator)
+    add_subdirectory(D3D12MemoryAllocator) # Can be replaced by in-house implementation.
 elseif(APPLE)
     add_subdirectory(Metal-Headers)
 endif()
