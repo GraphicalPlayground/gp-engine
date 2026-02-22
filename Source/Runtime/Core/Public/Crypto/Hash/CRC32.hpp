@@ -22,11 +22,11 @@ public:
 
 private:
     /// \brief Get the precomputed CRC-32 lookup table.
-    /// The table is generated at compile time using a lambda and stored as a static constexpr array.
-    /// \return Reference to the CRC-32 lookup table.
-    GP_NODISCARD static constexpr const std::array<UInt32, 256>& Table() noexcept
+    /// The table is generated at compile time using an immediately-invoked lambda.
+    /// \return CRC-32 lookup table (optimized away by compiler in constexpr contexts).
+    GP_NODISCARD static constexpr std::array<UInt32, 256> Table() noexcept
     {
-        constexpr static auto kTable = []
+        return []
         {
             std::array<UInt32, 256> t{};
             for (UInt32 i = 0; i < 256; ++i)
@@ -37,7 +37,6 @@ private:
             }
             return t;
         }();
-        return kTable;
     }
 
 public:
