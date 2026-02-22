@@ -11,9 +11,10 @@ namespace GP::Container
 {
 
 /// \brief
-/// \tparam T
+/// \tparam Key
+/// \tparam Value
 /// \tparam Alloc
-template <typename T, Concepts::IsAllocator Alloc = Memory::TAllocator<T>>
+template <typename Key, typename Value, GP::Concepts::IsAllocator Alloc>
 class TMap
 {
 private:

@@ -20,7 +20,7 @@ template <typename T, SizeT N, Concepts::IsAllocator Alloc>
 class TStaticArray;
 template <typename T, Concepts::IsAllocator Alloc>
 class TSet;
-template <typename T, Concepts::IsAllocator Alloc>
+template <typename Key, typename Value, Concepts::IsAllocator Alloc>
 class TMap;
 template <typename T, Concepts::IsAllocator Alloc>
 class TList;
