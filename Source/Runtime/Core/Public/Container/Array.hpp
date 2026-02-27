@@ -363,6 +363,74 @@ public:
     /// \return An iterator pointing to the newly inserted element.
     Iterator Insert(ConstIterator pos, T&& value) { return Emplace(pos, std::move(value)); }
 
+    /// \brief Inserts all elements from the range [first, last) into the array at the given position. All elements
+    /// after pos are shifted right. If the operation requires reallocation, all existing iterators and references are
+    /// invalidated. Supports move iterators for efficient range transfers.
+    /// \tparam InputIt The type of the input iterators. Must not be an integral type.
+    /// \param pos The position at which to insert. Must be a valid iterator within [begin(), end()].
+    /// \param first The beginning of the range to insert (inclusive).
+    /// \param last The end of the range to insert (exclusive).
+    /// \return An iterator pointing to the first inserted element, or pos if the range is empty.
+    template <typename InputIt>
+    requires(!Concepts::IsIntegral<InputIt>) Iterator Insert(ConstIterator pos, InputIt first, InputIt last)
+    {
+        const SizeType index = static_cast<SizeType>(pos - m_data);
+        const SizeType count = static_cast<SizeType>(std::distance(first, last));
+
+        if (count == 0) { return m_data + index; }
+
+        if (m_size + count > m_capacity)
+        {
+            // Reallocation path: build the new buffer in a single pass to avoid iterator invalidation.
+            const SizeType newCapacity = CalculateGrowth(m_size + count);
+            Pointer newData = AllocateBuffer(newCapacity);
+
+            Memory::RelocateRange(newData, m_data, index);
+            SizeType insertIdx = index;
+            for (InputIt it = first; it != last; ++it, ++insertIdx) { Memory::Construct<T>(newData + insertIdx, *it); }
+            Memory::RelocateRange(newData + index + count, m_data + index, m_size - index);
+
+            if (m_data) { m_allocator.Deallocate(m_data); }
+            m_data = newData;
+            m_capacity = newCapacity;
+        }
+        else
+        {
+            const SizeType shiftCount = m_size - index;
+
+            if constexpr (Concepts::IsTriviallyCopyable<T>)
+            {
+                // For trivially copyable types a single memmove shifts existing elements; then overwrite the gap.
+                std::memmove(m_data + index + count, m_data + index, shiftCount * sizeof(T));
+                InputIt it = first;
+                for (SizeType i = index; i < index + count; ++i, ++it) { m_data[i] = *it; }
+            }
+            else if (count <= shiftCount)
+            {
+                // The last `count` shifted elements fall into uninitialized space: move-construct them.
+                Memory::MoveConstructRange(m_data + m_size, m_data + m_size - count, count);
+                // Shift the remaining elements right-to-left within initialized space.
+                for (SizeType i = m_size - count; i > index; --i) { m_data[i + count - 1] = std::move(m_data[i - 1]); }
+                // Assign new elements into [index, index+count): these slots are now moved-from.
+                InputIt it = first;
+                for (SizeType i = index; i < index + count; ++i, ++it) { m_data[i] = *it; }
+            }
+            else
+            {
+                // All shifted elements fall entirely into uninitialized space: move-construct them.
+                Memory::MoveConstructRange(m_data + index + count, m_data + index, shiftCount);
+                // Assign the first shiftCount new elements to the moved-from positions in [index, m_size).
+                InputIt it = first;
+                for (SizeType i = index; i < m_size; ++i, ++it) { m_data[i] = *it; }
+                // Construct the remaining (count - shiftCount) new elements into uninitialized [m_size, index+count).
+                for (SizeType i = m_size; i < index + count; ++i, ++it) { Memory::Construct<T>(m_data + i, *it); }
+            }
+        }
+
+        m_size += count;
+        return m_data + index;
+    }
+
     /// \brief Constructs an element in-place at the specified position in the array.
     /// \tparam Args The types of the arguments to forward to the element's constructor.
     /// \param pos The position at which to insert the element. Must be a valid iterator within the range [begin(),
@@ -804,5 +872,45 @@ private:
         m_capacity = newCapacity;
     }
 };
+
+/// \brief Removes all elements from the array that compare equal to the given value.
+/// Equivalent to the erase-remove idiom: elements are compacted in-place and the array's size is
+/// reduced by the number of removed elements. Relative order of the surviving elements is preserved.
+/// \tparam T The element type of the array.
+/// \tparam Alloc The allocator type of the array.
+/// \tparam U A type whose equality with T is well-formed (i.e. t == u compiles and yields bool).
+/// \param array The array to modify in-place.
+/// \param value The value to compare against. All elements equal to this value are removed.
+/// \return The number of elements removed.
+template <typename T, Concepts::IsAllocator Alloc, typename U>
+requires Concepts::IsEqualityComparableWith<T, U>
+typename TArray<T, Alloc>::SizeType Erase(TArray<T, Alloc>& array, const U& value)
+{
+    const auto it = std::remove_if(array.Begin(), array.End(), [&value](const T& element) { return element == value; });
+    const typename TArray<T, Alloc>::SizeType count =
+        static_cast<typename TArray<T, Alloc>::SizeType>(array.End() - it);
+    array.Erase(it, array.End());
+    return count;
+}
+
+/// \brief Removes all elements from the array for which the given predicate returns true.
+/// Equivalent to the erase-remove-if idiom: elements are compacted in-place and the array's size is
+/// reduced by the number of removed elements. Relative order of the surviving elements is preserved.
+/// \tparam T The element type of the array.
+/// \tparam Alloc The allocator type of the array.
+/// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+/// \param array The array to modify in-place.
+/// \param predicate Unary predicate. An element is removed if predicate(element) returns true.
+/// \return The number of elements removed.
+template <typename T, Concepts::IsAllocator Alloc, typename TPredicate>
+requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+typename TArray<T, Alloc>::SizeType EraseIf(TArray<T, Alloc>& array, TPredicate&& predicate)
+{
+    const auto it = std::remove_if(array.Begin(), array.End(), std::forward<TPredicate>(predicate));
+    const typename TArray<T, Alloc>::SizeType count =
+        static_cast<typename TArray<T, Alloc>::SizeType>(array.End() - it);
+    array.Erase(it, array.End());
+    return count;
+}
 
 }   // namespace GP::Container
