@@ -5,6 +5,8 @@
 #include "Container/BasicString.hpp"
 #include "Container/BasicStringView.hpp"
 #include "Container/ContainerForward.hpp"
+#include "Events/MulticastDelegate.hpp"
+#include "Events/ScopedDelegateHandle.hpp"
 #include "HALBuild.hpp"
 #include "HALForward.hpp"
 #include "Math/MathForward.hpp"
@@ -12,19 +14,69 @@
 #include "Math/Vector/IntPoint2D.hpp"
 #include "Monitor/IMonitor.hpp"
 #include "Windowing/WindowEnums.hpp"
+#include "Windowing/WindowEvents.hpp"
 
 namespace GP::HAL
 {
 
 /// \brief Interface for the window class.
-/// The window class is responsible for managing the application's main window, including its creation, configuration,
-/// and destruction. It also provides access to the window's properties, such as its size, position, and state, and
-/// allows for handling of window events, such as resizing, moving, and closing.
+/// IWindow is responsible for managing the application's main window, including its creation, configuration, and
+/// destruction. It provides access to window properties (size, position, state) and exposes a rich set of
+/// TMulticastDelegate event dispatchers that notify subscribers when window state transitions occur.
+///
+/// ### Event System Integration
+/// Every observable state change in IWindow is surfaced as a public TMulticastDelegate. Clients subscribe by calling
+/// one of the delegate's Add*() methods and retain the returned FDelegateHandle (or FScopedDelegateHandle) to
+/// unsubscribe later.
+///
+/// \code
+/// // One-shot lambda subscription:
+/// FDelegateHandle h = window.OnResized.AddLambda([](const FWindowResizedEvent& e) {
+///     RecreateSwapChain(e.width, e.height);
+/// });
+///
+/// // RAII subscription — auto-unregisters when renderer is destroyed:
+/// m_resizeHandle = GP::Core::FScopedDelegateHandle(
+///     window.OnResized,
+///     window.OnResized.AddMember(this, &FMyRenderer::HandleResize)
+/// );
+/// \endcode
 class IWindow
 {
 public:
+    using FEvents = FEvents<IWindow>;
+    using FEventHandle = GP::Events::FDelegateHandle;
+    using FScopedHandle = GP::Events::FScopedDelegateHandle;
+    template <typename Signature>
+    using TEvent = GP::Events::TMulticastDelegate<Signature>;
+
+public:
     /// \brief Virtual destructor to allow for proper cleanup of derived classes.
     virtual ~IWindow() = default;
+
+public:
+    TEvent<void(const FEvents::CloseRequested&)> OnCloseRequested;
+    TEvent<void(const FEvents::Closed&)> OnClosed;
+    TEvent<void(const FEvents::Moved&)> OnMoved;
+    TEvent<void(const FEvents::Resized&)> OnResized;
+    TEvent<void(const FEvents::FramebufferResized&)> OnFramebufferResized;
+    TEvent<void(const FEvents::FocusGained&)> OnFocusGained;
+    TEvent<void(const FEvents::FocusLost&)> OnFocusLost;
+    TEvent<void(const FEvents::Shown&)> OnShown;
+    TEvent<void(const FEvents::Hidden&)> OnHidden;
+    TEvent<void(const FEvents::Minimized&)> OnMinimized;
+    TEvent<void(const FEvents::Maximized&)> OnMaximized;
+    TEvent<void(const FEvents::Restored&)> OnRestored;
+    TEvent<void(const FEvents::ContentScaleChanged&)> OnContentScaleChanged;
+    TEvent<void(const FEvents::RefreshRateChanged&)> OnRefreshRateChanged;
+    TEvent<void(const FEvents::ModeChanged&)> OnModeChanged;
+    TEvent<void(const FEvents::StyleChanged&)> OnStyleChanged;
+    TEvent<void(const FEvents::RefreshRequested&)> OnRefreshRequested;
+    TEvent<void(const FEvents::Occluded&)> OnOccluded;
+    TEvent<void(const FEvents::Revealed&)> OnRevealed;
+    TEvent<void(const FEvents::MonitorChanged&)> OnMonitorChanged;
+    TEvent<void(const FEvents::MouseEntered&)> OnMouseEntered;
+    TEvent<void(const FEvents::MouseLeft&)> OnMouseLeft;
 
 public:
     /// \brief Checks if the window is currently open.
