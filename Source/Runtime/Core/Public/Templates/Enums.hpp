@@ -147,7 +147,6 @@ inline bool HasAny(E val, E flags)
     return Any(val & flags);
 }
 
-///////////////////////////////////////////////////////////////////////////////
 /// \brief Check if none of the specified flags are set in the enum value
 /// \tparam E Enum type (must be enabled with GP_ENABLE_ENUM_BITWISE_OPERATIONS)
 /// \param val Enum value to check
