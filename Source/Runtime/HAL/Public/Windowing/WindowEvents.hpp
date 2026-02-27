@@ -14,6 +14,9 @@ namespace GP::HAL
 /// \brief Forward declaration of the IWindow interface.
 class IWindow;
 
+/// \brief Forward declaration of the IMonitor interface.
+class IMonitor;
+
 }   // namespace GP::HAL
 
 namespace GP
@@ -169,6 +172,22 @@ public:
 
     /// \brief Fired when the window transitions from being fully occluded back to being at least partially visible.
     struct Revealed
+    {};
+
+    /// \brief Fired when the window is moved to a different monitor, which may have different DPI, refresh rate, or
+    /// other characteristics.
+    struct MonitorChanged
+    {
+        HAL::IMonitor* previousMonitor{ nullptr };   //<! The monitor the window was previously on.
+        HAL::IMonitor* newMonitor{ nullptr };        //<! The monitor the window is now on.
+    };
+
+    /// \brief Fired when the mouse cursor enters the window's content area.
+    struct MouseEntered
+    {};
+
+    /// \brief Fired when the mouse cursor leaves the window's content area.
+    struct MouseLeft
     {};
 };
 
