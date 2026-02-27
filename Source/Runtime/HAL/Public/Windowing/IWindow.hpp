@@ -23,6 +23,7 @@ namespace GP::HAL
 class IWindow
 {
 public:
+    /// \brief Virtual destructor to allow for proper cleanup of derived classes.
     virtual ~IWindow() = default;
 
 public:
