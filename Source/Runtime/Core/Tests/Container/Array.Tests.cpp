@@ -1399,3 +1399,300 @@ TEST_CASE("TArray Stress Tests", "[GP][Core][Container][TArray]")
         REQUIRE(arr.Capacity() == 9);
     }
 }
+
+TEST_CASE("TArray Range Insert", "[GP][Core][Container][TArray]")
+{
+    SECTION("Insert Range at Beginning")
+    {
+        TArray<int> arr = { 4, 5, 6 };
+        std::vector<int> src = { 1, 2, 3 };
+        arr.Insert(arr.Begin(), src.begin(), src.end());
+        REQUIRE(arr.Size() == 6);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 2);
+        REQUIRE(arr[2] == 3);
+        REQUIRE(arr[3] == 4);
+        REQUIRE(arr[4] == 5);
+        REQUIRE(arr[5] == 6);
+    }
+
+    SECTION("Insert Range in Middle")
+    {
+        TArray<int> arr = { 1, 5, 6 };
+        arr.Reserve(10);
+        std::vector<int> src = { 2, 3, 4 };
+        arr.Insert(arr.Begin() + 1, src.begin(), src.end());
+        REQUIRE(arr.Size() == 6);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 2);
+        REQUIRE(arr[2] == 3);
+        REQUIRE(arr[3] == 4);
+        REQUIRE(arr[4] == 5);
+        REQUIRE(arr[5] == 6);
+    }
+
+    SECTION("Insert Range at End")
+    {
+        TArray<int> arr = { 1, 2, 3 };
+        std::vector<int> src = { 4, 5, 6 };
+        arr.Insert(arr.End(), src.begin(), src.end());
+        REQUIRE(arr.Size() == 6);
+        for (int i = 0; i < 6; ++i) { REQUIRE(arr[static_cast<SizeT>(i)] == i + 1); }
+    }
+
+    SECTION("Insert Empty Range Returns pos")
+    {
+        TArray<int> arr = { 1, 2, 3 };
+        std::vector<int> src;
+        auto it = arr.Insert(arr.Begin() + 1, src.begin(), src.end());
+        REQUIRE(arr.Size() == 3);
+        REQUIRE(it == arr.Begin() + 1);
+    }
+
+    SECTION("Insert Range into Empty Array")
+    {
+        TArray<int> arr;
+        std::vector<int> src = { 1, 2, 3 };
+        arr.Insert(arr.Begin(), src.begin(), src.end());
+        REQUIRE(arr.Size() == 3);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 2);
+        REQUIRE(arr[2] == 3);
+    }
+
+    SECTION("Insert Range Returns Iterator to First Inserted")
+    {
+        TArray<int> arr = { 1, 5 };
+        arr.Reserve(10);
+        std::vector<int> src = { 2, 3, 4 };
+        auto it = arr.Insert(arr.Begin() + 1, src.begin(), src.end());
+        REQUIRE(*it == 2);
+        REQUIRE(it == arr.Begin() + 1);
+    }
+
+    SECTION("Insert Range Triggers Reallocation")
+    {
+        TArray<int> arr;
+        arr.Reserve(3);
+        arr.PushBack(1);
+        arr.PushBack(5);
+        std::vector<int> src = { 2, 3, 4 };
+        // size 2 + count 3 exceeds capacity 3 — reallocation required.
+        arr.Insert(arr.Begin() + 1, src.begin(), src.end());
+        REQUIRE(arr.Size() == 5);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 2);
+        REQUIRE(arr[2] == 3);
+        REQUIRE(arr[3] == 4);
+        REQUIRE(arr[4] == 5);
+    }
+
+    SECTION("Insert Large Range in Middle (count > shiftCount)")
+    {
+        // count=5 > shiftCount=1: all shifted elements go into uninitialized space.
+        TArray<int> arr = { 1, 2 };
+        arr.Reserve(10);
+        std::vector<int> src = { 10, 20, 30, 40, 50 };
+        arr.Insert(arr.Begin() + 1, src.begin(), src.end());
+        REQUIRE(arr.Size() == 7);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 10);
+        REQUIRE(arr[2] == 20);
+        REQUIRE(arr[3] == 30);
+        REQUIRE(arr[4] == 40);
+        REQUIRE(arr[5] == 50);
+        REQUIRE(arr[6] == 2);
+    }
+
+    SECTION("Insert Small Range in Middle (count <= shiftCount)")
+    {
+        // count=1 <= shiftCount=4: part of the shifted range stays within initialized space.
+        TArray<int> arr = { 1, 3, 4, 5, 6 };
+        arr.Reserve(10);
+        std::vector<int> src = { 2 };
+        arr.Insert(arr.Begin() + 1, src.begin(), src.end());
+        REQUIRE(arr.Size() == 6);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 2);
+        REQUIRE(arr[2] == 3);
+        REQUIRE(arr[3] == 4);
+        REQUIRE(arr[4] == 5);
+        REQUIRE(arr[5] == 6);
+    }
+
+    SECTION("Insert Range with Move Iterators")
+    {
+        TArray<std::string> arr = { "a", "d" };
+        arr.Reserve(10);
+        TArray<std::string> src = { "b", "c" };
+        arr.Insert(arr.Begin() + 1, std::make_move_iterator(src.Begin()), std::make_move_iterator(src.End()));
+        REQUIRE(arr.Size() == 4);
+        REQUIRE(arr[0] == "a");
+        REQUIRE(arr[1] == "b");
+        REQUIRE(arr[2] == "c");
+        REQUIRE(arr[3] == "d");
+    }
+
+    SECTION("Insert Range of Strings Preserves Values")
+    {
+        TArray<std::string> arr = { "first", "last" };
+        arr.Reserve(10);
+        std::vector<std::string> src = { "middle1", "middle2" };
+        arr.Insert(arr.Begin() + 1, src.begin(), src.end());
+        REQUIRE(arr.Size() == 4);
+        REQUIRE(arr[0] == "first");
+        REQUIRE(arr[1] == "middle1");
+        REQUIRE(arr[2] == "middle2");
+        REQUIRE(arr[3] == "last");
+    }
+}
+
+TEST_CASE("TArray Erase Free Function", "[GP][Core][Container][TArray]")
+{
+    SECTION("Erase All Matching Elements")
+    {
+        TArray<int> arr = { 1, 2, 3, 2, 4, 2, 5 };
+        const SizeT removed = GP::Container::Erase(arr, 2);
+        REQUIRE(removed == 3);
+        REQUIRE(arr.Size() == 4);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 3);
+        REQUIRE(arr[2] == 4);
+        REQUIRE(arr[3] == 5);
+    }
+
+    SECTION("Erase Single Occurrence")
+    {
+        TArray<int> arr = { 1, 2, 3, 4, 5 };
+        const SizeT removed = GP::Container::Erase(arr, 3);
+        REQUIRE(removed == 1);
+        REQUIRE(arr.Size() == 4);
+        REQUIRE_FALSE(arr.Contains(3));
+    }
+
+    SECTION("Erase Non-Existing Value Returns Zero")
+    {
+        TArray<int> arr = { 1, 2, 3 };
+        const SizeT removed = GP::Container::Erase(arr, 99);
+        REQUIRE(removed == 0);
+        REQUIRE(arr.Size() == 3);
+    }
+
+    SECTION("Erase From Empty Array")
+    {
+        TArray<int> arr;
+        const SizeT removed = GP::Container::Erase(arr, 1);
+        REQUIRE(removed == 0);
+        REQUIRE(arr.IsEmpty());
+    }
+
+    SECTION("Erase All Elements")
+    {
+        TArray<int> arr = { 7, 7, 7, 7 };
+        const SizeT removed = GP::Container::Erase(arr, 7);
+        REQUIRE(removed == 4);
+        REQUIRE(arr.IsEmpty());
+    }
+
+    SECTION("Erase First and Last Elements")
+    {
+        TArray<int> arr = { 1, 2, 3, 4, 1 };
+        const SizeT removed = GP::Container::Erase(arr, 1);
+        REQUIRE(removed == 2);
+        REQUIRE(arr.Size() == 3);
+        REQUIRE(arr[0] == 2);
+        REQUIRE(arr[1] == 3);
+        REQUIRE(arr[2] == 4);
+    }
+
+    SECTION("Erase Preserves Relative Order")
+    {
+        TArray<int> arr = { 3, 1, 3, 2, 3 };
+        GP::Container::Erase(arr, 3);
+        REQUIRE(arr.Size() == 2);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 2);
+    }
+}
+
+TEST_CASE("TArray EraseIf Free Function", "[GP][Core][Container][TArray]")
+{
+    SECTION("EraseIf Removes Even Elements")
+    {
+        TArray<int> arr = { 1, 2, 3, 4, 5, 6 };
+        const SizeT removed = GP::Container::EraseIf(arr, [](const int& v) { return v % 2 == 0; });
+        REQUIRE(removed == 3);
+        REQUIRE(arr.Size() == 3);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 3);
+        REQUIRE(arr[2] == 5);
+    }
+
+    SECTION("EraseIf No Match Returns Zero")
+    {
+        TArray<int> arr = { 1, 3, 5, 7 };
+        const SizeT removed = GP::Container::EraseIf(arr, [](const int& v) { return v % 2 == 0; });
+        REQUIRE(removed == 0);
+        REQUIRE(arr.Size() == 4);
+    }
+
+    SECTION("EraseIf All Match Clears Array")
+    {
+        TArray<int> arr = { 2, 4, 6, 8 };
+        const SizeT removed = GP::Container::EraseIf(arr, [](const int& v) { return v % 2 == 0; });
+        REQUIRE(removed == 4);
+        REQUIRE(arr.IsEmpty());
+    }
+
+    SECTION("EraseIf On Empty Array")
+    {
+        TArray<int> arr;
+        const SizeT removed = GP::Container::EraseIf(arr, [](const int& v) { return v > 0; });
+        REQUIRE(removed == 0);
+        REQUIRE(arr.IsEmpty());
+    }
+
+    SECTION("EraseIf Threshold Predicate")
+    {
+        TArray<int> arr = { 1, 2, 3, 4, 5 };
+        const SizeT removed = GP::Container::EraseIf(arr, [](const int& v) { return v > 3; });
+        REQUIRE(removed == 2);
+        REQUIRE(arr.Size() == 3);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 2);
+        REQUIRE(arr[2] == 3);
+    }
+
+    SECTION("EraseIf Preserves Relative Order")
+    {
+        TArray<int> arr = { 5, 1, 4, 2, 3 };
+        GP::Container::EraseIf(arr, [](const int& v) { return v > 3; });
+        REQUIRE(arr.Size() == 3);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[1] == 2);
+        REQUIRE(arr[2] == 3);
+    }
+
+    SECTION("EraseIf pendingRemoval Flag Pattern (MulticastDelegate Use Case)")
+    {
+        struct FBinding
+        {
+            int id;
+            bool pendingRemoval = false;
+        };
+
+        TArray<FBinding> bindings = {
+            { 1, false },
+            { 2,  true },
+            { 3, false },
+            { 4,  true },
+            { 5, false }
+        };
+        const SizeT removed = GP::Container::EraseIf(bindings, [](const FBinding& b) { return b.pendingRemoval; });
+        REQUIRE(removed == 2);
+        REQUIRE(bindings.Size() == 3);
+        REQUIRE(bindings[0].id == 1);
+        REQUIRE(bindings[1].id == 3);
+        REQUIRE(bindings[2].id == 5);
+    }
+}
