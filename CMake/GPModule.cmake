@@ -1,5 +1,14 @@
 # Copyright (c) - Graphical Playground. All rights reserved.
 
+# Include guard: GPModule.cmake is included once per module, but functions and
+# global state must only be initialized once for the entire CMake session.
+# Without this guard, each include(GPModule) call from a module CMakeLists.txt
+# would execute set(GP_REGISTERED_MODULES) and silently wipe the registry.
+if(DEFINED GP_MODULE_CMAKE_INCLUDED)
+    return()
+endif()
+set(GP_MODULE_CMAKE_INCLUDED TRUE)
+
 # Define valid module types
 set(GP_VALID_MODULE_TYPES
     "Runtime"
@@ -9,13 +18,45 @@ set(GP_VALID_MODULE_TYPES
     "Launch"
 )
 
+# Global module registry
+set(GP_REGISTERED_MODULES)
+set(GP_MODULE_DEPENDENCIES)
+
+function(gp_register_module)
+    # Registration is only meaningful during the first-pass dependency collection.
+    # During the build phase, all modules are already sorted and add_subdirectory
+    # re-evaluates each CMakeLists.txt — skip to avoid corrupting the parent scope.
+    if(GP_MODULE_BUILD_PHASE)
+        return()
+    endif()
+
+    # Parse arguments
+    cmake_parse_arguments(
+        ARG
+        ""
+        "NAME"
+        "DEPENDENCIES"
+        ${ARGN}
+    )
+
+    if(NOT ARG_NAME)
+        message(FATAL_ERROR "gp_register_module requires NAME")
+    endif()
+
+    list(APPEND GP_REGISTERED_MODULES ${ARG_NAME})
+    set(GP_REGISTERED_MODULES ${GP_REGISTERED_MODULES} PARENT_SCOPE)
+
+    # Store dependencies in a variable named GP_MODULE_DEPS_<Name>
+    set(GP_MODULE_DEPS_${ARG_NAME} "${ARG_DEPENDENCIES}" PARENT_SCOPE)
+endfunction()
+
 function(gp_add_module)
     # Parse arguments
     cmake_parse_arguments(
         ARG
         ""
         "NAME;MODULE_TYPE"
-        "DEPENDENCIES"
+        "PUBLIC_DEPENDENCIES;PRIVATE_DEPENDENCIES;OPTIONAL_DEPENDENCIES;FEATURE_DEFINES"
         ${ARGN}
     )
 
@@ -31,6 +72,12 @@ function(gp_add_module)
     if(NOT ARG_MODULE_TYPE IN_LIST GP_VALID_MODULE_TYPES)
         message(FATAL_ERROR "gp_add_module: Invalid MODULE_TYPE '${ARG_MODULE_TYPE}'. Must be one of: ${VALID_MODULE_TYPES}")
     endif()
+
+    foreach(DEP ${ARG_PUBLIC_DEPENDENCIES} ${ARG_PRIVATE_DEPENDENCIES})
+        if(NOT TARGET ${DEP})
+            message(FATAL_ERROR "gp_add_module: Required dependency '${DEP}' for module '${ARG_NAME}' not found.")
+        endif()
+    endforeach()
 
     # Generate the export name with prefix: GP<ModuleType><Name>
     # Example: GPRuntimeCore, GPEditorViewport
@@ -117,17 +164,32 @@ function(gp_add_module)
             list(APPEND ISPC_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/Private")
 
             # Add any dependency include directories
-            if(ARG_DEPENDENCIES)
-                foreach(DEP ${ARG_DEPENDENCIES})
-                    # Try to get include directories from the dependency
+
+            set(ALL_ISPC_DEPS ${ARG_PUBLIC_DEPENDENCIES} ${ARG_PRIVATE_DEPENDENCIES})
+
+            foreach(DEP ${ARG_OPTIONAL_DEPENDENCIES})
+                if(TARGET ${DEP})
+                    list(APPEND ALL_ISPC_DEPS ${DEP})
+                endif()
+            endforeach()
+
+            foreach(DEP ${ALL_ISPC_DEPS})
+                if(TARGET ${DEP})
                     get_target_property(DEP_INCLUDES ${DEP} INTERFACE_INCLUDE_DIRECTORIES)
+
                     if(DEP_INCLUDES)
                         foreach(INC_DIR ${DEP_INCLUDES})
-                            list(APPEND ISPC_INCLUDES "-I${INC_DIR}")
+                            # Skip generator expressions (ISPC can't handle them)
+                            if(NOT INC_DIR MATCHES "\\$<")
+                                list(APPEND ISPC_INCLUDES "-I${INC_DIR}")
+                            endif()
                         endforeach()
                     endif()
-                endforeach()
-            endif()
+                endif()
+            endforeach()
+
+            # Remove duplicates
+            list(REMOVE_DUPLICATES ISPC_INCLUDES)
 
             # Add custom command to compile ISPC file
             add_custom_command(
@@ -160,6 +222,14 @@ function(gp_add_module)
 
         message(STATUS "    [i] ISPC compilation configured with targets: ${ISPC_TARGETS}")
     endif()
+
+    # Debug output
+    set(MODULE_INFO_MSG "  [+] Adding module: ${ALIAS_NAME} (export: ${EXPORT_NAME}, output: ${EXPORT_NAME})")
+    if(MODULE_ISPC_SOURCES)
+        list(LENGTH MODULE_ISPC_SOURCES ISPC_COUNT)
+        set(MODULE_INFO_MSG "${MODULE_INFO_MSG} [ISPC: ${ISPC_COUNT} file(s)]")
+    endif()
+    message(STATUS "${MODULE_INFO_MSG}")
 
     # If no C/C++ source files found, add a dummy file for CMake link language detection
     if(ORIGINAL_SOURCE_COUNT EQUAL 0)
@@ -217,13 +287,58 @@ function(gp_add_module)
             $<$<BOOL:${MODULE_ISPC_SOURCES}>:${ISPC_OUTPUT_DIR}>
     )
 
+    # Collect optional dependencies that are available and add them to the link list
+    set(RESOLVED_OPTIONAL_DEPS)
+
+    foreach(DEP ${ARG_OPTIONAL_DEPENDENCIES})
+        if(TARGET ${DEP})
+            list(APPEND RESOLVED_OPTIONAL_DEPS ${DEP})
+            message(STATUS "    [i] Optional dependency '${DEP}' found")
+        else()
+            message(STATUS "    [i] Optional dependency '${DEP}' not found (skipped)")
+        endif()
+    endforeach()
+
     # Link dependencies
-    if(ARG_DEPENDENCIES)
-        target_link_libraries(${EXPORT_NAME} PUBLIC ${ARG_DEPENDENCIES})
+    if(ARG_PUBLIC_DEPENDENCIES)
+        target_link_libraries(${EXPORT_NAME} PUBLIC ${ARG_PUBLIC_DEPENDENCIES})
     endif()
 
-    # Ensure C++20 standard
+    if(ARG_PRIVATE_DEPENDENCIES)
+        target_link_libraries(${EXPORT_NAME} PRIVATE ${ARG_PRIVATE_DEPENDENCIES})
+    endif()
+
+    if(RESOLVED_OPTIONAL_DEPS)
+        target_link_libraries(${EXPORT_NAME} PUBLIC ${RESOLVED_OPTIONAL_DEPS})
+    endif()
+
+    # Ensure C++23 standard
     target_compile_features(${EXPORT_NAME} PUBLIC cxx_std_23)
+
+    # Feature-based compile definitions
+    if(ARG_FEATURE_DEFINES)
+        list(LENGTH ARG_FEATURE_DEFINES FEATURE_LIST_LENGTH)
+        math(EXPR FEATURE_PAIR_COUNT "${FEATURE_LIST_LENGTH} / 2")
+        math(EXPR FEATURE_MAX_INDEX "${FEATURE_PAIR_COUNT} - 1")
+
+        foreach(INDEX RANGE 0 ${FEATURE_MAX_INDEX})
+            math(EXPR TARGET_INDEX "${INDEX} * 2")
+            math(EXPR DEFINE_INDEX "${TARGET_INDEX} + 1")
+
+            list(GET ARG_FEATURE_DEFINES ${TARGET_INDEX} FEATURE_TARGET)
+            list(GET ARG_FEATURE_DEFINES ${DEFINE_INDEX} FEATURE_DEFINE)
+
+            set(FEATURE_VALUE 0)
+
+            if(TARGET ${FEATURE_TARGET})
+                set(FEATURE_VALUE 1)
+            endif()
+
+            target_compile_definitions(${EXPORT_NAME} PUBLIC ${FEATURE_DEFINE}=${FEATURE_VALUE})
+
+            message(STATUS "    [i] Feature ${FEATURE_DEFINE}=${FEATURE_VALUE}")
+        endforeach()
+    endif()
 
     # Installation rules
     install(TARGETS ${EXPORT_NAME}
@@ -264,14 +379,6 @@ function(gp_add_module)
             )
         endif()
     endif()
-
-    # Debug output
-    set(MODULE_INFO_MSG "  [+] Added module: ${ALIAS_NAME} (export: ${EXPORT_NAME}, output: ${EXPORT_NAME})")
-    if(MODULE_ISPC_SOURCES)
-        list(LENGTH MODULE_ISPC_SOURCES ISPC_COUNT)
-        set(MODULE_INFO_MSG "${MODULE_INFO_MSG} [ISPC: ${ISPC_COUNT} file(s)]")
-    endif()
-    message(STATUS "${MODULE_INFO_MSG}")
 
     # Check if Tests directory exists
     set(TESTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Tests")
