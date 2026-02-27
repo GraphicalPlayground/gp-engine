@@ -310,6 +310,15 @@
     #define GP_FORCEINLINE inline
 #endif
 
+// Inline
+#if GP_COMPILER_MSVC
+    #define GP_INLINE __inline
+#elif GP_COMPILER_GCC || GP_COMPILER_CLANG
+    #define GP_INLINE inline
+#else
+    #define GP_INLINE inline
+#endif
+
 // No inline
 #if GP_COMPILER_MSVC
     #define GP_NOINLINE __declspec(noinline)
