@@ -20,7 +20,8 @@ public:
     {
         struct
         {
-            T x, y;   //<! Components of the vector.
+            T x;   //<! X component of the vector.
+            T y;   //<! Y component of the vector.
         };
 
         T data[2];   //<! Array access to components.
