@@ -3,8 +3,15 @@
 # Include the GPModule functions
 include(GPModule)
 
-# Define the Core module
-gp_add_module(
+# Register the Core module
+gp_register_module(
     NAME Core
-    MODULE_TYPE Runtime
 )
+
+# Define the Core module
+if(GP_MODULE_BUILD_PHASE)
+    gp_add_module(
+        NAME Core
+        MODULE_TYPE Runtime
+    )
+endif()

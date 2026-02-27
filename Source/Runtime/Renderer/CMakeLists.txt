@@ -3,12 +3,23 @@
 # Include the GPModule functions
 include(GPModule)
 
-# Define the Shaders module
-gp_add_module(
+# Register the Renderer module
+gp_register_module(
     NAME Renderer
-    MODULE_TYPE Runtime
     DEPENDENCIES
-        GP::Runtime::Core
-        GP::Runtime::RHI
-        GP::Runtime::Shaders
+        Core
+        RHI
+        Shaders
 )
+
+# Define the Shaders module
+if(GP_MODULE_BUILD_PHASE)
+    gp_add_module(
+        NAME Renderer
+        MODULE_TYPE Runtime
+        PUBLIC_DEPENDENCIES
+            GP::Runtime::Core
+            GP::Runtime::RHI
+            GP::Runtime::Shaders
+    )
+endif()

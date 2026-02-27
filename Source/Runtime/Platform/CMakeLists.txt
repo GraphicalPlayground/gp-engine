@@ -3,10 +3,19 @@
 # Include the GPModule functions
 include(GPModule)
 
-# Define the Platform module
-gp_add_module(
+# Register the Platform module
+gp_register_module(
     NAME Platform
-    MODULE_TYPE Runtime
     DEPENDENCIES
-        GP::Runtime::Core
+        Core
 )
+
+# Define the Platform module
+if(GP_MODULE_BUILD_PHASE)
+    gp_add_module(
+        NAME Platform
+        MODULE_TYPE Runtime
+        PUBLIC_DEPENDENCIES
+            GP::Runtime::Core
+    )
+endif()

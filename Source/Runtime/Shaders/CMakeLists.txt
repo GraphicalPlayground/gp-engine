@@ -3,10 +3,19 @@
 # Include the GPModule functions
 include(GPModule)
 
-# Define the Shaders module
-gp_add_module(
+# Register the Shaders module
+gp_register_module(
     NAME Shaders
-    MODULE_TYPE Runtime
     DEPENDENCIES
-        GP::Runtime::Core
+        Core
 )
+
+# Define the Shaders module
+if(GP_MODULE_BUILD_PHASE)
+    gp_add_module(
+        NAME Shaders
+        MODULE_TYPE Runtime
+        PUBLIC_DEPENDENCIES
+            GP::Runtime::Core
+    )
+endif()
