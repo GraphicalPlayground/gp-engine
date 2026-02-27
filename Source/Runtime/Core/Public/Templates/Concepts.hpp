@@ -147,6 +147,10 @@ concept IsPolymorphic = std::is_polymorphic_v<T>;
 template <typename T>
 concept IsAbstract = std::is_abstract_v<T>;
 
+/// \brief Concept to check if a type is a unary predicate invocable with const T&.
+template <typename TPredicate, typename T>
+concept IsUnaryPredicateFor = std::predicate<TPredicate, const T&>;
+
 /// \brief Concept to check if a type is final.
 template <typename T>
 concept IsFinal = std::is_final_v<T>;
@@ -194,6 +198,13 @@ concept IsSTLContainer = requires(T container) {
 template <typename T>
 concept IsPrintable = requires(T a) {
     { std::declval<std::ostream&>() << a } -> std::same_as<std::ostream&>;
+};
+
+/// \brief Concept to check if a type is equality comparable with another type.
+template <typename T, typename U>
+concept IsEqualityComparableWith = requires(const T& t, const U& u) {
+    { t == u } -> std::convertible_to<bool>;
+    { u == t } -> std::convertible_to<bool>;
 };
 
 }   // namespace GP::Concepts
