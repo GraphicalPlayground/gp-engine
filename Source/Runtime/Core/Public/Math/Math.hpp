@@ -27,6 +27,8 @@
 #include "Math/Rotation/Rotator2D.hpp"
 #include "Math/Utils/Constants.hpp"
 #include "Math/Utils/Linear.hpp"
+#include "Math/Vector/IntExtent2D.hpp"
+#include "Math/Vector/IntPoint2D.hpp"
 #include "Math/Vector/Vector2.hpp"
 #include "Math/Vector/Vector3.hpp"
 #include "Math/Vector/Vector4.hpp"

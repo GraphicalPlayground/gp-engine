@@ -15,6 +15,11 @@ struct TVector3;
 template <Concepts::IsFloatingPoint T>
 struct TVector4;
 
+template <Concepts::IsIntegral T>
+struct TIntPoint2D;
+template <Concepts::IsIntegral T>
+struct TIntExtent2D;
+
 template <Concepts::IsFloatingPoint T>
 struct TMatrix2x2;
 template <Concepts::IsFloatingPoint T>
@@ -80,3 +85,6 @@ using FAABB = GP::Math::TAABB<GP::Real>;
 using FOBB = GP::Math::TOBB<GP::Real>;
 using FColor = GP::Math::FColor;
 using FLinearColor = GP::Math::FLinearColor;
+
+using FIntPoint2D = GP::Math::TIntPoint2D<GP::Int32>;
+using FIntExtent2D = GP::Math::TIntExtent2D<GP::UInt32>;
