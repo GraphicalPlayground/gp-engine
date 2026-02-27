@@ -147,6 +147,10 @@ concept IsPolymorphic = std::is_polymorphic_v<T>;
 template <typename T>
 concept IsAbstract = std::is_abstract_v<T>;
 
+/// \brief Concept to check if a type is invocable with given arguments.
+template <typename T, typename... Args>
+concept IsInvocable = std::is_invocable_v<T, Args...>;
+
 /// \brief Concept to check if a type is a unary predicate invocable with const T&.
 template <typename TPredicate, typename T>
 concept IsUnaryPredicateFor = std::predicate<TPredicate, const T&>;
