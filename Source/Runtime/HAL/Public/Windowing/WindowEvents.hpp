@@ -191,4 +191,12 @@ public:
     {};
 };
 
+namespace HAL
+{
+
+/// \brief Alias for the window events struct, for easier usage in code that handles window events.
+using FWindowEvents = FEvents<HAL::IWindow>;
+
+}   // namespace HAL
+
 }   // namespace GP

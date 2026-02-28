@@ -44,7 +44,6 @@ namespace GP::HAL
 class IWindow
 {
 public:
-    using FEvents = FEvents<IWindow>;
     using FEventHandle = GP::Events::FDelegateHandle;
     using FScopedHandle = GP::Events::FScopedDelegateHandle;
     template <typename Signature>
@@ -55,28 +54,28 @@ public:
     virtual ~IWindow() = default;
 
 public:
-    TEvent<void(const FEvents::CloseRequested&)> OnCloseRequested;
-    TEvent<void(const FEvents::Closed&)> OnClosed;
-    TEvent<void(const FEvents::Moved&)> OnMoved;
-    TEvent<void(const FEvents::Resized&)> OnResized;
-    TEvent<void(const FEvents::FramebufferResized&)> OnFramebufferResized;
-    TEvent<void(const FEvents::FocusGained&)> OnFocusGained;
-    TEvent<void(const FEvents::FocusLost&)> OnFocusLost;
-    TEvent<void(const FEvents::Shown&)> OnShown;
-    TEvent<void(const FEvents::Hidden&)> OnHidden;
-    TEvent<void(const FEvents::Minimized&)> OnMinimized;
-    TEvent<void(const FEvents::Maximized&)> OnMaximized;
-    TEvent<void(const FEvents::Restored&)> OnRestored;
-    TEvent<void(const FEvents::ContentScaleChanged&)> OnContentScaleChanged;
-    TEvent<void(const FEvents::RefreshRateChanged&)> OnRefreshRateChanged;
-    TEvent<void(const FEvents::ModeChanged&)> OnModeChanged;
-    TEvent<void(const FEvents::StyleChanged&)> OnStyleChanged;
-    TEvent<void(const FEvents::RefreshRequested&)> OnRefreshRequested;
-    TEvent<void(const FEvents::Occluded&)> OnOccluded;
-    TEvent<void(const FEvents::Revealed&)> OnRevealed;
-    TEvent<void(const FEvents::MonitorChanged&)> OnMonitorChanged;
-    TEvent<void(const FEvents::MouseEntered&)> OnMouseEntered;
-    TEvent<void(const FEvents::MouseLeft&)> OnMouseLeft;
+    TEvent<void(const FWindowEvents::CloseRequested&)> OnCloseRequested;
+    TEvent<void(const FWindowEvents::Closed&)> OnClosed;
+    TEvent<void(const FWindowEvents::Moved&)> OnMoved;
+    TEvent<void(const FWindowEvents::Resized&)> OnResized;
+    TEvent<void(const FWindowEvents::FramebufferResized&)> OnFramebufferResized;
+    TEvent<void(const FWindowEvents::FocusGained&)> OnFocusGained;
+    TEvent<void(const FWindowEvents::FocusLost&)> OnFocusLost;
+    TEvent<void(const FWindowEvents::Shown&)> OnShown;
+    TEvent<void(const FWindowEvents::Hidden&)> OnHidden;
+    TEvent<void(const FWindowEvents::Minimized&)> OnMinimized;
+    TEvent<void(const FWindowEvents::Maximized&)> OnMaximized;
+    TEvent<void(const FWindowEvents::Restored&)> OnRestored;
+    TEvent<void(const FWindowEvents::ContentScaleChanged&)> OnContentScaleChanged;
+    TEvent<void(const FWindowEvents::RefreshRateChanged&)> OnRefreshRateChanged;
+    TEvent<void(const FWindowEvents::ModeChanged&)> OnModeChanged;
+    TEvent<void(const FWindowEvents::StyleChanged&)> OnStyleChanged;
+    TEvent<void(const FWindowEvents::RefreshRequested&)> OnRefreshRequested;
+    TEvent<void(const FWindowEvents::Occluded&)> OnOccluded;
+    TEvent<void(const FWindowEvents::Revealed&)> OnRevealed;
+    TEvent<void(const FWindowEvents::MonitorChanged&)> OnMonitorChanged;
+    TEvent<void(const FWindowEvents::MouseEntered&)> OnMouseEntered;
+    TEvent<void(const FWindowEvents::MouseLeft&)> OnMouseLeft;
 
 public:
     /// \brief Checks if the window is currently open.
