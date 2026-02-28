@@ -6,7 +6,8 @@ namespace GP::HAL
 {
 
 SDLWindow::SDLWindow()
-    : m_window(nullptr)
+    : FBaseWindow(false)
+    , m_window(nullptr)
 {
     if (SDL_WasInit(SDL_INIT_VIDEO) == 0)
     {
