@@ -520,6 +520,19 @@ public:
         PopBack();
     }
 
+    /// \brief Removes the element at the specified iterator position by swapping it with the last element and then
+    /// removing the last element. This is more efficient than Erase for unordered arrays.
+    /// \param pos A valid iterator within the range [begin(), end()).
+    /// \return An iterator pointing to the element that now occupies the erased position (the former last element),
+    /// or end() if the erased element was itself the last element.
+    Iterator EraseSwapBack(ConstIterator pos)
+    {
+        const SizeType index = static_cast<SizeType>(pos - m_data);
+        GP_ASSERT(index < m_size, "EraseSwapBack iterator out of bounds");
+        EraseSwapBack(index);
+        return m_data + index;
+    }
+
     /// \brief Exchanges the contents of this array with another array.
     /// \param other The array to swap with. After the swap, this array will contain the elements and state of the other
     /// array, and vice versa.
@@ -647,10 +660,140 @@ public:
         return CEnd();
     }
 
+    /// \brief Searches for the first element satisfying the given predicate.
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for the target element.
+    /// \return An iterator pointing to the first matching element, or End() if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T> GP_NODISCARD Iterator FindIf(TPredicate&& predicate) noexcept
+    {
+        for (SizeType i = 0; i < m_size; ++i)
+        {
+            if (predicate(m_data[i])) { return m_data + i; }
+        }
+        return End();
+    }
+
+    /// \brief Searches for the first element satisfying the given predicate (const version).
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for the target element.
+    /// \return A const iterator pointing to the first matching element, or CEnd() if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD ConstIterator FindIf(TPredicate&& predicate) const noexcept
+    {
+        for (SizeType i = 0; i < m_size; ++i)
+        {
+            if (predicate(m_data[i])) { return m_data + i; }
+        }
+        return CEnd();
+    }
+
+    /// \brief Searches for the first element NOT satisfying the given predicate.
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for elements to skip.
+    /// \return An iterator pointing to the first non-matching element, or End() if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD Iterator FindIfNot(TPredicate&& predicate) noexcept
+    {
+        for (SizeType i = 0; i < m_size; ++i)
+        {
+            if (!predicate(m_data[i])) { return m_data + i; }
+        }
+        return End();
+    }
+
+    /// \brief Searches for the first element NOT satisfying the given predicate (const version).
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for elements to skip.
+    /// \return A const iterator pointing to the first non-matching element, or CEnd() if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD ConstIterator FindIfNot(TPredicate&& predicate) const noexcept
+    {
+        for (SizeType i = 0; i < m_size; ++i)
+        {
+            if (!predicate(m_data[i])) { return m_data + i; }
+        }
+        return CEnd();
+    }
+
+    /// \brief Searches for the last element satisfying the given predicate.
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for the target element.
+    /// \return An iterator pointing to the last matching element, or End() if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD Iterator FindLastIf(TPredicate&& predicate) noexcept
+    {
+        for (SizeType i = m_size; i > 0; --i)
+        {
+            if (predicate(m_data[i - 1])) { return m_data + i - 1; }
+        }
+        return End();
+    }
+
+    /// \brief Searches for the last element satisfying the given predicate (const version).
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for the target element.
+    /// \return A const iterator pointing to the last matching element, or CEnd() if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD ConstIterator FindLastIf(TPredicate&& predicate) const noexcept
+    {
+        for (SizeType i = m_size; i > 0; --i)
+        {
+            if (predicate(m_data[i - 1])) { return m_data + i - 1; }
+        }
+        return CEnd();
+    }
+
+    /// \brief Searches for the last element NOT satisfying the given predicate.
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for elements to skip.
+    /// \return An iterator pointing to the last non-matching element, or End() if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD Iterator FindLastIfNot(TPredicate&& predicate) noexcept
+    {
+        for (SizeType i = m_size; i > 0; --i)
+        {
+            if (!predicate(m_data[i - 1])) { return m_data + i - 1; }
+        }
+        return End();
+    }
+
+    /// \brief Searches for the last element NOT satisfying the given predicate (const version).
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for elements to skip.
+    /// \return A const iterator pointing to the last non-matching element, or CEnd() if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD ConstIterator FindLastIfNot(TPredicate&& predicate) const noexcept
+    {
+        for (SizeType i = m_size; i > 0; --i)
+        {
+            if (!predicate(m_data[i - 1])) { return m_data + i - 1; }
+        }
+        return CEnd();
+    }
+
     /// \brief Checks whether the specified value exists in the array.
     /// \param value The value to search for.
     /// \return true if the value is found in the array; otherwise, false.
     GP_NODISCARD bool Contains(const T& value) const noexcept { return Find(value) != End(); }
+
+    /// \brief Checks whether any element satisfies the given predicate.
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for the element to find.
+    /// \return true if at least one element for which predicate returns true is found; otherwise, false.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD bool ContainsIf(TPredicate&& predicate) const noexcept
+    {
+        return FindIf(std::forward<TPredicate>(predicate)) != CEnd();
+    }
 
     /// \brief Returns the index of the first occurrence of the specified value in the array.
     /// \param value The value to search for.
@@ -701,6 +844,47 @@ public:
         for (SizeType i = m_size; i > 0; --i)
         {
             if (m_data[i - 1] != value) { return i - 1; }
+        }
+        return NPOS;
+    }
+
+    /// \brief Returns the index of the first element satisfying the given predicate.
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for the target element.
+    /// \return The index of the first matching element, or NPOS if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD SizeType IndexIf(TPredicate&& predicate) const noexcept
+    {
+        for (SizeType i = 0; i < m_size; ++i)
+        {
+            if (predicate(m_data[i])) { return i; }
+        }
+        return NPOS;
+    }
+
+    /// \brief Returns the index of the first element satisfying the given predicate (alias for IndexIf).
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for the target element.
+    /// \return The index of the first matching element, or NPOS if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD SizeType IndexFirstIf(TPredicate&& predicate) const noexcept
+    {
+        return IndexIf(std::forward<TPredicate>(predicate));
+    }
+
+    /// \brief Returns the index of the last element satisfying the given predicate.
+    /// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+    /// \param predicate Unary predicate. Returns true for the target element.
+    /// \return The index of the last matching element, or NPOS if no such element is found.
+    template <typename TPredicate>
+    requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+    GP_NODISCARD SizeType IndexLastIf(TPredicate&& predicate) const noexcept
+    {
+        for (SizeType i = m_size; i > 0; --i)
+        {
+            if (predicate(m_data[i - 1])) { return i - 1; }
         }
         return NPOS;
     }
@@ -911,6 +1095,35 @@ typename TArray<T, Alloc>::SizeType EraseIf(TArray<T, Alloc>& array, TPredicate&
         static_cast<typename TArray<T, Alloc>::SizeType>(array.End() - it);
     array.Erase(it, array.End());
     return count;
+}
+
+/// \brief Removes all elements from the array for which the given predicate returns true using the
+/// swap-and-pop-back strategy. Does NOT preserve the relative order of surviving elements. This
+/// variant performs fewer element moves than the order-preserving EraseIf and is preferable for
+/// unordered arrays where element order is irrelevant.
+/// \tparam T The element type of the array.
+/// \tparam Alloc The allocator type of the array.
+/// \tparam TPredicate A callable type satisfying std::predicate<TPredicate, const T&>.
+/// \param array The array to modify in-place.
+/// \param predicate Unary predicate. An element is removed if predicate(element) returns true.
+/// \return The number of elements removed.
+/// \note The order of surviving elements is NOT guaranteed to match the original order.
+template <typename T, Concepts::IsAllocator Alloc, typename TPredicate>
+requires Concepts::IsUnaryPredicateFor<TPredicate, T>
+typename TArray<T, Alloc>::SizeType EraseSwapBackIf(TArray<T, Alloc>& array, TPredicate&& predicate)
+{
+    typename TArray<T, Alloc>::SizeType removed = 0;
+    typename TArray<T, Alloc>::SizeType i = 0;
+    while (i < array.Size())
+    {
+        if (predicate(array[i]))
+        {
+            array.EraseSwapBack(i);
+            ++removed;
+        }
+        else { ++i; }
+    }
+    return removed;
 }
 
 }   // namespace GP::Container
