@@ -6,6 +6,7 @@
 #include "Events/DelegateHandle.hpp"
 #include "Templates/Concepts.hpp"
 #include <functional>
+#include <memory>
 #include <optional>
 #include <type_traits>
 
@@ -48,7 +49,9 @@ public:
     using FOptionalReturn = std::conditional_t<std::is_void_v<R>, bool, std::optional<R>>;
 
 private:
-    FStorage m_storage;   //<! Storage for the currently bound callable. Empty if no callable is bound.
+    FStorage m_storage;       //<! Storage for the currently bound callable. Empty if no callable is bound.
+    std::function<bool()>
+        m_weakPtrValidator;   //<! Optional predicate returning false when a bound weak_ptr has expired.
 
 public:
     /// \brief Default constructor.
@@ -77,6 +80,7 @@ public:
     {
         GP_ASSERT(func != nullptr);
         m_storage = FStorage{ func };
+        m_weakPtrValidator = nullptr;
     }
 
     /// \brief Binds any callable: lambda, functor, or std::bind expression.
@@ -86,6 +90,7 @@ public:
     requires Concepts::IsInvocable<TCallable, Args...> GP_INLINE void BindLambda(TCallable&& callable)
     {
         m_storage = FStorage{ std::forward<TCallable>(callable) };
+        m_weakPtrValidator = nullptr;
     }
 
     /// \brief Binds a non-const member function on a raw object pointer.
@@ -101,6 +106,7 @@ public:
         GP_ASSERT(func != nullptr);
         m_storage =
             FStorage{ [object, func](Args&&... args) -> R { return (object->*func)(std::forward<Args>(args)...); } };
+        m_weakPtrValidator = nullptr;
     }
 
     /// \brief Binds a const member function on a raw object pointer.
@@ -114,22 +120,82 @@ public:
         GP_ASSERT(func != nullptr);
         m_storage =
             FStorage{ [object, func](Args&&... args) -> R { return (object->*func)(std::forward<Args>(args)...); } };
+        m_weakPtrValidator = nullptr;
+    }
+
+    /// \brief Binds a non-const member function via a shared_ptr, using a weak reference internally. IsBound() returns
+    /// false once the shared_ptr's managed object has been destroyed, making it safe to use ExecuteIfBound() without
+    /// worrying about dangling pointers.
+    /// \tparam T The class that owns the member function.
+    /// \param sp A non-null shared_ptr to the target object.
+    /// \param func Pointer to the member function to invoke.
+    /// \warning Execute() will GP_ASSERT if called after the tracked object has been destroyed. Prefer ExecuteIfBound()
+    /// to handle the expired case gracefully.
+    template <typename T>
+    GP_INLINE void BindWeakSP(const std::shared_ptr<T>& sp, R (T::*func)(Args...))
+    {
+        GP_ASSERT(sp != nullptr);
+        GP_ASSERT(func != nullptr);
+        std::weak_ptr<T> wp = sp;
+        m_storage = FStorage{ [wp, func](Args&&... args) -> R
+                              {
+                                  auto locked = wp.lock();
+                                  GP_ASSERT(
+                                      locked != nullptr,
+                                      "BindWeakSP: the tracked object has been destroyed. Use ExecuteIfBound()."
+                                  );
+                                  return (locked.get()->*func)(std::forward<Args>(args)...);
+                              } };
+        m_weakPtrValidator = [wp]() -> bool { return !wp.expired(); };
+    }
+
+    /// \brief Binds a const member function via a shared_ptr, using a weak reference internally.
+    /// IsBound() returns false once the shared_ptr's managed object has been destroyed.
+    /// \tparam T The class that owns the member function.
+    /// \param sp A non-null shared_ptr to the target object.
+    /// \param func Pointer to the const member function to invoke.
+    template <typename T>
+    GP_INLINE void BindWeakSP(const std::shared_ptr<T>& sp, R (T::*func)(Args...) const)
+    {
+        GP_ASSERT(sp != nullptr);
+        GP_ASSERT(func != nullptr);
+        std::weak_ptr<T> wp = sp;
+        m_storage = FStorage{ [wp, func](Args&&... args) -> R
+                              {
+                                  auto locked = wp.lock();
+                                  GP_ASSERT(
+                                      locked != nullptr,
+                                      "BindWeakSP: the tracked object has been destroyed. Use ExecuteIfBound()."
+                                  );
+                                  return (locked.get()->*func)(std::forward<Args>(args)...);
+                              } };
+        m_weakPtrValidator = [wp]() -> bool { return !wp.expired(); };
     }
 
     /// \brief Removes the current binding. After this call, IsBound() returns false.
-    GP_INLINE void Unbind() noexcept { m_storage = nullptr; }
+    GP_INLINE void Unbind() noexcept
+    {
+        m_storage = nullptr;
+        m_weakPtrValidator = nullptr;
+    }
 
-    /// \brief Returns true if a callable is currently bound.
-    /// \return True if a callable is bound, false if the delegate is empty.
-    GP_NODISCARD GP_INLINE bool IsBound() const noexcept { return static_cast<bool>(m_storage); }
+    /// \brief Returns true if a callable is currently bound and, for weak-pointer bindings, the tracked object
+    /// is still alive.
+    /// \return True if the delegate is ready to be invoked, false otherwise.
+    GP_NODISCARD GP_INLINE bool IsBound() const noexcept
+    {
+        if (!static_cast<bool>(m_storage)) { return false; }
+        if (m_weakPtrValidator) { return m_weakPtrValidator(); }
+        return true;
+    }
 
     /// \brief Invokes the bound callable unconditionally.
     /// \param args Arguments forwarded to the callable.
     /// \return The return value of the callable.
     /// \warning Triggers a GP_ASSERT if no callable is bound. Prefer ExecuteIfBound() for optional invocation.
-    GP_INLINE R Execute(Args... args) const
+    GP_INLINE R Execute(Args... args)
     {
-        GP_ASSERT_MSG(IsBound(), "TDelegate::Execute called on an unbound delegate.");
+        GP_ASSERT(IsBound(), "TDelegate::Execute called on an unbound delegate.");
         return m_storage(std::forward<Args>(args)...);
     }
 
@@ -138,7 +204,7 @@ public:
     /// callable was invoked, false otherwise.
     /// \param args Arguments forwarded to the callable.
     /// \return std::optional<R> (non-void) or bool (void).
-    GP_INLINE FOptionalReturn ExecuteIfBound(Args... args) const
+    GP_INLINE FOptionalReturn ExecuteIfBound(Args... args)
     {
         if constexpr (std::is_void_v<R>)
         {
