@@ -11,6 +11,7 @@
 #include "Math/Geometry/AABB.hpp"
 #include "Math/Geometry/Box.hpp"
 #include "Math/Geometry/Frustum.hpp"
+#include "Math/Geometry/IntRectangle.hpp"
 #include "Math/Geometry/OBB.hpp"
 #include "Math/Geometry/Plane.hpp"
 #include "Math/Geometry/Ray.hpp"

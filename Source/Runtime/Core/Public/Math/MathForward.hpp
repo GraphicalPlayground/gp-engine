@@ -19,6 +19,8 @@ template <Concepts::IsIntegral T>
 struct TIntPoint2D;
 template <Concepts::IsIntegral T>
 struct TIntExtent2D;
+template <Concepts::IsIntegral T>
+struct TIntRectangle;
 
 template <Concepts::IsFloatingPoint T>
 struct TMatrix2x2;
@@ -88,3 +90,4 @@ using FLinearColor = GP::Math::FLinearColor;
 
 using FIntPoint2D = GP::Math::TIntPoint2D<GP::Int32>;
 using FIntExtent2D = GP::Math::TIntExtent2D<GP::UInt32>;
+using FIntRectangle = GP::Math::TIntRectangle<GP::Int32>;
