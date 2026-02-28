@@ -1,6 +1,7 @@
 // Copyright (c) - Graphical Playground. All rights reserved.
 
 #include "Core.hpp"
+#include "HAL.hpp"
 #include <iostream>
 #include <string>
 
@@ -14,6 +15,15 @@ int main(int argc, char** argv)
     GP_UNUSED(argv);
 
     std::cout << "Hello, Graphical Playground!" << std::endl;
+
+    auto windowing = GP::HAL::IWindowingSystem::Create();
+    auto monitors = windowing->GetMonitors();
+    for (const auto& monitor: monitors)
+    {
+        auto videoMode = monitor->GetCurrentVideoMode();
+        std::cout << "Monitor: " << monitor->GetName().Data() << " " << videoMode << std::endl;
+    }
+
     return 0;
 }
 
