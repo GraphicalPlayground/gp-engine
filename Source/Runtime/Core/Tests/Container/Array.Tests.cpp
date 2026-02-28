@@ -783,7 +783,7 @@ TEST_CASE("TArray EraseSwapBack", "[GP][Core][Container][TArray]")
     SECTION("EraseSwapBack First Element")
     {
         TArray<int> arr = { 1, 2, 3, 4, 5 };
-        arr.EraseSwapBack(0);
+        arr.EraseSwapBack(TArray<int>::SizeType{ 0 });
         REQUIRE(arr.Size() == 4);
         REQUIRE(arr[0] == 5);   // Last element moved to first position
         REQUIRE(arr[1] == 2);
@@ -794,7 +794,7 @@ TEST_CASE("TArray EraseSwapBack", "[GP][Core][Container][TArray]")
     SECTION("EraseSwapBack Middle Element")
     {
         TArray<int> arr = { 1, 2, 3, 4, 5 };
-        arr.EraseSwapBack(2);
+        arr.EraseSwapBack(TArray<int>::SizeType{ 2 });
         REQUIRE(arr.Size() == 4);
         REQUIRE(arr[0] == 1);
         REQUIRE(arr[1] == 2);
@@ -816,7 +816,7 @@ TEST_CASE("TArray EraseSwapBack", "[GP][Core][Container][TArray]")
     SECTION("EraseSwapBack Single Element Array")
     {
         TArray<int> arr = { 42 };
-        arr.EraseSwapBack(0);
+        arr.EraseSwapBack(TArray<int>::SizeType{ 0 });
         REQUIRE(arr.Size() == 0);
         REQUIRE(arr.IsEmpty());
     }
@@ -1392,7 +1392,7 @@ TEST_CASE("TArray Stress Tests", "[GP][Core][Container][TArray]")
         arr.Erase(arr.Begin());
         arr.PushBack(100);
         arr.Resize(10, 42);
-        arr.EraseSwapBack(0);
+        arr.EraseSwapBack(TArray<int>::SizeType{ 0 });
         arr.ShrinkToFit();
 
         REQUIRE(arr.Size() == 9);
@@ -1694,5 +1694,344 @@ TEST_CASE("TArray EraseIf Free Function", "[GP][Core][Container][TArray]")
         REQUIRE(bindings[0].id == 1);
         REQUIRE(bindings[1].id == 3);
         REQUIRE(bindings[2].id == 5);
+    }
+}
+
+TEST_CASE("TArray EraseSwapBack Iterator Overload", "[GP][Core][Container][TArray]")
+{
+    SECTION("Erase First Element via Iterator")
+    {
+        TArray<int> arr = { 1, 2, 3, 4, 5 };
+        auto it = arr.EraseSwapBack(arr.Begin());
+        REQUIRE(arr.Size() == 4);
+        // Former last element (5) is now at index 0
+        REQUIRE(arr[0] == 5);
+        REQUIRE(*it == 5);
+    }
+
+    SECTION("Erase Last Element via Iterator Returns End")
+    {
+        TArray<int> arr = { 1, 2, 3 };
+        auto it = arr.EraseSwapBack(arr.End() - 1);
+        REQUIRE(arr.Size() == 2);
+        REQUIRE(it == arr.End());
+    }
+
+    SECTION("Erase Middle Element via Iterator")
+    {
+        TArray<int> arr = { 10, 20, 30, 40 };
+        auto it = arr.EraseSwapBack(arr.Begin() + 1);   // erase 20
+        REQUIRE(arr.Size() == 3);
+        REQUIRE(arr[1] == 40);                          // 40 swapped into position 1
+        REQUIRE(*it == 40);
+    }
+
+    SECTION("Erase Only Element via Iterator Returns End")
+    {
+        TArray<int> arr = { 99 };
+        auto it = arr.EraseSwapBack(arr.Begin());
+        REQUIRE(arr.IsEmpty());
+        REQUIRE(it == arr.End());
+    }
+
+    SECTION("Iterator Overload Is Consistent with Index Overload")
+    {
+        TArray<int> arrA = { 1, 2, 3, 4, 5 };
+        TArray<int> arrB = { 1, 2, 3, 4, 5 };
+        arrA.EraseSwapBack(arrA.Begin() + 2);
+        arrB.EraseSwapBack(static_cast<SizeT>(2));
+        REQUIRE(arrA.Size() == arrB.Size());
+        for (SizeT i = 0; i < arrA.Size(); ++i) { REQUIRE(arrA[i] == arrB[i]); }
+    }
+}
+
+TEST_CASE("TArray FindIf Methods", "[GP][Core][Container][TArray]")
+{
+    SECTION("FindIf Returns Iterator to First Match")
+    {
+        TArray<int> arr = { 1, 2, 3, 4, 5 };
+        auto it = arr.FindIf([](const int& v) { return v > 3; });
+        REQUIRE(it != arr.End());
+        REQUIRE(*it == 4);
+    }
+
+    SECTION("FindIf Returns End When No Match")
+    {
+        TArray<int> arr = { 1, 2, 3 };
+        auto it = arr.FindIf([](const int& v) { return v > 10; });
+        REQUIRE(it == arr.End());
+    }
+
+    SECTION("FindIf Const Version")
+    {
+        const TArray<int> arr = { 5, 10, 15, 20 };
+        auto it = arr.FindIf([](const int& v) { return v >= 15; });
+        REQUIRE(it != arr.CEnd());
+        REQUIRE(*it == 15);
+    }
+
+    SECTION("FindIf On Empty Array Returns End")
+    {
+        TArray<int> arr;
+        auto it = arr.FindIf([](const int& v) { return v == 1; });
+        REQUIRE(it == arr.End());
+    }
+
+    SECTION("FindIfNot Returns Iterator to First Non-Match")
+    {
+        TArray<int> arr = { 2, 4, 6, 7, 8 };
+        auto it = arr.FindIfNot([](const int& v) { return v % 2 == 0; });
+        REQUIRE(it != arr.End());
+        REQUIRE(*it == 7);
+    }
+
+    SECTION("FindIfNot Returns End When All Match")
+    {
+        TArray<int> arr = { 2, 4, 6 };
+        auto it = arr.FindIfNot([](const int& v) { return v % 2 == 0; });
+        REQUIRE(it == arr.End());
+    }
+
+    SECTION("FindIfNot Const Version")
+    {
+        const TArray<int> arr = { 1, 2, 3 };
+        auto it = arr.FindIfNot([](const int& v) { return v < 3; });
+        REQUIRE(it != arr.CEnd());
+        REQUIRE(*it == 3);
+    }
+
+    SECTION("FindLastIf Returns Iterator to Last Match")
+    {
+        TArray<int> arr = { 1, 5, 2, 5, 3 };
+        auto it = arr.FindLastIf([](const int& v) { return v == 5; });
+        REQUIRE(it != arr.End());
+        REQUIRE(*it == 5);
+        REQUIRE(it == arr.Begin() + 3);
+    }
+
+    SECTION("FindLastIf Returns End When No Match")
+    {
+        TArray<int> arr = { 1, 2, 3 };
+        auto it = arr.FindLastIf([](const int& v) { return v > 10; });
+        REQUIRE(it == arr.End());
+    }
+
+    SECTION("FindLastIf Const Version")
+    {
+        const TArray<int> arr = { 10, 20, 10, 30 };
+        auto it = arr.FindLastIf([](const int& v) { return v == 10; });
+        REQUIRE(it != arr.CEnd());
+        REQUIRE(it == arr.CBegin() + 2);
+    }
+
+    SECTION("FindLastIfNot Returns Iterator to Last Non-Match")
+    {
+        TArray<int> arr = { 2, 4, 6, 7, 8 };
+        auto it = arr.FindLastIfNot([](const int& v) { return v % 2 == 0; });
+        REQUIRE(it != arr.End());
+        REQUIRE(*it == 7);
+        REQUIRE(it == arr.Begin() + 3);
+    }
+
+    SECTION("FindLastIfNot Returns End When All Match Predicate")
+    {
+        TArray<int> arr = { 2, 4, 6 };
+        auto it = arr.FindLastIfNot([](const int& v) { return v % 2 == 0; });
+        REQUIRE(it == arr.End());
+    }
+
+    SECTION("FindLastIfNot Const Version")
+    {
+        const TArray<int> arr = { 1, 2, 1, 1 };
+        auto it = arr.FindLastIfNot([](const int& v) { return v == 1; });
+        REQUIRE(it != arr.CEnd());
+        REQUIRE(*it == 2);
+        REQUIRE(it == arr.CBegin() + 1);
+    }
+
+    SECTION("FindIf Only Finds First, FindLastIf Only Finds Last")
+    {
+        TArray<int> arr = { 3, 1, 3, 2, 3 };
+        auto first = arr.FindIf([](const int& v) { return v == 3; });
+        auto last = arr.FindLastIf([](const int& v) { return v == 3; });
+        REQUIRE(first == arr.Begin());
+        REQUIRE(last == arr.Begin() + 4);
+    }
+}
+
+TEST_CASE("TArray ContainsIf Method", "[GP][Core][Container][TArray]")
+{
+    SECTION("ContainsIf Returns True When Match Found")
+    {
+        TArray<int> arr = { 1, 2, 3, 4, 5 };
+        REQUIRE(arr.ContainsIf([](const int& v) { return v == 3; }));
+    }
+
+    SECTION("ContainsIf Returns False When No Match")
+    {
+        TArray<int> arr = { 1, 2, 3 };
+        REQUIRE_FALSE(arr.ContainsIf([](const int& v) { return v > 10; }));
+    }
+
+    SECTION("ContainsIf On Empty Array Returns False")
+    {
+        TArray<int> arr;
+        REQUIRE_FALSE(arr.ContainsIf([](const int& v) { return v == 1; }));
+    }
+
+    SECTION("ContainsIf With Complex Predicate")
+    {
+        TArray<int> arr = { 1, 3, 5, 7, 8 };
+        REQUIRE(arr.ContainsIf([](const int& v) { return v % 2 == 0; }));
+    }
+
+    SECTION("ContainsIf On Const Array")
+    {
+        const TArray<int> arr = { 10, 20, 30 };
+        REQUIRE(arr.ContainsIf([](const int& v) { return v > 25; }));
+        REQUIRE_FALSE(arr.ContainsIf([](const int& v) { return v > 100; }));
+    }
+}
+
+TEST_CASE("TArray IndexIf Methods", "[GP][Core][Container][TArray]")
+{
+    SECTION("IndexIf Returns Index of First Match")
+    {
+        TArray<int> arr = { 1, 2, 3, 4, 5 };
+        REQUIRE(arr.IndexIf([](const int& v) { return v > 3; }) == 3);
+    }
+
+    SECTION("IndexIf Returns NPOS When No Match")
+    {
+        TArray<int> arr = { 1, 2, 3 };
+        REQUIRE(arr.IndexIf([](const int& v) { return v > 10; }) == TArray<int>::NPOS);
+    }
+
+    SECTION("IndexIf On Empty Array Returns NPOS")
+    {
+        TArray<int> arr;
+        REQUIRE(arr.IndexIf([](const int& v) { return v == 1; }) == TArray<int>::NPOS);
+    }
+
+    SECTION("IndexFirstIf Is Alias for IndexIf")
+    {
+        TArray<int> arr = { 5, 3, 8, 1, 7 };
+        const SizeT expected = arr.IndexIf([](const int& v) { return v > 4; });
+        const SizeT actual = arr.IndexFirstIf([](const int& v) { return v > 4; });
+        REQUIRE(expected == actual);
+        REQUIRE(actual == 0);   // 5 > 4 at index 0
+    }
+
+    SECTION("IndexLastIf Returns Index of Last Match")
+    {
+        TArray<int> arr = { 1, 5, 2, 5, 3 };
+        REQUIRE(arr.IndexLastIf([](const int& v) { return v == 5; }) == 3);
+    }
+
+    SECTION("IndexLastIf Returns NPOS When No Match")
+    {
+        TArray<int> arr = { 1, 2, 3 };
+        REQUIRE(arr.IndexLastIf([](const int& v) { return v > 10; }) == TArray<int>::NPOS);
+    }
+
+    SECTION("IndexIf and IndexLastIf Differ When Multiple Matches")
+    {
+        TArray<int> arr = { 2, 4, 1, 4, 2 };
+        REQUIRE(arr.IndexIf([](const int& v) { return v == 4; }) == 1);
+        REQUIRE(arr.IndexLastIf([](const int& v) { return v == 4; }) == 3);
+    }
+
+    SECTION("IndexLastIf On Empty Array Returns NPOS")
+    {
+        TArray<int> arr;
+        REQUIRE(arr.IndexLastIf([](const int& v) { return v == 0; }) == TArray<int>::NPOS);
+    }
+}
+
+TEST_CASE("TArray EraseSwapBackIf Free Function", "[GP][Core][Container][TArray]")
+{
+    SECTION("Removes All Matching Elements")
+    {
+        TArray<int> arr = { 1, 2, 3, 4, 5, 6 };
+        const SizeT removed = GP::Container::EraseSwapBackIf(arr, [](const int& v) { return v % 2 == 0; });
+        REQUIRE(removed == 3);
+        REQUIRE(arr.Size() == 3);
+        // All surviving elements must be odd
+        for (SizeT i = 0; i < arr.Size(); ++i) { REQUIRE(arr[i] % 2 != 0); }
+    }
+
+    SECTION("Returns Zero When No Match")
+    {
+        TArray<int> arr = { 1, 3, 5 };
+        const SizeT removed = GP::Container::EraseSwapBackIf(arr, [](const int& v) { return v % 2 == 0; });
+        REQUIRE(removed == 0);
+        REQUIRE(arr.Size() == 3);
+    }
+
+    SECTION("Removes All Elements When All Match")
+    {
+        TArray<int> arr = { 2, 4, 6, 8 };
+        const SizeT removed = GP::Container::EraseSwapBackIf(arr, [](const int& v) { return v % 2 == 0; });
+        REQUIRE(removed == 4);
+        REQUIRE(arr.IsEmpty());
+    }
+
+    SECTION("On Empty Array Returns Zero")
+    {
+        TArray<int> arr;
+        const SizeT removed = GP::Container::EraseSwapBackIf(arr, [](const int& v) { return v > 0; });
+        REQUIRE(removed == 0);
+        REQUIRE(arr.IsEmpty());
+    }
+
+    SECTION("Does NOT Preserve Order (Unlike EraseIf)")
+    {
+        // EraseSwapBackIf is explicitly unordered — just verify count and content correctness
+        TArray<int> arr = { 1, 2, 3, 4, 5 };
+        GP::Container::EraseSwapBackIf(arr, [](const int& v) { return v % 2 == 0; });
+        REQUIRE(arr.Size() == 3);
+        REQUIRE(arr.ContainsIf([](const int& v) { return v == 1; }));
+        REQUIRE(arr.ContainsIf([](const int& v) { return v == 3; }));
+        REQUIRE(arr.ContainsIf([](const int& v) { return v == 5; }));
+        REQUIRE_FALSE(arr.ContainsIf([](const int& v) { return v % 2 == 0; }));
+    }
+
+    SECTION("Single Element Match")
+    {
+        TArray<int> arr = { 42 };
+        const SizeT removed = GP::Container::EraseSwapBackIf(arr, [](const int& v) { return v == 42; });
+        REQUIRE(removed == 1);
+        REQUIRE(arr.IsEmpty());
+    }
+
+    SECTION("Single Element No Match")
+    {
+        TArray<int> arr = { 1 };
+        const SizeT removed = GP::Container::EraseSwapBackIf(arr, [](const int& v) { return v > 10; });
+        REQUIRE(removed == 0);
+        REQUIRE(arr.Size() == 1);
+    }
+
+    SECTION("pendingRemoval Flag Pattern (Unordered Variant)")
+    {
+        struct FBinding
+        {
+            int id;
+            bool pendingRemoval = false;
+        };
+
+        TArray<FBinding> bindings = {
+            { 1, false },
+            { 2,  true },
+            { 3, false },
+            { 4,  true },
+            { 5, false }
+        };
+        const SizeT removed =
+            GP::Container::EraseSwapBackIf(bindings, [](const FBinding& b) { return b.pendingRemoval; });
+        REQUIRE(removed == 2);
+        REQUIRE(bindings.Size() == 3);
+        // All surviving bindings must not be pending removal
+        for (SizeT i = 0; i < bindings.Size(); ++i) { REQUIRE_FALSE(bindings[i].pendingRemoval); }
     }
 }
