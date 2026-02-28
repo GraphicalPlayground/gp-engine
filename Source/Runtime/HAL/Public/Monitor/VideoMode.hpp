@@ -5,6 +5,7 @@
 #include "HALBuild.hpp"
 #include "Math/Vector/IntExtent2D.hpp"
 #include "Math/Vector/IntPoint2D.hpp"
+#include <ostream>
 
 namespace GP::HAL
 {
@@ -58,3 +59,10 @@ public:
 };
 
 }   // namespace GP::HAL
+
+/// \brief Formats a video mode as a human-readable string for output streams.
+/// The format is "WIDTHxHEIGHT @REFRESHRATEHz (BITDEPTH bpp)".
+/// \param os The output stream to write to.
+/// \param videoMode The video mode to format and output.
+/// \return The output stream after writing the formatted video mode string.
+std::ostream& operator<<(std::ostream& os, const GP::HAL::FVideoMode& videoMode);
