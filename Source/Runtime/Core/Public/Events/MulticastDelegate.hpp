@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <concepts>
 #include <functional>
+#include <memory>
 #include <ranges>
 #include <type_traits>
 #include <vector>
@@ -142,6 +143,49 @@ public:
         );
     }
 
+    /// \brief Registers a non-const member function on a shared_ptr-owned object, holding only a weak reference.
+    /// If the tracked object has been destroyed when Broadcast() fires, the invocation is silently skipped.
+    /// The binding remains in the list; call Remove() with the returned handle to clean it up explicitly.
+    /// \tparam T The class that owns the member function.
+    /// \param sp A non-null shared_ptr to the target object.
+    /// \param func A non-null pointer to a non-const member function.
+    /// \return A valid FDelegateHandle for later removal.
+    template <typename T>
+    GP_NODISCARD FDelegateHandle AddWeakSP(const std::shared_ptr<T>& sp, void (T::*func)(Args...))
+    {
+        GP_ASSERT(sp != nullptr);
+        GP_ASSERT(func != nullptr);
+        std::weak_ptr<T> wp = sp;
+        return AddCallable(FCallable{ [wp, func](Args&&... args)
+                                      {
+                                          if (auto locked = wp.lock())
+                                          {
+                                              (locked.get()->*func)(std::forward<Args>(args)...);
+                                          }
+                                      } });
+    }
+
+    /// \brief Registers a const member function on a shared_ptr-owned object, holding only a weak reference.
+    /// If the tracked object has been destroyed when Broadcast() fires, the invocation is silently skipped.
+    /// \tparam T The class that owns the member function.
+    /// \param sp A non-null shared_ptr to the target object.
+    /// \param func A non-null pointer to a const member function.
+    /// \return A valid FDelegateHandle for later removal.
+    template <typename T>
+    GP_NODISCARD FDelegateHandle AddWeakSP(const std::shared_ptr<T>& sp, void (T::*func)(Args...) const)
+    {
+        GP_ASSERT(sp != nullptr);
+        GP_ASSERT(func != nullptr);
+        std::weak_ptr<T> wp = sp;
+        return AddCallable(FCallable{ [wp, func](Args&&... args)
+                                      {
+                                          if (auto locked = wp.lock())
+                                          {
+                                              (locked.get()->*func)(std::forward<Args>(args)...);
+                                          }
+                                      } });
+    }
+
     /// \brief Removes the binding identified by the given handle. If called during a Broadcast(), the removal is
     /// deferred until the outermost Broadcast() completes. The callable will NOT be invoked for the current broadcast
     /// even if the removal is deferred.
@@ -248,6 +292,27 @@ public:
     /// \brief Returns true if a Broadcast() is currently in progress on this delegate.
     /// \return True if currently broadcasting, false otherwise.
     GP_NODISCARD bool IsBroadcasting() const noexcept { return m_broadcastDepth > 0; }
+
+    /// \brief Returns true if a binding identified by the given handle is currently registered and not pending removal.
+    /// Bindings added during an ongoing Broadcast() (i.e., pending additions) are also checked.
+    /// \param handle The handle to look up.
+    /// \return True if the handle refers to an active or pending-addition binding, false otherwise.
+    GP_NODISCARD bool Contains(FDelegateHandle handle) const noexcept
+    {
+        if (!handle.IsValid()) { return false; }
+
+        const bool inActive = std::ranges::any_of(
+            m_bindings, [handle](const FBinding& b) { return b.handle == handle && !b.pendingRemoval; }
+        );
+        if (inActive) { return true; }
+
+        if (m_hasPendingAdditions)
+        {
+            return std::ranges::any_of(m_pendingAdditions, [handle](const FBinding& b) { return b.handle == handle; });
+        }
+
+        return false;
+    }
 
 private:
     /// \brief Core registration path used by all public Add* methods.
