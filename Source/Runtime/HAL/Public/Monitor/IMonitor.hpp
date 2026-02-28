@@ -4,6 +4,7 @@
 
 #include "Container/BasicString.hpp"
 #include "Container/BasicStringView.hpp"
+#include "Container/ContainerForward.hpp"
 #include "Events/MulticastDelegate.hpp"
 #include "Events/ScopedDelegateHandle.hpp"
 #include "HALBuild.hpp"
