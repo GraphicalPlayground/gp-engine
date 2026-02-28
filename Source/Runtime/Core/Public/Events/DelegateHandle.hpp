@@ -4,6 +4,7 @@
 
 #include "CoreBuild.hpp"
 #include <atomic>
+#include <functional>
 
 namespace GP::Events
 {
@@ -11,8 +12,8 @@ namespace GP::Events
 /// \brief An opaque handle returned when binding a callable to a TMulticastDelegate.
 ///
 /// The handle is used to uniquely identify a binding so it can be removed at a later point without needing a reference
-/// to the original callable. Handles are non-copyable by design to prevent accidental double-removal; use
-/// FScopedDelegateHandle for RAII ownership.
+/// to the original callable. FDelegateHandle is a lightweight copyable value type; it does not own the binding. To
+/// get automatic RAII removal, wrap it in an FScopedDelegateHandle, which IS non-copyable by design.
 ///
 /// \note ID 0 is reserved as the "invalid" sentinel value and is never assigned to a live binding.
 /// \note FDelegateHandle is a trivially-copyable value type safe to pass and store by value.
@@ -68,3 +69,14 @@ public:
 };
 
 }   // namespace GP::Events
+
+/// \brief std::hash specialization for GP::Events::FDelegateHandle.
+/// Enables FDelegateHandle to be used as a key in std::unordered_map and std::unordered_set.
+template <>
+struct std::hash<GP::Events::FDelegateHandle>
+{
+    GP_NODISCARD std::size_t operator()(const GP::Events::FDelegateHandle& handle) const noexcept
+    {
+        return hash<GP::UInt64>{}(handle.id);
+    }
+};
