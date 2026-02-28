@@ -6,6 +6,7 @@
 #include "Events/DelegateHandle.hpp"
 #include "Events/MulticastDelegate.hpp"
 #include <functional>
+#include <utility>
 
 namespace GP::Events
 {
@@ -126,6 +127,18 @@ public:
         m_remover = nullptr;
         return detached;
     }
+
+    /// \brief Exchanges the managed binding of this scoped handle with another. Neither binding is removed; ownership
+    /// is simply transferred between the two handles.
+    /// \param other The other FScopedDelegateHandle to swap with.
+    void Swap(FScopedDelegateHandle& other) noexcept
+    {
+        std::swap(m_handle, other.m_handle);
+        std::swap(m_remover, other.m_remover);
+    }
+
+    /// \brief ADL-accessible free swap. Delegates to FScopedDelegateHandle::Swap().
+    friend void swap(FScopedDelegateHandle& lhs, FScopedDelegateHandle& rhs) noexcept { lhs.Swap(rhs); }
 };
 
 }   // namespace GP::Events
