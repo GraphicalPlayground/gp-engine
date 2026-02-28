@@ -47,7 +47,6 @@ protected:
     FIntPoint2D m_position{ DEFAULT_POSITION };
     Float32 m_aspectRatio{ DEFAULT_ASPECT_RATIO };
     Float32 m_contentScale{ DEFAULT_CONTENT_SCALE };
-    void* m_nativeHandle{ nullptr };
 
     bool m_isOpen{ false };
     bool m_shouldClose{ false };

@@ -148,7 +148,7 @@ GP_NODISCARD FIntExtent2D FBaseWindow::GetMaxSize() const noexcept { return m_ma
 
 GP_NODISCARD const IMonitor* FBaseWindow::GetCurrentMonitor() const noexcept { return nullptr; }
 
-GP_NODISCARD void* FBaseWindow::GetNativeHandle() const noexcept { return m_nativeHandle; }
+GP_NODISCARD void* FBaseWindow::GetNativeHandle() const noexcept { return nullptr; }
 
 void FBaseWindow::Close()
 {
