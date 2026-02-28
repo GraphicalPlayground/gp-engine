@@ -280,11 +280,10 @@ TEST_CASE("TLinearAllocator Out of Memory", "[GP][Core][Memory][LinearAllocator]
 
     SECTION("Out of Memory with Alignment Padding")
     {
-        (void)allocator.Allocate(200);   // 56 bytes remaining
+        (void)allocator.Allocate(255, 1);
+        REQUIRE(allocator.GetRemainingBytes() == 1);
 
-        // Request 56 bytes with 64-byte alignment
-        // This should fail because alignment padding would exceed capacity
-        void* ptr = allocator.Allocate(56, 64);
+        void* ptr = allocator.Allocate(1, 2);
         REQUIRE(ptr == nullptr);
     }
 }
