@@ -233,11 +233,11 @@ void FBaseWindow::SetHeight(UInt32 height) { SetSize(m_contentSize.width, height
 
 void FBaseWindow::SetFullWindowSize(UInt32 width, UInt32 height) { m_fullWindowSize = { width, height }; }
 
-void FBaseWindow::SetFullWindowSize(const FIntExtent2D& size) { m_fullWindowSize = size; }
+void FBaseWindow::SetFullWindowSize(const FIntExtent2D& size) { SetFullWindowSize(size.width, size.height); }
 
-void FBaseWindow::SetFullWindowWidth(UInt32 width) { m_fullWindowSize.width = width; }
+void FBaseWindow::SetFullWindowWidth(UInt32 width) { SetFullWindowSize(width, m_fullWindowSize.height); }
 
-void FBaseWindow::SetFullWindowHeight(UInt32 height) { m_fullWindowSize.height = height; }
+void FBaseWindow::SetFullWindowHeight(UInt32 height) { SetFullWindowSize(m_fullWindowSize.width, height); }
 
 void FBaseWindow::SetPosition(UInt32 x, UInt32 y)
 {
@@ -245,11 +245,16 @@ void FBaseWindow::SetPosition(UInt32 x, UInt32 y)
     m_position.y = static_cast<Int32>(y);
 }
 
-void FBaseWindow::SetPosition(const FIntPoint2D& position) { m_position = position; }
+void FBaseWindow::SetPosition(const FIntPoint2D& position)
+{
+    SetPosition(
+        static_cast<UInt32>(position.x >= 0 ? position.x : 0), static_cast<UInt32>(position.y >= 0 ? position.y : 0)
+    );
+}
 
-void FBaseWindow::SetX(UInt32 x) { m_position.x = static_cast<Int32>(x); }
+void FBaseWindow::SetX(UInt32 x) { SetPosition(x, static_cast<UInt32>(m_position.y >= 0 ? m_position.y : 0)); }
 
-void FBaseWindow::SetY(UInt32 y) { m_position.y = static_cast<Int32>(y); }
+void FBaseWindow::SetY(UInt32 y) { SetPosition(static_cast<UInt32>(m_position.x >= 0 ? m_position.x : 0), y); }
 
 void FBaseWindow::SetAspectRatio(Float32 aspectRatio) { m_aspectRatio = aspectRatio; }
 
@@ -267,25 +272,42 @@ void FBaseWindow::SetSizeLimits(UInt32 minWidth, UInt32 minHeight, UInt32 maxWid
 
 void FBaseWindow::SetSizeLimits(const FIntExtent2D& minSize, const FIntExtent2D& maxSize)
 {
-    m_minSize = minSize;
-    m_maxSize = maxSize;
+    SetSizeLimits(minSize.width, minSize.height, maxSize.width, maxSize.height);
 }
 
-void FBaseWindow::SetMinSize(const FIntExtent2D& minSize) { m_minSize = minSize; }
+void FBaseWindow::SetMinSize(const FIntExtent2D& minSize) { SetSizeLimits(minSize, m_maxSize); }
 
-void FBaseWindow::SetMinSize(UInt32 minWidth, UInt32 minHeight) { m_minSize = { minWidth, minHeight }; }
+void FBaseWindow::SetMinSize(UInt32 minWidth, UInt32 minHeight)
+{
+    SetSizeLimits(minWidth, minHeight, m_maxSize.width, m_maxSize.height);
+}
 
-void FBaseWindow::SetMinWidth(UInt32 minWidth) { m_minSize.width = minWidth; }
+void FBaseWindow::SetMinWidth(UInt32 minWidth)
+{
+    SetSizeLimits(minWidth, m_minSize.height, m_maxSize.width, m_maxSize.height);
+}
 
-void FBaseWindow::SetMinHeight(UInt32 minHeight) { m_minSize.height = minHeight; }
+void FBaseWindow::SetMinHeight(UInt32 minHeight)
+{
+    SetSizeLimits(m_minSize.width, minHeight, m_maxSize.width, m_maxSize.height);
+}
 
-void FBaseWindow::SetMaxSize(const FIntExtent2D& maxSize) { m_maxSize = maxSize; }
+void FBaseWindow::SetMaxSize(const FIntExtent2D& maxSize) { SetSizeLimits(m_minSize, maxSize); }
 
-void FBaseWindow::SetMaxSize(UInt32 maxWidth, UInt32 maxHeight) { m_maxSize = { maxWidth, maxHeight }; }
+void FBaseWindow::SetMaxSize(UInt32 maxWidth, UInt32 maxHeight)
+{
+    SetSizeLimits(m_minSize.width, m_minSize.height, maxWidth, maxHeight);
+}
 
-void FBaseWindow::SetMaxWidth(UInt32 maxWidth) { m_maxSize.width = maxWidth; }
+void FBaseWindow::SetMaxWidth(UInt32 maxWidth)
+{
+    SetSizeLimits(m_minSize.width, m_minSize.height, maxWidth, m_maxSize.height);
+}
 
-void FBaseWindow::SetMaxHeight(UInt32 maxHeight) { m_maxSize.height = maxHeight; }
+void FBaseWindow::SetMaxHeight(UInt32 maxHeight)
+{
+    SetSizeLimits(m_minSize.width, m_minSize.height, m_maxSize.width, maxHeight);
+}
 
 void FBaseWindow::Center(const IMonitor* monitor)
 {
