@@ -19,11 +19,44 @@ int main(int argc, char** argv)
 
     auto windowing = GP::HAL::IWindowingSystem::Create();
     auto monitors = windowing->GetMonitors();
-    for (const auto& monitor: monitors)
+    for (size_t i = 0; i < monitors.Size(); i++)
     {
+        const auto& monitor = monitors[i];
         auto videoMode = monitor->GetCurrentVideoMode();
-        std::cout << "Monitor: " << monitor->GetName().Data() << (monitor->IsPrimary() ? "(primary) " : " ")
-                  << videoMode << std::endl;
+        std::cout << "Monitor [" << i << "]:" << std::endl;
+        std::cout << "  Name: " << monitor->GetName().Data() << std::endl;
+        std::cout << "  UniqueID: " << monitor->GetUniqueID().Data() << std::endl;
+        std::cout << "  Manufacturer: " << monitor->GetManufacturerName().Data() << std::endl;
+        std::cout << "  Model: " << monitor->GetModelName().Data() << std::endl;
+        std::cout << "  SerialNumber: " << monitor->GetSerialNumber().Data() << std::endl;
+        std::cout << "  VideoMode: " << videoMode << std::endl;
+        std::cout << "  IsPrimary: " << (monitor->IsPrimary() ? "true" : "false") << std::endl;
+        std::cout << "  IsConnected: " << (monitor->IsConnected() ? "true" : "false") << std::endl;
+        std::cout << "  IsSleeping: " << (monitor->IsSleeping() ? "true" : "false") << std::endl;
+        std::cout << "  IsVirtual: " << (monitor->IsVirtual() ? "true" : "false") << std::endl;
+        std::cout << "  IsBuiltIn: " << (monitor->IsBuiltIn() ? "true" : "false") << std::endl;
+        std::cout << "  IsHighDPI: " << (monitor->IsHighDPI() ? "true" : "false") << std::endl;
+        std::cout << "  ConnectorType: " << monitor->GetConnectorType() << std::endl;
+        std::cout << "  PanelType: " << monitor->GetPanelType() << std::endl;
+        std::cout << "  RefreshRate: " << monitor->GetRefreshRate() << " Hz" << std::endl;
+        std::cout << "  MinRefreshRate: " << monitor->GetMinRefreshRate() << " Hz" << std::endl;
+        std::cout << "  MaxRefreshRate: " << monitor->GetMaxRefreshRate() << " Hz" << std::endl;
+        std::cout << "  PhysicalSize: " << monitor->GetPhysicalSize().widthMM << "x"
+                  << monitor->GetPhysicalSize().heightMM << " mm" << std::endl;
+        std::cout << "  DPI: " << monitor->GetDPIX() << "x" << monitor->GetDPIY() << " dpi" << std::endl;
+        std::cout << "  VRR Type: " << monitor->GetVRRType() << std::endl;
+        std::cout << "  VRR Capable: " << (monitor->SupportsVRR() ? "true" : "false") << std::endl;
+        std::cout << "  Color Gamut: " << monitor->GetColorGamut() << std::endl;
+        std::cout << "  HDR Format: " << monitor->GetHDRFormat() << std::endl;
+        std::cout << "  HDR Capable: " << (monitor->SupportsHDR() ? "true" : "false") << std::endl;
+        std::cout << "  HDR Enabled: " << (monitor->IsHDREnabled() ? "true" : "false") << std::endl;
+        std::cout << "  Max Luminance: " << monitor->GetMaxLuminance() << " nits" << std::endl;
+        std::cout << "  Min Luminance: " << monitor->GetMinLuminance() << " nits" << std::endl;
+        std::cout << "  Brightness: " << monitor->GetBrightness() << std::endl;
+        std::cout << "  Orientation: " << monitor->GetOrientation() << std::endl;
+        std::cout << "  Is Portrait: " << (monitor->IsPortrait() ? "true" : "false") << std::endl;
+        std::cout << "  Has TouchScreen: " << (monitor->HasTouchScreen() ? "true" : "false") << std::endl;
+        std::cout << "  Has BuiltIn Speakers: " << (monitor->HasBuiltInSpeakers() ? "true" : "false") << std::endl;
     }
 
     auto window = windowing->CreateWindow({ .title = "GP Editor", .width = 1280, .height = 720 });
