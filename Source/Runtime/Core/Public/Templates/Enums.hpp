@@ -3,7 +3,27 @@
 #pragma once
 
 #include "CoreBuild.hpp"
+#include <ostream>
 #include <type_traits>
+#include <utility>
+
+/// \brief Macro to define an output stream operator for an enum type, allowing it to be printed as a string. The macro
+/// takes the enum type and a list of enumerator-name pairs, and generates an operator<< that looks up the string name
+/// for the given enum value. If the value does not match any of the provided enumerators, it will print the underlying
+/// integer value instead in a format like "<EnumType::Value>".
+/// \param EnumType The enum type for which to define the output stream operator.
+/// \param ... A list of enumerator-name pairs in the form { EnumType::Enumerator, "Name" }, which are used to map enum
+/// values to their string representations.
+#define GP_ENUM_TO_STRING(EnumType, ...)                                                        \
+    inline std::ostream& operator<<(std::ostream& os, EnumType val)                             \
+    {                                                                                           \
+        using Pair = std::pair<EnumType, const char*>;                                          \
+        static constexpr Pair table[] = { __VA_ARGS__ };                                        \
+        for (const auto& [enumerator, name] : table)                                            \
+            if (enumerator == val) { os << name; return os; }                                   \
+        os << "<" #EnumType "::" << static_cast<std::underlying_type_t<EnumType>>(val) << ">";  \
+        return os;                                                                              \
+    }
 
 /// \brief Internal trait to check if bitwise operations are enabled for an enum
 /// By default, all enums have this trait set to false_type.
@@ -12,6 +32,8 @@ template <typename E>
 struct IsBitwiseEnumeration : std::false_type
 {};
 
+/// \brief Macro to enable bitwise operations for a specific enum type
+/// Usage: GP_ENABLE_ENUM_BITWISE_OPERATIONS(MyEnum);
 #define GP_ENABLE_ENUM_BITWISE_OPERATIONS(EnumType) \
     template <> \
     struct IsBitwiseEnumeration<EnumType> : std::true_type \
