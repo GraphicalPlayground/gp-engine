@@ -97,7 +97,7 @@ public:
     /// \brief Registers a free function pointer as a listener.
     /// \param func A non-null pointer to a free function matching the delegate's signature.
     /// \return A valid FDelegateHandle that can be passed to Remove() to unregister the listener.
-    GP_NODISCARD FDelegateHandle AddStatic(void (*func)(Args...))
+    FDelegateHandle AddStatic(void (*func)(Args...))
     {
         GP_ASSERT(func != nullptr);
         return AddCallable(FCallable{ func });
@@ -108,7 +108,7 @@ public:
     /// \param callable The callable to register. Moved into internal storage.
     /// \return A valid FDelegateHandle that can be passed to Remove() to unregister the listener.
     template <typename TCallable>
-    requires std::invocable<TCallable, Args...> GP_NODISCARD FDelegateHandle AddLambda(TCallable&& callable)
+    requires std::invocable<TCallable, Args...> FDelegateHandle AddLambda(TCallable&& callable)
     {
         return AddCallable(FCallable{ std::forward<TCallable>(callable) });
     }
@@ -121,7 +121,7 @@ public:
     /// \warning The delegate does NOT manage the object's lifetime. Ensure the object is alive for as long as the
     /// binding is registered.
     template <typename T>
-    GP_NODISCARD FDelegateHandle AddMember(T* object, void (T::*func)(Args...))
+    FDelegateHandle AddMember(T* object, void (T::*func)(Args...))
     {
         GP_ASSERT(object != nullptr);
         GP_ASSERT(func != nullptr);
@@ -135,7 +135,7 @@ public:
     /// \param func A non-null pointer to a const member function.
     /// \return A valid FDelegateHandle for later removal.
     template <typename T>
-    GP_NODISCARD FDelegateHandle AddMember(const T* object, void (T::*func)(Args...) const)
+    FDelegateHandle AddMember(const T* object, void (T::*func)(Args...) const)
     {
         GP_ASSERT(object != nullptr);
         GP_ASSERT(func != nullptr);
@@ -151,7 +151,7 @@ public:
     /// \param func A non-null pointer to a non-const member function.
     /// \return A valid FDelegateHandle for later removal.
     template <typename T>
-    GP_NODISCARD FDelegateHandle AddWeakSP(const std::shared_ptr<T>& sp, void (T::*func)(Args...))
+    FDelegateHandle AddWeakSP(const std::shared_ptr<T>& sp, void (T::*func)(Args...))
     {
         GP_ASSERT(sp != nullptr);
         GP_ASSERT(func != nullptr);
@@ -172,7 +172,7 @@ public:
     /// \param func A non-null pointer to a const member function.
     /// \return A valid FDelegateHandle for later removal.
     template <typename T>
-    GP_NODISCARD FDelegateHandle AddWeakSP(const std::shared_ptr<T>& sp, void (T::*func)(Args...) const)
+    FDelegateHandle AddWeakSP(const std::shared_ptr<T>& sp, void (T::*func)(Args...) const)
     {
         GP_ASSERT(sp != nullptr);
         GP_ASSERT(func != nullptr);
