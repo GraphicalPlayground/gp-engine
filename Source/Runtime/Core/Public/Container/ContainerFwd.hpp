@@ -14,7 +14,15 @@ class TMap;
 template <typename T>
 class TMultiMap;
 template <typename T>
+class TMultiHashMap;
+template <typename T>
+class TMultiSet;
+template <typename T>
+class TMultiHashSet;
+template <typename T>
 class THashMap;
+template <typename T>
+class THashSet;
 template <typename T>
 class TSet;
 template <typename T>
