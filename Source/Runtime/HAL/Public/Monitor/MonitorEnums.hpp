@@ -99,3 +99,68 @@ enum class EMonitorCapabilityFlags : UInt32
 }   // namespace GP::HAL
 
 GP_ENABLE_ENUM_BITWISE_OPERATIONS(GP::HAL::EMonitorCapabilityFlags);
+
+GP_ENUM_TO_STRING(
+    GP::HAL::EMonitorConnectorType,
+    { GP::HAL::EMonitorConnectorType::Unknown, "Unknown" },
+    { GP::HAL::EMonitorConnectorType::HDMI, "HDMI" },
+    { GP::HAL::EMonitorConnectorType::DisplayPort, "DisplayPort" },
+    { GP::HAL::EMonitorConnectorType::DVI, "DVI" },
+    { GP::HAL::EMonitorConnectorType::VGA, "VGA" },
+    { GP::HAL::EMonitorConnectorType::Thunderbolt, "Thunderbolt" },
+    { GP::HAL::EMonitorConnectorType::USBC, "USB-C" },
+    { GP::HAL::EMonitorConnectorType::Embedded, "Embedded" },
+    { GP::HAL::EMonitorConnectorType::Virtual, "Virtual" }
+);
+
+GP_ENUM_TO_STRING(
+    GP::HAL::EMonitorPanelType,
+    { GP::HAL::EMonitorPanelType::Unknown, "Unknown" },
+    { GP::HAL::EMonitorPanelType::IPS, "IPS" },
+    { GP::HAL::EMonitorPanelType::TN, "TN" },
+    { GP::HAL::EMonitorPanelType::VA, "VA" },
+    { GP::HAL::EMonitorPanelType::OLED, "OLED" },
+    { GP::HAL::EMonitorPanelType::MicroLED, "MicroLED" },
+    { GP::HAL::EMonitorPanelType::QLED, "QLED" },
+    { GP::HAL::EMonitorPanelType::CRT, "CRT" }
+);
+
+GP_ENUM_TO_STRING(
+    GP::HAL::EMonitorColorGamut,
+    { GP::HAL::EMonitorColorGamut::Unknown, "Unknown" },
+    { GP::HAL::EMonitorColorGamut::sRGB, "sRGB" },
+    { GP::HAL::EMonitorColorGamut::AdobeRGB, "Adobe RGB" },
+    { GP::HAL::EMonitorColorGamut::DCIP3, "DCI-P3" },
+    { GP::HAL::EMonitorColorGamut::BT2020, "BT.2020" },
+    { GP::HAL::EMonitorColorGamut::BT2100, "BT.2100" },
+    { GP::HAL::EMonitorColorGamut::DisplayP3, "Display P3" }
+);
+
+GP_ENUM_TO_STRING(
+    GP::HAL::EMonitorHDRFormat,
+    { GP::HAL::EMonitorHDRFormat::None, "None" },
+    { GP::HAL::EMonitorHDRFormat::HDR10, "HDR10" },
+    { GP::HAL::EMonitorHDRFormat::HLG, "HLG" },
+    { GP::HAL::EMonitorHDRFormat::DolbyVision, "Dolby Vision" },
+    { GP::HAL::EMonitorHDRFormat::HDR400, "VESA DisplayHDR 400" },
+    { GP::HAL::EMonitorHDRFormat::HDR600, "VESA DisplayHDR 600" },
+    { GP::HAL::EMonitorHDRFormat::HDR1000, "VESA DisplayHDR 1000" },
+    { GP::HAL::EMonitorHDRFormat::HDR1400, "VESA DisplayHDR 1400" }
+);
+
+GP_ENUM_TO_STRING(
+    GP::HAL::EMonitorOrientation,
+    { GP::HAL::EMonitorOrientation::Landscape, "Landscape" },
+    { GP::HAL::EMonitorOrientation::Portrait, "Portrait" },
+    { GP::HAL::EMonitorOrientation::LandscapeFlipped, "Landscape (Flipped)" },
+    { GP::HAL::EMonitorOrientation::PortraitFlipped, "Portrait (Flipped)" }
+);
+
+GP_ENUM_TO_STRING(
+    GP::HAL::EMonitorVRRType,
+    { GP::HAL::EMonitorVRRType::None, "None" },
+    { GP::HAL::EMonitorVRRType::FreeSync, "AMD FreeSync" },
+    { GP::HAL::EMonitorVRRType::GSync, "NVIDIA G-Sync" },
+    { GP::HAL::EMonitorVRRType::GSyncComp, "NVIDIA G-Sync Compatible" },
+    { GP::HAL::EMonitorVRRType::HDMI_VRR, "HDMI 2.1 VRR" }
+);
