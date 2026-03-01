@@ -50,6 +50,7 @@ public:
     GP_NODISCARD const IMonitor* FindMonitorByID(FStringView uniqueID) const noexcept override;
     GP_NODISCARD const IMonitor* FindMonitorByNativeHandle(void*) const noexcept override;
     GP_NODISCARD const IMonitor* FindMonitorForWindow(const IWindow*) const noexcept override;
+    GP_NODISCARD const IMonitor* FindMonitorBySDLDisplayID(SDL_DisplayID displayID) const noexcept;
     void RefreshMonitors() override;
     void PollEvents() override;
     void WaitEvents() override;

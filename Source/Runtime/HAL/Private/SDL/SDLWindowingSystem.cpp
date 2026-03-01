@@ -31,7 +31,7 @@ SDLWindowingSystem::~SDLWindowingSystem()
     SDL_Quit();
 }
 
-IWindow* SDLWindowingSystem::CreateWindow(const FWindowDesc& desc)
+GP_NODISCARD IWindow* SDLWindowingSystem::CreateWindow(const FWindowDesc& desc)
 {
     auto& owned = m_windows.EmplaceBack(std::make_unique<SDLWindow>(desc, this));
     RebuildPointerCaches();
@@ -51,16 +51,19 @@ void SDLWindowingSystem::DestroyWindow(IWindow* window)
     }
 }
 
-Container::TSpan<IWindow* const> SDLWindowingSystem::GetWindows() const noexcept
+GP_NODISCARD Container::TSpan<IWindow* const> SDLWindowingSystem::GetWindows() const noexcept
 {
     return Container::TSpan<IWindow* const>{ m_windowPtrs.Data(), m_windowPtrs.Size() };
 }
 
-UInt32 SDLWindowingSystem::GetWindowCount() const noexcept { return static_cast<UInt32>(m_windows.Size()); }
+GP_NODISCARD UInt32 SDLWindowingSystem::GetWindowCount() const noexcept
+{
+    return static_cast<UInt32>(m_windows.Size());
+}
 
-bool SDLWindowingSystem::HasWindows() const noexcept { return !m_windows.IsEmpty(); }
+GP_NODISCARD bool SDLWindowingSystem::HasWindows() const noexcept { return !m_windows.IsEmpty(); }
 
-IWindow* SDLWindowingSystem::FindWindowByNativeHandle(void* nativeHandle) const noexcept
+GP_NODISCARD IWindow* SDLWindowingSystem::FindWindowByNativeHandle(void* nativeHandle) const noexcept
 {
     for (const auto& w: m_windows)
     {
@@ -69,29 +72,32 @@ IWindow* SDLWindowingSystem::FindWindowByNativeHandle(void* nativeHandle) const 
     return nullptr;
 }
 
-const IMonitor* SDLWindowingSystem::GetPrimaryMonitor() const noexcept
+GP_NODISCARD const IMonitor* SDLWindowingSystem::GetPrimaryMonitor() const noexcept
 {
     return m_monitors.IsEmpty() ? nullptr : m_monitors[0].get();
 }
 
-IMonitor* SDLWindowingSystem::GetPrimaryMonitor() noexcept
+GP_NODISCARD IMonitor* SDLWindowingSystem::GetPrimaryMonitor() noexcept
 {
     return m_monitors.IsEmpty() ? nullptr : m_monitors[0].get();
 }
 
-Container::TSpan<IMonitor* const> SDLWindowingSystem::GetMonitors() const noexcept
+GP_NODISCARD Container::TSpan<IMonitor* const> SDLWindowingSystem::GetMonitors() const noexcept
 {
     return Container::TSpan<IMonitor* const>{ m_monitorPtrs.Data(), m_monitorPtrs.Size() };
 }
 
-Container::TSpan<IMonitor*> SDLWindowingSystem::GetMonitors() noexcept
+GP_NODISCARD Container::TSpan<IMonitor*> SDLWindowingSystem::GetMonitors() noexcept
 {
     return Container::TSpan<IMonitor*>{ m_monitorPtrs.Data(), m_monitorPtrs.Size() };
 }
 
-UInt32 SDLWindowingSystem::GetMonitorCount() const noexcept { return static_cast<UInt32>(m_monitors.Size()); }
+GP_NODISCARD UInt32 SDLWindowingSystem::GetMonitorCount() const noexcept
+{
+    return static_cast<UInt32>(m_monitors.Size());
+}
 
-const IMonitor* SDLWindowingSystem::FindMonitorByID(FStringView uniqueID) const noexcept
+GP_NODISCARD const IMonitor* SDLWindowingSystem::FindMonitorByID(FStringView uniqueID) const noexcept
 {
     for (const auto& m: m_monitors)
     {
@@ -100,7 +106,7 @@ const IMonitor* SDLWindowingSystem::FindMonitorByID(FStringView uniqueID) const 
     return nullptr;
 }
 
-const IMonitor* SDLWindowingSystem::FindMonitorByNativeHandle(void* nativeHandle) const noexcept
+GP_NODISCARD const IMonitor* SDLWindowingSystem::FindMonitorByNativeHandle(void* nativeHandle) const noexcept
 {
     for (const auto& m: m_monitors)
     {
@@ -109,7 +115,16 @@ const IMonitor* SDLWindowingSystem::FindMonitorByNativeHandle(void* nativeHandle
     return nullptr;
 }
 
-const IMonitor* SDLWindowingSystem::FindMonitorForWindow(const IWindow* window) const noexcept
+GP_NODISCARD const IMonitor* SDLWindowingSystem::FindMonitorBySDLDisplayID(SDL_DisplayID displayID) const noexcept
+{
+    for (const auto& m: m_monitors)
+    {
+        if (m->GetDisplayID() == displayID) { return m.get(); }
+    }
+    return nullptr;
+}
+
+GP_NODISCARD const IMonitor* SDLWindowingSystem::FindMonitorForWindow(const IWindow* window) const noexcept
 {
     GP_ASSERT(window, "FindMonitorForWindow: window must not be null");
 
@@ -152,9 +167,12 @@ void SDLWindowingSystem::PostEmptyEvent()
     SDL_PushEvent(&event);
 }
 
-FStringView SDLWindowingSystem::GetBackendName() const noexcept { return "SDL3"; }
+GP_NODISCARD FStringView SDLWindowingSystem::GetBackendName() const noexcept { return "SDL3"; }
 
-FStringView SDLWindowingSystem::GetPlatformName() const noexcept { return FStringView{ SDL_GetPlatform() }; }
+GP_NODISCARD FStringView SDLWindowingSystem::GetPlatformName() const noexcept
+{
+    return FStringView{ SDL_GetPlatform() };
+}
 
 void SDLWindowingSystem::ProcessEvent(const SDL_Event& event)
 {
@@ -204,7 +222,7 @@ void SDLWindowingSystem::ProcessDisplayEvent(const SDL_Event& event)
     }
 }
 
-SDLWindow* SDLWindowingSystem::FindSDLWindow(SDL_WindowID id) const noexcept
+GP_NODISCARD SDLWindow* SDLWindowingSystem::FindSDLWindow(SDL_WindowID id) const noexcept
 {
     for (const auto& w: m_windows)
     {
