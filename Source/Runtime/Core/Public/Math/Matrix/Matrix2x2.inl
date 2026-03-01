@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Container/Array.hpp"
+#include "Math/Matrix/Matrix2x2.hpp"
 
 namespace GP
 {}   // namespace GP

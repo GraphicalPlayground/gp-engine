@@ -6,9 +6,9 @@ namespace GP
 {
 
 template <typename T>
-class TArray
+class THashMap
 {};
 
 }   // namespace GP
 
-#include "Container/Array.inl"
+#include "Container/HashMap.inl"

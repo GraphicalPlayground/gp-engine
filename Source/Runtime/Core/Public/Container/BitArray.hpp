@@ -2,7 +2,12 @@
 
 #pragma once
 
-#include "Container/Array.hpp"
-
 namespace GP
-{}   // namespace GP
+{
+
+class FBitArray
+{};
+
+}   // namespace GP
+
+#include "Container/BitArray.inl"

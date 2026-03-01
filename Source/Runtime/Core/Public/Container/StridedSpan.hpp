@@ -6,9 +6,9 @@ namespace GP
 {
 
 template <typename T>
-class TArray
+class TStridedSpan
 {};
 
 }   // namespace GP
 
-#include "Container/Array.inl"
+#include "Container/StridedSpan.inl"

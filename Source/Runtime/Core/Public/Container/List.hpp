@@ -6,9 +6,9 @@ namespace GP
 {
 
 template <typename T>
-class TArray
+class TList
 {};
 
 }   // namespace GP
 
-#include "Container/Array.inl"
+#include "Container/List.inl"

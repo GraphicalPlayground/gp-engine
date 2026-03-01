@@ -6,9 +6,9 @@ namespace GP
 {
 
 template <typename T>
-class TArray
+class TAny
 {};
 
 }   // namespace GP
 
-#include "Container/Array.inl"
+#include "Container/Any.inl"

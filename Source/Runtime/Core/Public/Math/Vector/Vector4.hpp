@@ -6,9 +6,9 @@ namespace GP
 {
 
 template <typename T>
-class TArray
+struct TVector4
 {};
 
 }   // namespace GP
 
-#include "Container/Array.inl"
+#include "Math/Vector/Vector4.inl"

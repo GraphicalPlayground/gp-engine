@@ -6,9 +6,9 @@ namespace GP
 {
 
 template <typename T>
-class TArray
+struct TMatrix4x4
 {};
 
 }   // namespace GP
 
-#include "Container/Array.inl"
+#include "Math/Matrix/Matrix4x4.inl"

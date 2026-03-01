@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Container/Array.hpp"
+#include "Container/ArrayView.hpp"
 
 namespace GP
 {}   // namespace GP
