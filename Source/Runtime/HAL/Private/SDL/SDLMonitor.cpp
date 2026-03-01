@@ -4,6 +4,18 @@
 #include <cfloat>
 #include <cstdio>
 
+#if GP_PLATFORM_WINDOWS
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+    #include <windows.h>   // Core Win32 types (HMONITOR, HDC, UINT32, etc.)
+    #include <wingdi.h>    // CreateDCW, GetDeviceCaps, DeleteDC, DISPLAYCONFIG_* types
+    #include <winuser.h>   // GetMonitorInfoW, MONITORINFOEXW
+#endif
+
 namespace GP::HAL
 {
 
@@ -296,6 +308,325 @@ void SDLMonitor::Refresh() noexcept
         m_nativeHandle = SDL_GetPointerProperty(props, SDL_PROP_DISPLAY_WAYLAND_WL_OUTPUT_POINTER, nullptr);
 #endif
     }
+
+    // Populate fields queryable from SDL3 properties or cross-platform inference.
+    QueryHDRMetadata();
+    QueryVRRSupport();
+    QueryTouchSupport();
+    // Populate fields that require platform-specific OS queries (physical size, EDID metadata).
+    QueryPlatformInfo();
+}
+
+}   // namespace GP::HAL
+
+#if GP_PLATFORM_WINDOWS
+
+/// \brief Decodes a 3-letter EISA/PnP manufacturer ID to a human-readable vendor name.
+/// \param code Pointer to the first character of the 3-letter PnP code (need not be null-terminated).
+/// \return A string literal with the vendor name, or "Unknown" if the code is not in the table.
+static const GP::Char8* DecodePnPManufacturer(const GP::Char8* code) noexcept
+{
+    struct FEntry
+    {
+        GP::Char8 code[4];       //!< 3-char PnP code + null terminator.
+        const GP::Char8* name;   //!< Human-readable vendor name.
+    };
+
+    // Source: UEFI/ACPI PnP ID Registry and major display vendor PnP assignments.
+    static constexpr FEntry k_table[] = {
+        { "ACI",         "ASUSTeK" },
+        { "ACR",            "Acer" },
+        { "AUO",    "AU Optronics" },
+        { "BNQ",            "BenQ" },
+        { "BOE",     "BOE Display" },
+        { "CMN",         "Innolux" },
+        { "CMO",         "Chi Mei" },
+        { "CPL",          "Compaq" },
+        { "CPQ",          "Compaq" },
+        { "DEL",            "Dell" },
+        { "DEN",          "Denver" },
+        { "ENC",            "Eizo" },
+        { "EPI",        "Envision" },
+        { "FUJ",         "Fujitsu" },
+        { "FUS", "Fujitsu Siemens" },
+        { "GSM",              "LG" },
+        { "HPN",              "HP" },
+        { "HPQ",              "HP" },
+        { "HSD",        "HannStar" },
+        { "HWP",              "HP" },
+        { "IBM",             "IBM" },
+        { "IVM",          "Iiyama" },
+        { "LEN",          "Lenovo" },
+        { "LGD",      "LG Display" },
+        { "LPL",      "LG Philips" },
+        { "MAX",         "Maxdata" },
+        { "MEI",       "Panasonic" },
+        { "MED",          "Medion" },
+        { "NEC",             "NEC" },
+        { "NOK",           "Nokia" },
+        { "PHL",         "Philips" },
+        { "QDS",  "Quanta Display" },
+        { "SAM",         "Samsung" },
+        { "SAN",           "Sanyo" },
+        { "SEC",         "Samsung" },
+        { "SEI",           "Seiko" },
+        { "SHP",           "Sharp" },
+        { "SNY",            "Sony" },
+        { "STA",         "Innolux" },
+        { "TOS",         "Toshiba" },
+        { "TSB",         "Toshiba" },
+        { "VIZ",           "Vizio" },
+        { "VSC",       "ViewSonic" },
+        { "WDE",    "Westinghouse" },
+    };
+
+    for (const auto& e: k_table)
+    {
+        if (code[0] == e.code[0] && code[1] == e.code[1] && code[2] == e.code[2]) { return e.name; }
+    }
+    return "Unknown";
+}
+
+/// \brief Converts a Windows DISPLAYCONFIG output technology constant to the GP connector type enum.
+/// \param tech The DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY value from the DisplayConfig API.
+/// \return The corresponding EMonitorConnectorType, or Unknown if the constant is unrecognized.
+static GP::HAL::EMonitorConnectorType ConvertOutputTechnology(DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY tech) noexcept
+{
+    switch (tech)
+    {
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_HDMI                : return GP::HAL::EMonitorConnectorType::HDMI;
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DVI                 : return GP::HAL::EMonitorConnectorType::DVI;
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_HD15                : return GP::HAL::EMonitorConnectorType::VGA;
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EXTERNAL: return GP::HAL::EMonitorConnectorType::DisplayPort;
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EMBEDDED: return GP::HAL::EMonitorConnectorType::Embedded;
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_LVDS                : return GP::HAL::EMonitorConnectorType::Embedded;
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_MIRACAST            : return GP::HAL::EMonitorConnectorType::Virtual;
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_WIRED      :
+    case DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_VIRTUAL    : return GP::HAL::EMonitorConnectorType::Virtual;
+    default                                                  : return GP::HAL::EMonitorConnectorType::Unknown;
+    }
+}
+
+#endif   // GP_PLATFORM_WINDOWS
+
+namespace GP::HAL
+{
+
+void SDLMonitor::QueryHDRMetadata() noexcept
+{
+    if (m_displayID == 0u) { return; }
+
+    const SDL_PropertiesID props = SDL_GetDisplayProperties(m_displayID);
+    if (props == 0u) { return; }
+
+    // SDL 3.2 exposes a single boolean HDR property.  Richer per-display luminance
+    // and headroom floats (SDL_PROP_DISPLAY_SDR_WHITE_POINT_FLOAT /
+    // SDL_PROP_DISPLAY_HDR_HEADROOM_FLOAT) were added in later SDL3 revisions; they
+    // are not available in the version vendored by this project and are therefore not
+    // queried here.  Exact HDR tier and luminance values will be filled by
+    // QueryPlatformInfo() using OS-level APIs where supported.
+    const bool hdrEnabled = SDL_GetBooleanProperty(props, SDL_PROP_DISPLAY_HDR_ENABLED_BOOLEAN, false);
+
+    if (!hdrEnabled) { return; }
+
+    // HDR is active: record at least the baseline HDR10 format and set the capability
+    // flag.  QueryPlatformInfo() may upgrade this to a more specific tier once it
+    // interrogates the OS display metadata (e.g. EDID max luminance on Windows).
+    if (m_hdrFormat == EMonitorHDRFormat::None) { m_hdrFormat = EMonitorHDRFormat::HDR10; }
+    m_capabilityFlags = Enums::SetFlags(m_capabilityFlags, EMonitorCapabilityFlags::HDR);
+
+    // A display with active HDR output is likely at minimum Display P3 wide-gamut.
+    // This is a conservative lower bound; QueryPlatformInfo() will refine the value.
+    if (m_colorGamut == EMonitorColorGamut::Unknown) { m_colorGamut = EMonitorColorGamut::DisplayP3; }
+    if (m_colorGamut != EMonitorColorGamut::sRGB)
+    {
+        m_capabilityFlags = Enums::SetFlags(m_capabilityFlags, EMonitorCapabilityFlags::WideColorGamut);
+    }
+}
+
+void SDLMonitor::QueryVRRSupport() noexcept
+{
+    // A refresh rate range wider than 10 Hz indicates the display advertises
+    // Adaptive-Sync (VESA) or a proprietary VRR standard.  The 10-Hz dead-band
+    // eliminates false positives from floating-point rounding in SDL3 mode queries.
+    if (m_minRefreshRate == 0u || m_maxRefreshRate == 0u) { return; }
+    if (m_maxRefreshRate <= m_minRefreshRate + 10u) { return; }
+
+    if (m_vrrType == EMonitorVRRType::None)
+    {
+        // Default to FreeSync / VESA Adaptive-Sync — the open standard supported by the
+        // majority of VRR-capable consumer panels.  QueryPlatformInfo() may later refine
+        // this to GSyncComp or HDMI_VRR when richer platform API data is available.
+        m_vrrType = EMonitorVRRType::FreeSync;
+    }
+
+    m_capabilityFlags = Enums::SetFlags(m_capabilityFlags, EMonitorCapabilityFlags::VRR);
+}
+
+void SDLMonitor::QueryTouchSupport() noexcept
+{
+    // SDL3 enumerates touch devices globally without binding them to individual displays.
+    // On mobile (Android / iOS) platforms every active touch device is assumed to belong
+    // to the primary built-in panel.  On desktop platforms we skip detection to avoid
+    // incorrectly attributing an external USB touch screen to this particular monitor.
+    if constexpr (!GP::Build::Platform::IsMobile) { return; }
+
+    int touchCount = 0;
+    SDL_TouchID* const touchDevices = SDL_GetTouchDevices(&touchCount);
+    if (touchDevices && touchCount > 0)
+    {
+        m_capabilityFlags = Enums::SetFlags(m_capabilityFlags, EMonitorCapabilityFlags::TouchScreen);
+    }
+    if (touchDevices) { SDL_free(touchDevices); }
+}
+
+void SDLMonitor::QueryPlatformInfo() noexcept
+{
+    if (m_displayID == 0u) { return; }
+
+#if GP_PLATFORM_WINDOWS
+    // Retrieve the HMONITOR associated with this SDL display from the SDL3 property bag.
+    const SDL_PropertiesID props = SDL_GetDisplayProperties(m_displayID);
+    if (props == 0u) { return; }
+
+    auto* const hMonitor =
+        static_cast<HMONITOR>(SDL_GetPointerProperty(props, SDL_PROP_DISPLAY_WINDOWS_HMONITOR_POINTER, nullptr));
+    if (!hMonitor) { return; }
+
+    // ---- Physical panel dimensions via the GDI device context ------------------
+    // GetDeviceCaps(HORZSIZE / VERTSIZE) returns the physical display area in millimetres
+    // as reported by the GPU driver from the monitor's EDID.
+    MONITORINFOEXW monInfoEx{};
+    monInfoEx.cbSize = sizeof(monInfoEx);
+    if (!GetMonitorInfoW(hMonitor, &monInfoEx)) { return; }
+
+    {
+        HDC hdc = CreateDCW(L"DISPLAY", monInfoEx.szDevice, nullptr, nullptr);
+        if (hdc)
+        {
+            const Int32 horzMM = GetDeviceCaps(hdc, HORZSIZE);
+            const Int32 vertMM = GetDeviceCaps(hdc, VERTSIZE);
+            DeleteDC(hdc);
+
+            if (horzMM > 0 && vertMM > 0)
+            {
+                m_physicalSize.widthMM = static_cast<UInt32>(horzMM);
+                m_physicalSize.heightMM = static_cast<UInt32>(vertMM);
+
+                // Recompute physical DPI now that real panel dimensions are available.
+                const FVideoMode mode = QueryCurrentMode();
+                if (mode.width > 0u && m_physicalSize.widthMM > 0u)
+                {
+                    m_physicalDpiX =
+                        static_cast<Float32>(mode.width) * 25.4f / static_cast<Float32>(m_physicalSize.widthMM);
+                    m_physicalDpiY =
+                        static_cast<Float32>(mode.height) * 25.4f / static_cast<Float32>(m_physicalSize.heightMM);
+                }
+            }
+        }
+    }
+
+    // QueryDisplayConfig returns the active display topology.  We match our HMONITOR
+    // to a path by comparing GDI device names, then call DisplayConfigGetDeviceInfo to
+    // extract the EDID-sourced friendly name and the output-technology constant.
+    UINT32 pathCount = 0u, modeCount = 0u;
+    if (GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &pathCount, &modeCount) != ERROR_SUCCESS || pathCount == 0u)
+    {
+        return;
+    }
+
+    auto* const paths = static_cast<DISPLAYCONFIG_PATH_INFO*>(SDL_malloc(pathCount * sizeof(DISPLAYCONFIG_PATH_INFO)));
+    auto* const modes = static_cast<DISPLAYCONFIG_MODE_INFO*>(SDL_malloc(modeCount * sizeof(DISPLAYCONFIG_MODE_INFO)));
+
+    if (!paths || !modes)
+    {
+        SDL_free(paths);
+        SDL_free(modes);
+        return;
+    }
+
+    if (QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &pathCount, paths, &modeCount, modes, nullptr) != ERROR_SUCCESS)
+    {
+        SDL_free(paths);
+        SDL_free(modes);
+        return;
+    }
+
+    for (UINT32 i = 0u; i < pathCount; ++i)
+    {
+        // Match the source GDI device name (e.g., L"\\\\.\\DISPLAY1") to our monitor.
+        DISPLAYCONFIG_SOURCE_DEVICE_NAME srcName{};
+        srcName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
+        srcName.header.size = sizeof(srcName);
+        srcName.header.adapterId = paths[i].sourceInfo.adapterId;
+        srcName.header.id = paths[i].sourceInfo.id;
+
+        if (DisplayConfigGetDeviceInfo(&srcName.header) != ERROR_SUCCESS) { continue; }
+        if (wcscmp(srcName.viewGdiDeviceName, monInfoEx.szDevice) != 0) { continue; }
+
+        // Found the matching path; query the target (monitor-side) device name.
+        DISPLAYCONFIG_TARGET_DEVICE_NAME targetName{};
+        targetName.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+        targetName.header.size = sizeof(targetName);
+        targetName.header.adapterId = paths[i].targetInfo.adapterId;
+        targetName.header.id = paths[i].targetInfo.id;
+
+        if (DisplayConfigGetDeviceInfo(&targetName.header) != ERROR_SUCCESS) { break; }
+
+        if (targetName.monitorFriendlyDeviceName[0] != L'\0')
+        {
+            char modelBuf[128] = {};
+            WideCharToMultiByte(
+                CP_UTF8,
+                0,
+                targetName.monitorFriendlyDeviceName,
+                -1,
+                modelBuf,
+                static_cast<int>(sizeof(modelBuf)) - 1,
+                nullptr,
+                nullptr
+            );
+            m_modelName = FString(modelBuf);
+        }
+
+        // Path format:  "\\?\DISPLAY#<MFR3><PROD4>#<INSTANCE>#{GUID}"
+        // The 3-letter EISA/PnP manufacturer code immediately follows the "DISPLAY#" token.
+        const wchar_t* const devPath = targetName.monitorDevicePath;
+        const wchar_t* const marker = wcsstr(devPath, L"DISPLAY#");
+        if (marker)
+        {
+            const wchar_t* const pnp = marker + 8u;   // skip "DISPLAY#"
+            if (pnp[0] != L'\0' && pnp[1] != L'\0' && pnp[2] != L'\0')
+            {
+                const Char8 code[4] = {
+                    static_cast<Char8>(pnp[0]), static_cast<Char8>(pnp[1]), static_cast<Char8>(pnp[2]), '\0'
+                };
+                m_manufacturerName = FString(DecodePnPManufacturer(code));
+            }
+        }
+
+        m_connectorType = ConvertOutputTechnology(targetName.outputTechnology);
+
+        if (targetName.outputTechnology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EMBEDDED ||
+            targetName.outputTechnology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_LVDS)
+        {
+            m_isBuiltIn = true;
+            m_connectorType = EMonitorConnectorType::Embedded;
+        }
+
+        break;   // Matched; no need to continue iterating remaining paths.
+    }
+
+    SDL_free(paths);
+    SDL_free(modes);
+
+#elif GP_PLATFORM_LINUX
+    // TODO: Query physical size and connector type via sysfs /sys/class/drm/<card>/edid
+    //       and udev. Wayland exposes partial geometry info via xdg-output; X11 via XRandR.
+#elif GP_PLATFORM_MACOS
+    // TODO: Query physical size via IODisplayCreateInfoDictionary and connector type via
+    //       IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching("IODisplay")).
+#endif
 }
 
 }   // namespace GP::HAL

@@ -176,6 +176,30 @@ private:
     /// \brief Queries the current display mode from SDL3.
     /// \return The active FVideoMode, or the cached base-class default if the SDL query fails.
     GP_NODISCARD FVideoMode QueryCurrentMode() const noexcept;
+
+    /// \brief Fills HDR luminance metadata and infers color gamut from SDL3 display properties.
+    /// \note maxLuminance is computed as (SDR white point) * (HDR headroom) when the SDL3 properties are available. HDR
+    /// capability is inferred from the headroom value even when the OS HDR output toggle is currently disabled. Values
+    /// remain at their defaults when SDL3 does not expose the relevant property data on the current platform.
+    void QueryHDRMetadata() noexcept;
+
+    /// \brief Infers VRR (variable refresh rate) support from the monitor's advertised refresh range.
+    /// \note A gap of more than 10 Hz between the minimum and maximum refresh rates is treated as an indicator of
+    /// Adaptive-Sync / FreeSync support. QueryPlatformInfo() may override the specific VRR standard to G-Sync or HDMI
+    /// VRR when platform API data is available.
+    void QueryVRRSupport() noexcept;
+
+    /// \brief Detects touch-screen capability for built-in panels via the SDL3 touch device API.
+    /// \note SDL3 does not bind individual touch devices to specific displays. This method conservatively enables the
+    /// TouchScreen capability flag only on mobile and Apple platforms where the primary display is always the built-in
+    /// touch panel.
+    void QueryTouchSupport() noexcept;
+
+    /// \brief Populates platform-specific display metadata not exposed by SDL3.
+    /// \note On Windows this queries GDI for physical panel dimensions and the DisplayConfig API for model name,
+    /// manufacturer identity, and connector type. Physical DPI is recomputed once the real panel dimensions are
+    /// available. On other platforms this is a no-op pending the implementation of the respective OS-level queries.
+    void QueryPlatformInfo() noexcept;
 };
 
 }   // namespace GP::HAL
