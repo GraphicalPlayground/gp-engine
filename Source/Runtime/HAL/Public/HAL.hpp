@@ -16,8 +16,6 @@
 
 // Include all public headers of the HAL module
 #include "Application/Application.hpp"
-#include "Common/Common.hpp"
-#include "Factory/Factory.hpp"
 #include "Input/Input.hpp"
 #include "Monitor/Monitor.hpp"
 #include "Windowing/Windowing.hpp"
