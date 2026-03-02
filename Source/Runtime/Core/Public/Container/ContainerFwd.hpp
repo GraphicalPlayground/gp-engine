@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include "CoreTypes.hpp"
+
 namespace GP
 {
 
-template <typename T>
+template <typename T, SizeT InlineCapacity = 8>
 class TArray;
 template <typename T>
 class TStaticArray;
