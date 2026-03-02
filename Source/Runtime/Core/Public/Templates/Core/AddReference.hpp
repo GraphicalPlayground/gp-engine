@@ -12,13 +12,17 @@ namespace Detail
 
 // clang-format off
 
-/// @brief Adds an `lvalue` reference to the type if possible, otherwise returns the type itself.
-template <typename T> auto TryAddLValueRef(int) -> TVoid<T&>;
-template <typename T> auto TryAddLValueRef(...) -> TVoid<T>;
+/// @brief Minimal holder used to smuggle a type through a decltype expression.
+///        Unlike TVoid, preserves the wrapped type via its ::Type member.
+template <typename T> struct TTypeHolder { using Type = T; };
 
 /// @brief Adds an `lvalue` reference to the type if possible, otherwise returns the type itself.
-template <typename T> auto TryAddRValueRef(int) -> TVoid<T&&>;
-template <typename T> auto TryAddRValueRef(...) -> TVoid<T>;
+template <typename T> auto TryAddLValueRef(int) -> TTypeHolder<T&>;
+template <typename T> auto TryAddLValueRef(...) -> TTypeHolder<T>;
+
+/// @brief Adds an `rvalue` reference to the type if possible, otherwise returns the type itself.
+template <typename T> auto TryAddRValueRef(int) -> TTypeHolder<T&&>;
+template <typename T> auto TryAddRValueRef(...) -> TTypeHolder<T>;
 
 // clang-format on
 
