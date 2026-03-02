@@ -56,3 +56,34 @@ TEST_CASE("Vector2: Constructors", "[Math][Vector2]")
         REQUIRE(v.y == 9.0f);
     }
 }
+
+TEST_CASE("Vector2: Equality operators", "[Math][Vector2]")
+{
+    SECTION("Equality operator with identical vectors")
+    {
+        TVector2<float> v1(1.0f, 2.0f);
+        TVector2<float> v2(1.0f, 2.0f);
+        REQUIRE(v1 == v2);
+    }
+
+    SECTION("Equality operator with different vectors")
+    {
+        TVector2<float> v1(1.0f, 2.0f);
+        TVector2<float> v2(3.0f, 4.0f);
+        REQUIRE_FALSE(v1 == v2);
+    }
+
+    SECTION("Inequality operator with identical vectors")
+    {
+        TVector2<float> v1(1.0f, 2.0f);
+        TVector2<float> v2(1.0f, 2.0f);
+        REQUIRE_FALSE(v1 != v2);
+    }
+
+    SECTION("Inequality operator with different vectors")
+    {
+        TVector2<float> v1(1.0f, 2.0f);
+        TVector2<float> v2(3.0f, 4.0f);
+        REQUIRE(v1 != v2);
+    }
+}

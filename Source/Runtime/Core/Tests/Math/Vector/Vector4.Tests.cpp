@@ -1,8 +1,8 @@
 // Copyright (c) - Graphical Playground. All rights reserved.
 
+#include "Math/Vector/Vector4.hpp"
 #include "Math/Vector/Vector2.hpp"
 #include "Math/Vector/Vector3.hpp"
-#include "Math/Vector/Vector4.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 using namespace GP;
@@ -66,5 +66,36 @@ TEST_CASE("Vector4: Constructors", "[Math][Vector4]")
         REQUIRE(v.y == 9.0f);
         REQUIRE(v.z == 10.0f);
         REQUIRE(v.w == 12.0f);
+    }
+}
+
+TEST_CASE("Vector4: Equality operators", "[Math][Vector4]")
+{
+    SECTION("Equality operator with identical vectors")
+    {
+        TVector4<float> v1(1.0f, 2.0f, 3.0f, 4.0f);
+        TVector4<float> v2(1.0f, 2.0f, 3.0f, 4.0f);
+        REQUIRE(v1 == v2);
+    }
+
+    SECTION("Equality operator with different vectors")
+    {
+        TVector4<float> v1(1.0f, 2.0f, 3.0f, 4.0f);
+        TVector4<float> v2(4.0f, 5.0f, 6.0f, 7.0f);
+        REQUIRE(v1 != v2);
+    }
+
+    SECTION("Inequality operator with identical vectors")
+    {
+        TVector4<float> v1(1.0f, 2.0f, 3.0f, 4.0f);
+        TVector4<float> v2(1.0f, 2.0f, 3.0f, 4.0f);
+        REQUIRE_FALSE(v1 != v2);
+    }
+
+    SECTION("Inequality operator with different vectors")
+    {
+        TVector4<float> v1(1.0f, 2.0f, 3.0f, 4.0f);
+        TVector4<float> v2(3.0f, 4.0f, 5.0f, 6.0f);
+        REQUIRE(v1 != v2);
     }
 }
