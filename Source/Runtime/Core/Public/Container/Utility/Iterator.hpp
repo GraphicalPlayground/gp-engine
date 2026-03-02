@@ -5,6 +5,7 @@
 #include "CoreTypes.hpp"
 #include "Templates/Concepts/CoreConcepts.hpp"
 #include "Templates/Core/RemoveCV.hpp"
+#include <compare>
 
 namespace GP
 {
@@ -160,7 +161,7 @@ public:
     /// @param rhs The right-hand side iterator (must be the same type as the current iterator).
     /// @return The number of elements between the two iterators (positive if lhs is ahead of rhs, negative if lhs is
     ///         behind rhs).
-    GP_NODISCARD constexpr DifferenceType operator-(const TIterator& lhs, const TIterator& rhs) noexcept
+    GP_NODISCARD friend constexpr DifferenceType operator-(const TIterator& lhs, const TIterator& rhs) noexcept
     {
         return lhs.m_ptr - rhs.m_ptr;
     }
@@ -201,7 +202,10 @@ public:
     /// @param other The other iterator to compare with (must be the same type as the current iterator).
     /// @return A std::strong_ordering value indicating the relative positions of the two iterators (less, equal, or
     ///         greater).
-    GP_NODISCARD constexpr auto operator<=>(const TIterator& other) const noexcept = default;
+    GP_NODISCARD constexpr std::strong_ordering operator<=>(const TIterator& other) const noexcept
+    {
+        return m_ptr <=> other.m_ptr;
+    }
 
 public:
     /// @brief Accessor to retrieve the raw pointer from the iterator.
