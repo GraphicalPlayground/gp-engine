@@ -1,0 +1,14 @@
+// Copyright (c) - Graphical Playground. All rights reserved.
+
+#pragma once
+
+namespace GP
+{
+
+template <typename T>
+class TSet
+{};
+
+}   // namespace GP
+
+#include "Container/Associative/Set.inl"
