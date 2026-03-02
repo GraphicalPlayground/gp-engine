@@ -82,6 +82,16 @@ public:
     /// @param other The TVector4 to move from.
     /// @return A reference to this TVector4 after assignment.
     constexpr TVector4<T>& operator=(TVector4&& other) noexcept = default;
+
+    /// @brief Equality operator compares two TVector4 for component-wise equality.
+    /// @param other The TVector4 to compare with.
+    /// @return true if all components of this TVector4 are equal to the corresponding components of other.
+    GP_NODISCARD constexpr bool operator==(const TVector4& other) const noexcept;
+
+    /// @brief Inequality operator compares two TVector4 for component-wise inequality.
+    /// @param other The TVector4 to compare with.
+    /// @return true if any component of this TVector4 is not equal to the corresponding component of other.
+    GP_NODISCARD constexpr bool operator!=(const TVector4& other) const noexcept;
 };
 
 }   // namespace GP
