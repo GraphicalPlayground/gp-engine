@@ -45,4 +45,16 @@ constexpr TVector2<T>::TVector2(const TVector4<T>& vec4) noexcept
     , y(vec4.y)
 {}
 
+template <CFloatingPoint T>
+GP_NODISCARD constexpr bool TVector2<T>::operator==(const TVector2& other) const noexcept
+{
+    return x == other.x && y == other.y;
+}
+
+template <CFloatingPoint T>
+GP_NODISCARD constexpr bool TVector2<T>::operator!=(const TVector2& other) const noexcept
+{
+    return !(*this == other);
+}
+
 }   // namespace GP
