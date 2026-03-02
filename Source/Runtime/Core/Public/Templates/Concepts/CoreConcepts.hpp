@@ -68,6 +68,26 @@ concept CVoid = TIsVoid_V<T>;
 template <typename T>
 concept CNonVoid = !TIsVoid_V<T>;
 
+/// @brief Satisfied when T is a reference type.
+template <typename T>
+concept CReference = TIsReference_V<T>;
+
+/// @brief Satisfied when T is a constant type.
+template <typename T>
+concept CConst = TIsConst_V<T>;
+
+/// @brief Satisfied when T is a non-constant type.
+template <typename T>
+concept CNonConst = !TIsConst_V<T>;
+
+/// @brief Satisfied when T is a volatile type.
+template <typename T>
+concept CVolatile = TIsVolatile_V<T>;
+
+/// @brief Satisfied when T is a non-volatile type.
+template <typename T>
+concept CNonVolatile = !TIsVolatile_V<T>;
+
 /// @brief Satisfied when T can be constructed from Args.
 template <typename T, typename... TArgs>
 concept CConstructibleFrom = TIsConstructible_V<T, TArgs...>;
