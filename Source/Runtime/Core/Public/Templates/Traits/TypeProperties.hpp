@@ -62,7 +62,11 @@ template <typename T> inline constexpr bool TIsTrivial_V = TIsTrivial<T>::Value;
 
 /// @brief Checks whether T has a trivial destructor.
 template <typename T>
+#if GP_COMPILER_GCC
+struct TIsTriviallyDestructible : TBoolConstant<__has_trivial_destructor(T)> {};
+#else
 struct TIsTriviallyDestructible : TBoolConstant<__is_trivially_destructible(T)> {};
+#endif
 template <typename T> inline constexpr bool TIsTriviallyDestructible_V = TIsTriviallyDestructible<T>::Value;
 
 /// @brief Checks whether T is trivially default constructible.

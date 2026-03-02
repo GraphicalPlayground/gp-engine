@@ -29,7 +29,11 @@ inline constexpr bool TIsBaseOf_V = TIsBaseOf<TBase, TDerived>::Value;
 
 /// @brief Checks whether an expression of type TFrom is implicitly convertible to TTo.
 template <typename TFrom, typename TTo>
+#if GP_COMPILER_MSVC
 struct TIsConvertible : TBoolConstant<__is_convertible_to(TFrom, TTo)> {};
+#else
+struct TIsConvertible : TBoolConstant<__is_convertible(TFrom, TTo)> {};
+#endif
 
 /// @brief Helper variable template for TIsConvertible.
 template <typename TFrom, typename TTo>
@@ -139,15 +143,76 @@ struct TIsMoveAssignable : TIsAssignable<T&, T&&> {};
 template <typename T>
 inline constexpr bool TIsMoveAssignable_V = TIsMoveAssignable<T>::Value;
 
+#if GP_COMPILER_GCC
+
+namespace Detail
+{
+
+/// @brief Unevaluated-context reference producer for SFINAE destructor checks.
+template <typename T>
+auto GpDeclval() noexcept -> T&&;
+
+/// @brief SFINAE test: well-formed iff T has an accessible, non-deleted destructor.
+template <typename T, typename = void>
+struct TIsDestructibleTest : FFalseType {};
+
+template <typename T>
+struct TIsDestructibleTest<T, decltype(GpDeclval<T&>().~T(), void())> : FTrueType {};
+
+}   // namespace Detail
+
+/// @brief Checks whether T is destructible (has an accessible non-deleted destructor).
+template <typename T>
+struct TIsDestructible : Detail::TIsDestructibleTest<T> {};
+template <typename T>          struct TIsDestructible<T&>                  : FTrueType  {};
+template <typename T>          struct TIsDestructible<T&&>                 : FTrueType  {};
+template <>                    struct TIsDestructible<void>                : FFalseType {};
+template <>                    struct TIsDestructible<const void>          : FFalseType {};
+template <>                    struct TIsDestructible<volatile void>       : FFalseType {};
+template <>                    struct TIsDestructible<const volatile void> : FFalseType {};
+template <typename T>          struct TIsDestructible<T[]>                : FFalseType {};
+template <typename T, SizeT N> struct TIsDestructible<T[N]>               : TIsDestructible<T> {};
+
+#else
+
 /// @brief Checks whether T is destructible (has an accessible non-deleted destructor).
 template <typename T>
 struct TIsDestructible : TBoolConstant<__is_destructible(T)> {};
+
+#endif
+
 template <typename T>
 inline constexpr bool TIsDestructible_V = TIsDestructible<T>::Value;
+
+#if GP_COMPILER_GCC
+
+namespace Detail
+{
+
+/// @brief SFINAE test: true iff T's destructor is noexcept.
+template <typename T, bool = TIsDestructible<T>::Value>
+struct TIsNothrowDestructibleTest : FFalseType {};
+
+template <typename T>
+struct TIsNothrowDestructibleTest<T, true> : TBoolConstant<noexcept(GpDeclval<T&>().~T())> {};
+
+}   // namespace Detail
+
+/// @brief Checks whether T's destructor is noexcept.
+template <typename T>
+struct TIsNothrowDestructible : Detail::TIsNothrowDestructibleTest<T> {};
+template <typename T>          struct TIsNothrowDestructible<T&>     : FTrueType {};
+template <typename T>          struct TIsNothrowDestructible<T&&>    : FTrueType {};
+template <typename T, SizeT N> struct TIsNothrowDestructible<T[N]>  : TIsNothrowDestructible<T> {};
+
+#else
 
 /// @brief Checks whether T's destructor is noexcept.
 template <typename T>
 struct TIsNothrowDestructible : TBoolConstant<__is_nothrow_destructible(T)> {};
+
+#endif
+
 template <typename T>
 inline constexpr bool TIsNothrowDestructible_V = TIsNothrowDestructible<T>::Value;
 
