@@ -17,8 +17,6 @@ struct FPoint
 
 }   // namespace
 
-// ─── Construction ─────────────────────────────────────────────────────────────
-
 TEST_CASE("TIterator: Default construction yields null pointer", "[Container][Iterator]")
 {
     const TIterator<Int32> it;
@@ -57,8 +55,6 @@ TEST_CASE("TIterator: Const iterator constructed from non-const iterator", "[Con
     REQUIRE(cit.GetPtr() == arr);
 }
 
-// ─── Type aliases ─────────────────────────────────────────────────────────────
-
 TEST_CASE("TIterator: Iterator category is random access", "[Container][Iterator]")
 {
     using Category = TIterator<Int32>::IteratorCategory;
@@ -70,8 +66,6 @@ TEST_CASE("TIterator: ValueType strips cv-qualifiers", "[Container][Iterator]")
     STATIC_REQUIRE(CSameAs<TIterator<const Int32>::ValueType, Int32>);
     STATIC_REQUIRE(CSameAs<TIterator<Int32>::ValueType, Int32>);
 }
-
-// ─── Dereference ──────────────────────────────────────────────────────────────
 
 TEST_CASE("TIterator: operator* returns reference to pointed-to element", "[Container][Iterator]")
 {
@@ -121,8 +115,6 @@ TEST_CASE("TIterator: operator[] allows modification of offset element", "[Conta
     REQUIRE(arr[1] == 77);
 }
 
-// ─── Pre/Post Increment ───────────────────────────────────────────────────────
-
 TEST_CASE("TIterator: Pre-increment advances iterator and returns self-reference", "[Container][Iterator]")
 {
     Int32 arr[3]{ 1, 2, 3 };
@@ -159,8 +151,6 @@ TEST_CASE("TIterator: Post-decrement returns original position then moves back",
     REQUIRE(*it == 2);
 }
 
-// ─── Compound Assignment Arithmetic ───────────────────────────────────────────
-
 TEST_CASE("TIterator: operator+= advances by n and returns self-reference", "[Container][Iterator]")
 {
     Int32 arr[5]{ 1, 2, 3, 4, 5 };
@@ -194,8 +184,6 @@ TEST_CASE("TIterator: operator-= by zero keeps position", "[Container][Iterator]
     it -= 0;
     REQUIRE(*it == 20);
 }
-
-// ─── Binary Arithmetic Operators ──────────────────────────────────────────────
 
 TEST_CASE("TIterator: operator+(n) creates advanced iterator without modifying original", "[Container][Iterator]")
 {
@@ -238,8 +226,6 @@ TEST_CASE("TIterator: iterator - iterator returns zero for equal iterators", "[C
     TIterator<Int32> it(arr + 1);
     REQUIRE((it - it) == 0);
 }
-
-// ─── Comparison Operators ─────────────────────────────────────────────────────
 
 TEST_CASE("TIterator: operator== is true for iterators at same position", "[Container][Iterator]")
 {
@@ -325,16 +311,12 @@ TEST_CASE("TIterator: operator<=> provides correct strong ordering", "[Container
     REQUIRE((early <=> early) == std::strong_ordering::equal);
 }
 
-// ─── GetPtr ───────────────────────────────────────────────────────────────────
-
 TEST_CASE("TIterator: GetPtr returns the underlying pointer", "[Container][Iterator]")
 {
     Int32 arr[3]{ 1, 2, 3 };
     TIterator<Int32> it(arr + 1);
     REQUIRE(it.GetPtr() == &arr[1]);
 }
-
-// ─── TConstIterator ───────────────────────────────────────────────────────────
 
 TEST_CASE("TConstIterator: Reads elements without modification", "[Container][Iterator]")
 {
@@ -364,8 +346,6 @@ TEST_CASE("TConstIterator: Supports full arithmetic identical to TIterator", "[C
     it -= 1;
     REQUIRE(*it == 2);
 }
-
-// ─── Range Iteration Pattern ──────────────────────────────────────────────────
 
 TEST_CASE("TIterator: Forward range iteration visits all elements in order", "[Container][Iterator]")
 {

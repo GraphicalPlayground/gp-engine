@@ -17,8 +17,6 @@ struct FPoint
 
 }   // namespace
 
-// ─── Construction ─────────────────────────────────────────────────────────────
-
 TEST_CASE("TReverseIterator: Default construction yields null base", "[Container][ReverseIterator]")
 {
     const TReverseIteratorT<Int32> rit;
@@ -58,8 +56,6 @@ TEST_CASE("TReverseIterator: Const reverse iterator constructed from non-const",
     REQUIRE(crit.GetBase().GetPtr() == arr + 3);
 }
 
-// ─── Type Aliases ─────────────────────────────────────────────────────────────
-
 TEST_CASE("TReverseIterator: Iterator category matches underlying iterator", "[Container][ReverseIterator]")
 {
     using Category = TReverseIteratorT<Int32>::IteratorCategory;
@@ -76,8 +72,6 @@ TEST_CASE("TConstReverseIterator: Is TReverseIterator<TIterator<const T>>", "[Co
     STATIC_REQUIRE(CSameAs<TConstReverseIterator<Int32>, TReverseIterator<TIterator<const Int32>>>);
 }
 
-// ─── GetBase ──────────────────────────────────────────────────────────────────
-
 TEST_CASE(
     "TReverseIterator: GetBase returns underlying iterator, pointing one past last element",
     "[Container][ReverseIterator]"
@@ -87,8 +81,6 @@ TEST_CASE(
     TReverseIteratorT<Int32> rit(TIterator<Int32>(arr + 5));
     REQUIRE(rit.GetBase().GetPtr() == arr + 5);
 }
-
-// ─── Dereference ──────────────────────────────────────────────────────────────
 
 TEST_CASE("TReverseIterator: operator* dereferences the element before the base", "[Container][ReverseIterator]")
 {
@@ -143,8 +135,6 @@ TEST_CASE("TReverseIterator: operator[] accesses elements at reverse offset", "[
     REQUIRE(rit[4] == 1);
 }
 
-// ─── Pre/Post Increment ───────────────────────────────────────────────────────
-
 TEST_CASE(
     "TReverseIterator: Pre-increment moves backward through array and returns self", "[Container][ReverseIterator]"
 )
@@ -186,8 +176,6 @@ TEST_CASE("TReverseIterator: Post-decrement returns original then moves forward"
     REQUIRE(*rit == 20);
 }
 
-// ─── Compound Assignment Arithmetic ───────────────────────────────────────────
-
 TEST_CASE("TReverseIterator: operator+= advances n steps in reverse and returns self", "[Container][ReverseIterator]")
 {
     Int32 arr[5]{ 1, 2, 3, 4, 5 };
@@ -222,8 +210,6 @@ TEST_CASE("TReverseIterator: operator-= by zero keeps position", "[Container][Re
     rit -= 0;
     REQUIRE(*rit == 20);
 }
-
-// ─── Binary Arithmetic Operators ──────────────────────────────────────────────
 
 TEST_CASE("TReverseIterator: operator+(n) creates new iterator n steps in reverse", "[Container][ReverseIterator]")
 {
@@ -271,8 +257,6 @@ TEST_CASE("TReverseIterator: iterator - iterator is zero for equal iterators", "
     TReverseIteratorT<Int32> rit(TIterator<Int32>(arr + 2));
     REQUIRE((rit - rit) == 0);
 }
-
-// ─── Comparison Operators ─────────────────────────────────────────────────────
 
 TEST_CASE("TReverseIterator: operator== true for iterators with same base", "[Container][ReverseIterator]")
 {
@@ -351,8 +335,6 @@ TEST_CASE("TReverseIterator: operator>= reflects reversed pointer ordering", "[C
     REQUIRE_FALSE(rbegin >= rend);
 }
 
-// ─── Range Iteration Pattern ──────────────────────────────────────────────────
-
 TEST_CASE("TReverseIterator: Full reverse traversal visits elements in reverse order", "[Container][ReverseIterator]")
 {
     Int32 arr[5]{ 10, 20, 30, 40, 50 };
@@ -398,8 +380,6 @@ TEST_CASE("TReverseIterator: Reverse traversal writes values correctly", "[Conta
     REQUIRE(arr[1] == 30);
     REQUIRE(arr[0] == 40);
 }
-
-// ─── TConstReverseIterator ────────────────────────────────────────────────────
 
 TEST_CASE("TConstReverseIterator: Reads elements without modification", "[Container][ReverseIterator]")
 {
