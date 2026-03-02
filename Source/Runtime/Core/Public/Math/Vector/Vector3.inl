@@ -51,4 +51,16 @@ constexpr TVector3<T>::TVector3(const TVector4<T>& vec4) noexcept
     , z(vec4.z)
 {}
 
+template <CFloatingPoint T>
+GP_NODISCARD constexpr bool TVector3<T>::operator==(const TVector3& other) const noexcept
+{
+    return x == other.x && y == other.y && z == other.z;
+}
+
+template <CFloatingPoint T>
+GP_NODISCARD constexpr bool TVector3<T>::operator!=(const TVector3& other) const noexcept
+{
+    return !(*this == other);
+}
+
 }   // namespace GP
