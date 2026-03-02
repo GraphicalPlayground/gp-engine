@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include "Templates/Concepts/CoreConcepts.hpp"
+
 namespace GP
 {
 
-template <typename T>
+template <CFloatingPoint T>
 struct TQuaternion
 {};
 

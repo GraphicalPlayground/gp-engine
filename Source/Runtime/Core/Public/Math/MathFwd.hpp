@@ -2,66 +2,69 @@
 
 #pragma once
 
+#include "CoreTypes.hpp"
+#include "Templates/Concepts/CoreConcepts.hpp"
+
 namespace GP
 {
 
-template <typename T>
+template <CFloatingPoint T>
 struct TVector2;
-template <typename T>
+template <CFloatingPoint T>
 struct TVector3;
-template <typename T>
+template <CFloatingPoint T>
 struct TVector4;
-template <typename T>
+template <CFloatingPoint T>
 struct TMatrix2x2;
-template <typename T>
+template <CFloatingPoint T>
 struct TMatrix3x3;
-template <typename T>
+template <CFloatingPoint T>
 struct TMatrix3x4;
-template <typename T>
+template <CFloatingPoint T>
 struct TMatrix4x4;
-template <typename T>
+template <CFloatingPoint T>
 struct TQuaternion;
-template <typename T>
+template <CFloatingPoint T>
 struct TDualQuaternion;
-template <typename T>
+template <CFloatingPoint T>
 struct TRotator;
-template <typename T>
+template <CFloatingPoint T>
 struct TRotator2D;
-template <typename T>
+template <CFloatingPoint T>
 struct TBoundingBox;
-template <typename T>
+template <CFloatingPoint T>
 struct TOrientedBoundingBox;
-template <typename T>
+template <CFloatingPoint T>
 struct TBoundingSphere;
-template <typename T>
+template <CFloatingPoint T>
 struct TFrustum;
-template <typename T>
+template <CFloatingPoint T>
 struct TCapsule;
-template <typename T>
+template <CFloatingPoint T>
 struct TCone;
-template <typename T>
+template <CFloatingPoint T>
 struct TCylinder;
-template <typename T>
+template <CFloatingPoint T>
 struct TCurve;
-template <typename T>
+template <CFloatingPoint T>
 struct TNURBS;
-template <typename T>
+template <CFloatingPoint T>
 struct TPlane;
-template <typename T>
+template <CFloatingPoint T>
 struct TPolyhedron;
-template <typename T>
+template <CFloatingPoint T>
 struct TRay;
-template <typename T>
+template <CFloatingPoint T>
 struct TSphere;
-template <typename T>
+template <CFloatingPoint T>
 struct TSpline;
-template <typename T>
+template <CFloatingPoint T>
 struct TSurface;
-template <typename T>
+template <CFloatingPoint T>
 struct TTorus;
-template <typename T>
+template <CFloatingPoint T>
 struct TVolume;
-template <typename T>
+template <CFloatingPoint T>
 struct TTransform;
 
 struct FBezier;
