@@ -58,4 +58,9 @@ public:
     GP_NODISCARD static FDefaultAllocator& Get() noexcept;
 };
 
+/// @brief Returns the process-wide default allocator. Can be overridden per-system by passing explicit allocators to
+///        containers.
+/// @return Reference to the default allocator.
+GP_FORCEINLINE IAllocator& GetDefaultAllocator() noexcept { return FDefaultAllocator::Get(); }
+
 }   // namespace GP
