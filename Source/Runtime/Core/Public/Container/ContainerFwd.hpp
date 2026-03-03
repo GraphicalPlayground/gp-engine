@@ -39,7 +39,7 @@ template <typename T>
 class TQueue;
 template <typename T>
 class TStack;
-template <typename T>
+template <typename TFirst, typename TSecond>
 class TPair;
 template <typename T>
 class TSpan;
