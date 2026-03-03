@@ -184,6 +184,10 @@ concept CNothrowMoveCopyAssignable =
     CNothrowCopyAssignable<T> &&
     CNothrowMoveAssignable<T>;
 
+/// @brief Satisfied when T is default-constructible.
+template <typename T>
+concept CDefaultConstructible = TIsDefaultConstructible_V<T>;
+
 // clang-format on
 
 }   // namespace GP
