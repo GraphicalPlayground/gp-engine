@@ -1,5 +1,6 @@
 // Copyright (c) - Graphical Playground. All rights reserved.
 
+#include "Container/Core/Pair.hpp"
 #include "Container/Sequential/Array.hpp"
 #include "CoreBuild.hpp"
 #include "CoreTypes.hpp"
@@ -32,6 +33,9 @@ int main(int argc, char* argv[])
     {
         std::cout << "Element " << i << ": " << intArray[i] << std::endl;
     }
+
+    GP::TPair<int, bool> pair{ 42, true };
+    std::cout << "TPair first: " << pair.first << ", second: " << std::boolalpha << pair.second << std::endl;
 
     return 0;
 }
