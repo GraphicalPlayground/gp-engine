@@ -65,15 +65,41 @@ struct FWindowDesc
     /// @brief Whether to synchronize the buffer swap with the display's vertical refresh rate.
     bool useVSync{ true };
 
+    /// @brief If true, the window will be created without a visible framebuffer and will not render any content. This
+    ///        is useful for headless applications or when the window is only used for input handling without any visual
+    ///        output.
+    /// @note This has absolute priority over all other settings. If useHeadless is true, the window will be created in
+    ///       a headless state regardless of the values of other fields in this struct. In headless mode, the window
+    ///       will not be visible, will not have a framebuffer, and will not render any content, but it can still
+    ///       receive input events and be manipulated through the IWindow interface.
+    bool useHeadless{ false };
+
+    /// @brief If true, the window will be created in an open/visible state. If false, the window will not be created
+    ///        until Open() is called.
+    bool startOpened{ true };
+
     /// @brief If true, the window will attempt to take input focus immediately upon creation.
+    /// @note This may be ignored by the OS or window manager if it deems it inappropriate to steal focus from the
+    ///       currently active application. Additionally, if startVisible is false, the window will be created hidden
+    ///       regardless of the value of startFocused.
     bool startFocused{ true };
 
     /// @brief If true, the window will be visible immediately upon creation. If false, the window will be created
     ///        hidden and must be shown explicitly by the caller.
+    /// @note This has priority over initialState. If startVisible is false, the window will be created hidden
+    ///       regardless of the value of initialState.
     bool startVisible{ true };
 
     /// @brief If true, the window will automatically request focus whenever it transitions to a visible state.
     bool focusOnShow{ true };
+
+    /// @brief If true, the window will be created with the mouse input grabbed, meaning it will receive all mouse
+    ///        events regardless of whether it is the active/focused window.
+    bool grabMouse{ false };
+
+    /// @brief If true, the window will be created with the keyboard input grabbed, meaning it will receive all keyboard
+    ///        events regardless of whether it is the active/focused window.
+    bool grabKeyboard{ false };
 
     /// @brief Optional native handle to a parent window. If provided, this window becomes a child.
     /// @details This is used for embedding the engine into external tools or editor environments (e.g., Win32 HWND).
