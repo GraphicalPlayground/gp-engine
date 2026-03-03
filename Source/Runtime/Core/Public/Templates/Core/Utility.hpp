@@ -91,4 +91,16 @@ GP_NODISCARD constexpr SizeT ArraySize(const T (&)[N]) noexcept
     return N;
 }
 
+/// @brief Swaps the values of two objects. Equivalent to std::swap.
+/// @tparam T Type of the objects to swap.
+/// @param a First object.
+/// @param b Second object.
+template <typename T>
+GP_FORCEINLINE void Swap(T& a, T& b) noexcept(noexcept(T(Move(a))) && noexcept(a = Move(b)) && noexcept(b = Move(a)))
+{
+    T temp = Move(a);
+    a = Move(b);
+    b = Move(temp);
+}
+
 }   // namespace GP
