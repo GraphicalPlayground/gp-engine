@@ -143,6 +143,8 @@ void FBaseWindow::Restore() {}
 
 void FBaseWindow::Focus() {}
 
-void FBaseWindow::RequestAttention() {}
+void FBaseWindow::RequestAttention(EWindowFlashMode mode) { GP_UNUSED(mode); }
+
+void FBaseWindow::CenterOnDisplay(const IDisplay* display) { GP_UNUSED(display); }
 
 }   // namespace GP

@@ -85,7 +85,7 @@ public:
     virtual void Maximize() override;
     virtual void Restore() override;
     virtual void Focus() override;
-    virtual void RequestAttention() override;
+    virtual void RequestAttention(EWindowFlashMode mode = EWindowFlashMode::UntilFocused) override;
     virtual void CenterOnDisplay(const IDisplay* display = nullptr) override;
 };
 
