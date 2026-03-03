@@ -5,6 +5,8 @@
 #include "CoreBuild.hpp"
 #include "Math/Vector/IntExtent2D.hpp"
 #include "Math/Vector/IntPoint2D.hpp"
+#include "Window/WindowDesc.hpp"
+#include "Window/WindowEnums.hpp"
 
 namespace GP
 {
@@ -143,7 +145,7 @@ public:
     virtual void Maximize() = 0;
     virtual void Restore() = 0;
     virtual void Focus() = 0;
-    virtual void RequestAttention() = 0;
+    virtual void RequestAttention(EWindowFlashMode mode = EWindowFlashMode::UntilFocused) = 0;
 
     /// @note CenterOnDisplay() moves the window to the center of the specified display. If the display parameter is
     ///       nullptr, the window should be centered on the actual display.
