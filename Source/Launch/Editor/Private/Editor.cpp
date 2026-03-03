@@ -28,6 +28,10 @@ int main(int argc, char* argv[])
 
     GP::TArray<int> intArray{ 1, 2, 3, 4, 5 };
     std::cout << "TArray size: " << intArray.Size() << ", capacity: " << intArray.Capacity() << std::endl;
+    for (GP::SizeT i = 0; i < intArray.Size(); ++i)
+    {
+        std::cout << "Element " << i << ": " << intArray[i] << std::endl;
+    }
 
     return 0;
 }
