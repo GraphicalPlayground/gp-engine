@@ -110,6 +110,20 @@ public:
         }
     }
 
+    /// @brief Allocates a memory block and associates it with a profiling tag for engine memory tracking.
+    ///        Profiling allocators override this to record which subsystem owns the allocation.
+    ///        The default implementation ignores the tag and forwards to Allocate().
+    /// @param size      Size of the block in bytes.
+    /// @param alignment Alignment requirement; must be a power of two.
+    /// @param tag       Null-terminated string identifying the owning subsystem (e.g. "TArray").
+    ///                  May be nullptr; the allocator should treat that as an untagged allocation.
+    /// @return Pointer to allocated memory, or nullptr on failure.
+    GP_NODISCARD virtual void* AllocateTagged(SizeT size, SizeT alignment, const char* tag) noexcept
+    {
+        GP_UNUSED(tag);
+        return Allocate(size, alignment);
+    }
+
     /// @brief Gets the total number of bytes currently allocated (if tracked).
     /// @return Total allocated bytes.
     GP_NODISCARD virtual SizeT GetTotalAllocated() const noexcept { return 0; }
