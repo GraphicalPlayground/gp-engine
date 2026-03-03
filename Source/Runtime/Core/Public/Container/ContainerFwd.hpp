@@ -8,7 +8,7 @@
 namespace GP
 {
 
-template <typename T, SizeT InlineCapacity = 8>
+template <typename T, SizeT InlineCapacity>
 class TArray;
 template <typename T>
 class TStaticArray;
