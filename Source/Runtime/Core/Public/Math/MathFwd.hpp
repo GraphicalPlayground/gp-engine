@@ -84,4 +84,7 @@ struct FLinearColor;
 struct FColorGrading;
 struct FColorSpace;
 
+using FIntPoint2D = TIntPoint2D<Int32>;
+using FIntExtent2D = TIntExtent2D<UInt32>;
+
 }   // namespace GP
