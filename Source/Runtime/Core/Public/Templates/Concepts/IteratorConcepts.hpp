@@ -94,7 +94,7 @@ concept CContiguousRange =
     CRange<T> &&
     requires (T& range)
     {
-        { range.data() } -> CPointer;
+        { range.Data() } -> CPointer;
     };
 
 /// @brief Satisfied when T is a contiguous range with a known element count.
@@ -103,7 +103,7 @@ concept CSizedRange =
     CRange<T> &&
     requires (T& range)
     {
-        { range.size() } -> CIntegral;
+        { range.Size() } -> CIntegral;
     };
 
 // clang-format on
