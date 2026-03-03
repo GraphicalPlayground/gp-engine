@@ -2,10 +2,16 @@
 
 #pragma once
 
+#include "Container/Utility/Iterator.hpp"
+#include "Container/Utility/ReverseIterator.hpp"
+#include "CoreBuild.hpp"
+#include "CoreTypes.hpp"
+#include "Templates/Concepts/TypeConcepts.hpp"
+
 namespace GP
 {
 
-template <typename T>
+template <CCharacter T>
 class TString
 {};
 
