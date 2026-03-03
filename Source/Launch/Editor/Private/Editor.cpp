@@ -1,5 +1,6 @@
 // Copyright (c) - Graphical Playground. All rights reserved.
 
+#include "Container/Sequential/Array.hpp"
 #include "CoreBuild.hpp"
 #include "CoreTypes.hpp"
 #include "Templates/Templates.hpp"
@@ -24,6 +25,9 @@ int main(int argc, char* argv[])
 
     TestStructure test{ 3.14f };
     std::cout << "TestStructure value: " << test.value << std::endl;
+
+    GP::TArray<int> intArray{ 1, 2, 3, 4, 5 };
+    std::cout << "TArray size: " << intArray.Size() << ", capacity: " << intArray.Capacity() << std::endl;
 
     return 0;
 }
