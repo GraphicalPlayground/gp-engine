@@ -9,7 +9,10 @@
 namespace GP
 {
 
-/// @class IWindow
+// Forward declarations
+
+class IDisplay;
+
 /// @brief Interface for platform-agnostic window management.
 class IWindow
 {
@@ -22,7 +25,6 @@ public:
     ///
 
     GP_NODISCARD virtual bool IsOpen() const noexcept = 0;
-    GP_NODISCARD virtual bool ShouldClose() const noexcept = 0;
     GP_NODISCARD virtual bool IsValid() const noexcept = 0;
     GP_NODISCARD virtual bool IsActive() const noexcept = 0;
     GP_NODISCARD virtual bool IsFocused() const noexcept = 0;
@@ -82,6 +84,15 @@ public:
     /// @see GetMinimumSize() for the minimum size constraints of the window.
     GP_NODISCARD virtual FIntExtent2D GetMaximumSize() const noexcept = 0;
 
+    /// @note GetNativeHandle() returns a pointer to the underlying native window handle or object. The actual type and
+    ///       meaning of this handle is platform-specific. It may be used for advanced operations that are not covered
+    ///       by this interface, but the caller must know the expected type and semantics of the handle for the specific
+    ///       platform. This may return nullptr if no native handle is available.
+    GP_NODISCARD virtual void* GetNativeHandle() const noexcept = 0;
+
+    /// @note GetCurrentDisplay() returns a pointer to the IDisplay that the window is currently on.
+    GP_NODISCARD virtual const IDisplay* GetCurrentDisplay() const noexcept = 0;
+
     ///
     /// @section Setters
     ///
@@ -112,6 +123,31 @@ public:
     virtual void SetMinimumSize(const UInt32 width, const UInt32 height) noexcept = 0;
     virtual void SetMaximumSize(const FIntExtent2D& size) noexcept = 0;
     virtual void SetMaximumSize(const UInt32 width, const UInt32 height) noexcept = 0;
+
+    ///
+    /// @section Actions
+    ///
+
+    virtual void Open() = 0;
+
+    /// @note Close() closes the window immediately. After calling Close(), the window should no longer be considered
+    ///       valid or open.
+    virtual void Close() = 0;
+
+    /// @note RequestClose() requests that the window be closed, but does not force it to close immediately.
+    virtual void RequestClose() = 0;
+
+    virtual void Show() = 0;
+    virtual void Hide() = 0;
+    virtual void Minimize() = 0;
+    virtual void Maximize() = 0;
+    virtual void Restore() = 0;
+    virtual void Focus() = 0;
+    virtual void RequestAttention() = 0;
+
+    /// @note CenterOnDisplay() moves the window to the center of the specified display. If the display parameter is
+    ///       nullptr, the window should be centered on the actual display.
+    virtual void CenterOnDisplay(const IDisplay* display = nullptr) = 0;
 };
 
 }   // namespace GP
