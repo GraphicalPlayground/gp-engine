@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreTypes.hpp"
+#include "Templates/Concepts/TypeConcepts.hpp"
 
 namespace GP
 {
@@ -45,13 +46,13 @@ template <typename T>
 class TSpan;
 template <typename T>
 class TStridedSpan;
-template <typename T>
+template <CCharacter T>
 class TString;
-template <typename T>
+template <CCharacter T>
 class TName;
 template <typename T>
 class TTuple;
-template <typename T>
+template <CCharacter T>
 class TStringView;
 template <typename T>
 class TArrayView;
