@@ -1,7 +1,9 @@
 // Copyright (c) - Graphical Playground. All rights reserved.
 
+#include "Container/ContainerFwd.hpp"
 #include "Container/Core/Pair.hpp"
 #include "Container/Sequential/Array.hpp"
+#include "Container/Views/StringView.hpp"
 #include "CoreBuild.hpp"
 #include "CoreTypes.hpp"
 #include "Templates/Templates.hpp"
@@ -36,6 +38,11 @@ int main(int argc, char* argv[])
 
     GP::TPair<int, bool> pair{ 42, true };
     std::cout << "TPair first: " << pair.first << ", second: " << std::boolalpha << pair.second << std::endl;
+
+    GP::FStringView strView{ "Hello, FStringView!" };
+    GP::FStringView strView2{ "Hello, FStringView!" };
+    std::cout << "FStringView: " << strView.Data() << ", size: " << strView.Size() << std::endl;
+    std::cout << "FStringView equality: " << std::boolalpha << (strView == strView2) << std::endl;
 
     return 0;
 }
