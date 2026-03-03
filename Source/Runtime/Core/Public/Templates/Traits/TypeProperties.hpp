@@ -99,6 +99,22 @@ template <typename T>
 struct TAlignmentOf : TIntegralConstant<SizeT, alignof(T)> {};
 template <typename T> inline constexpr SizeT TAlignmentOf_V = TAlignmentOf<T>::Value;
 
+/// @brief Trait indicating that T can be safely relocated by copying its raw bytes and skipping its
+///        move-constructor and destructor on the source object.
+///
+///        Defaults to TIsTriviallyCopyable<T>, which covers all scalar types and trivially-copyable classes.
+///        Users may specialize this to FTrueType for non-trivially-copyable types whose invariants are
+///        preserved by a byte-for-byte copy (e.g. types whose members are all heap-owning pointers with no
+///        back-references or self-pointers). Doing so enables a single memcpy during TArray reallocation
+///        instead of per-element move-construction + destruction.
+///
+/// @warning Do NOT specialize for types that contain self-referential pointers (e.g. a node whose members
+///          point back into the object itself, or types whose move constructor performs fixups).
+template <typename T>
+struct TIsBitwiseRelocatable : TIsTriviallyCopyable<T> {};
+template <typename T>
+inline constexpr bool TIsBitwiseRelocatable_V = TIsBitwiseRelocatable<T>::Value;
+
 /// @brief Returns the size (in bytes) of type T as a compile-time constant.
 template <typename T>
 struct TSizeOf : TIntegralConstant<SizeT, sizeof(T)> {};
