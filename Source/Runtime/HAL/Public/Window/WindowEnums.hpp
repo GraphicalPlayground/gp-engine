@@ -3,9 +3,23 @@
 #pragma once
 
 #include "CoreTypes.hpp"
+#include "Templates/Utility/Enums.hpp"
 
 namespace GP
 {
+
+/// @brief Defines the flashing behavior of a window when requesting user attention.
+enum class EWindowFlashMode : UInt8
+{
+    /// @brief Stop flashing the window.
+    None,
+
+    /// @brief Flash the window until it receives focus.
+    UntilFocused,
+
+    /// @brief Flash the window for a short period of time.
+    Briefly,
+};
 
 /// @brief Defines the primary display mode of the window.
 enum class EWindowMode : UInt8
@@ -71,5 +85,7 @@ enum class EWindowStyle : UInt32
     /// @brief A standard decorative window.
     Default = TitleBar | Closable | Resizable | MinMaxButtons
 };
+
+GP_ENABLE_ENUM_BITWISE_OPERATIONS(EWindowStyle);
 
 }   // namespace GP
