@@ -67,6 +67,11 @@ struct TVolume;
 template <CFloatingPoint T>
 struct TTransform;
 
+template <CIntegral T>
+struct TIntPoint2D;
+template <CIntegral T>
+struct TIntExtent2D;
+
 struct FBezier;
 struct FCatmullRom;
 struct FEasing;
