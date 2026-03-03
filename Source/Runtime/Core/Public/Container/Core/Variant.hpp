@@ -10,5 +10,3 @@ class TVariant
 {};
 
 }   // namespace GP
-
-#include "Container/Core/Variant.inl"

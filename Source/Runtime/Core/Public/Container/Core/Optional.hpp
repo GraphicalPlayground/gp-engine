@@ -10,5 +10,3 @@ class TOptional
 {};
 
 }   // namespace GP
-
-#include "Container/Core/Optional.inl"

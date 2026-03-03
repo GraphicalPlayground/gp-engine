@@ -10,5 +10,3 @@ class TAny
 {};
 
 }   // namespace GP
-
-#include "Container/Core/Any.inl"

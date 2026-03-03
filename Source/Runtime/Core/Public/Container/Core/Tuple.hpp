@@ -10,5 +10,3 @@ class TTuple
 {};
 
 }   // namespace GP
-
-#include "Container/Core/Tuple.inl"
