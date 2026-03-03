@@ -12,4 +12,5 @@ gp_add_executable(
     ICON ${CMAKE_CURRENT_SOURCE_DIR}/Resources/AppIcon.rc
     DEPENDENCIES
         GP::Runtime::Core
+        GP::Runtime::HAL
 )
