@@ -168,5 +168,3 @@ public:
 };
 
 }   // namespace GP
-
-#include "Container/Views/ArrayView.inl"
