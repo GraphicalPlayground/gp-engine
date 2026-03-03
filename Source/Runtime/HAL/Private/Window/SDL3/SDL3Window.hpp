@@ -3,6 +3,8 @@
 #pragma once
 
 #include "Window/BaseWindow.hpp"
+#include "Window/WindowDesc.hpp"
+#include <SDL3/SDL.h>
 
 namespace GP
 {
@@ -10,6 +12,46 @@ namespace GP
 /// @brief
 class FSDL3Window final : public FBaseWindow
 {
+private:
+    static constexpr FIntExtent2D DefaultWindowSize{ 1280u, 720u };
+
+private:
+    FWindowDesc m_desc{};
+
+    EWindowMode m_windowMode{ EWindowMode::Windowed };
+    EWindowState m_windowState{ EWindowState::Normal };
+    EWindowStyle m_windowStyle{ EWindowStyle::Default };
+    ECursorMode m_cursorMode{ ECursorMode::Normal };
+    ECursorShape m_cursorShape{ ECursorShape::Arrow };
+    Float32 m_opacity{ 1.0f };
+    // FString m_title{ "Graphical Playground" };
+    FIntExtent2D m_minSize{ 0u, 0u };
+    FIntExtent2D m_maxSize{ 0u, 0u };
+    FIntExtent2D m_fullWindowSize{ DefaultWindowSize };
+    FIntExtent2D m_contentSize{ DefaultWindowSize };
+    FIntExtent2D m_framebufferSize{ DefaultWindowSize };
+    FIntPoint2D m_position{ 0, 0 };
+    Float32 m_aspectRatio{ static_cast<Float32>(DefaultWindowSize.width) /
+                           static_cast<Float32>(DefaultWindowSize.height) };
+    Float32 m_contentScale{ 1.0f };
+
+    bool m_shouldClose{ false };
+    bool m_isFocused{ false };
+    bool m_isHovered{ false };
+    bool m_isOccluded{ false };
+    bool m_isHighDPI{ false };
+    bool m_isVSync{ false };
+    bool m_isKeyboardGrabbed{ false };
+    bool m_isMouseGrabbed{ false };
+    bool m_isHeadless{ false };
+
+    SDL_Window* m_window{ nullptr };
+    SDL_Cursor* m_cursor{ nullptr };
+
+public:
+    FSDL3Window(const FWindowDesc& desc) noexcept;
+    ~FSDL3Window() noexcept;
+
 public:
     ///
     /// @section State queries
@@ -76,8 +118,17 @@ public:
     virtual void Maximize() override;
     virtual void Restore() override;
     virtual void Focus() override;
-    virtual void RequestAttention() override;
+    virtual void RequestAttention(EWindowFlashMode mode = EWindowFlashMode::UntilFocused) override;
     virtual void CenterOnDisplay(const IDisplay* display = nullptr) override;
+
+private:
+    void ResetToDefaultState() noexcept;
+    void SyncStateWithSDL() noexcept;
+    void ApplySDLCursorShape(ECursorShape shape) noexcept;
+    void ApplySDLCursorMode(ECursorMode mode) noexcept;
+
+private:
+    static void BuildSDLFlags(const FWindowDesc& desc) noexcept;
 };
 
 }   // namespace GP
