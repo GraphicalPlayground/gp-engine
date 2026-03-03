@@ -22,7 +22,7 @@ class IDisplay;
 struct FWindowDesc
 {
     /// @brief The text displayed in the window's title bar and taskbar entry.
-    FStringView title;   // TODO: Add a default title like "Graphical Playground" if title is empty.
+    FStringView title{ "Graphical Playground" };
 
     /// @brief The initial top-left position of the window in screen coordinates.
     /// @note If targetDisplay is non-null, this is often treated as an offset from that display's origin.
