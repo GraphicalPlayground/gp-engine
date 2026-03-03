@@ -544,3 +544,13 @@
 
 // Unused parameter
 #define GP_UNUSED(x) (void)(x)
+
+#if GP_DEBUG
+    #define GP_ASSERT(expr, ...)
+    #define GP_ASSERT_FATAL(expr, ...)
+    #define GP_ENSURE(expr, ...)
+#else
+    #define GP_ASSERT(expr, ...)
+    #define GP_ASSERT_FATAL(expr, ...)
+    #define GP_ENSURE(expr, ...)
+#endif
