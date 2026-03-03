@@ -61,4 +61,10 @@ class TMapView;
 class FBitSet;
 class FBitArray;
 
+using FStringView = TStringView<Char8>;
+using FWideStringView = TStringView<WideChar>;
+using FNameView = TStringView<Char8>;
+using FString = TString<Char8>;
+using FWideString = TString<WideChar>;
+
 }   // namespace GP
