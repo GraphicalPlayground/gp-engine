@@ -138,7 +138,7 @@ public:
     TArray(const T* first, const T* last, IAllocator& alloc = GetDefaultAllocator())
         : m_alloc(&alloc)
     {
-        // GP_ASSERT(first <= last);
+        GP_ASSERT(first <= last);
         SetupInline();
         const SizeT count = static_cast<SizeT>(last - first);
         Reserve(count);
@@ -217,7 +217,7 @@ public:
     /// @return Reference to the element.
     GP_NODISCARD constexpr Reference operator[](SizeT index) noexcept
     {
-        // GP_ASSERT(index < m_size);
+        GP_ASSERT(index < m_size);
         return m_data[index];
     }
 
@@ -226,7 +226,7 @@ public:
     /// @return Const reference to the element.
     GP_NODISCARD constexpr ConstReference operator[](SizeT index) const noexcept
     {
-        // GP_ASSERT(index < m_size);
+        GP_ASSERT(index < m_size);
         return m_data[index];
     }
 
@@ -291,7 +291,7 @@ public:
     /// @warning The returned memory is uninitialised. Reading it without prior construction is UB.
     GP_NODISCARD T* AddUninitialized(SizeT count)
     {
-        // GP_ASSERT(count > 0);
+        GP_ASSERT(count > 0);
         const SizeT newSize = m_size + count;
         if (newSize > m_capacity)
         {
@@ -426,7 +426,7 @@ public:
     /// @return Moved value of the last element.
     GP_NODISCARD T PopBack() noexcept
     {
-        // GP_ASSERT(!IsEmpty());
+        GP_ASSERT(!IsEmpty());
         T value = GP::Move(m_data[m_size - 1]);
         m_data[--m_size].~T();
         return value;
@@ -437,7 +437,7 @@ public:
     /// @param value Value to copy into the inserted element.
     void Insert(SizeT index, const T& value)
     {
-        // GP_ASSERT(index <= m_size);
+        GP_ASSERT(index <= m_size);
         // Guard against self-reference: capture index before reallocation or ShiftRight invalidates &value.
         const bool selfRef = IsInternalPtr(&value);
         const SizeT selfIdx = selfRef ? static_cast<SizeT>(&value - m_data) : SizeT(0);
@@ -458,7 +458,7 @@ public:
     /// @param value Rvalue to move into the inserted element.
     void Insert(SizeT index, T&& value)
     {
-        // GP_ASSERT(index <= m_size);
+        GP_ASSERT(index <= m_size);
         // Guard against self-move: capture index before reallocation or ShiftRight invalidates &value.
         const bool selfRef = IsInternalPtr(&value);
         const SizeT selfIdx = selfRef ? static_cast<SizeT>(&value - m_data) : SizeT(0);
@@ -477,7 +477,7 @@ public:
     /// @param index Index of the element to remove.
     void RemoveAtSwap(SizeT index) noexcept
     {
-        // GP_ASSERT(index < m_size);
+        GP_ASSERT(index < m_size);
         if (index != m_size - 1) { m_data[index] = GP::Move(m_data[m_size - 1]); }
         m_data[--m_size].~T();
     }
@@ -486,7 +486,7 @@ public:
     /// @param index Index of the element to remove.
     void RemoveAt(SizeT index) noexcept
     {
-        // GP_ASSERT(index < m_size);
+        GP_ASSERT(index < m_size);
         m_data[index].~T();
         for (SizeT i = index; i < m_size - 1; ++i)
         {
@@ -549,7 +549,7 @@ public:
     /// @return Reference to the first element.
     GP_NODISCARD constexpr Reference Front() noexcept
     {
-        // GP_ASSERT(!IsEmpty());
+        GP_ASSERT(!IsEmpty());
         return m_data[0];
     }
 
@@ -557,7 +557,7 @@ public:
     /// @return Const reference to the first element.
     GP_NODISCARD constexpr ConstReference Front() const noexcept
     {
-        // GP_ASSERT(!IsEmpty());
+        GP_ASSERT(!IsEmpty());
         return m_data[0];
     }
 
@@ -565,7 +565,7 @@ public:
     /// @return Reference to the last element.
     GP_NODISCARD constexpr Reference Back() noexcept
     {
-        // GP_ASSERT(!IsEmpty());
+        GP_ASSERT(!IsEmpty());
         return m_data[m_size - 1];
     }
 
@@ -573,7 +573,7 @@ public:
     /// @return Const reference to the last element.
     GP_NODISCARD constexpr ConstReference Back() const noexcept
     {
-        // GP_ASSERT(!IsEmpty());
+        GP_ASSERT(!IsEmpty());
         return m_data[m_size - 1];
     }
 
@@ -709,10 +709,10 @@ private:
     /// @param newCapacity Desired new capacity (must be >= m_size).
     void Reallocate(SizeT newCapacity)
     {
-        // GP_ASSERT(newCapacity >= m_size);
+        GP_ASSERT(newCapacity >= m_size);
         const SizeT newBytes = sizeof(T) * newCapacity;
         T* newData = static_cast<T*>(m_alloc->AllocateTagged(newBytes, kAllocAlignment, kStatTag));
-        // GP_ASSERT(newData);
+        GP_ASSERT(newData);
         if (m_size)
         {
             if constexpr (TIsBitwiseRelocatable_V<T>)

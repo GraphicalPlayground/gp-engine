@@ -70,7 +70,7 @@ public:
     /// @return Mutable reference to the element.
     GP_NODISCARD constexpr Reference operator[](SizeT index) noexcept
     {
-        // GP_ASSERT(index < m_size);
+        GP_ASSERT(index < m_size);
         return m_data[index];
     }
 
@@ -79,7 +79,7 @@ public:
     /// @return Const reference to the element.
     GP_NODISCARD constexpr ConstReference operator[](SizeT index) const noexcept
     {
-        // GP_ASSERT(index < m_size);
+        GP_ASSERT(index < m_size);
         return m_data[index];
     }
 
@@ -99,28 +99,28 @@ public:
     /// @brief Returns a mutable reference to the first element.
     GP_NODISCARD constexpr Reference Front() noexcept
     {
-        // GP_ASSERT(!IsEmpty());
+        GP_ASSERT(!IsEmpty());
         return m_data[0];
     }
 
     /// @brief Returns a const reference to the first element.
     GP_NODISCARD constexpr ConstReference Front() const noexcept
     {
-        // GP_ASSERT(!IsEmpty());
+        GP_ASSERT(!IsEmpty());
         return m_data[0];
     }
 
     /// @brief Returns a mutable reference to the last element.
     GP_NODISCARD constexpr Reference Back() noexcept
     {
-        // GP_ASSERT(!IsEmpty());
+        GP_ASSERT(!IsEmpty());
         return m_data[m_size - 1];
     }
 
     /// @brief Returns a const reference to the last element.
     GP_NODISCARD constexpr ConstReference Back() const noexcept
     {
-        // GP_ASSERT(!IsEmpty());
+        GP_ASSERT(!IsEmpty());
         return m_data[m_size - 1];
     }
 
@@ -131,7 +131,7 @@ public:
     /// @return A new TArrayView covering [offset, offset + clamped_length).
     GP_NODISCARD constexpr TArrayView SubView(SizeT offset, SizeT length = NPOS) const noexcept
     {
-        // GP_ASSERT(offset <= m_size);
+        GP_ASSERT(offset <= m_size);
         const SizeT avail = (offset <= m_size) ? (m_size - offset) : SizeT(0);
         return TArrayView(m_data + offset, avail < length ? avail : length);
     }

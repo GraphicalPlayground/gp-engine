@@ -73,7 +73,7 @@ public:
 
     GP_NODISCARD constexpr ConstReference operator[](SizeType index) const noexcept
     {
-        // GP_ASSERT(i < m_size);
+        GP_ASSERT(i < m_size);
         return m_data[index];
     }
 
