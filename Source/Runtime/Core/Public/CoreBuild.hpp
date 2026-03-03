@@ -482,9 +482,11 @@
     #define GP_ALIGN(x)
 #endif
 
-/// @brief Prefetches a cache line for reading.
-/// @brief Prefetches a cache line for writing.
-#if defined(GP_COMPILER_CLANG) || defined(GP_COMPILER_GCC)
+/// @brief Prefetches a cache line into L1 for reading.
+/// @brief Prefetches a cache line into L1 for writing.
+/// @note  Uses __builtin_prefetch on Clang, GCC, and MSVC (VS 2019 16.8+ supports the GCC builtin).
+///        Falls back to a no-op on unknown compilers.
+#if GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_MSVC
     #define GP_PREFETCH_R(ptr) __builtin_prefetch((ptr), 0, 3)
     #define GP_PREFETCH_W(ptr) __builtin_prefetch((ptr), 1, 3)
 #else
