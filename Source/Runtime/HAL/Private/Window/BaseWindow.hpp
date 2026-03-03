@@ -19,7 +19,6 @@ public:
     ///
 
     GP_NODISCARD virtual bool IsOpen() const noexcept override;
-    GP_NODISCARD virtual bool ShouldClose() const noexcept override;
     GP_NODISCARD virtual bool IsValid() const noexcept override;
     GP_NODISCARD virtual bool IsActive() const noexcept override;
     GP_NODISCARD virtual bool IsFocused() const noexcept override;
@@ -54,6 +53,8 @@ public:
     GP_NODISCARD virtual FIntExtent2D GetFramebufferSize() const noexcept override;
     GP_NODISCARD virtual FIntExtent2D GetMinimumSize() const noexcept override;
     GP_NODISCARD virtual FIntExtent2D GetMaximumSize() const noexcept override;
+    GP_NODISCARD virtual void* GetNativeHandle() const noexcept override;
+    GP_NODISCARD virtual const IDisplay* GetCurrentDisplay() const noexcept override;
 
     ///
     /// @section Setters
@@ -70,6 +71,22 @@ public:
     virtual void SetMinimumSize(const UInt32 width, const UInt32 height) noexcept override;
     virtual void SetMaximumSize(const FIntExtent2D& size) noexcept override;
     virtual void SetMaximumSize(const UInt32 width, const UInt32 height) noexcept override;
+
+    ///
+    /// @section Actions
+    ///
+
+    virtual void Open() override;
+    virtual void Close() override;
+    virtual void RequestClose() override;
+    virtual void Show() override;
+    virtual void Hide() override;
+    virtual void Minimize() override;
+    virtual void Maximize() override;
+    virtual void Restore() override;
+    virtual void Focus() override;
+    virtual void RequestAttention() override;
+    virtual void CenterOnDisplay(const IDisplay* display = nullptr) override;
 };
 
 }   // namespace GP

@@ -12,8 +12,6 @@ namespace GP
 
 GP_NODISCARD bool FBaseWindow::IsOpen() const noexcept { return false; }
 
-GP_NODISCARD bool FBaseWindow::ShouldClose() const noexcept { return false; }
-
 GP_NODISCARD bool FBaseWindow::IsValid() const noexcept { return false; }
 
 GP_NODISCARD bool FBaseWindow::IsActive() const noexcept { return false; }
@@ -78,6 +76,10 @@ GP_NODISCARD FIntExtent2D FBaseWindow::GetMinimumSize() const noexcept { return 
 
 GP_NODISCARD FIntExtent2D FBaseWindow::GetMaximumSize() const noexcept { return FIntExtent2D{ 0, 0 }; }
 
+GP_NODISCARD void* FBaseWindow::GetNativeHandle() const noexcept { return nullptr; }
+
+GP_NODISCARD const IDisplay* FBaseWindow::GetCurrentDisplay() const noexcept { return nullptr; }
+
 ///
 /// @section Setters
 /// @note These default implementations do nothing. Derived classes should override these to actually change the
@@ -100,8 +102,8 @@ void FBaseWindow::SetFullSize(const UInt32 width, const UInt32 height) noexcept
 
 void FBaseWindow::SetSizeLimits(const FIntExtent2D& minimum, const FIntExtent2D& maximum) noexcept
 {
-    GP_UNUSED(minimum);
-    GP_UNUSED(maximum);
+    SetMinimumSize(minimum);
+    SetMaximumSize(maximum);
 }
 
 void FBaseWindow::SetMinimumSize(const FIntExtent2D& size) noexcept { GP_UNUSED(size); }
@@ -117,5 +119,30 @@ void FBaseWindow::SetMaximumSize(const UInt32 width, const UInt32 height) noexce
 {
     SetMaximumSize(FIntExtent2D{ width, height });
 }
+
+///
+/// @section Actions
+/// @note These default implementations do nothing. Derived classes should override these to actually perform the
+///
+
+void FBaseWindow::Open() {}
+
+void FBaseWindow::Close() {}
+
+void FBaseWindow::RequestClose() {}
+
+void FBaseWindow::Show() {}
+
+void FBaseWindow::Hide() {}
+
+void FBaseWindow::Minimize() {}
+
+void FBaseWindow::Maximize() {}
+
+void FBaseWindow::Restore() {}
+
+void FBaseWindow::Focus() {}
+
+void FBaseWindow::RequestAttention() {}
 
 }   // namespace GP
