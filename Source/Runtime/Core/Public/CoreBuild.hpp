@@ -460,6 +460,17 @@
     #define GP_NORETURN
 #endif
 
+/// @brief Marks a struct as no unique address, allowing it to have zero size and be used for empty base optimization.
+#if GP_INTERNAL_CXX20
+    #define GP_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#elif GP_COMPILER_MSVC
+    #define GP_NO_UNIQUE_ADDRESS __declspec(empty_bases)
+#elif GP_COMPILER_GCC || GP_COMPILER_CLANG
+    #define GP_NO_UNIQUE_ADDRESS __attribute__((no_unique_address))
+#else
+    #define GP_NO_UNIQUE_ADDRESS
+#endif
+
 /// @brief Specifies the minimum alignment of a variable or type in bytes.
 #if GP_INTERNAL_CXX11
     #define GP_ALIGN(x) alignas(x)
