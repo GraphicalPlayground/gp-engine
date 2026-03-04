@@ -5,7 +5,7 @@
 namespace GP
 {
 
-template <typename T>
+template <typename T, typename TDeleter>
 class TUniquePtr;
 template <typename T>
 class TSharedPtr;
