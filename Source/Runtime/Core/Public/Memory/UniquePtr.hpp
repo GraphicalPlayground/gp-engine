@@ -6,6 +6,7 @@
 #include "CoreTypes.hpp"
 #include "Memory/DefaultDeleter.hpp"
 #include "Templates/Concepts/CoreConcepts.hpp"
+#include "Templates/Core/RemoveExtent.hpp"
 #include "Templates/Core/RemoveReference.hpp"
 #include "Templates/Core/Utility.hpp"
 #include <compare>
@@ -287,6 +288,44 @@ template <typename T, typename TD>
 void Swap(TUniquePtr<T, TD>& a, TUniquePtr<T, TD>& b) noexcept
 {
     a.Swap(b);
+}
+
+/// @brief Constructs T with Args and wraps it in a TUniquePtr.
+///        Equivalent to TUniquePtr<T>(new T(Args...)) but exception-safe
+///        and avoids naked new at the call site.
+///
+/// @tparam T The type to construct.
+/// @tparam TArgs Constructor argument types.
+template <typename T, typename... TArgs>
+requires(!TIsArray_V<T>) GP_NODISCARD TUniquePtr<T> MakeUnique(TArgs&&... args)
+{
+    return TUniquePtr<T>(new T(GP::Forward<TArgs>(args)...));
+}
+
+/// @brief Constructs a default-initialised array of Count elements.
+///
+/// @tparam T The array element type (must be T[]).
+/// @param count Number of elements to allocate.
+template <typename T>
+requires TIsUnboundedArray_V<T> GP_NODISCARD TUniquePtr<T> MakeUnique(SizeT count)
+{
+    using TElem = TRemoveExtent_T<T>;
+    return TUniquePtr<T>(new TElem[count]());
+}
+
+/// @brief Constructs a value-initialised array of N elements (bounded array).
+///
+/// @tparam T Bounded array type, e.g. int[4].
+template <typename T>
+requires TIsBoundedArray_V<T>
+GP_NODISCARD TUniquePtr<T> MakeUnique() = delete;   // standard mandates this overload be deleted
+
+/// @brief Constructs T with Args, leaving the object default-initialised (no zero-fill).
+///        Slightly faster than MakeUnique for trivial types when zeroing is unnecessary.
+template <typename T, typename... TArgs>
+requires(!TIsArray_V<T>) GP_NODISCARD TUniquePtr<T> MakeUniqueForOverwrite()
+{
+    return TUniquePtr<T>(new T);
 }
 
 }   // namespace GP
