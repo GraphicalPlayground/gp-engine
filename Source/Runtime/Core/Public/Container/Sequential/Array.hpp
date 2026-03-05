@@ -424,7 +424,7 @@ public:
 
     /// @brief Removes and returns the last element by moving it out.
     /// @return Moved value of the last element.
-    GP_NODISCARD T PopBack() noexcept
+    T PopBack() noexcept
     {
         GP_ASSERT(!IsEmpty());
         T value = GP::Move(m_data[m_size - 1]);
