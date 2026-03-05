@@ -19,5 +19,7 @@ template <typename T>
 class TRef;
 template <typename T>
 class TTypedObjectPool;
+template <typename T>
+class TEnableSharedFromThis;
 
 }   // namespace GP
