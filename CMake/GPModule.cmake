@@ -382,7 +382,7 @@ function(gp_add_module)
 
     # Check if Tests directory exists
     set(TESTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Tests")
-    if(EXISTS ${TESTS_DIR} AND IS_DIRECTORY ${TESTS_DIR})
+    if(EXISTS ${TESTS_DIR} AND IS_DIRECTORY ${TESTS_DIR} AND GP_ENABLE_TESTS)
         # Gather test source files
         file(GLOB_RECURSE TEST_SOURCES
             "${TESTS_DIR}/*.cpp"
@@ -498,7 +498,7 @@ function(gp_add_module)
 
     # Check if Benchmarks directory exists
     set(BENCHMARKS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Benchmarks")
-    if(EXISTS ${BENCHMARKS_DIR} AND IS_DIRECTORY ${BENCHMARKS_DIR})
+    if(EXISTS ${BENCHMARKS_DIR} AND IS_DIRECTORY ${BENCHMARKS_DIR} AND GP_ENABLE_BENCHMARKS)
         # Gather benchmarks source files
         file(GLOB_RECURSE BENCHMARKS_SOURCES
             "${BENCHMARKS_DIR}/*.cpp"
