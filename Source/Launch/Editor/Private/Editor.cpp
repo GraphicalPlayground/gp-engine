@@ -3,10 +3,12 @@
 #include "CoreBuild.hpp"
 #include "CoreTypes.hpp"
 #include "Window/IWindow.hpp"
+#include "Window/IWindowSystem.hpp"
 #include "Window/WindowDesc.hpp"
 #if GP_PLATFORM_WINDOWS
     #include <stdlib.h>
     #include <windows.h>
+    #undef CreateWindow
 #endif
 #include <iostream>
 
@@ -16,6 +18,33 @@ int main(int argc, char* argv[])
     GP_UNUSED(argv);
 
     std::cout << "Hello, Graphical Playground Editor!" << std::endl;
+
+    auto windowSystem = GP::IWindowSystem::Create();
+    if (!windowSystem)
+    {
+        std::cerr << "Failed to create window system!" << std::endl;
+        return 1;
+    }
+
+    auto window = windowSystem->CreateWindow({
+      .title = "Graphical Playground Editor", .size = { 1280, 720 }
+    });
+    if (!window)
+    {
+        std::cerr << "Failed to create window!" << std::endl;
+        return 1;
+    }
+
+    while (window->IsOpen())
+    {
+        windowSystem->PollEvents();
+
+        // Do something here
+
+        windowSystem->DispatchEvents();
+
+        // Sleep or wait for vsync here to avoid busy-waiting
+    }
 
     return 0;
 }
