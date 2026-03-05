@@ -488,11 +488,127 @@ function(gp_add_module)
             endif()
 
             # Ensure C++20 standard for tests
-            target_compile_features(${TEST_EXPORT_NAME} PRIVATE cxx_std_20)
+            target_compile_features(${TEST_EXPORT_NAME} PRIVATE cxx_std_23)
         else()
             message(STATUS "    [i] No test source files found in Tests directory for module ${ARG_NAME}")
         endif()
     else()
         message(STATUS "    [i] No Tests directory found for module ${ARG_NAME}")
+    endif()
+
+    # Check if Benchmarks directory exists
+    set(BENCHMARKS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Benchmarks")
+    if(EXISTS ${BENCHMARKS_DIR} AND IS_DIRECTORY ${BENCHMARKS_DIR})
+        # Gather benchmarks source files
+        file(GLOB_RECURSE BENCHMARKS_SOURCES
+            "${BENCHMARKS_DIR}/*.cpp"
+            "${BENCHMARKS_DIR}/*.c"
+        )
+
+        # Only create benchmarks executable if benchmarks sources are found
+        if(BENCHMARKS_SOURCES)
+            # Count benchmarks files for reporting
+            list(LENGTH BENCHMARKS_SOURCES BENCHMARKS_FILE_COUNT)
+
+            # Generate benchmarks executable name: GP<ModuleType><Name>Benchmarks
+            set(BENCHMARKS_EXPORT_NAME "${EXPORT_NAME}Benchmarks")
+
+            message(STATUS "    [i] Found ${BENCHMARKS_FILE_COUNT} benchmark source file(s) in Benchmarks directory")
+            message(STATUS "    [i] Creating benchmark executable: ${BENCHMARKS_EXPORT_NAME}")
+
+            # Create benchmark executable
+            add_executable(${BENCHMARKS_EXPORT_NAME} ${BENCHMARKS_SOURCES})
+
+            # Set benchmark executable properties
+            set_target_properties(${BENCHMARKS_EXPORT_NAME} PROPERTIES
+                # Output to Binaries/Bin directory (same as other executables)
+                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/Binaries/Bin"
+                RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/Binaries/Bin/DEBUG"
+                RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/Binaries/Bin/RELEASE"
+                RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/Binaries/Bin/RELWITHDEBINFO"
+                RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/Binaries/Bin/MINSIZEREL"
+
+                # Organize in IDE under Benchmarks folder hierarchy
+                FOLDER "Benchmarks/${ARG_MODULE_TYPE}"
+
+                # Output name matches benchmark export name
+                OUTPUT_NAME ${BENCHMARKS_EXPORT_NAME}
+            )
+
+            # Link against the module being benchmarked
+            target_link_libraries(${BENCHMARKS_EXPORT_NAME}
+                PRIVATE
+                    ${ALIAS_NAME}  # Link to the module being benchmarked
+            )
+
+            # Link against Catch2 if available
+            if(TARGET Catch2::Catch2WithMain)
+                target_link_libraries(${BENCHMARKS_EXPORT_NAME}
+                    PRIVATE
+                        Catch2::Catch2WithMain  # Catch2 with main() provided
+                )
+
+                message(STATUS "    [i] Linked ${BENCHMARKS_EXPORT_NAME} with Catch2::Catch2WithMain")
+
+                # Include Catch2's CMake module for benchmark discovery if available
+                if(catch2_SOURCE_DIR)
+                    list(APPEND CMAKE_MODULE_PATH "${catch2_SOURCE_DIR}/extras")
+                    include(Catch OPTIONAL RESULT_VARIABLE CATCH_MODULE_FOUND)
+
+                    if(CATCH_MODULE_FOUND)
+                        # Automatically discover and register all benchmark cases
+                        # This creates individual CTest entries for each TEST_CASE
+                        catch_discover_tests(${BENCHMARKS_EXPORT_NAME}
+                            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/Binaries/Bin"
+                            PROPERTIES
+                                LABELS "${ARG_MODULE_TYPE};${ARG_NAME}"
+                        )
+
+                        message(STATUS "    [i] Registered ${BENCHMARKS_EXPORT_NAME} with CTest (auto-discovery enabled)")
+                    else()
+                        # Fallback: Manual test registration
+                        add_test(NAME ${BENCHMARKS_EXPORT_NAME} COMMAND ${BENCHMARKS_EXPORT_NAME})
+                        set_tests_properties(${BENCHMARKS_EXPORT_NAME} PROPERTIES
+                            LABELS "${ARG_MODULE_TYPE};${ARG_NAME}"
+                        )
+
+                        message(STATUS "    [i] Registered ${BENCHMARKS_EXPORT_NAME} with CTest (manual registration)")
+                    endif()
+                endif()
+            elseif(TARGET Catch2::Catch2)
+                # If only Catch2::Catch2 is available (without main)
+                target_link_libraries(${BENCHMARKS_EXPORT_NAME}
+                    PRIVATE
+                        Catch2::Catch2
+                )
+
+                message(STATUS "    [i] Linked ${BENCHMARKS_EXPORT_NAME} with Catch2::Catch2")
+                message(STATUS "    [i] Note: Benchmarks must provide their own main() function")
+
+                # Manual test registration
+                add_test(NAME ${BENCHMARKS_EXPORT_NAME} COMMAND ${BENCHMARKS_EXPORT_NAME})
+                set_tests_properties(${BENCHMARKS_EXPORT_NAME} PROPERTIES
+                    LABELS "${ARG_MODULE_TYPE};${ARG_NAME}"
+                )
+
+                message(STATUS "    [i] Registered ${BENCHMARKS_EXPORT_NAME} with CTest")
+            else()
+                message(STATUS "    [x] Catch2 not found - benchmarks will be compiled but not linked to test framework")
+                message(STATUS "    [x] To enable benchmark framework, add Catch2 to ThirdParty dependencies")
+
+                # Still register the test with CTest even without Catch2
+                add_test(NAME ${BENCHMARKS_EXPORT_NAME} COMMAND ${BENCHMARKS_EXPORT_NAME})
+                set_tests_properties(${BENCHMARKS_EXPORT_NAME} PROPERTIES
+                    LABELS "${ARG_MODULE_TYPE};${ARG_NAME}"
+                )
+            endif()
+
+            # Ensure C++23 standard for benchmarks
+            target_compile_features(${BENCHMARKS_EXPORT_NAME} PRIVATE cxx_std_23)
+        else()
+            message(STATUS "    [i] No benchmark source files found in Benchmarks directory for module ${ARG_NAME}")
+        endif()
+    else()
+        message(STATUS "    [i] No Benchmarks directory found for module ${ARG_NAME}")
     endif()
 endfunction()
