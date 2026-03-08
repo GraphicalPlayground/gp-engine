@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Templates/Core/EnableIf.hpp"
+#include "Templates/Core/AddReference.hpp"
 #include "Templates/Core/RemoveReference.hpp"
 
 namespace GP
@@ -14,8 +14,8 @@ namespace Detail
 // clang-format off
 
 /// @brief Helper function to add a pointer to a type, correctly handling reference types.
-template <typename T> auto TryAddPointer(int) -> TVoid<TRemoveReference_T<T>*>;
-template <typename T> auto TryAddPointer(...) -> TVoid<T>;
+template <typename T> auto TryAddPointer(int) -> TTypeHolder<TRemoveReference_T<T>*>;
+template <typename T> auto TryAddPointer(...) -> TTypeHolder<T>;
 
 // clang-format on
 
