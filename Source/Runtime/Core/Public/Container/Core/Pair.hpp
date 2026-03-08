@@ -106,13 +106,16 @@ public:
 
     /// @brief Three-way comparison operator, compares first elements and then second elements if first are equal.
     /// @param other Pair to compare against.
-    /// @return Comparison result based on the first differing element, or std::strong_ordering::equal if both are
-    ///         equal.
+    /// @return Comparison result based on the first differing element, or the common comparison category equal if
+    ///         both elements are equal.
     GP_NODISCARD constexpr auto operator<=>(const TPair& other) const noexcept
         requires CThreeWayComparable<TFirst> && CThreeWayComparable<TSecond>
     {
-        if (auto cmp = first <=> other.first; cmp != 0) { return cmp; }
-        return second <=> other.second;
+        using Cat = std::common_comparison_category_t<
+            decltype(GP::Declval<const TFirst&>() <=> GP::Declval<const TFirst&>()),
+            decltype(GP::Declval<const TSecond&>() <=> GP::Declval<const TSecond&>())>;
+        if (const Cat cmp = first <=> other.first; cmp != 0) { return cmp; }
+        return Cat(second <=> other.second);
     }
 
 public:
