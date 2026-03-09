@@ -6,6 +6,7 @@
 #include "Templates/Concepts/ComparisonConcepts.hpp"
 #include "Templates/Concepts/CoreConcepts.hpp"
 #include "Templates/Concepts/ObjectConcepts.hpp"
+#include "Templates/Core/RemoveCVRef.hpp"
 #include "Templates/Core/Utility.hpp"
 
 namespace GP
@@ -151,7 +152,7 @@ public:
     /// @param value Value to assign.
     /// @return Reference to this optional.
     template <typename U = T>
-    requires CConstructibleFrom<T, U&&> && (!CSameAs<std::remove_cvref_t<U>, TOptional>)TOptional& operator=(U&& value)
+    requires CConstructibleFrom<T, U&&> && (!CSameAs<TRemoveCVRef_T<U>, TOptional>)TOptional& operator=(U&& value)
     {
         if (m_hasValue) { Value() = GP::Forward<U>(value); }
         else

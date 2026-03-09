@@ -8,6 +8,7 @@
 #include "Templates/Concepts/ObjectConcepts.hpp"
 #include "Templates/Core/RemoveCVRef.hpp"
 #include "Templates/Core/Utility.hpp"
+#include "Templates/Traits/AlignedStorage.hpp"
 #include <new>
 
 namespace GP
@@ -94,14 +95,14 @@ private:
             if (p)
             {
                 p->~T();
-                ::operator delete(p, sizeof(T), std::align_val_t{ alignof(T) });
+                ::operator delete(p, sizeof(T), AlignVal_T{ alignof(T) });
             }
         }
 
         static void CopyTo(const void* src, void* dst)
         {
             const T* srcObj = *reinterpret_cast<const T* const*>(src);
-            void* mem = ::operator new(sizeof(T), std::align_val_t{ alignof(T) });
+            void* mem = ::operator new(sizeof(T), AlignVal_T{ alignof(T) });
             ::new (mem) T(*srcObj);
             *reinterpret_cast<void**>(dst) = mem;
         }
@@ -140,7 +141,7 @@ public:
         if constexpr (kFitsSBO<U>) { ::new (m_buf) U(GP::Forward<T>(value)); }
         else
         {
-            void* mem = ::operator new(sizeof(U), std::align_val_t{ alignof(U) });
+            void* mem = ::operator new(sizeof(U), AlignVal_T{ alignof(U) });
             ::new (mem) U(GP::Forward<T>(value));
             *reinterpret_cast<void**>(m_buf) = mem;
         }
@@ -159,7 +160,7 @@ public:
         if constexpr (kFitsSBO<U>) { ::new (m_buf) U(GP::Forward<Args>(args)...); }
         else
         {
-            void* mem = ::operator new(sizeof(U), std::align_val_t{ alignof(U) });
+            void* mem = ::operator new(sizeof(U), AlignVal_T{ alignof(U) });
             ::new (mem) U(GP::Forward<Args>(args)...);
             *reinterpret_cast<void**>(m_buf) = mem;
         }
@@ -312,7 +313,7 @@ public:
         if constexpr (kFitsSBO<U>) { ::new (m_buf) U(GP::Forward<Args>(args)...); }
         else
         {
-            void* mem = ::operator new(sizeof(U), std::align_val_t{ alignof(U) });
+            void* mem = ::operator new(sizeof(U), AlignVal_T{ alignof(U) });
             ::new (mem) U(GP::Forward<Args>(args)...);
             *reinterpret_cast<void**>(m_buf) = mem;
         }
