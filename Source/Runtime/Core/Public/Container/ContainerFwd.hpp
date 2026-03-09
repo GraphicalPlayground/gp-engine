@@ -50,7 +50,7 @@ template <CCharacter T>
 class TString;
 template <CCharacter T>
 class TName;
-template <typename T>
+template <typename... Ts>
 class TTuple;
 template <CCharacter T>
 class TStringView;
