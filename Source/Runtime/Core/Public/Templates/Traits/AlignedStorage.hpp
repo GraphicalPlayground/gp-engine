@@ -4,9 +4,14 @@
 
 #include "CoreBuild.hpp"
 #include "CoreTypes.hpp"
+#include <new>
 
 namespace GP
 {
+
+/// @brief Type trait for defining an aligned storage buffer of at least Size bytes and alignment Align. See
+///        std::aligned_storage.
+using AlignVal_T = std::align_val_t;
 
 /// @brief A trivially default-constructible, trivially destructible buffer with at least Size bytes and alignment
 ///        Align. Equivalent to std::aligned_storage.
