@@ -50,7 +50,7 @@ struct FLargeFunctor
 };
 
 static_assert(
-    sizeof(FLargeFunctor) > Detail::kSBOCapacity, "FLargeFunctor must exceed SBO capacity to test heap fallback path."
+    sizeof(FLargeFunctor) > kSBOCapacity, "FLargeFunctor must exceed SBO capacity to test heap fallback path."
 );
 
 }   // anonymous namespace

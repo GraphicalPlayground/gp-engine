@@ -133,8 +133,8 @@ TEST_CASE("TAny: Has<T> returns false for wrong type", "[Container][Any]")
 TEST_CASE("TAny: Construction stores SBO types inline (SBO path)", "[Container][Any]")
 {
     // Int32 is small enough for SBO.
-    STATIC_REQUIRE(sizeof(Int32) <= TAny::kSBOSize);
-    STATIC_REQUIRE(alignof(Int32) <= TAny::kSBOAlign);
+    STATIC_REQUIRE(sizeof(Int32) <= kSBOCapacity);
+    STATIC_REQUIRE(alignof(Int32) <= kSBOAlignment);
 
     TAny a(Int32{ 99 });
     REQUIRE(a.Has<Int32>());
@@ -144,7 +144,7 @@ TEST_CASE("TAny: Construction stores SBO types inline (SBO path)", "[Container][
 TEST_CASE("TAny: Construction stores large types on heap (heap path)", "[Container][Any]")
 {
     // FLargeStruct is larger than the SBO buffer.
-    STATIC_REQUIRE(sizeof(FLargeStruct) > TAny::kSBOSize);
+    STATIC_REQUIRE(sizeof(FLargeStruct) > kSBOCapacity);
 
     TAny a(FLargeStruct{ 77 });
     REQUIRE(a.Has<FLargeStruct>());
@@ -259,7 +259,7 @@ TEST_CASE("TAny: Destructor invokes the stored type's destructor (heap)", "[Cont
             ~FLargeTracker() { ++(*m_count); }
         };
 
-        STATIC_REQUIRE(sizeof(FLargeTracker) > TAny::kSBOSize);
+        STATIC_REQUIRE(sizeof(FLargeTracker) > kSBOCapacity);
 
         TAny a(FLargeTracker{ count });
         REQUIRE(count == 1);   // Temporary destroyed after construction

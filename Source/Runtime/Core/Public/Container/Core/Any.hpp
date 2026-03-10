@@ -7,6 +7,7 @@
 #include "Templates/Concepts/CoreConcepts.hpp"
 #include "Templates/Concepts/ObjectConcepts.hpp"
 #include "Templates/Core/RemoveCVRef.hpp"
+#include "Templates/Core/SmallBufferOptimization.hpp"
 #include "Templates/Core/Utility.hpp"
 #include "Templates/Traits/AlignedStorage.hpp"
 #include <new>
@@ -51,13 +52,6 @@ inline constexpr TInPlaceTypeT<T> InPlaceType{};
 ///        The stored type must be CopyConstructible; move-only types are not supported.
 class TAny final
 {
-public:
-    /// @brief Byte size of the inline small-buffer-optimisation (SBO) storage.
-    static constexpr SizeT kSBOSize = 3 * sizeof(void*);
-
-    /// @brief Alignment of the inline SBO buffer. Equals alignof(MaxAlignT).
-    static constexpr SizeT kSBOAlign = alignof(MaxAlignT);
-
 private:
     /// @brief Virtual dispatch table for type-erased operations on the stored value.
     struct FVTable
@@ -120,10 +114,10 @@ private:
 private:
     /// @brief True when T fits in the SBO buffer (small enough and not over-aligned).
     template <typename T>
-    static constexpr bool kFitsSBO = (sizeof(T) <= kSBOSize) && (alignof(T) <= kSBOAlign);
+    static constexpr bool kFitsSBO = (sizeof(T) <= kSBOCapacity) && (alignof(T) <= kSBOAlignment);
 
     // clang-format off
-    GP_ALIGN(kSBOAlign) Byte m_buf[kSBOSize] {};
+    GP_ALIGN(kSBOAlignment) Byte m_buf[kSBOCapacity] {};
     // clang-format on
     const FVTable* m_vtable{ nullptr };
 
