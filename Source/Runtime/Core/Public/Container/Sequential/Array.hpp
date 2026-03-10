@@ -589,6 +589,115 @@ public:
         for (SizeT offset = 0; offset < total; offset += GP_CACHE_LINE_SIZE) { GP_PREFETCH_R(ptr + offset); }
     }
 
+    /// @brief Erases the element pointed to by `pos`.
+    ///        Preserves element order by shifting subsequent elements left.
+    /// @param pos Valid, dereferenceable iterator into this array.
+    /// @return Iterator to the element that immediately followed the erased one, or end() if it was the last.
+    Iterator Erase(ConstIterator pos) noexcept
+    {
+        GP_ASSERT(pos >= cbegin() && pos < cend());
+        const SizeT index = static_cast<SizeT>(pos - cbegin());
+        RemoveAt(index);
+        return Iterator(m_data + index);
+    }
+
+    /// @brief Erases all elements in the half-open range [first, last).
+    ///        Preserves element order. A no-op when first == last.
+    /// @param first Iterator to the first element to erase.
+    /// @param last Iterator one-past the last element to erase.
+    /// @return Iterator to the element that followed the last erased element, or end().
+    Iterator Erase(ConstIterator first, ConstIterator last) noexcept
+    {
+        GP_ASSERT(first >= cbegin() && last <= cend() && first <= last);
+        const SizeT from = static_cast<SizeT>(first - cbegin());
+        const SizeT count = static_cast<SizeT>(last - first);
+        if (count == 0) { return Iterator(m_data + from); }
+
+        DestroyN(m_data + from, count);
+
+        const SizeT remaining = m_size - from - count;
+        if (remaining > 0)
+        {
+            if constexpr (CTriviallyCopyable<T>)
+            {
+                // Safe overlap: destination is always before source when shifting left.
+                ::memmove(m_data + from, m_data + from + count, sizeof(T) * remaining);
+            }
+            else
+            {
+                for (SizeT i = 0; i < remaining; ++i)
+                {
+                    ::new (m_data + from + i) T(GP::Move(m_data[from + count + i]));
+                    m_data[from + count + i].~T();
+                }
+            }
+        }
+
+        m_size -= count;
+        return Iterator(m_data + from);
+    }
+
+    /// @brief Removes all elements for which `pred` returns true, preserving the relative order of survivors.
+    ///        Single-pass write-pointer compaction, equivalent to the erase-remove idiom but with no redundant
+    ///        iterator invalidation step. O(n) moves in the worst case.
+    /// @tparam Pred Predicate invocable with `const T&`, returning bool.
+    /// @param pred Predicate to evaluate each element; returning true marks the element for removal.
+    /// @return Number of elements removed.
+    template <CPredicate<const T&> Pred>
+    SizeT RemoveIf(Pred&& pred) noexcept
+    {
+        SizeT write = 0;
+        for (SizeT read = 0; read < m_size; ++read)
+        {
+            if (pred(m_data[read]))
+            {
+                // Element is condemned, destroy it in-place.
+                if constexpr (!CTriviallyDestructible<T>) { m_data[read].~T(); }
+            }
+            else
+            {
+                // Element survives, relocate it to the write cursor if compaction is active.
+                if (write != read)
+                {
+                    if constexpr (CTriviallyCopyable<T>) { ::memcpy(m_data + write, m_data + read, sizeof(T)); }
+                    else
+                    {
+                        ::new (m_data + write) T(GP::Move(m_data[read]));
+                        m_data[read].~T();
+                    }
+                }
+                ++write;
+            }
+        }
+
+        const SizeT removed = m_size - write;
+        m_size = write;
+        return removed;
+    }
+
+    /// @brief Removes all elements for which `pred` returns true by swapping each condemned element
+    ///        with the current tail (order NOT preserved). Preferred over RemoveIf when element order
+    ///        does not matter and the removal rate is expected to be low.
+    /// @tparam Pred Predicate invocable with `const T&`, returning bool.
+    /// @param pred Predicate to evaluate each element; returning true marks the element for removal.
+    /// @return Number of elements removed.
+    template <CPredicate<const T&> Pred>
+    SizeT RemoveIfSwap(Pred&& pred) noexcept
+    {
+        SizeT removed = 0;
+        for (SizeT i = 0; i < m_size;)
+        {
+            if (pred(m_data[i]))
+            {
+                RemoveAtSwap(i);
+                ++removed;
+                // Do NOT advance i: the element swapped in from the tail has not been evaluated yet.
+            }
+            else { ++i; }
+        }
+        return removed;
+    }
+
     /// @brief Returns a pointer to the underlying element storage.
     /// @return Mutable pointer to element data.
     GP_NODISCARD constexpr Pointer Data() noexcept { return m_data; }
