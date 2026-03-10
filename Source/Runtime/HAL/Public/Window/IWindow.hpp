@@ -5,8 +5,10 @@
 #include "CoreBuild.hpp"
 #include "Math/Vector/IntExtent2D.hpp"
 #include "Math/Vector/IntPoint2D.hpp"
+#include "Templates/Events/Event.hpp"
 #include "Window/WindowDesc.hpp"
 #include "Window/WindowEnums.hpp"
+#include "Window/WindowEvents.hpp"
 
 namespace GP
 {
@@ -18,6 +20,114 @@ class IDisplay;
 /// @brief Interface for platform-agnostic window management.
 class IWindow
 {
+protected:
+    ///
+    /// @section Events
+    ///
+
+    // clang-format off
+
+    // Lifecycle
+    TEvent<void(const FWindowOpenedEvent&)> m_onOpened;
+    TEvent<void(const FWindowCloseRequestedEvent&)> m_onCloseRequested;
+    TEvent<void(const FWindowClosedEvent&)> m_onClosed;
+
+    // Position
+    TEvent<void(const FWindowMovedEvent&)> m_onMoved;
+
+    // Size
+    TEvent<void(const FWindowResizedEvent&)> m_onResized;
+    TEvent<void(const FWindowFramebufferResizedEvent&)> m_onFramebufferResized;
+    TEvent<void(const FWindowSizeLimitsChangedEvent&)> m_onSizeLimitsChanged;
+
+    // Focus & Activity
+    TEvent<void(const FWindowFocusGainedEvent&)> m_onFocusGained;
+    TEvent<void(const FWindowFocusLostEvent&)> m_onFocusLost;
+    TEvent<void(const FWindowActivatedEvent&)> m_onActivated;
+    TEvent<void(const FWindowDeactivatedEvent&)> m_onDeactivated;
+
+    // Visibility & State
+    TEvent<void(const FWindowShownEvent&)> m_onShown;
+    TEvent<void(const FWindowHiddenEvent&)> m_onHidden;
+    TEvent<void(const FWindowMinimizedEvent&)> m_onMinimized;
+    TEvent<void(const FWindowMaximizedEvent&)> m_onMaximized;
+    TEvent<void(const FWindowRestoredEvent&)> m_onRestored;
+    TEvent<void(const FWindowOcclusionChangedEvent&)> m_onOcclusionChanged;
+
+    // Fullscreen & Borderless
+    TEvent<void(const FWindowFullscreenChangedEvent&)> m_onFullscreenChanged;
+    TEvent<void(const FWindowBorderlessChangedEvent&)> m_onBorderlessChanged;
+
+    // Display
+    TEvent<void(const FWindowDisplayChangedEvent&)> m_onDisplayChanged;
+    TEvent<void(const FWindowDPIScaleChangedEvent&)> m_onDPIScaleChanged;
+
+    // VSync
+    TEvent<void(const FWindowVSyncChangedEvent&)> m_onVSyncChanged;
+
+    // Mouse & Cursor
+    TEvent<void(const FWindowMouseEnteredEvent&)> m_onMouseEntered;
+    TEvent<void(const FWindowMouseLeftEvent&)> m_onMouseLeft;
+    TEvent<void(const FWindowMouseGrabChangedEvent&)> m_onMouseGrabChanged;
+    TEvent<void(const FWindowCursorVisibilityChangedEvent&)> m_onCursorVisibilityChanged;
+    TEvent<void(const FWindowCursorConfinedChangedEvent&)> m_onCursorConfinedChanged;
+
+    // Keyboard & Aggregate Input
+    TEvent<void(const FWindowKeyboardGrabChangedEvent&)> m_onKeyboardGrabChanged;
+    TEvent<void(const FWindowInputGrabChangedEvent&)> m_onInputGrabChanged;
+
+public:
+    // Lifecycle
+    TEventView<void(const FWindowOpenedEvent&)> OnOpened{ m_onOpened };
+    TEventView<void(const FWindowCloseRequestedEvent&)> OnCloseRequested{ m_onCloseRequested };
+    TEventView<void(const FWindowClosedEvent&)> OnClosed{ m_onClosed };
+
+    // Position
+    TEventView<void(const FWindowMovedEvent&)> OnMoved{ m_onMoved };
+
+    // Size
+    TEventView<void(const FWindowResizedEvent&)> OnResized{ m_onResized };
+    TEventView<void(const FWindowFramebufferResizedEvent&)> OnFramebufferResized{ m_onFramebufferResized };
+    TEventView<void(const FWindowSizeLimitsChangedEvent&)> OnSizeLimitsChanged{ m_onSizeLimitsChanged };
+
+    // Focus & Activity
+    TEventView<void(const FWindowFocusGainedEvent&)> OnFocusGained{ m_onFocusGained };
+    TEventView<void(const FWindowFocusLostEvent&)> OnFocusLost{ m_onFocusLost };
+    TEventView<void(const FWindowActivatedEvent&)> OnActivated{ m_onActivated };
+    TEventView<void(const FWindowDeactivatedEvent&)> OnDeactivated{ m_onDeactivated };
+
+    // Visibility & State
+    TEventView<void(const FWindowShownEvent&)> OnShown{ m_onShown };
+    TEventView<void(const FWindowHiddenEvent&)> OnHidden{ m_onHidden };
+    TEventView<void(const FWindowMinimizedEvent&)> OnMinimized{ m_onMinimized };
+    TEventView<void(const FWindowMaximizedEvent&)> OnMaximized{ m_onMaximized };
+    TEventView<void(const FWindowRestoredEvent&)> OnRestored{ m_onRestored };
+    TEventView<void(const FWindowOcclusionChangedEvent&)> OnOcclusionChanged{ m_onOcclusionChanged };
+
+    // Fullscreen & Borderless
+    TEventView<void(const FWindowFullscreenChangedEvent&)> OnFullscreenChanged{ m_onFullscreenChanged };
+    TEventView<void(const FWindowBorderlessChangedEvent&)> OnBorderlessChanged{ m_onBorderlessChanged };
+
+    // Display
+    TEventView<void(const FWindowDisplayChangedEvent&)> OnDisplayChanged{ m_onDisplayChanged };
+    TEventView<void(const FWindowDPIScaleChangedEvent&)> OnDPIScaleChanged{ m_onDPIScaleChanged };
+
+    // VSync
+    TEventView<void(const FWindowVSyncChangedEvent&)> OnVSyncChanged{ m_onVSyncChanged };
+
+    // Mouse & Cursor
+    TEventView<void(const FWindowMouseEnteredEvent&)> OnMouseEntered{ m_onMouseEntered };
+    TEventView<void(const FWindowMouseLeftEvent&)> OnMouseLeft{ m_onMouseLeft };
+    TEventView<void(const FWindowMouseGrabChangedEvent&)> OnMouseGrabChanged{ m_onMouseGrabChanged };
+    TEventView<void(const FWindowCursorVisibilityChangedEvent&)> OnCursorVisibilityChanged{ m_onCursorVisibilityChanged };
+    TEventView<void(const FWindowCursorConfinedChangedEvent&)> OnCursorConfinedChanged{ m_onCursorConfinedChanged };
+
+    // Keyboard & Aggregate Input
+    TEventView<void(const FWindowKeyboardGrabChangedEvent&)> OnKeyboardGrabChanged{ m_onKeyboardGrabChanged };
+    TEventView<void(const FWindowInputGrabChangedEvent&)> OnInputGrabChanged{ m_onInputGrabChanged };
+
+    // clang-format on
+
 public:
     virtual ~IWindow() = default;
 
