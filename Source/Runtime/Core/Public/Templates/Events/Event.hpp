@@ -4,7 +4,9 @@
 
 #include "Templates/Core/Utility.hpp"
 #include "Templates/Events/DelegateHandle.hpp"
+#include "Templates/Events/EventEnums.hpp"
 #include "Templates/Events/MulticastDelegate.hpp"
+#include <array>
 
 namespace GP
 {
@@ -13,32 +15,34 @@ namespace GP
 template <typename Signature>
 class TEvent;
 
-/// @brief Non-owning, subscribe-only reference into a TEvent.
+/// @brief Subscribe-only, non-owning view into a TEvent.
 ///
-/// TEventView wraps a single pointer to a TMulticastDelegate and exposes only
-/// the subscription half of the API: Add, AddScoped, AddMethod, AddFunction,
-/// Remove, RemoveAll, and query methods. Broadcast() is intentionally absent.
+/// sizeof(TEventView) == sizeof(void*). Passing or storing a TEventView is
+/// as cheap as passing a pointer. No virtual dispatch, no heap allocation.
 ///
-/// @par Zero overhead
-/// sizeof(TEventView) == sizeof(void*). Passing or storing a TEventView is as
-/// cheap as passing a pointer. No virtual dispatch, no heap allocation.
+/// Broadcast() is intentionally absent - only the class that owns the
+/// TEvent may fire it.
 ///
-/// @par Lifetime
-/// A TEventView is only valid while its TEvent is alive. Never store a
-/// TEventView that may outlive the source.
-///
-/// @par How to obtain a TEventView
-/// Call TEvent::GetView(), or access the named view members on
-/// FWindowEvents (and similar event-hub structs).
-///
+/// @par Preferred subscription
 /// @code
-///   // In IWindow:
-///   virtual FWindowEvents& GetEvents() noexcept = 0;
-///
-///   // Subscriber:
-///   FScopedDelegateHandle h = window.GetEvents().onResized.AddScoped(
-///       [&](FWindowResizedEvent const& e) { swapchain.Resize(e.newSize); }
+///   FScopedDelegateHandle h = view.AddScoped(
+///       [](FWindowResizedEvent const& e) { ... }
 ///   );
+///   // Subscription removed automatically when h is destroyed.
+/// @endcode
+///
+/// @par Priority subscription
+/// @code
+///   // Save system must run before the logging system.
+///   FScopedDelegateHandle save = view.AddScoped(OnSave, EEventPriority::Critical);
+///   FScopedDelegateHandle log  = view.AddScoped(OnLog,  EEventPriority::Low);
+/// @endcode
+///
+/// @par Operators
+/// @code
+///   view += [](auto& e) { ... };    // fire-and-forget (Normal priority)
+///   view -= handle;                 // remove by handle
+///   view -= static_cast<void*>(p); // RemoveAll for instance
 /// @endcode
 ///
 /// @tparam Signature  Must be void(TArgs...).
@@ -49,21 +53,15 @@ template <typename... TArgs>
 class TEventView<void(TArgs...)>
 {
 private:
-    using FDelegate = TMulticastDelegate<void(TArgs...)>;
+    using FSource = TEvent<void(TArgs...)>;
 
 private:
-    FDelegate* m_delegate{ nullptr };   //<! Non-owning pointer to the backing delegate.
+    FSource* m_source{ nullptr };   //<! Non-owning pointer to the event source.
 
 public:
-    /// @brief Constructs a view bound to \p delegate.
-    ///        Prefer TEvent::GetView() over direct construction.
-    explicit TEventView(FDelegate& delegate) noexcept
-        : m_delegate(&delegate)
-    {}
-
-    /// @brief Implicitly convertible from TEvent& for convenient GetView() implementation.
-    TEventView(class TEvent<void(TArgs...)>& delegate) noexcept
-        : m_delegate(&delegate.m_delegate)
+    /// @brief Constructs a view bound to \p source. Prefer TEvent::GetView() over direct construction.
+    explicit TEventView(FSource& source) noexcept
+        : m_source(&source)
     {}
 
     constexpr TEventView() noexcept = default;
@@ -74,143 +72,113 @@ public:
     ~TEventView() noexcept = default;
 
 public:
-    /// @brief Subscribes a callable and returns a reference to this view for chaining. Preferred over Add().
-    /// @tparam TCallable Any callable matching void(TArgs...).
+    /// @brief Fire-and-forget subscription at Normal priority. Handle is discarded.
+    ///        Use AddScoped() when the subscriber has a bounded lifetime.
     template <typename TCallable>
     TEventView& operator+=(TCallable&& callable)
     {
-        GP_ASSERT(IsValid(), "TEventView::operator+= - view is not bound to an event source.");
-        m_delegate->Add(GP::Forward<TCallable>(callable));
+        GP_ASSERT(IsValid(), "TEventView::operator+= - view is not bound to a source.");
+        m_source->Add(GP::Forward<TCallable>(callable), EEventPriority::Normal);
         return *this;
     }
 
-    ///  @brief Removes the binding identified by \p handle.
+    /// @brief Removes the binding identified by \p handle.
     TEventView& operator-=(FDelegateHandle handle)
     {
-        GP_ASSERT(IsValid(), "TEventView::operator-= - view is not bound to an event source.");
-        m_delegate->Remove(handle);
+        GP_ASSERT(IsValid(), "TEventView::operator-= - view is not bound to a source.");
+        m_source->Remove(handle);
         return *this;
     }
 
-    /// @brief Removes all method bindings registered for \p rawInstance. Equivalent to RemoveAll(rawInstance).
+    /// @brief Removes all method bindings registered for \p rawInstance.
     TEventView& operator-=(void* rawInstance)
     {
-        GP_ASSERT(IsValid(), "TEventView::operator-= - view is not bound to an event source.");
-        m_delegate->RemoveAll(rawInstance);
+        GP_ASSERT(IsValid(), "TEventView::operator-= - view is not bound to a source.");
+        m_source->RemoveAll(rawInstance);
         return *this;
     }
 
 public:
-    /// @brief Returns true if this view is bound to an event source.
-    GP_NODISCARD GP_FORCEINLINE bool IsValid() const noexcept { return m_delegate != nullptr; }
+    GP_NODISCARD GP_FORCEINLINE bool IsValid() const noexcept { return m_source != nullptr; }
 
-    /// @brief Subscribes a callable and returns an RAII handle that auto-removes when it goes out of scope. Preferred
-    ///        over Add().
-    /// @tparam TCallable Any callable matching void(TArgs...).
-    /// @param callable Callable to store. Copied or moved into the event.
-    /// @return RAII scoped handle; subscription lives exactly as long as the handle.
+    /// @brief Subscribes a callable; auto-removes when the returned handle is destroyed.
     template <typename TCallable>
-    GP_NODISCARD FScopedDelegateHandle AddScoped(TCallable&& callable)
+    GP_NODISCARD FScopedDelegateHandle AddScoped(TCallable&& callable, EEventPriority priority = EEventPriority::Normal)
     {
-        GP_ASSERT(IsValid(), "TEventView::AddScoped - view is not bound to an event source.");
-
-        FDelegateHandle handle = m_delegate->Add(GP::Forward<TCallable>(callable));
-
-        return FScopedDelegateHandle(
-            m_delegate,
-            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
-            handle
-        );
+        GP_ASSERT(IsValid(), "TEventView::AddScoped - view is not bound to a source.");
+        return m_source->AddScoped(std::forward<TCallable>(callable), priority);
     }
 
-    /// @brief Subscribes a callable and returns a raw handle. Caller is
-    ///        responsible for calling Remove(). Prefer AddScoped() instead.
-    ///
-    /// \tparam TCallable Any callable matching void(TArgs...).
-    /// \param  callable Callable to store.
-    /// \return Raw subscription handle.
+    /// @brief Subscribes a mutable member function; auto-removes when the returned handle is destroyed.
+    template <typename T>
+    GP_NODISCARD FScopedDelegateHandle
+        AddMethodScoped(T* instance, void (T::*method)(TArgs...), EEventPriority priority = EEventPriority::Normal)
+    {
+        GP_ASSERT(IsValid(), "TEventView::AddMethodScoped - view is not bound to a source.");
+        return m_source->AddMethodScoped(instance, method, priority);
+    }
+
+    /// @brief Subscribes a const member function; auto-removes when the returned handle is destroyed.
+    template <typename T>
+    GP_NODISCARD FScopedDelegateHandle AddMethodScoped(
+        const T* instance, void (T::*method)(TArgs...) const, EEventPriority priority = EEventPriority::Normal
+    )
+    {
+        GP_ASSERT(IsValid(), "TEventView::AddMethodScoped - view is not bound to a source.");
+        return m_source->AddMethodScoped(instance, method, priority);
+    }
+
+    /// @brief Subscribes a callable. Prefer AddScoped() for bounded-lifetime subscribers.
     template <typename TCallable>
-    GP_NODISCARD FDelegateHandle Add(TCallable&& callable)
+    GP_NODISCARD FDelegateHandle Add(TCallable&& callable, EEventPriority priority = EEventPriority::Normal)
     {
-        GP_ASSERT(IsValid(), "TEventView::Add - view is not bound to an event source.");
-        return m_delegate->Add(GP::Forward<TCallable>(callable));
+        GP_ASSERT(IsValid(), "TEventView::Add - view is not bound to a source.");
+        return m_source->Add(std::forward<TCallable>(callable), priority);
     }
 
-    /// @brief Subscribes a mutable member function. Returns a raw handle.
+    /// @brief Subscribes a mutable member function.
     template <typename T>
-    GP_NODISCARD FDelegateHandle AddMethod(T* instance, void (T::*method)(TArgs...))
+    GP_NODISCARD FDelegateHandle
+        AddMethod(T* instance, void (T::*method)(TArgs...), EEventPriority priority = EEventPriority::Normal)
     {
-        GP_ASSERT(IsValid(), "TEventView::AddMethod - view is not bound to an event source.");
-        return m_delegate->AddMethod(instance, method);
+        GP_ASSERT(IsValid(), "TEventView::AddMethod - view is not bound to a source.");
+        return m_source->AddMethod(instance, method, priority);
     }
 
-    /// @brief Subscribes a mutable member function. Returns an RAII scoped handle.
+    /// @brief Subscribes a const member function.
     template <typename T>
-    GP_NODISCARD FScopedDelegateHandle AddMethodScoped(T* instance, void (T::*method)(TArgs...))
+    GP_NODISCARD FDelegateHandle AddMethod(
+        const T* instance, void (T::*method)(TArgs...) const, EEventPriority priority = EEventPriority::Normal
+    )
     {
-        GP_ASSERT(IsValid(), "TEventView::AddMethodScoped - view is not bound to an event source.");
-
-        FDelegateHandle handle = m_delegate->AddMethod(instance, method);
-
-        return FScopedDelegateHandle(
-            m_delegate,
-            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
-            handle
-        );
+        GP_ASSERT(IsValid(), "TEventView::AddMethod - view is not bound to a source.");
+        return m_source->AddMethod(instance, method, priority);
     }
 
-    /// @brief Subscribes a const member function. Returns a raw handle.
-    template <typename T>
-    GP_NODISCARD FDelegateHandle AddMethod(const T* instance, void (T::*method)(TArgs...) const)
+    /// @brief Subscribes a free or static member function.
+    GP_NODISCARD FDelegateHandle AddFunction(void (*fn)(TArgs...), EEventPriority priority = EEventPriority::Normal)
     {
-        GP_ASSERT(IsValid(), "TEventView::AddMethod - view is not bound to an event source.");
-        return m_delegate->AddMethod(instance, method);
+        GP_ASSERT(IsValid(), "TEventView::AddFunction - view is not bound to a source.");
+        return m_source->AddFunction(fn, priority);
     }
 
-    /// @brief Subscribes a const member function. Returns an RAII scoped handle.
-    template <typename T>
-    GP_NODISCARD FScopedDelegateHandle AddMethodScoped(const T* instance, void (T::*method)(TArgs...) const)
-    {
-        GP_ASSERT(IsValid(), "TEventView::AddMethodScoped - view is not bound to an event source.");
-
-        FDelegateHandle handle = m_delegate->AddMethod(instance, method);
-
-        return FScopedDelegateHandle(
-            m_delegate,
-            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
-            handle
-        );
-    }
-
-    /// @brief Subscribes a free or static member function. Returns a raw handle.
-    GP_NODISCARD FDelegateHandle AddFunction(void (*fn)(TArgs...))
-    {
-        GP_ASSERT(IsValid(), "TEventView::AddFunction - view is not bound to an event source.");
-        return m_delegate->AddFunction(fn);
-    }
-
-    /// @brief Removes the subscription identified by \p handle.
-    ///        Safe to call re-entrantly from within a Broadcast().
-    /// \return True if a matching active binding was found.
     bool Remove(FDelegateHandle handle)
     {
-        GP_ASSERT(IsValid(), "TEventView::Remove - view is not bound to an event source.");
-        return m_delegate->Remove(handle);
+        GP_ASSERT(IsValid(), "TEventView::Remove");
+        return m_source->Remove(handle);
     }
 
-    /// @brief Removes all method bindings registered via AddMethod() on \p rawInstance.
-    /// \return Number of bindings removed.
     Int32 RemoveAll(void* rawInstance)
     {
-        GP_ASSERT(IsValid(), "TEventView::RemoveAll - view is not bound to an event source.");
-        return m_delegate->RemoveAll(rawInstance);
+        GP_ASSERT(IsValid(), "TEventView::RemoveAll");
+        return m_source->RemoveAll(rawInstance);
     }
 
-    GP_NODISCARD bool IsEmpty() const noexcept { return !m_delegate || m_delegate->IsEmpty(); }
+    GP_NODISCARD bool IsEmpty() const noexcept { return !m_source || m_source->IsEmpty(); }
 
-    GP_NODISCARD Int32 GetBindingCount() const noexcept { return m_delegate ? m_delegate->GetBindingCount() : 0; }
+    GP_NODISCARD Int32 GetBindingCount() const noexcept { return m_source ? m_source->GetBindingCount() : 0; }
 
-    GP_NODISCARD bool Contains(FDelegateHandle h) const noexcept { return m_delegate && m_delegate->Contains(h); }
+    GP_NODISCARD bool Contains(FDelegateHandle h) const noexcept { return m_source && m_source->Contains(h); }
 };
 
 /// @brief Owning event source: holds bindings, fires events, and vends
@@ -270,143 +238,169 @@ private:
     using FDelegate = TMulticastDelegate<void(TArgs...)>;
 
 private:
-    FDelegate m_delegate;   //<! Backing multicast delegate; all state lives here.
+    // TODO: Change the std::array to our custom TStaticArray when it completed
+    std::array<FDelegate, kEventPriorityCount> m_buckets;   //<! One delegate bucket per priority level.
 
 public:
     TEvent() noexcept = default;
 
-    // Non-copyable: event sources own unique binding lists.
     TEvent(const TEvent&) = delete;
     TEvent& operator=(const TEvent&) = delete;
 
-    // Movable.
     TEvent(TEvent&&) noexcept = default;
     TEvent& operator=(TEvent&&) noexcept = default;
 
     ~TEvent() noexcept = default;
 
 public:
-    /// @brief Subscribes a callable and returns a reference to this view for chaining. Preferred over Add().
-    /// @tparam TCallable Any callable matching void(TArgs...).
+    /// @brief Fire-and-forget subscription at Normal priority. Handle is discarded.
+    ///        Use AddScoped() when the subscriber has a bounded lifetime.
     template <typename TCallable>
     TEvent& operator+=(TCallable&& callable)
     {
-        m_delegate.Add(GP::Forward<TCallable>(callable));
+        Bucket(EEventPriority::Normal).Add(std::forward<TCallable>(callable));
         return *this;
     }
 
     /// @brief Removes the binding identified by \p handle.
     TEvent& operator-=(FDelegateHandle handle)
     {
-        m_delegate.Remove(handle);
+        Remove(handle);
         return *this;
     }
 
     /// @brief Removes all method bindings registered for \p rawInstance.
-    TEventSource& operator-=(void* rawInstance)
+    TEvent& operator-=(void* rawInstance)
     {
-        m_delegate.RemoveAll(rawInstance);
+        RemoveAll(rawInstance);
         return *this;
     }
 
-    /// @brief Broadcasts the event. Equivalent to Broadcast(args...).
-    ///        Owner-only by convention; subscribers see TEventView which omits this operator.
-    void operator()(TArgs... args) { m_delegate.Broadcast(GP::Forward<TArgs>(args)...); }
+    /// @brief Broadcasts via operator() for ergonomic owner-side syntax.
+    void operator()(TArgs... args) { Broadcast(args...); }
 
 public:
-    /// @brief Returns a subscribe-only TEventView bound to this source.
-    /// The view is valid as long as this TEvent is alive. Return it
-    /// from public accessor methods to give subscribers Add/Remove access
-    /// without exposing Broadcast().
     GP_NODISCARD GP_FORCEINLINE TEventView<void(TArgs...)> GetView() noexcept
     {
-        return TEventView<void(TArgs...)>{ m_delegate };
+        return TEventView<void(TArgs...)>{ *this };
     }
 
-    /// @brief Subscribes a callable and returns an RAII scoped handle. Preferred.
     template <typename TCallable>
-    GP_NODISCARD FScopedDelegateHandle AddScoped(TCallable&& callable)
+    GP_NODISCARD FScopedDelegateHandle AddScoped(TCallable&& callable, EEventPriority priority = EEventPriority::Normal)
     {
-        FDelegateHandle handle = m_delegate.Add(GP::Forward<TCallable>(callable));
-
-        return FScopedDelegateHandle(
-            &m_delegate,
-            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
-            handle
-        );
+        FDelegateHandle handle = Bucket(priority).Add(GP::Forward<TCallable>(callable));
+        return MakeScopedHandle(handle);
     }
 
-    /// @brief Subscribes a callable and returns a raw handle. Prefer AddScoped().
+    template <typename T>
+    GP_NODISCARD FScopedDelegateHandle
+        AddMethodScoped(T* instance, void (T::*method)(TArgs...), EEventPriority priority = EEventPriority::Normal)
+    {
+        FDelegateHandle handle = Bucket(priority).AddMethod(instance, method);
+        return MakeScopedHandle(handle);
+    }
+
+    template <typename T>
+    GP_NODISCARD FScopedDelegateHandle AddMethodScoped(
+        const T* instance, void (T::*method)(TArgs...) const, EEventPriority priority = EEventPriority::Normal
+    )
+    {
+        FDelegateHandle handle = Bucket(priority).AddMethod(instance, method);
+        return MakeScopedHandle(handle);
+    }
+
     template <typename TCallable>
-    GP_NODISCARD FDelegateHandle Add(TCallable&& callable)
+    GP_NODISCARD FDelegateHandle Add(TCallable&& callable, EEventPriority priority = EEventPriority::Normal)
     {
-        return m_delegate.Add(GP::Forward<TCallable>(callable));
+        return Bucket(priority).Add(GP::Forward<TCallable>(callable));
     }
 
-    /// @brief Subscribes a mutable member function. Returns a raw handle.
     template <typename T>
-    GP_NODISCARD FDelegateHandle AddMethod(T* instance, void (T::*method)(TArgs...))
+    GP_NODISCARD FDelegateHandle
+        AddMethod(T* instance, void (T::*method)(TArgs...), EEventPriority priority = EEventPriority::Normal)
     {
-        return m_delegate.AddMethod(instance, method);
+        return Bucket(priority).AddMethod(instance, method);
     }
 
-    /// @brief Subscribes a mutable member function. Returns an RAII scoped handle.
     template <typename T>
-    GP_NODISCARD FScopedDelegateHandle AddMethodScoped(T* instance, void (T::*method)(TArgs...))
+    GP_NODISCARD FDelegateHandle AddMethod(
+        const T* instance, void (T::*method)(TArgs...) const, EEventPriority priority = EEventPriority::Normal
+    )
     {
-        FDelegateHandle handle = m_delegate.AddMethod(instance, method);
+        return Bucket(priority).AddMethod(instance, method);
+    }
 
+    GP_NODISCARD FDelegateHandle AddFunction(void (*fn)(TArgs...), EEventPriority priority = EEventPriority::Normal)
+    {
+        return Bucket(priority).AddFunction(fn);
+    }
+
+    bool Remove(FDelegateHandle handle)
+    {
+        for (FDelegate& bucket: m_buckets)
+        {
+            if (bucket.Remove(handle)) { return true; }
+        }
+        return false;
+    }
+
+    Int32 RemoveAll(void* rawInstance)
+    {
+        Int32 total = 0;
+        for (FDelegate& bucket: m_buckets) { total += bucket.RemoveAll(rawInstance); }
+        return total;
+    }
+
+    void Clear()
+    {
+        for (FDelegate& bucket: m_buckets) { bucket.Clear(); }
+    }
+
+    /// @brief Invokes all listeners in priority order.
+    ///        Owner-only by convention; external code receives TEventView which omits this.
+    void Broadcast(TArgs... args)
+    {
+        // All event signatures are void(FXxx const&) - passing by const ref is safe
+        // across all bucket iterations; no double-forward issue.
+        for (FDelegate& bucket: m_buckets) { bucket.Broadcast(args...); }
+    }
+
+    GP_NODISCARD bool IsEmpty() const noexcept
+    {
+        for (const FDelegate& bucket: m_buckets)
+        {
+            if (!bucket.IsEmpty()) { return false; }
+        }
+        return true;
+    }
+
+    GP_NODISCARD Int32 GetBindingCount() const noexcept
+    {
+        Int32 total = 0;
+        for (const FDelegate& bucket: m_buckets) { total += bucket.GetBindingCount(); }
+        return total;
+    }
+
+    GP_NODISCARD bool Contains(FDelegateHandle handle) const noexcept
+    {
+        for (const FDelegate& b: m_buckets)
+        {
+            if (bucket.Contains(handle)) { return true; }
+        }
+        return false;
+    }
+
+private:
+    GP_FORCEINLINE FDelegate& Bucket(EEventPriority priority) noexcept { return m_buckets[ToIndex(priority)]; }
+
+    GP_NODISCARD FScopedDelegateHandle MakeScopedHandle(FDelegateHandle handle)
+    {
         return FScopedDelegateHandle(
-            &m_delegate,
-            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
+            this,
+            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<TEvent*>(src)->Remove(h); },
             handle
         );
     }
-
-    /// @brief Subscribes a const member function. Returns a raw handle.
-    template <typename T>
-    GP_NODISCARD FDelegateHandle AddMethod(const T* instance, void (T::*method)(TArgs...) const)
-    {
-        return m_delegate.AddMethod(instance, method);
-    }
-
-    /// @brief Subscribes a const member function. Returns an RAII scoped handle.
-    template <typename T>
-    GP_NODISCARD FScopedDelegateHandle AddMethodScoped(const T* instance, void (T::*method)(TArgs...) const)
-    {
-        FDelegateHandle handle = m_delegate.AddMethod(instance, method);
-
-        return FScopedDelegateHandle(
-            &m_delegate,
-            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
-            handle
-        );
-    }
-
-    /// @brief Subscribes a free or static member function. Returns a raw handle.
-    GP_NODISCARD FDelegateHandle AddFunction(void (*fn)(TArgs...)) { return m_delegate.AddFunction(fn); }
-
-    bool Remove(FDelegateHandle handle) { return m_delegate.Remove(handle); }
-
-    Int32 RemoveAll(void* rawInstance) { return m_delegate.RemoveAll(rawInstance); }
-
-    /// @brief Removes all bindings. Must not be called during Broadcast().
-    void Clear() { m_delegate.Clear(); }
-
-    /// @brief Fires the event, invoking all active bindings in subscription order.
-    /// @warning Call only from the class that declares this TEvent as a
-    ///          private member. Subscribers receive a TEventView which does not
-    ///          expose this method.
-    /// Re-entrancy: safe. Removals/additions within handlers are deferred until
-    /// the outermost Broadcast() returns.
-    /// @param args Arguments forwarded to each binding.
-    void Broadcast(TArgs... args) { m_delegate.Broadcast(GP::Forward<TArgs>(args)...); }
-
-    GP_NODISCARD bool IsEmpty() const noexcept { return m_delegate.IsEmpty(); }
-
-    GP_NODISCARD Int32 GetBindingCount() const noexcept { return m_delegate.GetBindingCount(); }
-
-    GP_NODISCARD bool Contains(FDelegateHandle h) const noexcept { return m_delegate.Contains(h); }
 };
 
 }   // namespace GP
