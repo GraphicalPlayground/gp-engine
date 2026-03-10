@@ -320,7 +320,7 @@
 #endif
 
 /// @brief Prevents the compiler from inlining the decorated function.
-#if defined(GP_COMPILER_MSVC)
+#if GP_COMPILER_MSVC
     #define GP_NOINLINE __declspec(noinline)
 #elif GP_COMPILER_GCC || GP_COMPILER_CLANG
     #define GP_NOINLINE __attribute__((noinline))

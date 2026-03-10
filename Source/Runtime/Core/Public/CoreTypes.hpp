@@ -35,33 +35,26 @@ typedef unsigned char      Byte;
 typedef decltype(nullptr)  NullPtrT;
 typedef double             MaxAlignT;   // Most aligned type
 
-#if GP_ARCHITECTURE_64BIT
-typedef unsigned long long SizeT;
-#if GP_COMPILER_MSVC
-typedef long long          SSizeT;
-#else
-typedef signed long long   SSizeT;
-#endif
-#elif GP_ARCHITECTURE_32BIT
-typedef unsigned int       SizeT;
-typedef signed int         SSizeT;
-#else
-    // Fallback for compilers that provide built-in types
-    #if defined(__SIZE_TYPE__)
-typedef __SIZE_TYPE__      SizeT;
-    #elif GP_PLATFORM_WINDOWS
-typedef unsigned __int64   SizeT;
-    #else
-typedef unsigned long      SizeT;
-    #endif
 
-    #if defined(__PTRDIFF_TYPE__)
+    // Fallback for compilers that provide built-in types
+#if defined(__SIZE_TYPE__)
+typedef __SIZE_TYPE__      SizeT;
+#elif GP_PLATFORM_WINDOWS
+typedef unsigned __int64   SizeT;
+#elif GP_ARCHITECTURE_64BIT
+typedef unsigned long long SizeT;
+#else
+typedef unsigned long      SizeT;
+#endif
+
+#if defined(__PTRDIFF_TYPE__)
 typedef __PTRDIFF_TYPE__   SSizeT;
-    #elif GP_PLATFORM_WINDOWS
+#elif GP_PLATFORM_WINDOWS
 typedef __int64            SSizeT;
-    #else
+#elif GP_ARCHITECTURE_64BIT
+typedef signed long long   SSizeT;
+#else
 typedef signed long        SSizeT;
-    #endif
 #endif
 
 typedef SSizeT             OffsetT;
