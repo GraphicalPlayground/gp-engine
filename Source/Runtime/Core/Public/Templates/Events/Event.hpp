@@ -78,7 +78,7 @@ public:
     TEventView& operator+=(TCallable&& callable)
     {
         GP_ASSERT(IsValid(), "TEventView::operator+= - view is not bound to a source.");
-        m_source->Add(GP::Forward<TCallable>(callable), EEventPriority::Normal);
+        GP_UNUSED(m_source->Add(GP::Forward<TCallable>(callable), EEventPriority::Normal));
         return *this;
     }
 
@@ -383,7 +383,7 @@ public:
 
     GP_NODISCARD bool Contains(FDelegateHandle handle) const noexcept
     {
-        for (const FDelegate& b: m_buckets)
+        for (const FDelegate& bucket: m_buckets)
         {
             if (bucket.Contains(handle)) { return true; }
         }
