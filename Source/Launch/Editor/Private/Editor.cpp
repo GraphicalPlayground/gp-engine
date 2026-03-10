@@ -39,6 +39,8 @@ int main(int argc, char* argv[])
     // window->OnFocusLost   += [](const auto&) { Audio::MuteAll(); };
     // window->OnFocusGained += [](const auto&) { Audio::Restore(); };
 
+    // window->OnCloseRequested.Add([](const auto&) { return true; }, GP::EEventPriority::Critical);
+
     while (window->IsOpen())
     {
         windowSystem->PollEvents();
