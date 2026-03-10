@@ -7,7 +7,7 @@
 
 #define GP_ENABLE_ENUM_BITWISE_OPERATIONS(EnumType) \
     template <> \
-    struct GP::TIsBitwiseEnumeration<EnumType> : GP::FTrueType \
+    struct TIsBitwiseEnumeration<EnumType> : FTrueType \
     {}
 
 namespace GP
