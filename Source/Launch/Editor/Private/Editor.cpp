@@ -35,6 +35,10 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    // window->OnClosed      += [](const auto&) { Platform::RequestExit(); };
+    // window->OnFocusLost   += [](const auto&) { Audio::MuteAll(); };
+    // window->OnFocusGained += [](const auto&) { Audio::Restore(); };
+
     while (window->IsOpen())
     {
         windowSystem->PollEvents();
