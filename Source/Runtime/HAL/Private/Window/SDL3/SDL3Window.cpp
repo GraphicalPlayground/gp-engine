@@ -1,9 +1,8 @@
 // Copyright (c) - Graphical Playground. All rights reserved.
 
-#pragma once
-
 #include "Window/SDL3/SDL3Window.hpp"
 #include "CoreBuild.hpp"
+#include "CoreTypes.hpp"
 #include "Templates/Utility/Enums.hpp"
 
 namespace GP
@@ -131,7 +130,7 @@ GP_NODISCARD void* FSDL3Window::GetNativeHandle() const noexcept
     void* wayland = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr);
     if (wayland) { return wayland; }
     const Sint64 x11 = SDL_GetNumberProperty(props, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
-    return reinterpret_cast<void*>(static_cast<UIntPtr>(x11 >= 0 ? static_cast<UInt64>(x11) : 0u));
+    return reinterpret_cast<void*>(static_cast<UIntPtrT>(x11 >= 0 ? static_cast<UInt64>(x11) : 0u));
 #else
     return static_cast<void*>(m_window);
 #endif
