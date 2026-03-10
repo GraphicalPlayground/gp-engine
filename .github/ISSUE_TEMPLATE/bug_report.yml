@@ -1,0 +1,94 @@
+name: Bug report
+description: Report a bug in the Graphical Playground (GP) engine
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        When reporting bugs, please follow the guidelines in this template. This helps identify the problem precisely and thus enables contributors to fix it faster.
+        - Write a descriptive issue title above.
+        - The golden rule is to **always open *one* issue for *one* bug**. If you notice several bugs and want to report them, make sure to create one new issue for each of them.
+        - Search [open](https://github.com/GraphicalPlayground/gp-engine/issues) and [closed](https://github.com/GraphicalPlayground/gp-engine/issues?q=is%3Aissue+is%3Aclosed) issues to ensure it has not already been reported. If you don't find a relevant match or if you're unsure, don't hesitate to **open a new issue**.
+        - Please always check if your issue is reproducible on the latest `main` commit — it may already have been fixed.
+        - If you are using a custom build, confirm whether the issue also reproduces on an official release build. If you have local modifications or third-party modules, verify the bug exists without them.
+
+  - type: textarea
+    attributes:
+      label: Tested versions
+      description: |
+        To properly fix a bug, we need to identify if it was recently introduced or has always been present.
+        - Specify the GP engine version and **Git commit hash** where the issue occurs. You can get the hash via `git rev-parse --short HEAD`.
+        - If possible, test on the previous release tag and note whether the bug is present there too. This helps identify **regressions**.
+        - List each version tested and whether the bug was reproducible or not.
+      placeholder: |
+        - Reproducible in: v0.3.0 [a1b2c3d], main @ 2026-02-20 [e4f5g6h]
+        - Not reproducible in: v0.2.1 [x9y8z7w]
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: System information
+      description: |
+        - OS name and version (e.g. Windows 11, Ubuntu 24.04, macOS 15.0).
+        - CPU model and architecture (x86_64 or ARM64).
+        - GPU model, driver version, and the active RHI backend (Vulkan, DX12, Metal).
+        - Compiler and version used for the build (e.g. Clang 18, GCC 14, MSVC 19.40).
+        - CMake build type (Debug, Release, RelWithDebInfo).
+        - **Bug reports missing required system information may be closed at the maintainers' discretion.**
+      placeholder: "Ubuntu 24.04 - GP v0.3.0 [a1b2c3d] - Vulkan - NVIDIA RTX 4080 (driver 565.77) - AMD Ryzen 9 7950X (x86_64) - Clang 18 - RelWithDebInfo"
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Affected module(s)
+      description: Which GP engine module(s) does this bug affect? Select all that apply.
+      multiple: true
+      options:
+        - Core
+        - HAL
+        - Platform
+        - RHI
+        - Renderer
+        - Shaders
+        - Editor
+        - Build / CMake
+        - Unknown / Other
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Issue description
+      description: |
+        Describe the bug clearly. What behaviour did you observe, and what did you expect instead?
+        - Include relevant log output, assertion failures, or crash stack traces as text (not screenshots).
+        - Format code and logs with triple-backtick blocks (` ``` `).
+        - If the bug is visual or rendering-related, attach a screenshot or recording alongside the text description.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: |
+        Provide a minimal, ordered list of steps or a self-contained C++ snippet that reliably triggers the bug.
+        Reproducibility is a prerequisite for contributors to investigate and fix the issue.
+      placeholder: |
+        1. Configure with `cmake -B Build -DCMAKE_BUILD_TYPE=Debug`
+        2. Build target `GPRuntimeCore`
+        3. Run `./Binaries/Bin/GPRuntimeCoreTests "[MyFeature]"`
+        4. Observe assertion failure in `TMyClass::DoThing()`
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Minimal reproduction case (MRC)
+      description: |
+        - Provide the smallest possible C++ code or test case that demonstrates the bug, ideally as a self-contained Catch2 test.
+        - If the issue is build-system related, include the relevant `CMakeLists.txt` fragment and CMake output.
+        - If no isolated reproduction is possible, describe in detail which existing test or executable triggers it and write "N/A" here.
+    validations:
+      required: true
