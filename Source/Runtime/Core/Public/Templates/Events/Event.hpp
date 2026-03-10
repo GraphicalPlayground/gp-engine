@@ -3,153 +3,410 @@
 #pragma once
 
 #include "Templates/Core/Utility.hpp"
+#include "Templates/Events/DelegateHandle.hpp"
 #include "Templates/Events/MulticastDelegate.hpp"
 
 namespace GP
 {
 
-/// @brief Owner-locked publish-subscribe event built on TMulticastDelegate.
+// Forward declaration
+template <typename Signature>
+class TEvent;
+
+/// @brief Non-owning, subscribe-only reference into a TEvent.
 ///
-/// Enforces a strict Publish-Subscribe ownership model:
-///  - \b Subscribers (anyone): may call Add*() and Remove() / RemoveAll() via
-///    the public interface.
-///  - \b Publisher (owner only): may call Broadcast() because \c TOwner is
-///    declared as a \c friend.
+/// TEventView wraps a single pointer to a TMulticastDelegate and exposes only
+/// the subscription half of the API: Add, AddScoped, AddMethod, AddFunction,
+/// Remove, RemoveAll, and query methods. Broadcast() is intentionally absent.
 ///
-/// This mirrors the encapsulation contract seen in Unreal Engine's
-/// \c DECLARE_EVENT macros and Decima's signal system: the owning class controls
-/// when an event fires; external code only observes it.
+/// @par Zero overhead
+/// sizeof(TEventView) == sizeof(void*). Passing or storing a TEventView is as
+/// cheap as passing a pointer. No virtual dispatch, no heap allocation.
 ///
-/// Declare an event as a private member of the broadcasting class and expose
-/// a const reference or a public accessor returning a subscription-only view.
+/// @par Lifetime
+/// A TEventView is only valid while its TEvent is alive. Never store a
+/// TEventView that may outlive the source.
 ///
-/// Example (inside the owner):
+/// @par How to obtain a TEventView
+/// Call TEvent::GetView(), or access the named view members on
+/// FWindowEvents (and similar event-hub structs).
+///
 /// @code
-///   class FPhysicsWorld
-///   {
-///   public:
-///       // Expose subscription interface; callers cannot Broadcast.
-///       TEvent<FPhysicsWorld, void(FCollisionInfo const&)>& OnCollision()
-///       {
-///           return m_onCollision;
-///       }
-///
-///   private:
-///       void SimulationStep()
-///       {
-///           // Only FPhysicsWorld can call Broadcast.
-///           m_onCollision.Broadcast(collisionInfo);
-///       }
-///
-///       TEvent<FPhysicsWorld, void(FCollisionInfo const&)> m_onCollision;
-///   };
+///   // In IWindow:
+///   virtual FWindowEvents& GetEvents() noexcept = 0;
 ///
 ///   // Subscriber:
-///   FDelegateHandle handle = physicsWorld.OnCollision().Add(
-///       [](FCollisionInfo const& info) { /* ... */ }
+///   FScopedDelegateHandle h = window.GetEvents().onResized.AddScoped(
+///       [&](FWindowResizedEvent const& e) { swapchain.Resize(e.newSize); }
 ///   );
 /// @endcode
 ///
-/// @tparam TOwner The class that is permitted to call Broadcast().
-/// @tparam Signature Full function signature; must be \c void(TArgs...).
-template <typename TOwner, typename Signature>
-class TEvent;
+/// @tparam Signature  Must be void(TArgs...).
+template <typename Signature>
+class TEventView;
 
-template <typename TOwner, typename... TArgs>
-class TEvent<TOwner, void(TArgs...)>
+template <typename... TArgs>
+class TEventView<void(TArgs...)>
 {
-private:
-    // Only the designated owner class may call Broadcast().
-    friend TOwner;
-
 private:
     using FDelegate = TMulticastDelegate<void(TArgs...)>;
 
 private:
-    FDelegate m_delegate;   //<! Internal multicast delegate handling all subscription logic.
+    FDelegate* m_delegate{ nullptr };   //<! Non-owning pointer to the backing delegate.
 
 public:
-    ///
-    /// @section Constructors / Destructor
-    ///
+    /// @brief Constructs a view bound to \p delegate.
+    ///        Prefer TEvent::GetView() over direct construction.
+    explicit TEventView(FDelegate& delegate) noexcept
+        : m_delegate(&delegate)
+    {}
 
+    /// @brief Implicitly convertible from TEvent& for convenient GetView() implementation.
+    TEventView(class TEvent<void(TArgs...)>& delegate) noexcept
+        : m_delegate(&delegate.m_delegate)
+    {}
+
+    constexpr TEventView() noexcept = default;
+    TEventView(const TEventView&) noexcept = default;
+    TEventView(TEventView&&) noexcept = default;
+    TEventView& operator=(const TEventView&) noexcept = default;
+    TEventView& operator=(TEventView&&) noexcept = default;
+    ~TEventView() noexcept = default;
+
+public:
+    /// @brief Subscribes a callable and returns a reference to this view for chaining. Preferred over Add().
+    /// @tparam TCallable Any callable matching void(TArgs...).
+    template <typename TCallable>
+    TEventView& operator+=(TCallable&& callable)
+    {
+        GP_ASSERT(IsValid(), "TEventView::operator+= - view is not bound to an event source.");
+        m_delegate->Add(GP::Forward<TCallable>(callable));
+        return *this;
+    }
+
+    ///  @brief Removes the binding identified by \p handle.
+    TEventView& operator-=(FDelegateHandle handle)
+    {
+        GP_ASSERT(IsValid(), "TEventView::operator-= - view is not bound to an event source.");
+        m_delegate->Remove(handle);
+        return *this;
+    }
+
+    /// @brief Removes all method bindings registered for \p rawInstance. Equivalent to RemoveAll(rawInstance).
+    TEventView& operator-=(void* rawInstance)
+    {
+        GP_ASSERT(IsValid(), "TEventView::operator-= - view is not bound to an event source.");
+        m_delegate->RemoveAll(rawInstance);
+        return *this;
+    }
+
+public:
+    /// @brief Returns true if this view is bound to an event source.
+    GP_NODISCARD GP_FORCEINLINE bool IsValid() const noexcept { return m_delegate != nullptr; }
+
+    /// @brief Subscribes a callable and returns an RAII handle that auto-removes when it goes out of scope. Preferred
+    ///        over Add().
+    /// @tparam TCallable Any callable matching void(TArgs...).
+    /// @param callable Callable to store. Copied or moved into the event.
+    /// @return RAII scoped handle; subscription lives exactly as long as the handle.
+    template <typename TCallable>
+    GP_NODISCARD FScopedDelegateHandle AddScoped(TCallable&& callable)
+    {
+        GP_ASSERT(IsValid(), "TEventView::AddScoped - view is not bound to an event source.");
+
+        FDelegateHandle handle = m_delegate->Add(GP::Forward<TCallable>(callable));
+
+        return FScopedDelegateHandle(
+            m_delegate,
+            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
+            handle
+        );
+    }
+
+    /// @brief Subscribes a callable and returns a raw handle. Caller is
+    ///        responsible for calling Remove(). Prefer AddScoped() instead.
+    ///
+    /// \tparam TCallable Any callable matching void(TArgs...).
+    /// \param  callable Callable to store.
+    /// \return Raw subscription handle.
+    template <typename TCallable>
+    GP_NODISCARD FDelegateHandle Add(TCallable&& callable)
+    {
+        GP_ASSERT(IsValid(), "TEventView::Add - view is not bound to an event source.");
+        return m_delegate->Add(GP::Forward<TCallable>(callable));
+    }
+
+    /// @brief Subscribes a mutable member function. Returns a raw handle.
+    template <typename T>
+    GP_NODISCARD FDelegateHandle AddMethod(T* instance, void (T::*method)(TArgs...))
+    {
+        GP_ASSERT(IsValid(), "TEventView::AddMethod - view is not bound to an event source.");
+        return m_delegate->AddMethod(instance, method);
+    }
+
+    /// @brief Subscribes a mutable member function. Returns an RAII scoped handle.
+    template <typename T>
+    GP_NODISCARD FScopedDelegateHandle AddMethodScoped(T* instance, void (T::*method)(TArgs...))
+    {
+        GP_ASSERT(IsValid(), "TEventView::AddMethodScoped - view is not bound to an event source.");
+
+        FDelegateHandle handle = m_delegate->AddMethod(instance, method);
+
+        return FScopedDelegateHandle(
+            m_delegate,
+            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
+            handle
+        );
+    }
+
+    /// @brief Subscribes a const member function. Returns a raw handle.
+    template <typename T>
+    GP_NODISCARD FDelegateHandle AddMethod(const T* instance, void (T::*method)(TArgs...) const)
+    {
+        GP_ASSERT(IsValid(), "TEventView::AddMethod - view is not bound to an event source.");
+        return m_delegate->AddMethod(instance, method);
+    }
+
+    /// @brief Subscribes a const member function. Returns an RAII scoped handle.
+    template <typename T>
+    GP_NODISCARD FScopedDelegateHandle AddMethodScoped(const T* instance, void (T::*method)(TArgs...) const)
+    {
+        GP_ASSERT(IsValid(), "TEventView::AddMethodScoped - view is not bound to an event source.");
+
+        FDelegateHandle handle = m_delegate->AddMethod(instance, method);
+
+        return FScopedDelegateHandle(
+            m_delegate,
+            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
+            handle
+        );
+    }
+
+    /// @brief Subscribes a free or static member function. Returns a raw handle.
+    GP_NODISCARD FDelegateHandle AddFunction(void (*fn)(TArgs...))
+    {
+        GP_ASSERT(IsValid(), "TEventView::AddFunction - view is not bound to an event source.");
+        return m_delegate->AddFunction(fn);
+    }
+
+    /// @brief Removes the subscription identified by \p handle.
+    ///        Safe to call re-entrantly from within a Broadcast().
+    /// \return True if a matching active binding was found.
+    bool Remove(FDelegateHandle handle)
+    {
+        GP_ASSERT(IsValid(), "TEventView::Remove - view is not bound to an event source.");
+        return m_delegate->Remove(handle);
+    }
+
+    /// @brief Removes all method bindings registered via AddMethod() on \p rawInstance.
+    /// \return Number of bindings removed.
+    Int32 RemoveAll(void* rawInstance)
+    {
+        GP_ASSERT(IsValid(), "TEventView::RemoveAll - view is not bound to an event source.");
+        return m_delegate->RemoveAll(rawInstance);
+    }
+
+    GP_NODISCARD bool IsEmpty() const noexcept { return !m_delegate || m_delegate->IsEmpty(); }
+
+    GP_NODISCARD Int32 GetBindingCount() const noexcept { return m_delegate ? m_delegate->GetBindingCount() : 0; }
+
+    GP_NODISCARD bool Contains(FDelegateHandle h) const noexcept { return m_delegate && m_delegate->Contains(h); }
+};
+
+/// @brief Owning event source: holds bindings, fires events, and vends
+///        subscribe-only TEventView references.
+///
+/// @par Access control model
+/// Access control is enforced through encapsulation, not friendship:
+///  - The owner (e.g. FWindowEvents, FGameSession) declares TEvent members
+///    as \b private.
+///  - External code receives a \c TEventView (via a public accessor or directly
+///    from a hub struct) that has no Broadcast() method.
+///  - Only the declaring class-which holds the TEvent-can call Broadcast().
+///
+/// This eliminates the need for \c TEvent<TOwner, Sig> and its \c friend TOwner
+/// constraint, which required a concrete owner class and produced the
+/// FWindowEventBroadcaster workaround.
+///
+/// @par Prefer AddScoped() over Add()
+/// AddScoped() returns an FScopedDelegateHandle that auto-removes on destruction,
+/// preventing the most common event system bug: dangling subscriptions after the
+/// subscriber is destroyed.
+///
+/// @par Example - declaration
+/// @code
+///   class FGameSession
+///   {
+///   public:
+///       TEventView<void(FPlayerDamagedEvent const&)> OnPlayerDamaged() noexcept
+///       {
+///           return m_onPlayerDamaged.GetView();
+///       }
+///
+///   private:
+///       void DealDamage(FPlayer& target, Int32 amount)
+///       {
+///           target.ApplyDamage(amount);
+///           m_onPlayerDamaged.Broadcast({ &target, amount }); // private: owner only
+///       }
+///
+///       TEvent<void(FPlayerDamagedEvent const&)> m_onPlayerDamaged;
+///   };
+///
+///   // Subscriber:
+///   FScopedDelegateHandle h = session.OnPlayerDamaged().AddScoped(
+///       [](FPlayerDamagedEvent const& e) { UpdateHUD(e); }
+///   );
+/// @endcode
+///
+/// @tparam Signature  Must be void(TArgs...).
+template <typename Signature>
+class TEvent;
+
+template <typename... TArgs>
+class TEvent<void(TArgs...)>
+{
+private:
+    using FDelegate = TMulticastDelegate<void(TArgs...)>;
+
+private:
+    FDelegate m_delegate;   //<! Backing multicast delegate; all state lives here.
+
+public:
     TEvent() noexcept = default;
+
+    // Non-copyable: event sources own unique binding lists.
+    TEvent(const TEvent&) = delete;
+    TEvent& operator=(const TEvent&) = delete;
+
+    // Movable.
+    TEvent(TEvent&&) noexcept = default;
+    TEvent& operator=(TEvent&&) noexcept = default;
+
     ~TEvent() noexcept = default;
 
-    // Events are non-copyable and non-movable: ownership semantics and friend
-    // access are tied to the declaring class instance.
-    TEvent(const TEvent&) = delete;
-    TEvent(TEvent&&) noexcept = delete;
-    TEvent& operator=(const TEvent&) = delete;
-    TEvent& operator=(TEvent&&) noexcept = delete;
+public:
+    /// @brief Subscribes a callable and returns a reference to this view for chaining. Preferred over Add().
+    /// @tparam TCallable Any callable matching void(TArgs...).
+    template <typename TCallable>
+    TEvent& operator+=(TCallable&& callable)
+    {
+        m_delegate.Add(GP::Forward<TCallable>(callable));
+        return *this;
+    }
+
+    /// @brief Removes the binding identified by \p handle.
+    TEvent& operator-=(FDelegateHandle handle)
+    {
+        m_delegate.Remove(handle);
+        return *this;
+    }
+
+    /// @brief Removes all method bindings registered for \p rawInstance.
+    TEventSource& operator-=(void* rawInstance)
+    {
+        m_delegate.RemoveAll(rawInstance);
+        return *this;
+    }
+
+    /// @brief Broadcasts the event. Equivalent to Broadcast(args...).
+    ///        Owner-only by convention; subscribers see TEventView which omits this operator.
+    void operator()(TArgs... args) { m_delegate.Broadcast(GP::Forward<TArgs>(args)...); }
 
 public:
-    /// @brief Subscribes a free or static member function.
-    /// @param fn Non-null function pointer.
-    /// @return Subscription handle.
-    FDelegateHandle AddFunction(void (*fn)(TArgs...)) { return m_delegate.AddFunction(fn); }
-
-    /// @brief Subscribes a mutable member function on a specific object instance.
-    /// @tparam T Instance type.
-    /// @param instance Non-null pointer to the listening object.
-    /// @param method Pointer to the member function.
-    /// @return Subscription handle.
-    template <typename T>
-    FDelegateHandle AddMethod(T* instance, void (T::*method)(TArgs...))
+    /// @brief Returns a subscribe-only TEventView bound to this source.
+    /// The view is valid as long as this TEvent is alive. Return it
+    /// from public accessor methods to give subscribers Add/Remove access
+    /// without exposing Broadcast().
+    GP_NODISCARD GP_FORCEINLINE TEventView<void(TArgs...)> GetView() noexcept
     {
-        return m_delegate.AddMethod(instance, method);
+        return TEventView<void(TArgs...)>{ m_delegate };
     }
 
-    /// @brief Subscribes a const-qualified member function on a specific object instance.
-    /// @tparam T Instance type.
-    /// @param instance Non-null const pointer to the listening object.
-    /// @param method Pointer to the const member function.
-    /// @return Subscription handle.
-    template <typename T>
-    FDelegateHandle AddMethod(const T* instance, void (T::*method)(TArgs...) const)
-    {
-        return m_delegate.AddMethod(instance, method);
-    }
-
-    /// \brief Subscribes any callable: lambda, functor, std::function, etc.
-    /// \tparam TCallable  Any callable type matching \c void(TArgs...).
-    /// \param callable Callable to copy/move into the event.
-    /// \return Subscription handle.
+    /// @brief Subscribes a callable and returns an RAII scoped handle. Preferred.
     template <typename TCallable>
-    FDelegateHandle Add(TCallable&& callable)
+    GP_NODISCARD FScopedDelegateHandle AddScoped(TCallable&& callable)
+    {
+        FDelegateHandle handle = m_delegate.Add(GP::Forward<TCallable>(callable));
+
+        return FScopedDelegateHandle(
+            &m_delegate,
+            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
+            handle
+        );
+    }
+
+    /// @brief Subscribes a callable and returns a raw handle. Prefer AddScoped().
+    template <typename TCallable>
+    GP_NODISCARD FDelegateHandle Add(TCallable&& callable)
     {
         return m_delegate.Add(GP::Forward<TCallable>(callable));
     }
 
-    /// @brief Removes the binding identified by \p handle.
-    /// Safe to call from within a Broadcast() handler.
-    /// @param handle Handle returned by a previous Add*() call.
-    /// @return True if a matching active binding was found.
+    /// @brief Subscribes a mutable member function. Returns a raw handle.
+    template <typename T>
+    GP_NODISCARD FDelegateHandle AddMethod(T* instance, void (T::*method)(TArgs...))
+    {
+        return m_delegate.AddMethod(instance, method);
+    }
+
+    /// @brief Subscribes a mutable member function. Returns an RAII scoped handle.
+    template <typename T>
+    GP_NODISCARD FScopedDelegateHandle AddMethodScoped(T* instance, void (T::*method)(TArgs...))
+    {
+        FDelegateHandle handle = m_delegate.AddMethod(instance, method);
+
+        return FScopedDelegateHandle(
+            &m_delegate,
+            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
+            handle
+        );
+    }
+
+    /// @brief Subscribes a const member function. Returns a raw handle.
+    template <typename T>
+    GP_NODISCARD FDelegateHandle AddMethod(const T* instance, void (T::*method)(TArgs...) const)
+    {
+        return m_delegate.AddMethod(instance, method);
+    }
+
+    /// @brief Subscribes a const member function. Returns an RAII scoped handle.
+    template <typename T>
+    GP_NODISCARD FScopedDelegateHandle AddMethodScoped(const T* instance, void (T::*method)(TArgs...) const)
+    {
+        FDelegateHandle handle = m_delegate.AddMethod(instance, method);
+
+        return FScopedDelegateHandle(
+            &m_delegate,
+            [](void* src, FDelegateHandle h) noexcept -> bool { return static_cast<FDelegate*>(src)->Remove(h); },
+            handle
+        );
+    }
+
+    /// @brief Subscribes a free or static member function. Returns a raw handle.
+    GP_NODISCARD FDelegateHandle AddFunction(void (*fn)(TArgs...)) { return m_delegate.AddFunction(fn); }
+
     bool Remove(FDelegateHandle handle) { return m_delegate.Remove(handle); }
 
-    /// @brief Removes all bindings registered via AddMethod() on \p rawInstance.
-    /// @param rawInstance Pointer to the object whose method bindings should be removed.
-    /// @return Number of bindings removed.
     Int32 RemoveAll(void* rawInstance) { return m_delegate.RemoveAll(rawInstance); }
 
-    /// @brief Returns true if no active bindings exist.
-    GP_NODISCARD bool IsEmpty() const noexcept { return m_delegate.IsEmpty(); }
+    /// @brief Removes all bindings. Must not be called during Broadcast().
+    void Clear() { m_delegate.Clear(); }
 
-    /// @brief Returns the number of active bindings.
-    GP_NODISCARD Int32 GetBindingCount() const noexcept { return m_delegate.GetBindingCount(); }
-
-    /// @brief Returns true if the given handle refers to an active binding.
-    GP_NODISCARD bool Contains(FDelegateHandle handle) const noexcept { return m_delegate.Contains(handle); }
-
-private:
-    /// @brief Fires the event, invoking all active subscribers in order.
-    /// Must be called by the owner class only. External code has no access.
-    /// @param args  Arguments forwarded to each binding.
+    /// @brief Fires the event, invoking all active bindings in subscription order.
+    /// @warning Call only from the class that declares this TEvent as a
+    ///          private member. Subscribers receive a TEventView which does not
+    ///          expose this method.
+    /// Re-entrancy: safe. Removals/additions within handlers are deferred until
+    /// the outermost Broadcast() returns.
+    /// @param args Arguments forwarded to each binding.
     void Broadcast(TArgs... args) { m_delegate.Broadcast(GP::Forward<TArgs>(args)...); }
 
-    /// @brief Removes all bindings. Owner-only operation.
-    /// @warning Must NOT be called from within a Broadcast() handler.
-    void Clear() { m_delegate.Clear(); }
+    GP_NODISCARD bool IsEmpty() const noexcept { return m_delegate.IsEmpty(); }
+
+    GP_NODISCARD Int32 GetBindingCount() const noexcept { return m_delegate.GetBindingCount(); }
+
+    GP_NODISCARD bool Contains(FDelegateHandle h) const noexcept { return m_delegate.Contains(h); }
 };
 
 }   // namespace GP
