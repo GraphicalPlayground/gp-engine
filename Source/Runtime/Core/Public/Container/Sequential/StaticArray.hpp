@@ -176,15 +176,23 @@ public:
     /// @brief Equality comparison. Compares all N elements pairwise.
     /// @param other The array to compare with.
     /// @return true if all elements are equal, false otherwise.
-    GP_NODISCARD constexpr bool operator==(const TStaticArray& other) const noexcept
+    GP_NODISCARD bool operator==(const TStaticArray& other) const noexcept requires CEqualityComparable<T>
     {
-        if (N != other.Size) { return false; }
+        if (N != other.Size()) { return false; }
 
         for (SizeType i = 0; i < N; ++i)
         {
             if (m_data[i] != other.m_data[i]) { return false; }
         }
         return true;
+    }
+
+    /// @brief Inequality comparison with another array.
+    /// @param other Array to compare against.
+    /// @return true if arrays differ.
+    GP_NODISCARD bool operator!=(const TStaticArray& other) const noexcept requires CEqualityComparable<T>
+    {
+        return !(*this == other);
     }
 
     /// @brief Three-way lexicographical comparison.
@@ -431,3 +439,8 @@ public:
 
 }   // namespace GP
 
+
+
+/*
+ [with T = int; long unsigned int N = 3; ConstIterator = GP::TIterator<const int>]’:
+*/
