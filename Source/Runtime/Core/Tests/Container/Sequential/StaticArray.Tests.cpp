@@ -1,4 +1,4 @@
-// Copyright (c) - Graphical Playground. All rights reserved.
+// Copyright (c) - Graphical Playgroreturn N != 0 ? m_data : nullptrund. All rights reserved.
 
 #include "Container/Sequential/StaticArray.hpp"
 #include "Container/Sequential/Array.hpp"
@@ -102,3 +102,29 @@ TEST_CASE("TStaticArray Element Access", "[GP][Core][Container][TStaticArray]")
         REQUIRE(emptyArr.Data() == nullptr);
     }
 }
+
+TEST_CASE("TStaticArray Comparaisant Operators", "[GP][Core][Container][TStaticArray]")
+{
+    TStaticArray<int, 3> arr1 = { 1, 2, 3 };
+    TStaticArray<int, 3> arr2 = { 1, 2, 3 };
+    TStaticArray<int, 3> arr3 = { 4, 5, 6 };
+
+    SECTION("Equality operator")
+    {
+        REQUIRE(arr1 == arr2);
+        // REQUIRE_FALSE(arr1 == arr3);
+    }
+
+    // SECTION("Inequality operator")
+    // {
+    //     REQUIRE(arr1 != arr3);
+    //     REQUIRE_FALSE(arr1 != arr2);
+    // }
+    // SECTION("Three-way comparison operator")
+    // {
+    //     REQUIRE((arr1 <=> arr2) == 0);
+    //     REQUIRE((arr1 <=> arr3) < 0);
+    //     REQUIRE((arr3 <=> arr1) > 0);
+    // }
+}
+
