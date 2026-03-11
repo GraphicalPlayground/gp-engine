@@ -178,8 +178,6 @@ public:
     /// @return true if all elements are equal, false otherwise.
     GP_NODISCARD bool operator==(const TStaticArray& other) const noexcept requires CEqualityComparable<T>
     {
-        if (N != other.Size()) { return false; }
-
         for (SizeType i = 0; i < N; ++i)
         {
             if (m_data[i] != other.m_data[i]) { return false; }
@@ -322,7 +320,7 @@ public:
     {
         for (SizeType i = 0; i < N; ++i)
         {
-            if (m_data[i] == value) { return m_data + i; }
+            if (m_data[i] == value) { return ConstIterator(m_data + i); }
         }
         return CEnd();
     }
@@ -366,19 +364,19 @@ public:
 
     /// \brief Returns a const iterator to the first element.
     /// \return A const iterator pointing to the first element.
-    GP_NODISCARD constexpr ConstIterator Begin() const noexcept { return m_data; }
+    GP_NODISCARD constexpr ConstIterator Begin() const noexcept { return ConstIterator(m_data); }
 
     /// \brief Returns a const iterator past the last element.
     /// \return A const iterator pointing past the last element.
-    GP_NODISCARD constexpr ConstIterator End() const noexcept { return m_data + N; }
+    GP_NODISCARD constexpr ConstIterator End() const noexcept { return ConstIterator(m_data + N); }
 
     /// \brief Returns a const iterator to the first element.
     /// \return A const iterator pointing to the first element.
-    GP_NODISCARD constexpr ConstIterator CBegin() const noexcept { return m_data; }
+    GP_NODISCARD constexpr ConstIterator CBegin() const noexcept { return ConstIterator(m_data); }
 
     /// \brief Returns a const iterator past the last element.
     /// \return A const iterator pointing past the last element.
-    GP_NODISCARD constexpr ConstIterator CEnd() const noexcept { return m_data + N; }
+    GP_NODISCARD constexpr ConstIterator CEnd() const noexcept { return ConstIterator(m_data + N); }
 
     /// \brief Returns a reverse iterator to the last element.
     /// \return A reverse iterator pointing to the last element.
@@ -406,19 +404,19 @@ public:
 
     /// \brief Returns a const iterator to the first element (STL compatibility).
     /// \return A const iterator pointing to the first element.
-    GP_NODISCARD constexpr ConstIterator begin() const noexcept { return m_data; }
+    GP_NODISCARD constexpr ConstIterator begin() const noexcept { return ConstIterator(m_data); }
 
     /// \brief Returns a const iterator past the last element (STL compatibility).
     /// \return A const iterator pointing past the last element.
-    GP_NODISCARD constexpr ConstIterator end() const noexcept { return m_data + N; }
+    GP_NODISCARD constexpr ConstIterator end() const noexcept { return ConstIterator(m_data + N); }
 
     /// \brief Returns a const iterator to the first element (STL compatibility).
     /// \return A const iterator pointing to the first element.
-    GP_NODISCARD constexpr ConstIterator cbegin() const noexcept { return m_data; }
+    GP_NODISCARD constexpr ConstIterator cbegin() const noexcept { return ConstIterator(m_data); }
 
     /// \brief Returns a const iterator past the last element (STL compatibility).
     /// \return A const iterator pointing past the last element.
-    GP_NODISCARD constexpr ConstIterator cend() const noexcept { return m_data + N; }
+    GP_NODISCARD constexpr ConstIterator cend() const noexcept { return ConstIterator(m_data + N); }
 
     /// \brief Returns a reverse iterator to the last element (STL compatibility).
     /// \return A reverse iterator pointing to the last element.
@@ -438,8 +436,6 @@ public:
 };
 
 }   // namespace GP
-
-
 
 /*
  [with T = int; long unsigned int N = 3; ConstIterator = GP::TIterator<const int>]’:
