@@ -181,6 +181,26 @@ enum class EFormat : UInt16
     Count,
 };
 
+/// @brief Bit-field describing how a specific EFormat may be used on this device.
+enum class EFormatSupport : UInt32
+{
+    None = 0,
+    Sampled = 1 << 0,
+    Storage = 1 << 1,
+    ColorAttachment = 1 << 2,
+    DepthStencil = 1 << 3,
+    BlitSource = 1 << 4,
+    BlitDest = 1 << 5,
+    FilterLinear = 1 << 6,   ///< Linear filtering in sampler.
+    FilterCubic = 1 << 7,
+    MsaaColorAttachment = 1 << 8,
+    TransferSource = 1 << 9,
+    TransferDest = 1 << 10,
+    VertexBuffer = 1 << 11,
+    AtomicReadWrite = 1 << 12,   ///< Image atomic ops (storage images).
+};
+GP_ENABLE_ENUM_BITWISE_OPERATIONS(EFormatSupport);
+
 /// @brief Describes how a buffer may be bound and used.
 enum class EBufferUsage : UInt32
 {
