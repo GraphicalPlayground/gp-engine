@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Memory/SharedPtr.hpp"
+#include "RHIBuild.hpp"
 
 namespace GP
 {
