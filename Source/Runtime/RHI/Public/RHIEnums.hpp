@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreTypes.hpp"
+#include "RHIBuild.hpp"
 #include "Templates/Utility/Enums.hpp"
 
 namespace GP
