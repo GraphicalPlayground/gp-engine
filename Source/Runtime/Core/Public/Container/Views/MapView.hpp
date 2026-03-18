@@ -10,5 +10,3 @@ class TMapView
 {};
 
 }   // namespace GP
-
-#include "Container/Views/MapView.inl"

@@ -10,5 +10,3 @@ class TMultiSet
 {};
 
 }   // namespace GP
-
-#include "Container/Associative/MultiSet.inl"

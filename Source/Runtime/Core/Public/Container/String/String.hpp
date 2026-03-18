@@ -16,5 +16,3 @@ class TString
 {};
 
 }   // namespace GP
-
-#include "Container/String/String.inl"

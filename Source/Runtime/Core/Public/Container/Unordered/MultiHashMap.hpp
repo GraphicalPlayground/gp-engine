@@ -10,5 +10,3 @@ class TMultiHashMap
 {};
 
 }   // namespace GP
-
-#include "Container/Unordered/MultiHashMap.inl"

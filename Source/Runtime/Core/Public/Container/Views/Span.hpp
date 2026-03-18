@@ -10,5 +10,3 @@ class TSpan
 {};
 
 }   // namespace GP
-
-#include "Container/Views/Span.inl"

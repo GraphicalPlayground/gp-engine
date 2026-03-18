@@ -10,5 +10,3 @@ class TMultiMap
 {};
 
 }   // namespace GP
-
-#include "Container/Associative/MultiMap.inl"

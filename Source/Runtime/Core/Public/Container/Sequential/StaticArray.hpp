@@ -436,7 +436,3 @@ public:
 };
 
 }   // namespace GP
-
-/*
- [with T = int; long unsigned int N = 3; ConstIterator = GP::TIterator<const int>]’:
-*/

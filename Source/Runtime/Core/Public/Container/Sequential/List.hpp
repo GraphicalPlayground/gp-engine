@@ -10,5 +10,3 @@ class TList
 {};
 
 }   // namespace GP
-
-#include "Container/Sequential/List.inl"

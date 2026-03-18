@@ -10,5 +10,3 @@ class TStack
 {};
 
 }   // namespace GP
-
-#include "Container/Sequential/Stack.inl"

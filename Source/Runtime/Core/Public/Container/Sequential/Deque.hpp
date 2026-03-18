@@ -10,5 +10,3 @@ class TDeque
 {};
 
 }   // namespace GP
-
-#include "Container/Sequential/Deque.inl"

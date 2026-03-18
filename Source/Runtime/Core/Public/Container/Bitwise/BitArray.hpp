@@ -9,5 +9,3 @@ class FBitArray
 {};
 
 }   // namespace GP
-
-#include "Container/Bitwise/BitArray.inl"

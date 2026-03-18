@@ -10,5 +10,3 @@ class TMap
 {};
 
 }   // namespace GP
-
-#include "Container/Associative/Map.inl"

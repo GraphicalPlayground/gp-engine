@@ -16,5 +16,3 @@ class TName
 {};
 
 }   // namespace GP
-
-#include "Container/String/Name.inl"

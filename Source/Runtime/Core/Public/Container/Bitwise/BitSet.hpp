@@ -10,5 +10,3 @@ class FBitSet
 {};
 
 }   // namespace GP
-
-#include "Container/Bitwise/BitSet.inl"

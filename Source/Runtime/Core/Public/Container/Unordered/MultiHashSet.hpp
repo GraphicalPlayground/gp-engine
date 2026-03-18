@@ -10,5 +10,3 @@ class TMultiHashSet
 {};
 
 }   // namespace GP
-
-#include "Container/Unordered/MultiHashSet.inl"

@@ -10,5 +10,3 @@ class TSet
 {};
 
 }   // namespace GP
-
-#include "Container/Associative/Set.inl"

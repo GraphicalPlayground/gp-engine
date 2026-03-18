@@ -10,5 +10,3 @@ class TStridedSpan
 {};
 
 }   // namespace GP
-
-#include "Container/Views/StridedSpan.inl"
