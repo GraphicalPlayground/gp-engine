@@ -11,9 +11,30 @@ namespace GP
 class FSDL3WindowSystem final : public FBaseWindowSystem
 {
 public:
-    virtual TSharedPtr<IWindow> CreateWindow(const FWindowDesc& desc) noexcept override;
+    ///
+    /// @section Window Management
+    ///
+
+    GP_NODISCARD virtual TSharedPtr<IWindow> CreateWindow(const FWindowDesc& desc) noexcept override;
+
+    ///
+    /// @section Display Management
+    ///
+
+    virtual void RefreshDisplayList() noexcept override;
+
+    ///
+    /// @section Event Handling
+    ///
+
     virtual void PollEvents() noexcept override;
     virtual void DispatchEvents() noexcept override;
+
+    ///
+    /// @section Utility
+    ///
+
+    GP_NODISCARD virtual FStringView GetBackendName() const noexcept override;
 };
 
 }   // namespace GP

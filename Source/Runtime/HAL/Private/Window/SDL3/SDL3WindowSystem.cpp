@@ -2,24 +2,26 @@
 
 #include "Window/SDL3/SDL3WindowSystem.hpp"
 #include "Window/SDL3/SDL3Window.hpp"
+#include <algorithm>
 #include <SDL3/SDL.h>
 
 namespace GP
 {
 
-TSharedPtr<IWindow> FSDL3WindowSystem::CreateWindow(const FWindowDesc& desc) noexcept
+GP_NODISCARD TSharedPtr<IWindow> FSDL3WindowSystem::CreateWindow(const FWindowDesc& desc) noexcept
 {
-    return GP::MakeShared<FSDL3Window>(desc);
+    return m_windows.EmplaceBack(GP::MakeShared<FSDL3Window>(desc));
 }
 
-void FSDL3WindowSystem::PollEvents() noexcept
+void FSDL3WindowSystem::RefreshDisplayList() noexcept
 {
-    // TODO: Implement event polling using SDL_PollEvent and translate SDL events into the engine's event system.
+    // TODO: Implement display enumeration and management using SDL3 APIs.
 }
 
-void FSDL3WindowSystem::DispatchEvents() noexcept
-{
-    // TODO: Implement event dispatching to the appropriate window instances based on the events polled in PollEvents().
-}
+GP_NODISCARD FStringView FSDL3WindowSystem::GetBackendName() const noexcept { return "SDL3"; }
+
+void FSDL3WindowSystem::PollEvents() noexcept {}
+
+void FSDL3WindowSystem::DispatchEvents() noexcept {}
 
 }   // namespace GP
