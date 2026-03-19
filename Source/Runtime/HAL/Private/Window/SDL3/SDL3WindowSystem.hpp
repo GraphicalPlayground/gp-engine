@@ -12,6 +12,14 @@ class FSDL3WindowSystem final : public FBaseWindowSystem
 {
 public:
     ///
+    /// @section Construction & Destruction
+    ///
+
+    FSDL3WindowSystem() noexcept;
+    ~FSDL3WindowSystem() noexcept override;
+
+public:
+    ///
     /// @section Window Management
     ///
 
