@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Templates/Events/EventQueue.hpp"
 #include "Window/BaseWindow.hpp"
 #include "Window/WindowDesc.hpp"
 #include <SDL3/SDL.h>
@@ -16,6 +17,8 @@ private:
     static constexpr FIntExtent2D DefaultWindowSize{ 1280u, 720u };
 
 private:
+    FEventQueue m_eventQueue;   //<! Queue for pending window events.
+
     FWindowDesc m_desc{};
 
     EWindowMode m_windowMode{ EWindowMode::Windowed };
@@ -120,6 +123,7 @@ public:
     virtual void Focus() override;
     virtual void RequestAttention(EWindowFlashMode mode = EWindowFlashMode::UntilFocused) override;
     virtual void CenterOnDisplay(const IDisplay* display = nullptr) override;
+    virtual void PollEvents() noexcept override;
 
 private:
     void ResetToDefaultState() noexcept;
