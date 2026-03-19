@@ -87,6 +87,7 @@ public:
     virtual void Focus() override;
     virtual void RequestAttention(EWindowFlashMode mode = EWindowFlashMode::UntilFocused) override;
     virtual void CenterOnDisplay(const IDisplay* display = nullptr) override;
+    virtual void PollEvents() noexcept override;
 };
 
 }   // namespace GP

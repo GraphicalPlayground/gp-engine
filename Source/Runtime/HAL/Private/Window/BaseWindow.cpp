@@ -147,4 +147,6 @@ void FBaseWindow::RequestAttention(EWindowFlashMode mode) { GP_UNUSED(mode); }
 
 void FBaseWindow::CenterOnDisplay(const IDisplay* display) { GP_UNUSED(display); }
 
+void FBaseWindow::PollEvents() noexcept {}
+
 }   // namespace GP
