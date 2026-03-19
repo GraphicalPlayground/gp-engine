@@ -5,6 +5,7 @@
 #include "CoreBuild.hpp"
 #include "CoreTypes.hpp"
 #include <compare>
+#include <ostream>
 
 namespace GP
 {
@@ -63,5 +64,11 @@ public:
         return static_cast<UInt64>(width) * static_cast<UInt64>(height);
     }
 };
+
+/// @brief Stream output operator for FDisplayMode, useful for logging and debugging.
+/// @param os The output stream to write to.
+/// @param mode The display mode to format.
+/// @return The output stream after writing the formatted display mode.
+std::ostream& operator<<(std::ostream& os, const GP::FDisplayMode& mode);
 
 }   // namespace GP
