@@ -38,7 +38,7 @@ public:
     using ValueType = TRemoveCV_T<T>;                    //<! The type of the elements pointed to by the iterator.
     using Pointer = T*;                                  //<! The pointer type used to access elements.
     using Reference = T&;                                //<! The reference type used to access elements.
-    using DifferenceType = SizeT;                        //<! The type used to represent the difference.
+    using DifferenceType = PtrDiffT;                     //<! The type used to represent the difference.
 
 private:
     /// @brief Private constructor for creating an iterator from a raw pointer. Only accessible to friend classes.
