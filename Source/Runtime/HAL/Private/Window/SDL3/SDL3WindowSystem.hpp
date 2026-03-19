@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Templates/Events/EventQueue.hpp"
 #include "Window/BaseWindowSystem.hpp"
 
 namespace GP
@@ -10,6 +11,9 @@ namespace GP
 /// @brief SDL3 implementation of IWindowSystem.
 class FSDL3WindowSystem final : public FBaseWindowSystem
 {
+private:
+    FEventQueue m_eventQueue;   //<! Queue for pending system events.
+
 public:
     ///
     /// @section Construction & Destruction
@@ -36,7 +40,6 @@ public:
     ///
 
     virtual void PollEvents() noexcept override;
-    virtual void DispatchEvents() noexcept override;
 
     ///
     /// @section Utility

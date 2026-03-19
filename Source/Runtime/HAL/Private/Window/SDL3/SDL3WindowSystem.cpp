@@ -115,8 +115,17 @@ void FSDL3WindowSystem::RefreshDisplayList() noexcept
 
 GP_NODISCARD FStringView FSDL3WindowSystem::GetBackendName() const noexcept { return "SDL3"; }
 
-void FSDL3WindowSystem::PollEvents() noexcept {}
+void FSDL3WindowSystem::PollEvents() noexcept
+{
+    // PumpNativeEvents();
 
-void FSDL3WindowSystem::DispatchEvents() noexcept {}
+    m_eventQueue.Swap();
+    m_eventQueue.Dispatch();
+
+    for (const auto& window: m_windows)
+    {
+        if (window && window->IsValid()) { window->PollEvents(); }
+    }
+}
 
 }   // namespace GP
