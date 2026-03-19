@@ -32,9 +32,19 @@ struct FWindowClosedEvent
 /// for convenience; it equals \c newPosition - \c oldPosition.
 struct FWindowMovedEvent
 {
+public:
     FIntPoint2D oldPosition;   //<! Client-area position before the move.
     FIntPoint2D newPosition;   //<! Client-area position after the move.
     FIntPoint2D delta;         //<! Signed pixel offset of the move.
+
+public:
+    /// @brief Coalesces two move events into one by updating the existing event with the new position and recalculating
+    ///        the delta.
+    static void Coalesce(FWindowMovedEvent& existing, const FWindowMovedEvent& incoming)
+    {
+        existing.newPosition = incoming.newPosition;
+        existing.delta = existing.newPosition - existing.oldPosition;
+    }
 };
 
 /// @brief Fired whenever the client area (drawable region) changes size.
@@ -44,8 +54,16 @@ struct FWindowMovedEvent
 ///        DPI transitions; see FWindowFramebufferResizedEvent for that.
 struct FWindowResizedEvent
 {
+public:
     FIntExtent2D oldSize;   //<! Client-area size before the resize.
     FIntExtent2D newSize;   //<! Client-area size after the resize.
+
+public:
+    /// @brief Coalesces two resize events into one by updating the existing event with the new size.
+    static void Coalesce(FWindowResizedEvent& existing, const FWindowResizedEvent& incoming)
+    {
+        existing.newSize = incoming.newSize;
+    }
 };
 
 /// @brief Fired whenever the GPU render target (framebuffer) changes size.
@@ -59,8 +77,16 @@ struct FWindowResizedEvent
 ///        that lands on the same physical pixel count).
 struct FWindowFramebufferResizedEvent
 {
+public:
     FIntExtent2D oldSize;   //<! Framebuffer size before the change.
     FIntExtent2D newSize;   //<! Framebuffer size after the change.
+
+public:
+    /// @brief Coalesces two framebuffer resize events into one by updating the existing event with the new size.
+    static void Coalesce(FWindowFramebufferResizedEvent& existing, const FWindowFramebufferResizedEvent& incoming)
+    {
+        existing.newSize = incoming.newSize;
+    }
 };
 
 /// @brief Fired when the window's minimum and/or maximum size limits change.
@@ -135,8 +161,16 @@ struct FWindowBorderlessChangedEvent
 ///        applicable on the current platform.
 struct FWindowDisplayChangedEvent
 {
+public:
     const IDisplay* oldDisplay;   //<! Display the window was on before.
     const IDisplay* newDisplay;   //<! Display the window is now on.
+
+public:
+    /// @brief Coalesces two display change events into one by updating the existing event with the new display.
+    static void Coalesce(FWindowDisplayChangedEvent& existing, const FWindowDisplayChangedEvent& incoming)
+    {
+        existing.newDisplay = incoming.newDisplay;
+    }
 };
 
 /// @brief Fired when the content scale (DPI ratio) of the display changes.
@@ -145,8 +179,16 @@ struct FWindowDisplayChangedEvent
 /// different pixel density, or changes the OS display scaling setting.
 struct FWindowDPIScaleChangedEvent
 {
+public:
     Float32 oldScale;   //<! Previous display content-scale factor.
     Float32 newScale;   //<! New display content-scale factor.
+
+public:
+    /// @brief Coalesces two DPI scale change events into one by updating the existing event with the new scale.
+    static void Coalesce(FWindowDPIScaleChangedEvent& existing, const FWindowDPIScaleChangedEvent& incoming)
+    {
+        existing.newScale = incoming.newScale;
+    }
 };
 
 /// @brief Fired when vertical synchronisation is toggled on or off.
