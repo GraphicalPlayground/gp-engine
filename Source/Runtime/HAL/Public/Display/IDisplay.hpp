@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Container/ContainerFwd.hpp"
 #include "Container/Views/ArrayView.hpp"
 #include "Container/Views/StringView.hpp"
 #include "CoreBuild.hpp"
