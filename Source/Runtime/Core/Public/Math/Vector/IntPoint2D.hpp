@@ -78,6 +78,20 @@ public:
     /// @param other Point to compare with.
     /// @return true if the points have different coordinates, false if they are equal.
     GP_NODISCARD constexpr bool operator!=(const TIntPoint2D& other) const noexcept;
+
+    /// @brief Unary negation operator, which negates both coordinates of the point.
+    /// @return A new point with both coordinates negated.
+    GP_NODISCARD constexpr TIntPoint2D operator-() const noexcept;
+
+    /// @brief Addition operator, which adds the corresponding coordinates of two points.
+    /// @param other Point to add.
+    /// @return A new point resulting from the coordinate-wise addition of the two points.
+    GP_NODISCARD constexpr TIntPoint2D operator+(const TIntPoint2D& other) const noexcept;
+
+    /// @brief Subtraction operator, which subtracts the corresponding coordinates of two points.
+    /// @param other Point to subtract.
+    /// @return A new point resulting from the coordinate-wise subtraction of the two points.
+    GP_NODISCARD constexpr TIntPoint2D operator-(const TIntPoint2D& other) const noexcept;
 };
 
 }   // namespace GP

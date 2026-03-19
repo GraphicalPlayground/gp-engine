@@ -50,4 +50,22 @@ GP_NODISCARD constexpr bool TIntPoint2D<T>::operator!=(const TIntPoint2D& other)
     return !(*this == other);
 }
 
+template <CIntegral T>
+constexpr TIntPoint2D<T> TIntPoint2D<T>::operator-() const noexcept
+{
+    return TIntPoint2D(-x, -y);
+}
+
+template <CIntegral T>
+constexpr TIntPoint2D<T> TIntPoint2D<T>::operator+(const TIntPoint2D& other) const noexcept
+{
+    return TIntPoint2D(x + other.x, y + other.y);
+}
+
+template <CIntegral T>
+constexpr TIntPoint2D<T> TIntPoint2D<T>::operator-(const TIntPoint2D& other) const noexcept
+{
+    return TIntPoint2D(x - other.x, y - other.y);
+}
+
 }   // namespace GP
