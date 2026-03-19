@@ -301,6 +301,28 @@
 // Combine Major, Minor, Patch into a single version number
 #define GP_VERSION(major, minor, patch) (((major) << 16) | ((minor) << 8) | (patch))
 
+// String concatenation
+#define GP_INTERNAL_CONCAT_IMPL(a, b) a##b
+#define GP_CONCAT(a, b) GP_INTERNAL_CONCAT_IMPL(a, b)
+
+// Stringification
+#define GP_INTERNAL_STRINGIFY_IMPL(x) #x
+#define GP_STRINGIFY(x) GP_INTERNAL_STRINGIFY_IMPL(x)
+
+// Get first argument or default
+#define GP_FIRST_OR_DEFAULT(first, ...) first
+
+// Get first argument
+#define GP_FIRST(...) GP_FIRST_HELPER(__VA_ARGS__, "")
+#define GP_FIRST_HELPER(first, ...) first
+
+// Expand remaining arguments (for printf-style formatting)
+#define GP_EXPAND_ARGS(...) GP_EXPAND_ARGS_HELPER(__VA_ARGS__, )
+#define GP_EXPAND_ARGS_HELPER(first, ...) , ##__VA_ARGS__
+
+// Format message helper
+#define GP_FORMAT_MSG(...) GP_FIRST(__VA_ARGS__)
+
 /// @brief Forces the compiler to inline the decorated function, if possible.
 #if GP_COMPILER_MSVC
     #define GP_FORCEINLINE __forceinline
@@ -482,13 +504,48 @@
     #define GP_ALIGN(x)
 #endif
 
+/// @brief Allocates memory with the specified alignment.  Size must be a multiple of alignment for some platforms
+/// (e.g. WASM).
+/// @brief Frees memory allocated with GP_ALIGNED_ALLOC.
+#if GP_COMPILER_MSVC
+    #define GP_ALIGNED_ALLOC(size, alignment) _aligned_malloc(size, alignment)
+    #define GP_ALIGNED_FREE(ptr) _aligned_free(ptr)
+#elif GP_COMPILER_GCC || GP_COMPILER_CLANG
+    #include <stdlib.h>
+    #define GP_ALIGNED_ALLOC(size, alignment) aligned_alloc(alignment, size)
+    #define GP_ALIGNED_FREE(ptr) free(ptr)
+#else
+    #define GP_ALIGNED_ALLOC(size, alignment) malloc(size)
+    #define GP_ALIGNED_FREE(ptr) free(ptr)
+#endif
+
+/// @brief Cpu pause instruction to reduce power consumption and improve SMT performance in spin loops.
+#if GP_ARCHITECTURE_X86_FAMILY
+    #include <immintrin.h>
+    #define GP_CPU_PAUSE() _mm_pause()
+#elif GP_ARCHITECTURE_ARM_FAMILY
+    // For MSVC ARM, use __yield intrinsic; for GCC/Clang use inline asm
+    #if GP_COMPILER_MSVC
+        #include <intrin.h>
+        #define GP_CPU_PAUSE() __yield()
+    #else
+        #define GP_CPU_PAUSE() __asm__ volatile("yield" ::: "memory")
+    #endif
+#else
+    #define GP_CPU_PAUSE()
+#endif
+
 /// @brief Prefetches a cache line into L1 for reading.
 /// @brief Prefetches a cache line into L1 for writing.
 /// @note  Uses __builtin_prefetch on Clang, GCC, and MSVC (VS 2019 16.8+ supports the GCC builtin).
 ///        Falls back to a no-op on unknown compilers.
-#if GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_MSVC
+#if GP_COMPILER_CLANG || GP_COMPILER_GCC
     #define GP_PREFETCH_R(ptr) __builtin_prefetch((ptr), 0, 3)
     #define GP_PREFETCH_W(ptr) __builtin_prefetch((ptr), 1, 3)
+#elif GP_COMPILER_MSVC
+    #include <immintrin.h>
+    #define GP_PREFETCH_R(ptr) _mm_prefetch((const char*)(ptr), _MM_HINT_T0)
+    #define GP_PREFETCH_W(ptr) _mm_prefetch((const char*)(ptr), _MM_HINT_T0)
 #else
     #define GP_PREFETCH_R(ptr) (void)(ptr)
     #define GP_PREFETCH_W(ptr) (void)(ptr)
@@ -503,30 +560,42 @@
     #define GP_CACHE_LINE_SIZE 64
 #endif
 
+/// @brief Macro to declare a cache-line aligned padding array of the specified size in bytes.
+#define GP_CACHE_PAD char GP_CONCAT(_pad, __LINE__)[GP_CACHE_LINE_SIZE]
+
 // Cache line alignment
 #define GP_CACHE_ALIGNED GP_ALIGN(GP_CACHE_LINE_SIZE)
 
-// String concatenation
-#define GP_INTERNAL_CONCAT_IMPL(a, b) a##b
-#define GP_CONCAT(a, b) GP_INTERNAL_CONCAT_IMPL(a, b)
+/// @brief Reads the hardware cycle counter (TSC on x86).
+#if GP_COMPILER_MSVC
+    #include <intrin.h>
+    #define GP_READ_REG_TSC() __rdtsc()
+#elif GP_COMPILER_GCC || GP_COMPILER_CLANG
+    #if GP_ARCHITECTURE_X86_FAMILY
+        #include <x86intrin.h>
+        #define GP_READ_REG_TSC() __rdtsc()
+    #elif GP_ARCHITECTURE_ARM64
+        // Reads the virtual counter register
+        #define GP_READ_REG_TSC() []() { \
+            uint64_t v; \
+            __asm__ volatile("mrs %0, cntvct_el0" : "=r"(v)); \
+            return v; \
+        }()
+    #endif
+#else
+    #define GP_READ_REG_TSC() 0
+#endif
 
-// Stringification
-#define GP_INTERNAL_STRINGIFY_IMPL(x) #x
-#define GP_STRINGIFY(x) GP_INTERNAL_STRINGIFY_IMPL(x)
-
-// Get first argument or default
-#define GP_FIRST_OR_DEFAULT(first, ...) first
-
-// Get first argument
-#define GP_FIRST(...) GP_FIRST_HELPER(__VA_ARGS__, "")
-#define GP_FIRST_HELPER(first, ...) first
-
-// Expand remaining arguments (for printf-style formatting)
-#define GP_EXPAND_ARGS(...) GP_EXPAND_ARGS_HELPER(__VA_ARGS__, )
-#define GP_EXPAND_ARGS_HELPER(first, ...) , ##__VA_ARGS__
-
-// Format message helper
-#define GP_FORMAT_MSG(...) GP_FIRST(__VA_ARGS__)
+/// @brief Full memory barrier. Prevents hardware and compiler reordering.
+#if GP_COMPILER_MSVC
+    #include <intrin.h>
+    #define GP_MEMORY_BARRIER() _ReadWriteBarrier(); MemoryBarrier()
+#elif GP_COMPILER_GCC || GP_COMPILER_CLANG
+    #define GP_MEMORY_BARRIER() __sync_synchronize()
+#else
+    #include <atomic>
+    #define GP_MEMORY_BARRIER() std::atomic_thread_fence(std::memory_order_seq_cst)
+#endif
 
 // Bit manipulation
 #define GP_BIT(x) (1 << (x))
@@ -545,6 +614,21 @@
 // Unused parameter
 #define GP_UNUSED(x) (void)(x)
 
+#if GP_INTERNAL_CXX23
+    #include <bit>
+    #define GP_BYTESWAP16(x) std::byteswap((uint16_t)x)
+    #define GP_BYTESWAP32(x) std::byteswap((uint32_t)x)
+    #define GP_BYTESWAP64(x) std::byteswap((uint64_t)x)
+#elif GP_COMPILER_MSVC
+    #define GP_BYTESWAP16(x) _byteswap_ushort(x)
+    #define GP_BYTESWAP32(x) _byteswap_ulong(x)
+    #define GP_BYTESWAP64(x) _byteswap_uint64(x)
+#else
+    #define GP_BYTESWAP16(x) __builtin_bswap16(x)
+    #define GP_BYTESWAP32(x) __builtin_bswap32(x)
+    #define GP_BYTESWAP64(x) __builtin_bswap64(x)
+#endif
+
 #if GP_DEBUG
     #define GP_ASSERT(expr, ...)
     #define GP_ASSERT_FATAL(expr, ...)
@@ -553,4 +637,10 @@
     #define GP_ASSERT(expr, ...)
     #define GP_ASSERT_FATAL(expr, ...)
     #define GP_ENSURE(expr, ...)
+#endif
+
+// Default Features
+
+#ifndef GP_ENABLE_DOUBLE_PRECISION
+    #define GP_ENABLE_DOUBLE_PRECISION 0
 #endif
