@@ -87,6 +87,7 @@ function(gp_fetch_content)
             GIT_TAG         ${ARG_GIT_TAG}
             GIT_SHALLOW     TRUE                    # Clone only the specified tag (faster)
             GIT_PROGRESS    TRUE                    # Show clone/fetch progress
+            SYSTEM          TRUE                    # Treat as system dependency (suppress warnings)
         )
 
         # Log fetch operation start
