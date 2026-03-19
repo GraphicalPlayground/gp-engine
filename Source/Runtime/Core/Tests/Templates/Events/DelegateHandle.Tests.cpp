@@ -20,16 +20,16 @@ TEST_CASE("FDelegateHandle - Generate() produces valid handles", "[Templates][De
 
 TEST_CASE("FDelegateHandle - Generate() produces unique handles", "[Templates][DelegateHandle]")
 {
-    static constexpr GP::Int32 k_count = 1000;
+    static constexpr GP::SizeT k_count = 1000;
     std::vector<GP::FDelegateHandle> handles;
     handles.reserve(k_count);
 
-    for (GP::Int32 i = 0; i < k_count; ++i) { handles.push_back(GP::FDelegateHandle::Generate()); }
+    for (GP::SizeT i = 0; i < k_count; ++i) { handles.push_back(GP::FDelegateHandle::Generate()); }
 
     // All handles must be distinct.
-    for (GP::Int32 i = 0; i < k_count; ++i)
+    for (GP::SizeT i = 0; i < k_count; ++i)
     {
-        for (GP::Int32 j = i + 1; j < k_count; ++j) { REQUIRE(handles[i] != handles[j]); }
+        for (GP::SizeT j = i + 1; j < k_count; ++j) { REQUIRE(handles[i] != handles[j]); }
     }
 }
 
