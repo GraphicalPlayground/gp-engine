@@ -37,7 +37,11 @@ GP_NODISCARD FDisplayMode FBaseDisplay::GetCurrentMode() const noexcept { return
 
 GP_NODISCARD TArrayView<const FDisplayMode> FBaseDisplay::GetSupportedModes() const noexcept { return {}; }
 
-GP_NODISCARD bool FBaseDisplay::SupportsMode(const FDisplayMode& mode) const noexcept { return false; }
+GP_NODISCARD bool FBaseDisplay::SupportsMode(const FDisplayMode& mode) const noexcept
+{
+    GP_UNUSED(mode);
+    return false;
+}
 
 ///
 /// @section Physical Properties
