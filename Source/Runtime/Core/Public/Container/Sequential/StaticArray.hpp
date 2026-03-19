@@ -51,7 +51,7 @@ public:
     static constexpr SizeType NPOS = static_cast<SizeType>(-1);
 
 private:
-    alignas(T) T m_data[N]{};   //<! Inline storage for N elements. Stack-allocated, zero heap overhead.
+    alignas(T) T m_data[N > 0 ? N : 1]{};   //<! Inline storage for N elements. Stack-allocated, zero heap overhead.
 
 public:
     /// @brief default constructor. Value-initializes all N elements.
@@ -226,19 +226,35 @@ public:
 
     /// @brief Access the first element.
     /// @return A reference to the first element.
-    GP_NODISCARD constexpr Reference Front() noexcept { return m_data[0]; }
+    GP_NODISCARD constexpr Reference Front() noexcept
+    {
+        GP_ASSERT(N > 0, "Front() called on empty TStaticArray");
+        return m_data[0];
+    }
 
     /// @brief Access the first element (const).
     /// @return A const reference to the first element.
-    GP_NODISCARD constexpr ConstReference Front() const noexcept { return m_data[0]; }
+    GP_NODISCARD constexpr ConstReference Front() const noexcept
+    {
+        GP_ASSERT(N > 0, "Front() called on empty TStaticArray");
+        return m_data[0];
+    }
 
     /// @brief Access the last element.
     /// @return A reference to the last element.
-    GP_NODISCARD constexpr Reference Back() noexcept { return m_data[N - 1]; }
+    GP_NODISCARD constexpr Reference Back() noexcept
+    {
+        GP_ASSERT(N > 0, "Back() called on empty TStaticArray");
+        return m_data[N - 1];
+    }
 
     /// @brief Access the last element (const).
     /// @return A reference to the last element.
-    GP_NODISCARD constexpr ConstReference Back() const noexcept { return m_data[N - 1]; }
+    GP_NODISCARD constexpr ConstReference Back() const noexcept
+    {
+        GP_ASSERT(N > 0, "Back() called on empty TStaticArray");
+        return m_data[N - 1];
+    }
 
     /// @brief Direct pointer to the underlying contiguous storage.
     /// @return A pointer to the first element.
@@ -347,9 +363,9 @@ public:
     /// @return The index of the element, or NPOS if not found.
     GP_NODISCARD constexpr SizeType IndexLastOf(const T& value) const noexcept
     {
-        for (SizeType i = N; N > 0; --i)
+        for (SizeType i = N; i > 0; --i)
         {
-            if (m_data[i] == value) { return i - 1; };
+            if (m_data[i - 1] == value) { return i - 1; };
         }
         return NPOS;
     }
