@@ -47,9 +47,9 @@ struct FNonTrivialEvent
 
 }   // namespace GP::Testing
 
-TEST_CASE("TEventQueue: Basic emission and dispatching", "[Templates][EventQueue]")
+TEST_CASE("FEventQueue: Basic emission and dispatching", "[Templates][EventQueue]")
 {
-    TEventQueue queue;
+    FEventQueue queue;
     TEvent<void(const Testing::FSimpleEvent&)> target;
 
     Int32 receivedValue = 0;
@@ -88,9 +88,9 @@ TEST_CASE("TEventQueue: Basic emission and dispatching", "[Templates][EventQueue
     }
 }
 
-TEST_CASE("TEventQueue: Coalescing events", "[Templates][EventQueue]")
+TEST_CASE("FEventQueue: Coalescing events", "[Templates][EventQueue]")
 {
-    TEventQueue queue;
+    FEventQueue queue;
 
     SECTION("Same target coalesces correctly")
     {
@@ -147,12 +147,12 @@ TEST_CASE("TEventQueue: Coalescing events", "[Templates][EventQueue]")
     }
 }
 
-TEST_CASE("TEventQueue: Destructor invocation for non-trivial events", "[Templates][EventQueue]")
+TEST_CASE("FEventQueue: Destructor invocation for non-trivial events", "[Templates][EventQueue]")
 {
     Int32 destroyCount = 0;
 
     {
-        TEventQueue queue;
+        FEventQueue queue;
         TEvent<void(const Testing::FNonTrivialEvent&)> target;
 
         queue.Emit(Testing::FNonTrivialEvent{ &destroyCount }, target);
@@ -170,10 +170,10 @@ TEST_CASE("TEventQueue: Destructor invocation for non-trivial events", "[Templat
     REQUIRE(destroyCount >= 2);
 }
 
-TEST_CASE("TEventQueue: Reallocation handles large number of events", "[Templates][EventQueue]")
+TEST_CASE("FEventQueue: Reallocation handles large number of events", "[Templates][EventQueue]")
 {
     // Initialize with a tiny capacity to force reallocations
-    TEventQueue queue(32);
+    FEventQueue queue(32);
     TEvent<void(const Testing::FSimpleEvent&)> target;
 
     Int32 sum = 0;

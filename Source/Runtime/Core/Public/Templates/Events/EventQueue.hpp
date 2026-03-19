@@ -130,13 +130,13 @@ concept CCoalesceable = requires(TEventType& existing, const TEventType& incomin
 ///       }
 ///
 ///   private:
-///       TEventQueue m_eventQueue;
+///       FEventQueue m_eventQueue;
 ///   };
 /// @endcode
 ///
 /// @note The class is non-copyable and non-movable.  Construct in-place and pass
 ///       references or pointers to collaborators.
-class TEventQueue
+class FEventQueue
 {
 public:
     ///
@@ -162,18 +162,18 @@ public:
     /// @brief Constructs a queue and pre-allocates both buffer halves.
     /// @param capacityPerBuffer  Initial byte reservation for each buffer half.
     ///                           Sized to hold a typical frame's worth of events without reallocation.
-    explicit TEventQueue(SizeT capacityPerBuffer = kDefaultCapacity) noexcept
+    explicit FEventQueue(SizeT capacityPerBuffer = kDefaultCapacity) noexcept
     {
         m_buffers[0].Reserve(capacityPerBuffer);
         m_buffers[1].Reserve(capacityPerBuffer);
     }
 
-    TEventQueue(const TEventQueue&) = delete;
-    TEventQueue& operator=(const TEventQueue&) = delete;
-    TEventQueue(TEventQueue&&) = delete;
-    TEventQueue& operator=(TEventQueue&&) = delete;
+    FEventQueue(const FEventQueue&) = delete;
+    FEventQueue& operator=(const FEventQueue&) = delete;
+    FEventQueue(FEventQueue&&) = delete;
+    FEventQueue& operator=(FEventQueue&&) = delete;
 
-    ~TEventQueue() noexcept = default;
+    ~FEventQueue() noexcept = default;
 
 public:
     ///
@@ -266,7 +266,7 @@ public:
         Detail::FEventRecord::FCoalesceFn coalesceFn = nullptr
     )
     {
-        GP_ASSERT(dispatchFn != nullptr, "TEventQueue::EmitRaw - dispatchFn must not be null.");
+        GP_ASSERT(dispatchFn != nullptr, "FEventQueue::EmitRaw - dispatchFn must not be null.");
 
         Detail::FEventRecord::FDestroyFn destroyFn = nullptr;
 
