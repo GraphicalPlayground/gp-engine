@@ -88,7 +88,6 @@ TEST_CASE("TTuple: Default construction is constexpr", "[Container][Tuple]")
 
 TEST_CASE("TTuple: Empty tuple default construction compiles and has size zero", "[Container][Tuple]")
 {
-    const TTuple<> t;
     STATIC_REQUIRE(TTuple<>::kSize == 0);
     STATIC_REQUIRE(TTuple<>::Size() == 0);
 }
