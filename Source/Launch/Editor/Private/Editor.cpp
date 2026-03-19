@@ -35,6 +35,13 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    auto displays = windowSystem->GetDisplays();
+    std::cout << "Detected " << displays.Size() << " display(s):" << std::endl;
+    for (const auto& display: displays)
+    {
+        std::cout << display->GetName().Data() << " - " << display->GetCurrentMode() << std::endl;
+    }
+
     // window->OnClosed      += [](const auto&) { Platform::RequestExit(); };
     // window->OnFocusLost   += [](const auto&) { Audio::MuteAll(); };
     // window->OnFocusGained += [](const auto&) { Audio::Restore(); };
