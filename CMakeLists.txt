@@ -60,6 +60,7 @@ include(GPOptions)
 
 # Apply Options
 gp_apply_options()
+gp_apply_compile_options()
 
 # Add Subdirectories
 add_subdirectory(ThirdParty)
