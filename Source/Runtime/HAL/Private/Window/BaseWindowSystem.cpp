@@ -48,13 +48,13 @@ GP_NODISCARD TSharedPtr<IWindow> FBaseWindowSystem::FindWindowByNativeHandle(voi
     return nullptr;
 }
 
-GP_NODISCARD TSharedPtr<const IDisplay> FBaseWindowSystem::GetPrimaryDisplay() const noexcept
+GP_NODISCARD TSharedPtr<IDisplay> FBaseWindowSystem::GetPrimaryDisplay() const noexcept
 {
     // TODO: Implement this properly once we have a real display system in place.
     return nullptr;
 }
 
-GP_NODISCARD TArrayView<const TSharedPtr<const IDisplay>> FBaseWindowSystem::GetDisplays() const noexcept
+GP_NODISCARD TArrayView<const TSharedPtr<IDisplay>> FBaseWindowSystem::GetDisplays() const noexcept
 {
     return m_displays.AsView();
 }
@@ -63,22 +63,22 @@ GP_NODISCARD SizeT FBaseWindowSystem::GetDisplayCount() const noexcept { return 
 
 GP_NODISCARD bool FBaseWindowSystem::HasDisplays() const noexcept { return m_displays.Size() != 0; }
 
-GP_NODISCARD TSharedPtr<const IDisplay> FBaseWindowSystem::FindDisplayById(SizeT id) const noexcept
+GP_NODISCARD TSharedPtr<IDisplay> FBaseWindowSystem::FindDisplayById(SizeT id) const noexcept
 {
     // TODO: Implement this properly once we have a real display system in place.
     GP_UNUSED(id);
     return nullptr;
 }
 
-GP_NODISCARD TSharedPtr<const IDisplay> FBaseWindowSystem::FindDisplayByNativeHandle(void* nativeHandle) const noexcept
+GP_NODISCARD TSharedPtr<IDisplay> FBaseWindowSystem::FindDisplayByNativeHandle(void* nativeHandle) const noexcept
 {
     // TODO: Implement this properly once we have a real display system in place.
     GP_UNUSED(nativeHandle);
     return nullptr;
 }
 
-GP_NODISCARD TSharedPtr<const IDisplay>
-    FBaseWindowSystem::FindDisplayForWindow(const TSharedPtr<IWindow>& window) const noexcept
+GP_NODISCARD TSharedPtr<IDisplay> FBaseWindowSystem::FindDisplayForWindow(const TSharedPtr<IWindow>& window
+) const noexcept
 {
     // TODO: Implement this properly once we have a real display system in place.
     GP_UNUSED(window);

@@ -38,14 +38,14 @@ public:
     /// @section Display Management
     ///
 
-    GP_NODISCARD virtual TSharedPtr<const IDisplay> GetPrimaryDisplay() const noexcept = 0;
-    GP_NODISCARD virtual TArrayView<const TSharedPtr<const IDisplay>> GetDisplays() const noexcept = 0;
+    GP_NODISCARD virtual TSharedPtr<IDisplay> GetPrimaryDisplay() const noexcept = 0;
+    GP_NODISCARD virtual TArrayView<const TSharedPtr<IDisplay>> GetDisplays() const noexcept = 0;
     GP_NODISCARD virtual SizeT GetDisplayCount() const noexcept = 0;
     GP_NODISCARD virtual bool HasDisplays() const noexcept = 0;
-    GP_NODISCARD virtual TSharedPtr<const IDisplay> FindDisplayById(SizeT id) const noexcept = 0;
-    GP_NODISCARD virtual TSharedPtr<const IDisplay> FindDisplayByNativeHandle(void* nativeHandle) const noexcept = 0;
-    GP_NODISCARD virtual TSharedPtr<const IDisplay>
-        FindDisplayForWindow(const TSharedPtr<IWindow>& window) const noexcept = 0;
+    GP_NODISCARD virtual TSharedPtr<IDisplay> FindDisplayById(SizeT id) const noexcept = 0;
+    GP_NODISCARD virtual TSharedPtr<IDisplay> FindDisplayByNativeHandle(void* nativeHandle) const noexcept = 0;
+    GP_NODISCARD virtual TSharedPtr<IDisplay> FindDisplayForWindow(const TSharedPtr<IWindow>& window
+    ) const noexcept = 0;
     virtual void RefreshDisplayList() noexcept = 0;
 
     ///

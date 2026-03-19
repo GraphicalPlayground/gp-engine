@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Container/Sequential/Array.hpp"
+#include "Display/IDisplay.hpp"
 #include "Memory/SharedPtr.hpp"
 #include "Window/IWindowSystem.hpp"
 
@@ -13,8 +14,8 @@ namespace GP
 class FBaseWindowSystem : public IWindowSystem
 {
 protected:
-    TArray<TSharedPtr<IWindow>> m_windows;           //<! Storage for all created windows.
-    TArray<TSharedPtr<const IDisplay>> m_displays;   //<! Storage for all detected displays.
+    TArray<TSharedPtr<IWindow>> m_windows;     //<! Storage for all created windows.
+    TArray<TSharedPtr<IDisplay>> m_displays;   //<! Storage for all detected displays.
 
 public:
     virtual ~FBaseWindowSystem() = default;
@@ -36,15 +37,14 @@ public:
     /// @section Display Management
     ///
 
-    GP_NODISCARD virtual TSharedPtr<const IDisplay> GetPrimaryDisplay() const noexcept override;
-    GP_NODISCARD virtual TArrayView<const TSharedPtr<const IDisplay>> GetDisplays() const noexcept override;
+    GP_NODISCARD virtual TSharedPtr<IDisplay> GetPrimaryDisplay() const noexcept override;
+    GP_NODISCARD virtual TArrayView<const TSharedPtr<IDisplay>> GetDisplays() const noexcept override;
     GP_NODISCARD virtual SizeT GetDisplayCount() const noexcept override;
     GP_NODISCARD virtual bool HasDisplays() const noexcept override;
-    GP_NODISCARD virtual TSharedPtr<const IDisplay> FindDisplayById(SizeT id) const noexcept override;
-    GP_NODISCARD virtual TSharedPtr<const IDisplay>
-        FindDisplayByNativeHandle(void* nativeHandle) const noexcept override;
-    GP_NODISCARD virtual TSharedPtr<const IDisplay>
-        FindDisplayForWindow(const TSharedPtr<IWindow>& window) const noexcept override;
+    GP_NODISCARD virtual TSharedPtr<IDisplay> FindDisplayById(SizeT id) const noexcept override;
+    GP_NODISCARD virtual TSharedPtr<IDisplay> FindDisplayByNativeHandle(void* nativeHandle) const noexcept override;
+    GP_NODISCARD virtual TSharedPtr<IDisplay> FindDisplayForWindow(const TSharedPtr<IWindow>& window
+    ) const noexcept override;
     virtual void RefreshDisplayList() noexcept override;
 
     ///
