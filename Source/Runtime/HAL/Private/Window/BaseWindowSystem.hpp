@@ -52,7 +52,6 @@ public:
     ///
 
     virtual void PollEvents() noexcept override;
-    virtual void DispatchEvents() noexcept override;
 
     ///
     /// @section Utility

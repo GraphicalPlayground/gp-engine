@@ -53,7 +53,6 @@ public:
     ///
 
     virtual void PollEvents() noexcept = 0;
-    virtual void DispatchEvents() noexcept = 0;
 
     ///
     /// @section Utility

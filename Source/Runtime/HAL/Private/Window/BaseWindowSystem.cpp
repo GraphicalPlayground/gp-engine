@@ -101,9 +101,4 @@ void FBaseWindowSystem::PollEvents() noexcept
     // Does nothing by default.
 }
 
-void FBaseWindowSystem::DispatchEvents() noexcept
-{
-    // Does nothing by default.
-}
-
 }   // namespace GP
