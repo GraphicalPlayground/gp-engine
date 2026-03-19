@@ -28,11 +28,11 @@ FSDL3Window::~FSDL3Window() noexcept
 /// @section State queries
 ///
 
-GP_NODISCARD bool FSDL3Window::IsOpen() const noexcept { return m_window; }
+GP_NODISCARD bool FSDL3Window::IsOpen() const noexcept { return m_window != nullptr; }
 
-GP_NODISCARD bool FSDL3Window::IsValid() const noexcept { return m_window; }
+GP_NODISCARD bool FSDL3Window::IsValid() const noexcept { return m_window != nullptr; }
 
-GP_NODISCARD bool FSDL3Window::IsActive() const noexcept { return m_window && m_isFocused; }
+GP_NODISCARD bool FSDL3Window::IsActive() const noexcept { return m_window != nullptr && m_isFocused; }
 
 GP_NODISCARD bool FSDL3Window::IsFocused() const noexcept { return m_isFocused; }
 
