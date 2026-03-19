@@ -52,6 +52,36 @@ public:
     /// @section Event Handling
     ///
 
+    /// @brief Drains the OS event queue and fills the TEventQueue write buffers.
+    ///
+    /// @par Threading
+    /// MUST be called on the platform thread (the thread that created the windows).
+    /// On macOS this is mandatorily the main OS thread.
+    /// On Win32 this is the thread that called SDL_Init / created the HWNDs.
+    ///
+    /// @par What it does
+    /// Calls the platform pump (SDL_PollEvent, PeekMessage, wl_display_dispatch…),
+    /// routes each raw event to the appropriate IWindow or system TEventQueue via
+    /// Emit(). Does NOT dispatch to listeners, that is DispatchEvents()'s job.
+    virtual void PumpEvents() noexcept = 0;
+
+    /// @brief Swaps and drains the TEventQueue read buffers, broadcasting all
+    ///        accumulated events through the TEvent priority system.
+    ///
+    /// @par Threading
+    /// Called on the game/logic thread. Safe to call concurrently with PumpEvents()
+    /// on the platform thread, the double buffer and spinlock handle the race.
+    ///
+    /// @par Dispatch order
+    /// 1. System-level events (display topology, power), must precede window events.
+    /// 2. Per-window events in window-registration order.
+    virtual void DispatchEvents() noexcept = 0;
+
+    /// @brief Convenience wrapper for single-threaded usage: pump then dispatch.
+    ///
+    /// Equivalent to PumpEvents() + DispatchEvents() called sequentially on the
+    /// same thread. Use this until a dedicated game thread exists. Internally
+    /// calls FlushImmediate() to avoid a pointless buffer flip.
     virtual void PollEvents() noexcept = 0;
 
     ///

@@ -51,6 +51,8 @@ public:
     /// @section Event Handling
     ///
 
+    virtual void PumpEvents() noexcept override;
+    virtual void DispatchEvents() noexcept override;
     virtual void PollEvents() noexcept override;
 
     ///

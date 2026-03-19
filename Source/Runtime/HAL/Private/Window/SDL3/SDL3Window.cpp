@@ -294,7 +294,7 @@ void FSDL3Window::CenterOnDisplay(const IDisplay* display)
     GP_UNUSED(display);
 }
 
-void FSDL3Window::PollEvents() noexcept
+void FSDL3Window::DispatchEvents() noexcept
 {
     m_eventQueue.Swap();
     m_eventQueue.Dispatch();

@@ -13,6 +13,7 @@ class FSDL3WindowSystem final : public FBaseWindowSystem
 {
 private:
     FEventQueue m_eventQueue;   //<! Queue for pending system events.
+    // THashMap<SDL_WindowID, FSDL3Window*> m_windowLookup;
 
 public:
     ///
@@ -39,13 +40,25 @@ public:
     /// @section Event Handling
     ///
 
-    virtual void PollEvents() noexcept override;
+    virtual void PumpEvents() noexcept override;
+    virtual void DispatchEvents() noexcept override;
 
     ///
     /// @section Utility
     ///
 
     GP_NODISCARD virtual FStringView GetBackendName() const noexcept override;
+
+private:
+    ///
+    /// @section Private Helpers
+    ///
+
+    void DispatchSDL3WindowEvent(const SDL_Event& sdlEvent) noexcept;
+    void DispatchSDL3DisplayEvent(const SDL_Event& sdlEvent) noexcept;
+    void DispatchSDL3InputEvent(const SDL_Event& sdlEvent) noexcept;
+    void DispatchSDL3OtherEvent(const SDL_Event& sdlEvent) noexcept;
+    void PumpSDL3Events() noexcept;
 };
 
 }   // namespace GP

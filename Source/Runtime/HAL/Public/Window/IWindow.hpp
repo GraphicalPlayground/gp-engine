@@ -261,7 +261,7 @@ public:
     ///       nullptr, the window should be centered on the actual display.
     virtual void CenterOnDisplay(const IDisplay* display = nullptr) = 0;
 
-    virtual void PollEvents() noexcept = 0;
+    virtual void DispatchEvents() noexcept = 0;
 };
 
 }   // namespace GP

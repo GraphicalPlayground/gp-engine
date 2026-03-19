@@ -115,16 +115,69 @@ void FSDL3WindowSystem::RefreshDisplayList() noexcept
 
 GP_NODISCARD FStringView FSDL3WindowSystem::GetBackendName() const noexcept { return "SDL3"; }
 
-void FSDL3WindowSystem::PollEvents() noexcept
-{
-    // PumpNativeEvents();
+void FSDL3WindowSystem::PumpEvents() noexcept { PumpSDL3Events(); }
 
+void FSDL3WindowSystem::DispatchEvents() noexcept
+{
+    // System-level first: display topology changes must be stable before
+    // any window interprets its own resize/DPI events.
     m_eventQueue.Swap();
     m_eventQueue.Dispatch();
 
+    // Per-window second.
     for (const auto& window: m_windows)
     {
-        if (window && window->IsValid()) { window->PollEvents(); }
+        if (window && window->IsValid()) { window->DispatchEvents(); }
+    }
+}
+
+void FSDL3WindowSystem::DispatchSDL3WindowEvent(const SDL_Event& sdlEvent) noexcept
+{
+    GP_UNUSED(sdlEvent);
+    // TODO: Implement dispatching of SDL window events to the appropriate FSDL3Window instances.
+}
+
+void FSDL3WindowSystem::DispatchSDL3DisplayEvent(const SDL_Event& sdlEvent) noexcept
+{
+    GP_UNUSED(sdlEvent);
+    // TODO: Implement dispatching of SDL display events to the appropriate FSDL3Display instances.
+}
+
+void FSDL3WindowSystem::DispatchSDL3InputEvent(const SDL_Event& sdlEvent) noexcept
+{
+    GP_UNUSED(sdlEvent);
+    // TODO: Implement dispatching of SDL input events (keyboard, mouse, etc.) to the appropriate FSDL3Window instances
+    // based on event data.
+}
+
+void FSDL3WindowSystem::DispatchSDL3OtherEvent(const SDL_Event& sdlEvent) noexcept
+{
+    GP_UNUSED(sdlEvent);
+    // TODO: Implement handling of non-window/display/input SDL events as needed (e.g. quit events, user events, etc.).
+}
+
+void FSDL3WindowSystem::PumpSDL3Events() noexcept
+{
+    SDL_Event sdlEvent;
+    while (SDL_PollEvent(&sdlEvent))
+    {
+        const SDL_EventType type = static_cast<SDL_EventType>(sdlEvent.type);
+
+        if (type >= SDL_EVENT_WINDOW_FIRST && type <= SDL_EVENT_WINDOW_LAST) { DispatchSDL3WindowEvent(sdlEvent); }
+        else if (type >= SDL_EVENT_DISPLAY_FIRST && type <= SDL_EVENT_DISPLAY_LAST)
+        {
+            DispatchSDL3DisplayEvent(sdlEvent);
+        }
+        else if ((type >= SDL_EVENT_KEY_DOWN && type <= SDL_EVENT_TEXT_EDITING_CANDIDATES) ||
+                 (type >= SDL_EVENT_MOUSE_MOTION && type <= SDL_EVENT_MOUSE_REMOVED) ||
+                 (type >= SDL_EVENT_JOYSTICK_AXIS_MOTION && type <= SDL_EVENT_JOYSTICK_REMOVED) ||
+                 (type >= SDL_EVENT_GAMEPAD_AXIS_MOTION && type <= SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED) ||
+                 (type >= SDL_EVENT_FINGER_DOWN && type <= SDL_EVENT_FINGER_CANCELED) ||
+                 (type >= SDL_EVENT_PEN_PROXIMITY_IN && type <= SDL_EVENT_PEN_BUTTON_UP))
+        {
+            DispatchSDL3InputEvent(sdlEvent);
+        }
+        else { DispatchSDL3OtherEvent(sdlEvent); }
     }
 }
 

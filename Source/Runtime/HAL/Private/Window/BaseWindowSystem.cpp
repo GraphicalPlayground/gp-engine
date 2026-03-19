@@ -96,9 +96,21 @@ void FBaseWindowSystem::RefreshDisplayList() noexcept
 
 GP_NODISCARD FStringView FBaseWindowSystem::GetBackendName() const noexcept { return "None"; }
 
-void FBaseWindowSystem::PollEvents() noexcept
+void FBaseWindowSystem::PumpEvents() noexcept
 {
     // Does nothing by default.
+}
+
+void FBaseWindowSystem::DispatchEvents() noexcept
+{
+    // Does nothing by default.
+}
+
+void FBaseWindowSystem::PollEvents() noexcept
+{
+    // Default implementation: pump then dispatch on the same thread.
+    PumpEvents();
+    DispatchEvents();
 }
 
 }   // namespace GP
