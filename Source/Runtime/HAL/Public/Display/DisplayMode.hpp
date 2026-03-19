@@ -9,7 +9,20 @@
 namespace GP
 {
 
-/// @brief Structure representing a display mode, including resolution and refresh rate.
+/// @brief A plain-value descriptor for a single display output mode (resolution + refresh + colour depth).
+///
+/// Instances are obtained via IDisplay::GetCurrentMode() or IDisplay::GetSupportedModes() and are used to enumerate
+/// hardware-supported configurations, compare modes, and request mode changes.
+///
+/// Layout is intentionally packed to four UInt32 fields (16 bytes) for cache-friendly storage in flat arrays returned
+/// by IDisplay::GetSupportedModes().
+///
+/// @note \c refreshRate carries the integer Hz value (e.g. 60, 144, 240). Sub-integer rates such
+///       as 59.94 Hz are rounded by the platform layer; use the rational form if exact precision
+///       is required in future extensions.
+/// @note \c bitsPerPixel reflects the total colour depth of the scanout buffer, not the
+///       per-channel precision. A standard 8-bpc RGBA surface reports 32.
+/// @see IDisplay
 struct FDisplayMode
 {
 public:
