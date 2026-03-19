@@ -8,6 +8,8 @@ namespace GP
 {
 
 /// @brief Describes the physical orientation of a display panel.
+/// @note The "natural" orientation is the default position the device ships in.
+///       For phones that is Portrait; for most monitors that is Landscape.
 enum class EDisplayOrientation : UInt8
 {
     Landscape,          //<! The display is in landscape orientation.
