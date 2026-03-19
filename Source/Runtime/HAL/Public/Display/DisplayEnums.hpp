@@ -12,6 +12,7 @@ namespace GP
 ///       For phones that is Portrait; for most monitors that is Landscape.
 enum class EDisplayOrientation : UInt8
 {
+    Unknown,            //<! Cannot be determined or not reported by the platform.
     Landscape,          //<! The display is in landscape orientation.
     Portrait,           //<! The display is in portrait orientation.
     LandscapeFlipped,   //<! The display is in landscape orientation but flipped.
