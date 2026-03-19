@@ -260,6 +260,8 @@ public:
     /// @note CenterOnDisplay() moves the window to the center of the specified display. If the display parameter is
     ///       nullptr, the window should be centered on the actual display.
     virtual void CenterOnDisplay(const IDisplay* display = nullptr) = 0;
+
+    virtual void PollEvents() noexcept = 0;
 };
 
 }   // namespace GP
