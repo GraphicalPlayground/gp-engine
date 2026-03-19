@@ -18,6 +18,15 @@
 namespace GP
 {
 
+// Supress warnings about unreachable code in the visitor dispatch when the visitor's return type is void.
+#ifdef GP_COMPILER_MSVC
+    #pragma warning(push)
+    #pragma warning(disable : 4702)   // unreachable code
+#elif GP_COMPILER_CLANG || GP_COMPILER_GCC
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunreachable-code"
+#endif
+
 // clang-format off
 
 /// @brief Empty monostate type. Enables default construction of a TVariant whose first
@@ -750,5 +759,12 @@ decltype(auto) Visit(TVisitor&& visitor, TVariant<Ts...>&& variant)
         variant.m_index, variant.m_storage, GP::Forward<TVisitor>(visitor)
     );
 }
+
+// Restore warnings about unreachable code in visitor dispatch.
+#ifdef GP_COMPILER_MSVC
+    #pragma warning(pop)
+#elif GP_COMPILER_CLANG || GP_COMPILER_GCC
+    #pragma GCC diagnostic pop
+#endif
 
 }   // namespace GP
