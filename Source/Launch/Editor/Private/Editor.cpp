@@ -52,10 +52,6 @@ int main(int argc, char* argv[])
     {
         windowSystem->PollEvents();
 
-        // Do something here
-
-        windowSystem->DispatchEvents();
-
         // Sleep or wait for vsync here to avoid busy-waiting
     }
 
