@@ -1,8 +1,0 @@
-// Copyright (c) - Graphical Playground. All rights reserved.
-
-#pragma once
-
-#include "Math/Matrix/Matrix3x3.hpp"
-
-namespace GP
-{}   // namespace GP

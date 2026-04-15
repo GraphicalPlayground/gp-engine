@@ -9,7 +9,7 @@ gp_add_executable(
     MODULE_TYPE Launch
     OUTPUT_NAME GPEditor
     TERMINAL OFF
-    ICON ${CMAKE_CURRENT_SOURCE_DIR}/Resources/AppIcon.rc
+    ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/AppIcon.rc
     DEPENDENCIES
         GP::Runtime::Core
         GP::Runtime::HAL

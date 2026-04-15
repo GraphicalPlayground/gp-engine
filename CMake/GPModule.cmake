@@ -89,19 +89,19 @@ function(gp_add_module)
 
     # Gather source files
     file(GLOB_RECURSE MODULE_SOURCES
-        "${CMAKE_CURRENT_SOURCE_DIR}/Private/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Private/*.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/*.c"
     )
 
     file(GLOB_RECURSE MODULE_HEADERS
-        "${CMAKE_CURRENT_SOURCE_DIR}/Public/*.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Public/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Public/*.inl"
+        "${CMAKE_CURRENT_SOURCE_DIR}/public/*.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/public/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/public/*.inl"
     )
 
     # Gather ISPC source files (.ispc)
     file(GLOB_RECURSE MODULE_ISPC_SOURCES
-        "${CMAKE_CURRENT_SOURCE_DIR}/Private/*.ispc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/*.ispc"
     )
 
     # Save original C/C++ source count before adding ISPC objects
@@ -109,8 +109,8 @@ function(gp_add_module)
 
     # Gather ISPC header files (.isph)
     file(GLOB_RECURSE MODULE_ISPC_HEADERS
-        "${CMAKE_CURRENT_SOURCE_DIR}/Public/*.isph"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Private/*.isph"
+        "${CMAKE_CURRENT_SOURCE_DIR}/public/*.isph"
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/*.isph"
     )
 
     # Process ISPC files if any are found
@@ -160,8 +160,8 @@ function(gp_add_module)
 
             # Build include directories for ISPC compiler
             set(ISPC_INCLUDES)
-            list(APPEND ISPC_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/Public")
-            list(APPEND ISPC_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/Private")
+            list(APPEND ISPC_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/public")
+            list(APPEND ISPC_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/private")
 
             # Add any dependency include directories
 
@@ -278,11 +278,11 @@ function(gp_add_module)
     target_include_directories(${EXPORT_NAME}
         PUBLIC
             # When building: use Public directory from source tree
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Public>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/public>
             # When installed: use include/${NAME} from install tree
             $<INSTALL_INTERFACE:include/${ARG_NAME}>
         PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/Private
+            ${CMAKE_CURRENT_SOURCE_DIR}/private
             # Add ISPC generated headers directory if ISPC sources exist
             $<$<BOOL:${MODULE_ISPC_SOURCES}>:${ISPC_OUTPUT_DIR}>
     )
@@ -351,7 +351,7 @@ function(gp_add_module)
 
     # Install public headers (preserving directory structure)
     if(MODULE_HEADERS)
-        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Public/
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/public/
             DESTINATION include/${ARG_NAME}
             FILES_MATCHING
                 PATTERN "*.h"
@@ -365,14 +365,14 @@ function(gp_add_module)
         # Filter only public ISPC headers
         set(PUBLIC_ISPC_HEADERS)
         foreach(ISPC_HEADER ${MODULE_ISPC_HEADERS})
-            string(FIND ${ISPC_HEADER} "/Public/" PUBLIC_POS)
+            string(FIND ${ISPC_HEADER} "/public/" PUBLIC_POS)
             if(NOT PUBLIC_POS EQUAL -1)
                 list(APPEND PUBLIC_ISPC_HEADERS ${ISPC_HEADER})
             endif()
         endforeach()
 
         if(PUBLIC_ISPC_HEADERS)
-            install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Public/
+            install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/public/
                 DESTINATION include/${ARG_NAME}
                 FILES_MATCHING
                     PATTERN "*.isph"
@@ -381,7 +381,7 @@ function(gp_add_module)
     endif()
 
     # Check if Tests directory exists
-    set(TESTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Tests")
+    set(TESTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests")
     if(EXISTS ${TESTS_DIR} AND IS_DIRECTORY ${TESTS_DIR} AND GP_ENABLE_TESTS)
         # Gather test source files
         file(GLOB_RECURSE TEST_SOURCES
@@ -406,11 +406,11 @@ function(gp_add_module)
             # Set test executable properties
             set_target_properties(${TEST_EXPORT_NAME} PROPERTIES
                 # Output to Binaries/Bin directory (same as other executables)
-                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/Binaries/Bin"
-                RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/Binaries/Bin/DEBUG"
-                RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/Binaries/Bin/RELEASE"
-                RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/Binaries/Bin/RELWITHDEBINFO"
-                RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/Binaries/Bin/MINSIZEREL"
+                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/binaries/bin"
+                RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/binaries/bin/DEBUG"
+                RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/binaries/bin/RELEASE"
+                RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/binaries/bin/RELWITHDEBINFO"
+                RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/binaries/bin/MINSIZEREL"
 
                 # Organize in IDE under Tests folder hierarchy
                 FOLDER "Tests/${ARG_MODULE_TYPE}"
@@ -443,7 +443,7 @@ function(gp_add_module)
                         # Automatically discover and register all test cases
                         # This creates individual CTest entries for each TEST_CASE
                         catch_discover_tests(${TEST_EXPORT_NAME}
-                            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/Binaries/Bin"
+                            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/binaries/bin"
                             PROPERTIES
                                 LABELS "${ARG_MODULE_TYPE};${ARG_NAME}"
                         )
@@ -521,12 +521,12 @@ function(gp_add_module)
 
             # Set benchmark executable properties
             set_target_properties(${BENCHMARKS_EXPORT_NAME} PROPERTIES
-                # Output to Binaries/Bin directory (same as other executables)
-                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/Binaries/Bin"
-                RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/Binaries/Bin/DEBUG"
-                RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/Binaries/Bin/RELEASE"
-                RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/Binaries/Bin/RELWITHDEBINFO"
-                RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/Binaries/Bin/MINSIZEREL"
+                # Output to binaries/bin directory (same as other executables)
+                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/binaries/bin"
+                RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/binaries/bin/DEBUG"
+                RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/binaries/bin/RELEASE"
+                RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/binaries/bin/RELWITHDEBINFO"
+                RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/binaries/bin/MINSIZEREL"
 
                 # Organize in IDE under Benchmarks folder hierarchy
                 FOLDER "Benchmarks/${ARG_MODULE_TYPE}"
@@ -559,7 +559,7 @@ function(gp_add_module)
                         # Automatically discover and register all benchmark cases
                         # This creates individual CTest entries for each TEST_CASE
                         catch_discover_tests(${BENCHMARKS_EXPORT_NAME}
-                            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/Binaries/Bin"
+                            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/binaries/bin"
                             PROPERTIES
                                 LABELS "${ARG_MODULE_TYPE};${ARG_NAME}"
                         )

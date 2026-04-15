@@ -37,9 +37,9 @@ if(GP_BUILD_SHARED)
 endif()
 
 # Output Directories (Clean bin/ folder structure)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Binaries/Lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Binaries/Lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Binaries/Bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/binaries/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/binaries/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/binaries/bin)
 
 # Enable Position Independent Code (PIC) for static libraries to allow linking into shared libraries on all platforms
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -47,13 +47,13 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Put Debug/Release in subfolders (Bin/Debug, Bin/Release)
 foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/Binaries/Bin/${OUTPUTCONFIG})
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/Binaries/Lib/${OUTPUTCONFIG})
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/Binaries/Lib/${OUTPUTCONFIG})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/bin/${OUTPUTCONFIG})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/lib/${OUTPUTCONFIG})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/lib/${OUTPUTCONFIG})
 endforeach()
 
 # Include the module creation function
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Include Options
 include(GPOptions)
@@ -63,6 +63,6 @@ gp_apply_options()
 gp_apply_compile_options()
 
 # Add Subdirectories
-add_subdirectory(ThirdParty)
-add_subdirectory(Source)
-# add_subdirectory(Examples)
+add_subdirectory(thirdparty)
+add_subdirectory(source)
+# add_subdirectory(examples)

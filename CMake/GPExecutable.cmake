@@ -28,14 +28,14 @@ function(gp_add_executable)
 
     # Gather source files
     file(GLOB_RECURSE EXEC_SOURCES
-        "${CMAKE_CURRENT_SOURCE_DIR}/Private/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Private/*.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/private/*.c"
     )
 
     file(GLOB_RECURSE EXEC_HEADERS
-        "${CMAKE_CURRENT_SOURCE_DIR}/Public/*.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Public/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Public/*.inl"
+        "${CMAKE_CURRENT_SOURCE_DIR}/public/*.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/public/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/public/*.inl"
     )
 
     # Set resources (if any)
