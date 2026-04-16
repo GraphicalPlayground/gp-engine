@@ -2,6 +2,6 @@
 
 include(gp-build-tool)
 
-gpStartModule(HAL)
-  gpAddPublicDependency(Core)
+gpStartModule(hal)
+  gpAddPublicDependency(gp::runtime::core)
 gpEndModule()

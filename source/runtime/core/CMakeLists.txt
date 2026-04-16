@@ -2,8 +2,8 @@
 
 include(gp-build-tool)
 
-gpStartModule(Core)
-  gpTargetSetTestsEnabled(TRUE)
+gpStartModule(core)
+  # gpTargetSetTestsEnabled(TRUE)
   # gpTargetSetBenchmarksEnabled(FALSE)
   # gpTargetSetExamplesEnabled(FALSE)
 gpEndModule()
