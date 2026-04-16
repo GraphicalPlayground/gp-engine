@@ -25,7 +25,7 @@ macro(gpStartTarget TARGET_NAME TARGET_TYPE)
   string(TOLOWER "${TARGET_NAME}" __GP_TARGET_NAME)
   string(TOUPPER "${TARGET_NAME}" __GP_TARGET_NAME_UPPER)
   string(TOLOWER "${TARGET_TYPE}" __GP_TARGET_TYPE)
-  set(__GP_TARGET_OUTPUT_NAME "gp_${__GP_SCOPE_NAME}_${__GP_TARGET_NAME}")
+  set(__GP_TARGET_OUTPUT_NAME "gp_${__GP_TARGET_NAME}")
 
   # Validate that target name is not empty
   if ("${__GP_TARGET_NAME}" STREQUAL "")

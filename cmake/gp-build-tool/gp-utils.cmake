@@ -83,7 +83,7 @@ function (gpSetCurrentPhase NEW_PHASE)
     message(FATAL_ERROR "[GPBT] Attempting to set build phase to '${NEW_PHASE}', but it is already the current phase. This likely indicates a logic error in the GP Build Tool's internal phase management.")
   endif()
   set_property(GLOBAL PROPERTY GP_CURRENT_PHASE "${NEW_PHASE}")
-  gpVerbose("Build phase set to '${NEW_PHASE}'")
+  message(STATUS "[GPBT] Build phase set to '${NEW_PHASE}'")
 endfunction()
 
 function (gpGetCurrentPhase RESULT_VAR)
@@ -95,17 +95,31 @@ function (gpGetCurrentPhase RESULT_VAR)
   set(${RESULT_VAR} "${_VAL}" PARENT_SCOPE)
 endfunction()
 
-macro(gpScanForModules SCOPE_NAME)
-  gpSetCurrentPhase("REGISTRATION")
+function(__gpInternalScanRecursive CURRENT_DIR)
+  file(GLOB ENTRIES RELATIVE ${CURRENT_DIR} ${CURRENT_DIR}/*)
 
-  set(__GP_SCOPE_NAME "${SCOPE_NAME}")
+  foreach(ENTRY ${ENTRIES})
+    set(FULL_PATH "${CURRENT_DIR}/${ENTRY}")
 
-  file(GLOB SUBDIRECTORIES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
-  foreach(SUBDIR ${SUBDIRECTORIES})
-    if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}" AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}/CMakeLists.txt")
-      add_subdirectory(${SUBDIR})
+    if(IS_DIRECTORY "${FULL_PATH}")
+      if(EXISTS "${FULL_PATH}/CMakeLists.txt")
+        # Found a module! Register it and STOP recursing this branch
+        # add_subdirectory uses paths relative to CMAKE_CURRENT_SOURCE_DIR
+        file(RELATIVE_PATH REL_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${FULL_PATH})
+        add_subdirectory(${REL_PATH})
+      else()
+        # No CMakeLists here, dive deeper into this subfolder
+        __gpInternalScanRecursive("${FULL_PATH}")
+      endif()
     endif()
   endforeach()
+endfunction()
+
+macro(gpScanForModules)
+  gpSetCurrentPhase("REGISTRATION")
+
+  # Start the recursive search from the current directory
+  __gpInternalScanRecursive("${CMAKE_CURRENT_SOURCE_DIR}")
 
   gpSortTargets(MY_ORDERED_MODULES)
   message(STATUS "[GPBT] Correct compilation order: ${MY_ORDERED_MODULES}")
