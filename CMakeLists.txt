@@ -4,9 +4,9 @@ cmake_minimum_required(VERSION 3.20)
 
 # Project Definition
 project(GraphicalPlayground
-    VERSION 0.1.0
-    LANGUAGES CXX C
-    DESCRIPTION "Graphical Playground Engine, learning and prototyping platform for graphics programming."
+  VERSION 0.1.0
+  LANGUAGES CXX C
+  DESCRIPTION "Graphical Playground Engine, learning and prototyping platform for graphics programming."
 )
 
 # Enforce C++23 globally
@@ -16,24 +16,24 @@ set(CMAKE_CXX_EXTENSIONS OFF) # Forces standard C++ (no GCC extensions)
 
 # If not specified, build type is Release
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    message(STATUS "[GP] Setting build type to 'Release' as none was specified.")
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-    # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+  message(STATUS "[GP] Setting build type to 'Release' as none was specified.")
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
 # If not specified, export compile commands for IDEs
 if(NOT CMAKE_EXPORT_COMPILE_COMMANDS)
-    message(STATUS "[GP] Enabling export of compile commands for IDEs.")
-    set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile commands." FORCE)
+  message(STATUS "[GP] Enabling export of compile commands for IDEs.")
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile commands." FORCE)
 endif()
 
 # Build Shared Libraries (DLLs) by default?
 # Set to OFF for Monolithic builds (Static Linking)
 option(GP_BUILD_SHARED "Build Engine as DLLs" ON)
 if(GP_BUILD_SHARED)
-    set(BUILD_SHARED_LIBS ON)
-    add_compile_definitions(GP_BUILD_DLL) # Global define for DLL logic
+  set(BUILD_SHARED_LIBS ON)
+  add_compile_definitions(GP_BUILD_DLL) # Global define for DLL logic
 endif()
 
 # Output Directories (Clean bin/ folder structure)
@@ -46,23 +46,16 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Put Debug/Release in subfolders (Bin/Debug, Bin/Release)
 foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
-    string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/bin/${OUTPUTCONFIG})
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/lib/${OUTPUTCONFIG})
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/lib/${OUTPUTCONFIG})
+  string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/bin/${OUTPUTCONFIG})
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/lib/${OUTPUTCONFIG})
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/lib/${OUTPUTCONFIG})
 endforeach()
 
 # Include the module creation function
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-# Include Options
-include(GPOptions)
-
-# Apply Options
-gp_apply_options()
-gp_apply_compile_options()
-
 # Add Subdirectories
-add_subdirectory(thirdparty)
+# add_subdirectory(thirdparty)
 add_subdirectory(source)
 # add_subdirectory(examples)

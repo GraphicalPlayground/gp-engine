@@ -1,6 +1,3 @@
 # Copyright (c) - Graphical Playground. All rights reserved.
 
-include(gp-build-tool)
-
-gpStartModule(Core)
-gpEndModule()
+include(gp-build-tool/gp-utils)
