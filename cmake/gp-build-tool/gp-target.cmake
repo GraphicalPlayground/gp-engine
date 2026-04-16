@@ -23,7 +23,9 @@ macro(gpStartTarget TARGET_NAME TARGET_TYPE)
 
   # Normalize target name and type to lowercase for consistency
   string(TOLOWER "${TARGET_NAME}" __GP_TARGET_NAME)
+  string(TOUPPER "${TARGET_NAME}" __GP_TARGET_NAME_UPPER)
   string(TOLOWER "${TARGET_TYPE}" __GP_TARGET_TYPE)
+  set(__GP_TARGET_OUTPUT_NAME "gp_${__GP_SCOPE_NAME}_${__GP_TARGET_NAME}")
 
   # Validate that target name is not empty
   if ("${__GP_TARGET_NAME}" STREQUAL "")
@@ -35,6 +37,9 @@ macro(gpStartTarget TARGET_NAME TARGET_TYPE)
 
   # Check that target name is unique
   if (__GP_CURRENT_PHASE STREQUAL "REGISTRATION")
+    # Store location of the target for potential use in custom build steps or tools that need to know where the source files are
+    set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}")
+
     if ("${__GP_TARGET_NAME}" IN_LIST _CURRENT_TARGETS)
       message(FATAL_ERROR "[GPBT] Target name '${__GP_TARGET_NAME}' is already registered. Target names must be unique.")
     else()
@@ -42,9 +47,20 @@ macro(gpStartTarget TARGET_NAME TARGET_TYPE)
     endif()
   endif()
 
+  get_property(__GP_TARGET_LOCATION GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_LOCATION)
+
   # Validate target type
   if (NOT "${__GP_TARGET_TYPE}" IN_LIST GP_VALID_TARGET_TYPES)
     message(FATAL_ERROR "[GPBT] Invalid target type '${__GP_TARGET_TYPE}' for target '${__GP_TARGET_NAME}'. Valid types are: ${GP_VALID_TARGET_TYPES}")
+  endif()
+
+  # Sources
+  set(__GP_TARGET_SOURCES)
+
+  # Executable specific properties
+  if ("${__GP_TARGET_TYPE}" STREQUAL "executable")
+    set(__GP_EXEC_RESOURCES)
+    set(__GP_EXEC_IS_TERMINAL OFF)
   endif()
 
   # Dependencies
@@ -71,11 +87,14 @@ macro(gpStartTarget TARGET_NAME TARGET_TYPE)
   # Log the start of a new target definition
   message(STATUS "[GPBT] Starting definition of target '${__GP_TARGET_NAME}' of type '${__GP_TARGET_TYPE}'")
 
-  if ("${__GP_TARGET_TYPE}" STREQUAL "module")
-    gpAddPublicIncludesPath(${CMAKE_CURRENT_SOURCE_DIR}/public)
-    gpAddPrivateIncludesPath(${CMAKE_CURRENT_SOURCE_DIR}/private)
-    gpAddInternalIncludesPath(${CMAKE_CURRENT_SOURCE_DIR}/internal)
-  elseif("${__GP_TARGET_TYPE}" STREQUAL "executable")
+  if ("${__GP_TARGET_TYPE}" STREQUAL "module" OR "${__GP_TARGET_TYPE}" STREQUAL "executable")
+    # Default include paths
+    gpAddPublicIncludesPath(${__GP_TARGET_LOCATION}/public)
+    gpAddPrivateIncludesPath(${__GP_TARGET_LOCATION}/private)
+    gpAddInternalIncludesPath(${__GP_TARGET_LOCATION}/internal)
+
+    # Default source files
+    gpTargetAddSourcesFromDirectory(${__GP_TARGET_LOCATION}/private)
   elseif("${__GP_TARGET_TYPE}" STREQUAL "thirdparty")
   endif()
 endmacro()
@@ -83,7 +102,6 @@ endmacro()
 macro(gpEndTarget)
   # Check that we are currently in a target definition
   gpCheckInTarget()
-  set(__GP_IN_TARGET OFF)
 
   # Get current process phase, if not set, default to REGISTRATION.
   gpGetCurrentPhase(__GP_CURRENT_PHASE)
@@ -95,20 +113,35 @@ macro(gpEndTarget)
   set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_PRV_DEPS "${__GP_TARGET_PRV_DEPS}")
   set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_INT_DEPS "${__GP_TARGET_INT_DEPS}")
   set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_ALL_DEPS "${_ALL_DEPS}")
-  # Store location of the target for potential use in custom build steps or tools that need to know where the source files are
-  set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}")
 
   if ("${__GP_CURRENT_PHASE}" STREQUAL "CONFIGURATION")
-    __gpDefineCMakeTarget()
+    if (NOT "${__GP_TARGET_TYPE}" STREQUAL "thirdparty")
+      __gpDefineCMakeTarget()
+    else()
+      # TODO: Handle third-party targets differently if needed (e.g., using add_library with IMPORTED)
+    endif()
   endif()
 
   # Endup message
   message(STATUS "[GPBT] Finished definition of target '${__GP_TARGET_NAME}'")
 
   # Clean up target-specific variables to avoid accidental reuse in subsequent targets
+  set(__GP_IN_TARGET OFF)
+
   # Metadata
   unset(__GP_TARGET_NAME)
+  unset(__GP_TARGET_NAME_UPPER)
   unset(__GP_TARGET_TYPE)
+  unset(__GP_TARGET_OUTPUT_NAME)
+
+  # Sources
+  unset(__GP_TARGET_SOURCES)
+
+  # Executable specific properties
+  if ("${__GP_TARGET_TYPE}" STREQUAL "executable")
+    unset(__GP_EXEC_RESOURCES)
+    unset(__GP_EXEC_IS_TERMINAL)
+  endif()
 
   # Dependencies
   unset(__GP_TARGET_PUB_DEPS)
@@ -180,4 +213,36 @@ macro(gpTargetSetIPSCEnabled VALUE)
   gpCheckInTarget()
   gpVerbose("Setting IPSC enabled for target '${__GP_TARGET_NAME}' to ${VALUE}")
   set(__GP_TARGET_ENABLE_IPSC ${VALUE})
+endmacro()
+
+macro(gpTargetAddSources)
+  gpCheckInTarget()
+  set(__GP_TARGET_SOURCES ${__GP_TARGET_SOURCES} ${ARGN})
+endmacro()
+
+macro(gpTargetAddSourcesFromDirectory DIRECTORY)
+  gpCheckInTarget()
+  file(GLOB_RECURSE _SOURCES_FROM_DIR "${DIRECTORY}/*.cpp" "${DIRECTORY}/*.c" "${DIRECTORY}/*.cc")
+  set(__GP_TARGET_SOURCES ${__GP_TARGET_SOURCES} ${_SOURCES_FROM_DIR})
+endmacro()
+
+macro(gpSetTargetOutputName OUTPUT_NAME)
+  gpCheckInTarget()
+  set(__GP_TARGET_OUTPUT_NAME "${OUTPUT_NAME}")
+endmacro()
+
+macro(gpExecutableAddResource RESOURCE_PATH)
+  gpCheckInTarget()
+  if (NOT "${__GP_TARGET_TYPE}" STREQUAL "executable")
+    message(FATAL_ERROR "[GPBT] gpExecutableAddResource can only be used within an executable target. Current target '${__GP_TARGET_NAME}' is of type '${__GP_TARGET_TYPE}'.")
+  endif()
+  set(__GP_EXEC_RESOURCES ${__GP_EXEC_RESOURCES} ${RESOURCE_PATH})
+endmacro()
+
+macro(gpExecutableSetIsTerminal IS_TERMINAL)
+  gpCheckInTarget()
+  if (NOT "${__GP_TARGET_TYPE}" STREQUAL "executable")
+    message(FATAL_ERROR "[GPBT] gpExecutableSetIsTerminal can only be used within an executable target. Current target '${__GP_TARGET_NAME}' is of type '${__GP_TARGET_TYPE}'.")
+  endif()
+  set(__GP_EXEC_IS_TERMINAL ${IS_TERMINAL})
 endmacro()
