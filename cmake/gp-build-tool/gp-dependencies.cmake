@@ -9,20 +9,17 @@ macro(gpAddPrivateDependency IN_DEP)
   string(TOLOWER "${IN_DEP}" DEP) # Normalize dependency name to lowercase for consistency
 
   # Check that the dependency is not already in the public dependencies to avoid conflicts
-  list(FIND __GP_TARGET_PUB_DEPS ${DEP} _pub_index)
-  if (_pub_index GREATER -1)
+  if ("${DEP}" IN_LIST __GP_TARGET_PUB_DEPS)
     message(FATAL_ERROR "[GPBT] Dependency '${DEP}' cannot be added as a private dependency because it is already listed as a public dependency.")
   endif()
 
   # Check that the dependency is not already in the internal dependencies to avoid conflicts
-  list(FIND __GP_TARGET_INT_DEPS ${DEP} _int_index)
-  if (_int_index GREATER -1)
+  if ("${DEP}" IN_LIST __GP_TARGET_INT_DEPS)
     message(FATAL_ERROR "[GPBT] Dependency '${DEP}' cannot be added as a private dependency because it is already listed as an internal dependency.")
   endif()
 
   # Check that the dependency is not already in the private dependencies to avoid duplicates
-  list(FIND __GP_TARGET_PRV_DEPS ${DEP} _prv_index)
-  if (_prv_index GREATER -1)
+  if ("${DEP}" IN_LIST __GP_TARGET_PRV_DEPS)
     message(FATAL_ERROR "[GPBT] Dependency '${DEP}' is already listed as a private dependency.")
   endif()
 
@@ -37,20 +34,17 @@ macro(gpAddPublicDependency IN_DEP)
   string(TOLOWER "${IN_DEP}" DEP) # Normalize dependency name to lowercase for consistency
 
   # Check that the dependency is not already in the private dependencies to avoid conflicts
-  list(FIND __GP_TARGET_PRV_DEPS ${DEP} _prv_index)
-  if (_prv_index GREATER -1)
+  if ("${DEP}" IN_LIST __GP_TARGET_PRV_DEPS)
     message(FATAL_ERROR "[GPBT] Dependency '${DEP}' cannot be added as a public dependency because it is already listed as a private dependency.")
   endif()
 
   # Check that the dependency is not already in the internal dependencies to avoid conflicts
-  list(FIND __GP_TARGET_INT_DEPS ${DEP} _int_index)
-  if (_int_index GREATER -1)
+  if ("${DEP}" IN_LIST __GP_TARGET_INT_DEPS)
     message(FATAL_ERROR "[GPBT] Dependency '${DEP}' cannot be added as a public dependency because it is already listed as an internal dependency.")
   endif()
 
   # Check that the dependency is not already in the public dependencies to avoid duplicates
-  list(FIND __GP_TARGET_PUB_DEPS ${DEP} _pub_index)
-  if (_pub_index GREATER -1)
+  if ("${DEP}" IN_LIST __GP_TARGET_PUB_DEPS)
     message(FATAL_ERROR "[GPBT] Dependency '${DEP}' is already listed as a public dependency.")
   endif()
 
@@ -65,20 +59,17 @@ macro(gpAddInternalDependency IN_DEP)
   string(TOLOWER "${IN_DEP}" DEP) # Normalize dependency name to lowercase for consistency
 
   # Check that the dependency is not already in the public dependencies to avoid conflicts
-  list(FIND __GP_TARGET_PUB_DEPS ${DEP} _pub_index)
-  if (_pub_index GREATER -1)
+  if ("${DEP}" IN_LIST __GP_TARGET_PUB_DEPS)
     message(FATAL_ERROR "[GPBT] Dependency '${DEP}' cannot be added as a internal dependency because it is already listed as a public dependency.")
   endif()
 
   # Check that the dependency is not already in the private dependencies to avoid conflicts
-  list(FIND __GP_TARGET_PRV_DEPS ${DEP} _prv_index)
-  if (_prv_index GREATER -1)
+  if ("${DEP}" IN_LIST __GP_TARGET_PRV_DEPS)
     message(FATAL_ERROR "[GPBT] Dependency '${DEP}' cannot be added as a internal dependency because it is already listed as an private dependency.")
   endif()
 
   # Check that the dependency is not already in the internal dependencies to avoid duplicates
-  list(FIND __GP_TARGET_INT_DEPS ${DEP} _int_index)
-  if (_int_index GREATER -1)
+  if ("${DEP}" IN_LIST __GP_TARGET_INT_DEPS)
     message(FATAL_ERROR "[GPBT] Dependency '${DEP}' is already listed as a internal dependency.")
   endif()
 
