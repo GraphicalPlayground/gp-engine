@@ -2,11 +2,9 @@
 
 include(gp-build-tool/gp-utils)
 
-macro(gpAddPrivateDependency IN_DEP)
+macro(gpAddPrivateDependency DEP)
   # Check that we are currently defining a target
   gpCheckInTarget()
-
-  string(TOLOWER "${IN_DEP}" DEP) # Normalize dependency name to lowercase for consistency
 
   # Check that the dependency is not already in the public dependencies to avoid conflicts
   if ("${DEP}" IN_LIST __GP_TARGET_PUB_DEPS)
@@ -27,11 +25,9 @@ macro(gpAddPrivateDependency IN_DEP)
   gpVerbose("Added private dependency '${DEP}' to target '${__GP_TARGET_NAME}'")
 endmacro()
 
-macro(gpAddPublicDependency IN_DEP)
+macro(gpAddPublicDependency DEP)
   # Check that we are currently defining a target
   gpCheckInTarget()
-
-  string(TOLOWER "${IN_DEP}" DEP) # Normalize dependency name to lowercase for consistency
 
   # Check that the dependency is not already in the private dependencies to avoid conflicts
   if ("${DEP}" IN_LIST __GP_TARGET_PRV_DEPS)
@@ -52,11 +48,9 @@ macro(gpAddPublicDependency IN_DEP)
   gpVerbose("Added public dependency '${DEP}' to target '${__GP_TARGET_NAME}'")
 endmacro()
 
-macro(gpAddInternalDependency IN_DEP)
+macro(gpAddInternalDependency DEP)
   # Check that we are currently defining a target
   gpCheckInTarget()
-
-  string(TOLOWER "${IN_DEP}" DEP) # Normalize dependency name to lowercase for consistency
 
   # Check that the dependency is not already in the public dependencies to avoid conflicts
   if ("${DEP}" IN_LIST __GP_TARGET_PUB_DEPS)
