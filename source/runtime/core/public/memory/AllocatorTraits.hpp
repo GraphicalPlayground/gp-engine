@@ -14,10 +14,12 @@ namespace gp::memory
 namespace detail
 {
 
+/// @brief Checks if the allocator type has a construct method with the expected signature.
 template <typename Alloc, typename = void>
 struct HasConstruct : std::false_type
 {};
 
+/// @brief Checks if the allocator type has a construct method with the expected signature.
 template <typename Alloc>
 struct HasConstruct<
     Alloc,
@@ -25,62 +27,86 @@ struct HasConstruct<
     : std::true_type
 {};
 
+/// @brief Checks if the allocator type has a destroy method with the expected signature.
 template <typename Alloc, typename = void>
 struct HasDestroy : std::false_type
 {};
 
+/// @brief Checks if the allocator type has a destroy method with the expected signature.
 template <typename Alloc>
 struct HasDestroy<
     Alloc,
     std::void_t<decltype(std::declval<Alloc&>().destroy(std::declval<typename Alloc::ValueType*>()))>> : std::true_type
 {};
 
+/// @brief If the allocator type has a maxSize member, it is used. Otherwise, the allocator does not report a maximum
+///        size.
 template <typename Alloc, typename = void>
 struct HasMaxSize : std::false_type
 {};
 
+/// @brief If the allocator type has a maxSize member, it is used. Otherwise, the allocator does not report a maximum
+///        size.
 template <typename Alloc>
 struct HasMaxSize<Alloc, std::void_t<decltype(std::declval<const Alloc&>().maxSize())>> : std::true_type
 {};
 
+/// @brief If the allocator type has a selectOnContainerCopyConstruction member, it is used. Otherwise, it is not
+///        propagated.
 template <typename Alloc, typename = void>
 struct HasSelectOnContainerCopyConstruction : std::false_type
 {};
 
+/// @brief If the allocator type has a selectOnContainerCopyConstruction member, it is used. Otherwise, it is not
+///        propagated.
 template <typename Alloc>
 struct HasSelectOnContainerCopyConstruction<
     Alloc,
     std::void_t<decltype(std::declval<const Alloc&>().selectOnContainerCopyConstruction())>> : std::true_type
 {};
 
+/// @brief If the allocator type has a PropagateOnContainerCopyAssignment member, it is used. Otherwise, it is not
+///        propagated.
 template <typename, typename = void>
 struct HasPropagateOnCopy : std::false_type
 {};
 
+/// @brief If the allocator type has a PropagateOnContainerCopyAssignment member, it is used. Otherwise, it is not
+///        propagated.
 template <typename Alloc>
 struct HasPropagateOnCopy<Alloc, std::void_t<typename Alloc::PropagateOnContainerCopyAssignment>> : std::true_type
 {};
 
+/// @brief If the allocator type has a PropagateOnContainerMoveAssignment member, it is used. Otherwise, it is not
+///        propagated.
 template <typename, typename = void>
 struct HasPropagateOnMove : std::false_type
 {};
 
+/// @brief If the allocator type has a PropagateOnContainerMoveAssignment member, it is used. Otherwise, it is not
+///        propagated.
 template <typename Alloc>
 struct HasPropagateOnMove<Alloc, std::void_t<typename Alloc::PropagateOnContainerMoveAssignment>> : std::true_type
 {};
 
+/// @brief If the allocator type has a PropagateOnContainerSwap member, it is used. Otherwise, it is not propagated.
 template <typename, typename = void>
 struct HasPropagateOnSwap : std::false_type
 {};
 
+/// @brief If the allocator type has a PropagateOnContainerSwap member, it is used. Otherwise, it is not propagated.
 template <typename Alloc>
 struct HasPropagateOnSwap<Alloc, std::void_t<typename Alloc::PropagateOnContainerSwap>> : std::true_type
 {};
 
+/// @brief If the allocator type has an IsAlwaysEqual member, it is used. Otherwise, if the allocator type is empty, it
+///        is considered always equal. Otherwise, it is not always equal.
 template <typename, typename = void>
 struct HasIsAlwaysEqual : std::false_type
 {};
 
+/// @brief If the allocator type has an IsAlwaysEqual member, it is used. Otherwise, if the allocator type is empty, it
+///        is considered always equal. Otherwise, it is not always equal.
 template <typename Alloc>
 struct HasIsAlwaysEqual<Alloc, std::void_t<typename Alloc::IsAlwaysEqual>> : std::true_type
 {};
@@ -93,7 +119,7 @@ template <typename Alloc>
 struct AllocatorTraits
 {
     using AllocatorType = Alloc;
-    using ValueType = typename Alloc::value_type;
+    using ValueType = typename Alloc::ValueType;
     using Pointer = ValueType*;
     using ConstPointer = const ValueType*;
     using VoidPointer = void*;
@@ -101,21 +127,28 @@ struct AllocatorTraits
     using SizeType = USize;
     using DifferenceType = ISize;
 
+    /// @brief If the allocator type has a PropagateOnContainerCopyAssignment member, it is used. Otherwise, it is not
+    ///        propagated.
     using PropagateOnContainerCopyAssignment = typename std::conditional_t<
         detail::HasPropagateOnCopy<Alloc>::value,
         typename Alloc::PropagateOnContainerCopyAssignment,
         std::false_type>;
 
+    /// @brief If the allocator type has a PropagateOnContainerMoveAssignment member, it is used. Otherwise, it is not
+    ///        propagated.
     using PropagateOnContainerMoveAssignment = typename std::conditional_t<
         detail::HasPropagateOnMove<Alloc>::value,
         typename Alloc::PropagateOnContainerMoveAssignment,
         std::true_type>;
 
+    /// @brief If the allocator type has a PropagateOnContainerSwap member, it is used. Otherwise, it is not propagated.
     using PropagateOnContainerSwap = typename std::conditional_t<
         detail::HasPropagateOnSwap<Alloc>::value,
         typename Alloc::PropagateOnContainerSwap,
         std::false_type>;
 
+    /// @brief If the allocator type has an IsAlwaysEqual member, it is used. Otherwise, if the allocator type is empty,
+    ///        it is considered always equal. Otherwise, it is not always equal.
     using IsAlwaysEqual = typename std::conditional_t<
         detail::HasIsAlwaysEqual<Alloc>::value,
         typename Alloc::IsAlwaysEqual,
@@ -127,6 +160,10 @@ struct AllocatorTraits
     /// @return A pointer to the allocated memory.
     GP_NODISCARD static Pointer allocate(Alloc& alloc, SizeType n) { return alloc.allocate(n); }
 
+    /// @brief Deallocates memory pointed to by ptr using the allocator alloc.
+    /// @param[in] alloc The allocator to use for memory deallocation.
+    /// @param[in] ptr The pointer to the memory location to deallocate.
+    /// @param[in] n The number of objects to deallocate.
     static void deallocate(Alloc& alloc, Pointer ptr, SizeType n) { alloc.deallocate(ptr, n); }
 
     /// @brief Constructs an object of type T at the location pointed to by ptr using the allocator alloc and the
@@ -160,7 +197,7 @@ struct AllocatorTraits
     static constexpr SizeType maxSize(const Alloc& alloc) noexcept
     {
         if constexpr (detail::HasMaxSize<Alloc>::value) { return alloc.maxSize(); }
-        else { return static_cast<SizeType>(-1) / sizeof(value_type); }
+        else { return static_cast<SizeType>(-1) / sizeof(ValueType); }
     }
 
     /// @brief Returns a copy of the allocator alloc to be used for copy construction of a container. If the allocator
