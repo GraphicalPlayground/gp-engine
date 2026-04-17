@@ -11,23 +11,23 @@
 
 # Main Modules
 
-/Source/Runtime/                        @GraphicalPlayground/engine-architecture
-/Source/Developer/                      @GraphicalPlayground/engine-architecture
-/Source/Editor/                         @GraphicalPlayground/engine-architecture
-/Source/Programs/                       @GraphicalPlayground/engine-architecture
-/Source/Shaders/                        @GraphicalPlayground/graphics-engineering
-/Source/Launch/                         @GraphicalPlayground/engine-architecture
+/source/runtime/                        @GraphicalPlayground/engine-architecture
+/source/developer/                      @GraphicalPlayground/engine-architecture
+/source/editor/                         @GraphicalPlayground/engine-architecture
+/source/programs/                       @GraphicalPlayground/engine-architecture
+/source/shaders/                        @GraphicalPlayground/graphics-engineering
+/source/launch/                         @GraphicalPlayground/engine-architecture
 
 # Third Party
 
-/ThirdParty/                            @GraphicalPlayground/engine-architecture
+/thirdparty/                            @GraphicalPlayground/engine-architecture
 
 # Documentation
 
-/Source/**/Docs/                        @GraphicalPlayground/documentation-knowledge
-/Docs/                                  @GraphicalPlayground/documentation-knowledge
-/Examples/                              @GraphicalPlayground/documentation-knowledge
-/Guides/                                @GraphicalPlayground/documentation-knowledge
+/source/**/docs/                        @GraphicalPlayground/documentation-knowledge
+/docs/                                  @GraphicalPlayground/documentation-knowledge
+/examples/                              @GraphicalPlayground/documentation-knowledge
+/guides/                                @GraphicalPlayground/documentation-knowledge
 
 # CI/CD
 
@@ -37,10 +37,10 @@
 
 # Runtime Specific
 
-/Source/Runtime/RHI/                     @GraphicalPlayground/graphics-engineering
-/Source/Runtime/Renderer/                @GraphicalPlayground/graphics-engineering
-/Source/Runtime/Audio/                   @GraphicalPlayground/engine-architecture
-/Source/Runtime/Core/                    @GraphicalPlayground/engine-architecture
-/Source/Runtime/HAL/                     @GraphicalPlayground/engine-architecture
-/Source/Runtime/Shaders/                 @GraphicalPlayground/engine-architecture
-/Source/Runtime/Platform/                @GraphicalPlayground/engine-architecture
+/source/runtime/rhi/                     @GraphicalPlayground/graphics-engineering
+/source/runtime/renderer/                @GraphicalPlayground/graphics-engineering
+/source/runtime/audio/                   @GraphicalPlayground/engine-architecture
+/source/runtime/core/                    @GraphicalPlayground/engine-architecture
+/source/runtime/hal/                     @GraphicalPlayground/engine-architecture
+/source/runtime/shaders/                 @GraphicalPlayground/engine-architecture
+/source/runtime/platform/                @GraphicalPlayground/engine-architecture
