@@ -64,14 +64,14 @@ public:
 public:
     /// @brief Two PolymorphicAllocators are equal if they wrap the same resource.
     template <typename U>
-    GP_NODISCARD bool operator==(const PolymorphicAllocator > &other) const noexcept
+    GP_NODISCARD bool operator==(const PolymorphicAllocator<U>& other) const noexcept
     {
         return m_resource == other.getResource();
     }
 
     /// @brief Inequality comparison.
     template <typename U>
-    GP_NODISCARD bool operator!=(const PolymorphicAllocator > &other) const noexcept
+    GP_NODISCARD bool operator!=(const PolymorphicAllocator<U>& other) const noexcept
     {
         return m_resource != other.getResource();
     }
