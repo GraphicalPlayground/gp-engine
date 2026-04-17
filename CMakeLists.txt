@@ -56,6 +56,6 @@ endforeach()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Add Subdirectories
-# add_subdirectory(thirdparty)
+add_subdirectory(thirdparty)
 add_subdirectory(source)
 # add_subdirectory(examples)

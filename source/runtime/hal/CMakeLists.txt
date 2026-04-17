@@ -16,4 +16,6 @@ gpStartModule(hal)
   if (NOT APPLE)
     gpTargetExcludeDirectory("macos")
   endif()
+
+  gpAddPrivateDependency(SDL3::SDL3-static)
 gpEndModule()
