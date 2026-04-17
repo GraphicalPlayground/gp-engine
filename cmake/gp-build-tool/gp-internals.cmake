@@ -214,7 +214,44 @@ macro(__gpDefineTestsTarget)
     message(FATAL_ERROR "[GPBT] Internal error: __gpDefineTestsTarget should only be called during the CONFIGURATION phase. Current phase: ${CURRENT_PHASE}")
   endif()
 
-  message(WARNING "[GPBT] Tests target generation is not yet implemented for target '${__GP_TARGET_NAME}'.")
+  if (NOT TARGET Catch2WithMain)
+    message(FATAL_ERROR "[GPBT] Catch2 target 'Catch2WithMain' not found. Ensure Catch2 is properly added as a dependency for tests.")
+  endif()
+
+  set(__GP_TARGET_TESTS_DIR "${__GP_TARGET_LOCATION}/tests")
+  if (NOT EXISTS "${__GP_TARGET_TESTS_DIR}")
+    message(WARNING "[GPBT] Tests directory '${__GP_TARGET_TESTS_DIR}' does not exist for target '${__GP_TARGET_NAME}'. No tests will be generated.")
+  else()
+    file(GLOB_RECURSE __GP_TARGET_TEST_SOURCES "${__GP_TARGET_TESTS_DIR}/*.cpp" "${__GP_TARGET_TESTS_DIR}/*.cc")
+
+    if (NOT __GP_TARGET_TEST_SOURCES)
+      message(WARNING "[GPBT] No test sources found in '${__GP_TARGET_TESTS_DIR}' for target '${__GP_TARGET_NAME}'. No tests will be generated.")
+    else()
+      add_executable(${__GP_TARGET_EXPORT_NAME}_tests ${__GP_TARGET_TEST_SOURCES})
+      target_link_libraries(${__GP_TARGET_EXPORT_NAME}_tests PRIVATE Catch2WithMain ${__GP_TARGET_EXPORT_NAME})
+      set_target_properties(${__GP_TARGET_EXPORT_NAME}_tests PROPERTIES
+        OUTPUT_NAME "${__GP_TARGET_OUTPUT_NAME}_tests"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/binaries/bin/tests"
+        FOLDER "tests"
+      )
+
+      if (MSCV)
+        set_target_properties(${__GP_TARGET_EXPORT_NAME}_tests PROPERTIES
+          RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/binaries/bin/DEBUG/tests"
+          RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/binaries/bin/RELEASE/tests"
+          RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/binaries/bin/RELWITHDEBINFO/tests"
+          RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/binaries/bin/MINSIZEREL/tests"
+        )
+      endif()
+
+      target_compile_features(${__GP_TARGET_EXPORT_NAME}_tests PUBLIC cxx_std_23)
+
+      add_test(NAME ${__GP_TARGET_NAME}_tests COMMAND ${__GP_TARGET_EXPORT_NAME}_tests)
+      set_tests_properties(${__GP_TARGET_NAME}_tests PROPERTIES
+        LABELS "gp;${__GP_TARGET_NAME};tests"
+      )
+    endif()
+  endif()
 endmacro()
 
 macro(__gpDefineBenchmarksTarget)

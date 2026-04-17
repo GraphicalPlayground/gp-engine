@@ -3,7 +3,7 @@
 include(gp-build-tool)
 
 gpStartModule(core)
-  # gpTargetSetTestsEnabled(TRUE)
+  gpTargetSetTestsEnabled(TRUE)
   # gpTargetSetBenchmarksEnabled(FALSE)
   # gpTargetSetExamplesEnabled(FALSE)
 gpEndModule()
