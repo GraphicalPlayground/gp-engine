@@ -4,6 +4,8 @@ include(gp-build-tool/gp-target)
 include(gp-build-tool/gp-dependencies)
 include(gp-build-tool/gp-includes)
 include(gp-build-tool/gp-definitions)
+include(gp-build-tool/gp-thirdparty)
+include(gp-build-tool/gp-flags)
 
 # TODO:
 #  - Add support for custom build steps (e.g., code generation, asset processing)

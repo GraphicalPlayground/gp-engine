@@ -48,8 +48,6 @@ macro(__gpDefineCMakeTarget)
     endif()
 
     target_compile_definitions(${__GP_TARGET_EXPORT_NAME} PRIVATE "GP_TERMINAL_APP=$<BOOL:${__GP_EXEC_IS_TERMINAL}>")
-  elseif ("${__GP_TARGET_TYPE}" STREQUAL "thirdparty")
-    message(FATAL_ERROR "[GPBT] Third-party target '${__GP_TARGET_NAME}' cannot be automatically defined.")
   endif()
 
   # Set target properties for symbol export, visibility, and other relevant settings
@@ -80,6 +78,23 @@ macro(__gpDefineCMakeTarget)
       ${__GP_TARGET_PRV_INCLUDES}
       ${__GP_TARGET_INT_INCLUDES}
   )
+
+  # Add precompiled headers if specified
+  list(LENGTH __GP_TARGET_PCH_HEADERS NUM_PCH_HEADERS)
+  if (NUM_PCH_HEADERS GREATER 0)
+    target_precompile_headers(${__GP_TARGET_EXPORT_NAME} PRIVATE ${__GP_TARGET_PCH_HEADERS})
+  endif()
+
+  # Apply compile flags with proper visibility
+  list(LENGTH __GP_TARGET_PUB_COMP_FLAGS NUM_PUB_FLAGS)
+  if (NUM_PUB_FLAGS GREATER 0)
+    target_compile_options(${__GP_TARGET_EXPORT_NAME} PUBLIC ${__GP_TARGET_PUB_COMP_FLAGS})
+  endif()
+
+  list(LENGTH __GP_TARGET_PRV_COMP_FLAGS NUM_PRV_FLAGS)
+  if (NUM_PRV_FLAGS GREATER 0)
+    target_compile_options(${__GP_TARGET_EXPORT_NAME} PRIVATE ${__GP_TARGET_PRV_COMP_FLAGS})
+  endif()
 
   # Set dependencies with proper visibility (PUBLIC, PRIVATE, INTERFACE)
   list(LENGTH __GP_TARGET_PUB_DEPS NUM_PUB_DEPS)
@@ -143,6 +158,15 @@ macro(__gpDefineCMakeTarget)
       FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp" PATTERN "*.hh" PATTERN "*.hxx"
     )
   endforeach()
+
+  # Strict warning handling (optional, but recommended for better code quality)
+  if (__GP_TARGET_ENABLE_STRICT_WARNING)
+    if (MSCV)
+      target_compile_options(${__GP_TARGET_EXPORT_NAME} PRIVATE /W4 /WX)
+    else()
+      target_compile_options(${__GP_TARGET_EXPORT_NAME} PRIVATE -Wall -Wextra -Werror)
+    endif()
+  endif()
 
   # Create the target for IPSC, if enabled
   if(__GP_TARGET_ENABLE_IPSC)

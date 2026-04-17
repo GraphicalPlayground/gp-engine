@@ -5,6 +5,7 @@ include(gp-build-tool/gp-includes)
 include(gp-build-tool/gp-definitions)
 include(gp-build-tool/gp-dependencies)
 include(gp-build-tool/gp-internals)
+include(gp-build-tool/gp-flags)
 
 # Header guard to prevent multiple inclusions of this file
 if (DEFINED GP_BUILD_TOOL_TARGET_INCLUDED)
@@ -14,7 +15,7 @@ else()
 endif()
 
 # Valid target types for validation
-set(GP_VALID_TARGET_TYPES "module" "executable" "thirdparty")
+set(GP_VALID_TARGET_TYPES "module" "executable")
 
 macro(gpStartTarget TARGET_NAME TARGET_TYPE)
   # Check that we are not already in a target definition
@@ -78,25 +79,33 @@ macro(gpStartTarget TARGET_NAME TARGET_TYPE)
   set(__GP_TARGET_PRV_DEFS)
   set(__GP_TARGET_INT_DEFS)
 
+  # PCHs
+  set(__GP_TARGET_PCH_HEADERS)
+
+  # Build Flags
+  set(__GP_TARGET_PUB_COMP_FLAGS)
+  set(__GP_TARGET_PRV_COMP_FLAGS)
+
   # Options
   set(__GP_TARGET_ENABLE_TESTS OFF)
   set(__GP_TARGET_ENABLE_BENCHMARKS OFF)
   set(__GP_TARGET_ENABLE_EXAMPLES OFF)
   set(__GP_TARGET_ENABLE_IPSC OFF)
+  set(__GP_TARGET_ENABLE_STRICT_WARNING OFF)
 
   # Log the start of a new target definition
   message(STATUS "[GPBT] Starting definition of target '${__GP_TARGET_NAME}' of type '${__GP_TARGET_TYPE}'")
 
-  if ("${__GP_TARGET_TYPE}" STREQUAL "module" OR "${__GP_TARGET_TYPE}" STREQUAL "executable")
-    # Default include paths
-    gpAddPublicIncludesPath(${__GP_TARGET_LOCATION}/public)
-    gpAddPrivateIncludesPath(${__GP_TARGET_LOCATION}/private)
-    gpAddInternalIncludesPath(${__GP_TARGET_LOCATION}/internal)
+  # Default include paths
+  gpAddPublicIncludesPath(${__GP_TARGET_LOCATION}/public)
+  gpAddPrivateIncludesPath(${__GP_TARGET_LOCATION}/private)
+  gpAddInternalIncludesPath(${__GP_TARGET_LOCATION}/internal)
 
-    # Default source files
-    gpTargetAddSourcesFromDirectory(${__GP_TARGET_LOCATION}/private)
-  elseif("${__GP_TARGET_TYPE}" STREQUAL "thirdparty")
-  endif()
+  # Default source files
+  gpTargetAddSourcesFromDirectory(${__GP_TARGET_LOCATION}/private)
+
+  # Set strict warnings by default
+  gpTargetSetStrictWarningEnabled(ON)
 endmacro()
 
 macro(gpEndTarget)
@@ -115,11 +124,7 @@ macro(gpEndTarget)
   set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_ALL_DEPS "${_ALL_DEPS}")
 
   if ("${__GP_CURRENT_PHASE}" STREQUAL "CONFIGURATION")
-    if (NOT "${__GP_TARGET_TYPE}" STREQUAL "thirdparty")
-      __gpDefineCMakeTarget()
-    else()
-      # TODO: Handle third-party targets differently if needed (e.g., using add_library with IMPORTED)
-    endif()
+    __gpDefineCMakeTarget()
   endif()
 
   # Endup message
@@ -158,11 +163,19 @@ macro(gpEndTarget)
   unset(__GP_TARGET_PRV_DEFS)
   unset(__GP_TARGET_INT_DEFS)
 
+  # PCHs
+  unset(__GP_TARGET_PCH_HEADERS)
+
+  # Compile Flags
+  unset(__GP_TARGET_PUB_COMP_FLAGS)
+  unset(__GP_TARGET_PRV_COMP_FLAGS)
+
   # Options
   unset(__GP_TARGET_ENABLE_TESTS)
   unset(__GP_TARGET_ENABLE_BENCHMARKS)
   unset(__GP_TARGET_ENABLE_EXAMPLES)
   unset(__GP_TARGET_ENABLE_IPSC)
+  unset(__GP_TARGET_ENABLE_STRICT_WARNING)
 endmacro()
 
 # Convenience macros for common target types
@@ -175,19 +188,11 @@ macro(gpStartExecutable TARGET_NAME)
   gpStartTarget(${TARGET_NAME} executable)
 endmacro()
 
-macro(gpStartThirdParty TARGET_NAME)
-  gpStartTarget(${TARGET_NAME} thirdparty)
-endmacro()
-
 macro(gpEndModule)
   gpEndTarget()
 endmacro()
 
 macro(gpEndExecutable)
-  gpEndTarget()
-endmacro()
-
-macro(gpEndThirdParty)
   gpEndTarget()
 endmacro()
 
@@ -215,9 +220,40 @@ macro(gpTargetSetIPSCEnabled VALUE)
   set(__GP_TARGET_ENABLE_IPSC ${VALUE})
 endmacro()
 
+macro(gpTargetSetStrictWarningEnabled VALUE)
+  gpCheckInTarget()
+  gpVerbose("Setting strict warning enabled for target '${__GP_TARGET_NAME}' to ${VALUE}")
+  set(__GP_TARGET_ENABLE_STRICT_WARNING ${VALUE})
+endmacro()
+
 macro(gpTargetAddSources)
   gpCheckInTarget()
   set(__GP_TARGET_SOURCES ${__GP_TARGET_SOURCES} ${ARGN})
+endmacro()
+
+macro(gpTargetExcludeSourcesRegex REGEX_PATTERN)
+  gpCheckInTarget()
+  # list(FILTER ... EXCLUDE REGEX ...) removes items matching the regex
+  list(FILTER __GP_TARGET_SOURCES EXCLUDE REGEX "${REGEX_PATTERN}")
+  gpVerbose("Excluded sources matching '${REGEX_PATTERN}' from target '${__GP_TARGET_NAME}'")
+endmacro()
+
+macro(gpTargetExcludeDirectory DIRECTORY_NAME)
+  gpCheckInTarget()
+  # By wrapping the directory name in slashes, we ensure we match the exact folder name 
+  # anywhere in the absolute path (e.g., "/private/linux/file.cpp")
+  gpTargetExcludeSourcesRegex("/${DIRECTORY_NAME}/")
+endmacro()
+
+macro(gpTargetExcludeFile FILE_NAME)
+  gpCheckInTarget()
+  # Matches the specific file name at the end of a path
+  gpTargetExcludeSourcesRegex("/${FILE_NAME}$")
+endmacro()
+
+macro(gpTargetAddPCHHeaders HEADER_PATH)
+  gpCheckInTarget()
+  list(APPEND __GP_TARGET_PCH_HEADERS ${HEADER_PATH})
 endmacro()
 
 macro(gpTargetAddSourcesFromDirectory DIRECTORY)
