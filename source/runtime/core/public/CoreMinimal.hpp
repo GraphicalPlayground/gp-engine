@@ -5,6 +5,7 @@
 #include "CoreDefines.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <new>
 
 namespace gp
 {
