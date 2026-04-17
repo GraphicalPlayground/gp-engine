@@ -164,7 +164,7 @@ macro(__gpDefineCMakeTarget)
 
   # Strict warning handling (optional, but recommended for better code quality)
   if (__GP_TARGET_ENABLE_STRICT_WARNING)
-    if (MSCV)
+    if (MSVC)
       target_compile_options(${__GP_TARGET_EXPORT_NAME} PRIVATE /W4 /WX)
     else()
       target_compile_options(${__GP_TARGET_EXPORT_NAME} PRIVATE -Wall -Wextra -Werror)
@@ -237,7 +237,7 @@ macro(__gpDefineTestsTarget)
         FOLDER "tests"
       )
 
-      if (MSCV)
+      if (MSVC)
         set_target_properties(${__GP_TARGET_EXPORT_NAME}_tests PROPERTIES
           RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/binaries/bin/DEBUG/tests"
           RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/binaries/bin/RELEASE/tests"

@@ -44,7 +44,7 @@
 #define GP_VERSION_STRINGIFY(major, minor, patch) #major "." #minor "." #patch
 
 /// @brief Macro to force inline a function, depending on the compiler being used.
-#if GP_COMPILER_MSCV
+#if GP_COMPILER_MSVC
     #define GP_FORCEINLINE __forceinline
 #elif GP_COMPILER_GCC || GP_COMPILER_CLANG
     #define GP_FORCEINLINE inline __attribute__((always_inline))
