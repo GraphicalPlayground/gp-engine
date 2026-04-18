@@ -162,19 +162,19 @@ public:
 
     /// @brief Returns a reverse iterator to the last character.
     /// @return Reverse iterator pointing to the last character in the view.
-    GP_NODISCARD constexpr ReverseIterator rbegin() const noexcept { return reverse_iterator(end()); }
+    GP_NODISCARD constexpr ReverseIterator rbegin() const noexcept { return ReverseIterator(end()); }
 
     /// @brief Returns a reverse iterator to one before the first character.
     /// @return Reverse iterator pointing to one before the first character in the view.
-    GP_NODISCARD constexpr ReverseIterator rend() const noexcept { return reverse_iterator(begin()); }
+    GP_NODISCARD constexpr ReverseIterator rend() const noexcept { return ReverseIterator(begin()); }
 
     /// @brief Returns a const reverse iterator to the last character.
     /// @return Const reverse iterator pointing to the last character in the view.
-    GP_NODISCARD constexpr ConstReverseIterator crbegin() const noexcept { return const_reverse_iterator(cend()); }
+    GP_NODISCARD constexpr ConstReverseIterator crbegin() const noexcept { return ConstReverseIterator(cend()); }
 
     /// @brief Returns a const reverse iterator to one before the first character.
     /// @return Const reverse iterator pointing to one before the first character in the view.
-    GP_NODISCARD constexpr ConstReverseIterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
+    GP_NODISCARD constexpr ConstReverseIterator crend() const noexcept { return ConstReverseIterator(cbegin()); }
 
     /// @brief Shrinks the view by moving the start forward.
     /// @param[in] n Number of characters to remove from the front.
