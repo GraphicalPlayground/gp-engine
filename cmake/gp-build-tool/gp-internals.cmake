@@ -233,18 +233,8 @@ macro(__gpDefineTestsTarget)
       target_link_libraries(${__GP_TARGET_EXPORT_NAME}_tests PRIVATE Catch2WithMain ${__GP_TARGET_EXPORT_NAME})
       set_target_properties(${__GP_TARGET_EXPORT_NAME}_tests PROPERTIES
         OUTPUT_NAME "${__GP_TARGET_OUTPUT_NAME}_tests"
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/binaries/bin/tests"
         FOLDER "tests"
       )
-
-      if (MSVC)
-        set_target_properties(${__GP_TARGET_EXPORT_NAME}_tests PROPERTIES
-          RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/binaries/bin/DEBUG/tests"
-          RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/binaries/bin/RELEASE/tests"
-          RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/binaries/bin/RELWITHDEBINFO/tests"
-          RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/binaries/bin/MINSIZEREL/tests"
-        )
-      endif()
 
       target_compile_features(${__GP_TARGET_EXPORT_NAME}_tests PUBLIC cxx_std_23)
 
