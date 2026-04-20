@@ -7,7 +7,7 @@
 
 # [@graphical-playground](https://github.com/GraphicalPlayground)/gp-engine
 
-### Table of content
+**Table of content**  
 [Overview](#overview)  
 ┕ [Getting Started](#getting-started)  
 ┕ [Prerequisites](#prerequisites)  
@@ -62,10 +62,10 @@ your development environment meets the following requirements:
 - **Compiler**: A C++23 compatible compiler (GCC 13+, Clang 16+, or MSVC 19.38+)
 - **Build System**: CMake (Version 3.20 or higher)
 - **Graphics Drivers**: Up-to-date GPU drivers with support for:
-    - Vulkan `tba`
-    - OpenGL `tba`
-    - DirectX `tba` (Windows only)
-    - Metal `tba` (macOS only)
+  - Vulkan `tba`
+  - OpenGL `tba`
+  - DirectX `tba` (Windows only)
+  - Metal `tba` (macOS only)
 
 ### Building the Engine
 
@@ -186,6 +186,7 @@ please consider supporting the project. Maintaining a modern C++ graphics engine
 significant time and resources!
 
 You can sponsor the Graphical Playground project through the following links:
+
 - [**Buy Me A Coffee**](https://www.buymeacoffee.com/GraphicalPlayground)
 - [**GitHub Sponsors**](https://github.com/sponsors/GraphicalPlayground)
 - [**Direct Donation**](https://graphical-playground.com/donate)
