@@ -88,6 +88,8 @@ using Byte = std::byte;
 enum class Byte = gp::UInt8{};
 #endif
 
+using NullPtr = std::nullptr_t;
+
 /// @brief A special value that can be used to indicate a dynamic extent in template parameters.
 inline constexpr USize DynamicExtent = static_cast<USize>(-1);
 
