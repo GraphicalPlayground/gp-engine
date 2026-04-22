@@ -4,10 +4,8 @@
 
 #pragma once
 
-#include "macros/DetectArchitecture.hpp"
 #include "macros/DetectBuild.hpp"
 #include "macros/DetectCompiler.hpp"
-#include "macros/DetectPlatform.hpp"
 
 /// @brief Macro to concatenate two tokens.
 #define GP_INTERNAL_CONCAT_IMPL(a, b) a##b
@@ -117,7 +115,6 @@
 
 /// @brief Tells the compiler a code path is unreachable. Undefined behaviour if executed.
 #if GP_INTERNAL_CXX23
-    #include <utility>
     #define GP_UNREACHABLE() std::unreachable()
 #elif GP_COMPILER_MSVC
     #define GP_UNREACHABLE() __assume(0)
@@ -187,9 +184,18 @@
     #define GP_NORETURN
 #endif
 
+/// @brief Utility macros for cpp_attributes and other compiler-specific features.
+#ifndef __has_cpp_attribute
+    #define __has_cpp_attribute(x) 0
+#endif
+
 /// @brief Marks a struct as no unique address, allowing it to have zero size and be used for empty base optimization.
 #if GP_INTERNAL_CXX20
-    #define GP_NO_UNIQUE_ADDRESS [[no_unique_address]]
+    #if __has_cpp_attribute(msvc::no_unique_address)
+        #define GP_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+    #else
+        #define GP_NO_UNIQUE_ADDRESS [[no_unique_address]]
+    #endif
 #elif GP_COMPILER_MSVC
     #define GP_NO_UNIQUE_ADDRESS __declspec(empty_bases)
 #elif GP_COMPILER_GCC || GP_COMPILER_CLANG

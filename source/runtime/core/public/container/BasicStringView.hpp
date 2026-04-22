@@ -8,7 +8,6 @@
 #include "CoreMinimal.hpp"
 #include <compare>
 #include <ostream>
-#include <utility>
 
 namespace gp
 {

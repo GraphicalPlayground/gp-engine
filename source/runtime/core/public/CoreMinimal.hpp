@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "CoreDefines.hpp"
+#include "CoreDefines.hpp"   // IWYU pragma: export
 #include <cstddef>
 #include <cstdint>
 #include <new>
@@ -80,7 +80,13 @@ using AlignVal = std::align_val_t;
 
 /// @section Special values.
 
+// use std::byte after C++17
+#if GP_INTERNAL_CXX17
 using Byte = std::byte;
+#else
+/// @brief A type representing a byte of data. Not an arithmetic type.
+enum class Byte = gp::UInt8{};
+#endif
 
 /// @brief A special value that can be used to indicate a dynamic extent in template parameters.
 inline constexpr USize DynamicExtent = static_cast<USize>(-1);

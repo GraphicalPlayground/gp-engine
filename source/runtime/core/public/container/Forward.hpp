@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.hpp"
 #include "memory/Forward.hpp"
-#include <concepts>
+#include "memory/PolymorphicAllocator.hpp"
 #include <string>   // required for std::char_traits
 
 // Volountary not inside a specific namespace to avoid excessive nesting for commonly used types like string,

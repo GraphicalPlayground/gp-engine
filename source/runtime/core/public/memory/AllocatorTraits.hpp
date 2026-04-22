@@ -5,7 +5,6 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
-#include <concepts>
 #include <type_traits>
 
 namespace gp::memory
