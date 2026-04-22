@@ -6,7 +6,10 @@
 add_subdirectory(catch2)
 add_subdirectory(sdl3)
 
-if(WIN32) # Windows specific
-elseif (UNIX AND NOT APPLE) # Linux specific
-elseif(APPLE) # macOS specific
-endif()
+# Graphics Backends
+# Note: Automatically be excluded from the build if the platform doesn't support it
+add_subdirectory(d3d12)
+add_subdirectory(d3d11)
+add_subdirectory(vulkan)
+add_subdirectory(metal)
+add_subdirectory(opengl)
