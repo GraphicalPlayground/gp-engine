@@ -1,4 +1,4 @@
-# Code of Conduct
+![Graphical Playground - Code Of Conduct](.github/assets/code-of-conduct.svg)
 
 ## Our Pledge
 

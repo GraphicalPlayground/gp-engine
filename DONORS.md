@@ -1,3 +1,5 @@
+![Graphical Playground - Donors](.github/assets/donors.svg)
+
 # Donors to the Graphical Playground project
 
 Graphical Playground is a non-profit project developed by students and a community of voluntary
