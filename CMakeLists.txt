@@ -2,7 +2,7 @@
 # For more information, see https://graphical-playground/legal
 # mailto:support AT graphical-playground DOT com
 
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.21.0)
 
 # Project Definition
 project(GraphicalPlayground
