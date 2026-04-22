@@ -11,14 +11,23 @@
 namespace gp
 {
 
+/// @brief Concept describing types manageable by gp::RefCountPtr.
+template <typename T>
+concept IsRefCounted = requires(T* object) {
+    { object->addRef() };
+    { object->release() };
+};
+
 /// @brief Intrusive, concept-gated smart pointer for reference-counted objects.
 /// @details
 /// The reference count lives inside the managed object itself (intrusive), which means a RefCountPtr is exactly
 /// one pointer wide and incurs no separate control block allocation.
 /// @tparam T A type satisfying gp::IsRefCounted.
-template <gp::IsRefCounted T>
+template <typename T>
 class RefCountPtr
 {
+    static_assert(gp::IsRefCounted<T>, "RefCountPtr can only be used with types that implement reference counting");
+
 public:
     using ValueType = T;
     using Pointer = T*;
@@ -37,7 +46,7 @@ private:
     Pointer m_pointer{ nullptr };
 
 private:
-    template <gp::IsRefCounted U>
+    template <typename U>
     friend class RefCountPtr;
 
 public:
@@ -73,7 +82,7 @@ public:
     /// @brief Constructs a RefCountPtr by copying from another RefCountPtr of a convertible type.
     /// @tparam U The type of the RefCountPtr to copy from. Must be convertible to T.
     /// @param[in] other The RefCountPtr to copy from. The refcount of the new pointer is incremented if non-null.
-    template <gp::IsRefCounted U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+    template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
     RefCountPtr(const RefCountPtr<U>& other) noexcept
         : m_pointer(other.m_pointer)
     {
@@ -91,7 +100,7 @@ public:
     /// @brief Constructs a RefCountPtr by moving from another RefCountPtr of a convertible type.
     /// @tparam U The type of the RefCountPtr to move from. Must be convertible to T.
     /// @param[in] other The RefCountPtr to move from. The moved-from RefCountPtr is left empty.
-    template <gp::IsRefCounted U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+    template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
     RefCountPtr(RefCountPtr<U>&& other) noexcept
         : m_pointer(other.m_pointer)
     {
@@ -115,7 +124,7 @@ public:
     /// @brief Replaces the stored pointer with a new one, adding a reference to it.
     /// @tparam U The type of the RefCountPtr to copy from. Must be convertible to T.
     /// @param[in] other The RefCountPtr to copy from. The refcount of the new pointer is incremented if non-null.
-    template <gp::IsRefCounted U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+    template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
     RefCountPtr& operator=(const RefCountPtr<U>& other) noexcept
     {
         RefCountPtr(other).swap(*this);
@@ -133,7 +142,7 @@ public:
     /// @brief Replaces the stored pointer with a new one, adding a reference to it.
     /// @tparam U The type of the RefCountPtr to move from. Must be convertible to T.
     /// @param[in] other The RefCountPtr to move from.
-    template <gp::IsRefCounted U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+    template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
     RefCountPtr& operator=(RefCountPtr<U>&& other) noexcept
     {
         RefCountPtr(std::move(other)).swap(*this);
@@ -244,7 +253,7 @@ public:
 /// @param[in] lhs The left-hand side RefCountPtr.
 /// @param[in] rhs The right-hand side RefCountPtr.
 /// @return true if both RefCountPtrs manage the same pointer (including both being empty), false otherwise.
-template <gp::IsRefCounted T, gp::IsRefCounted U>
+template <typename T, typename U>
 GP_FORCEINLINE bool operator==(const gp::RefCountPtr<T>& lhs, const gp::RefCountPtr<U>& rhs) noexcept
 {
     return lhs.get() == rhs.get();
@@ -254,7 +263,7 @@ GP_FORCEINLINE bool operator==(const gp::RefCountPtr<T>& lhs, const gp::RefCount
 /// @param[in] lhs The left-hand side RefCountPtr.
 /// @param[in] rhs The right-hand side RefCountPtr.
 /// @return true if the RefCountPtrs manage different pointers, false if they manage the same pointer.
-template <gp::IsRefCounted T, gp::IsRefCounted U>
+template <typename T, typename U>
 GP_FORCEINLINE bool operator!=(const gp::RefCountPtr<T>& lhs, const gp::RefCountPtr<U>& rhs) noexcept
 {
     return lhs.get() != rhs.get();
@@ -264,7 +273,7 @@ GP_FORCEINLINE bool operator!=(const gp::RefCountPtr<T>& lhs, const gp::RefCount
 /// @param[in] lhs The RefCountPtr to compare.
 /// @param[in] rhs The nullptr to compare.
 /// @return true if the RefCountPtr is empty (manages a null pointer), false otherwise.
-template <gp::IsRefCounted T>
+template <typename T>
 GP_FORCEINLINE bool operator==(const gp::RefCountPtr<T>& lhs, gp::NullPtr) noexcept
 {
     return lhs.get() == nullptr;
@@ -274,7 +283,7 @@ GP_FORCEINLINE bool operator==(const gp::RefCountPtr<T>& lhs, gp::NullPtr) noexc
 /// @param[in] lhs The nullptr to compare.
 /// @param[in] rhs The RefCountPtr to compare.
 /// @return true if the RefCountPtr is empty (manages a null pointer), false otherwise.
-template <gp::IsRefCounted T>
+template <typename T>
 GP_FORCEINLINE bool operator==(gp::NullPtr, const gp::RefCountPtr<T>& rhs) noexcept
 {
     return rhs.get() == nullptr;
@@ -284,7 +293,7 @@ GP_FORCEINLINE bool operator==(gp::NullPtr, const gp::RefCountPtr<T>& rhs) noexc
 /// @param[in] lhs The RefCountPtr to compare.
 /// @param[in] rhs The nullptr to compare.
 /// @return true if the RefCountPtr is non-empty (manages a non-null pointer), false otherwise.
-template <gp::IsRefCounted T>
+template <typename T>
 GP_FORCEINLINE bool operator!=(const gp::RefCountPtr<T>& lhs, gp::NullPtr) noexcept
 {
     return lhs.get() != nullptr;
@@ -294,7 +303,7 @@ GP_FORCEINLINE bool operator!=(const gp::RefCountPtr<T>& lhs, gp::NullPtr) noexc
 /// @param[in] lhs The nullptr to compare.
 /// @param[in] rhs The RefCountPtr to compare.
 /// @return true if the RefCountPtr is non-empty (manages a non-null pointer), false otherwise.
-template <gp::IsRefCounted T>
+template <typename T>
 GP_FORCEINLINE bool operator!=(gp::NullPtr, const gp::RefCountPtr<T>& rhs) noexcept
 {
     return rhs.get() != nullptr;
