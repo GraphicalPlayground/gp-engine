@@ -6,6 +6,7 @@
 
 #include "container/Forward.hpp"
 #include "CoreMinimal.hpp"
+#include "math/LinearAlgebra.hpp"
 #include <compare>
 #include <ostream>
 
@@ -212,7 +213,7 @@ public:
     constexpr SizeType copy(CharT* dest, SizeType count, SizeType pos = 0) const
     {
         GP_ASSERT(pos <= m_size);
-        const SizeType rcount = _min(count, m_size - pos);
+        const SizeType rcount = gp::math::min(count, m_size - pos);
         TraitsType::copy(dest, m_data + pos, rcount);
         return rcount;
     }
@@ -224,7 +225,7 @@ public:
     GP_NODISCARD constexpr BasicStringView substr(SizeType pos = 0, SizeType count = npos) const
     {
         GP_ASSERT(pos <= m_size);
-        return BasicStringView(m_data + pos, _min(count, m_size - pos));
+        return BasicStringView(m_data + pos, gp::math::min(count, m_size - pos));
     }
 
     /// @brief Compares this view with another.
@@ -232,7 +233,7 @@ public:
     /// @return Negative if less, zero if equal, positive if greater.
     GP_NODISCARD constexpr int compare(BasicStringView other) const noexcept
     {
-        const SizeType len = _min(m_size, other.m_size);
+        const SizeType len = gp::math::min(m_size, other.m_size);
         int result = TraitsType::compare(m_data, other.m_data, len);
         if (result != 0) { return result; }
         if (m_size < other.m_size) { return -1; }
@@ -390,9 +391,9 @@ public:
     /// @return Index of the last occurrence, or npos if not found.
     GP_NODISCARD constexpr SizeType rfind(BasicStringView sv, SizeType pos = npos) const noexcept
     {
-        if (sv.m_size == 0) { return _min(pos, m_size); }
+        if (sv.m_size == 0) { return gp::math::min(pos, m_size); }
         if (sv.m_size > m_size) { return npos; }
-        SizeType i = _min(pos, m_size - sv.m_size);
+        SizeType i = gp::math::min(pos, m_size - sv.m_size);
         for (;; --i)
         {
             if (TraitsType::compare(m_data + i, sv.m_data, sv.m_size) == 0) { return i; }
@@ -408,7 +409,7 @@ public:
     GP_NODISCARD constexpr SizeType rfind(CharT ch, SizeType pos = npos) const noexcept
     {
         if (m_size == 0) { return npos; }
-        SizeType i = _min(pos, m_size - 1);
+        SizeType i = gp::math::min(pos, m_size - 1);
         for (;; --i)
         {
             if (TraitsType::eq(m_data[i], ch)) { return i; }
@@ -481,7 +482,7 @@ public:
     GP_NODISCARD constexpr SizeType findLastOf(BasicStringView sv, SizeType pos = npos) const noexcept
     {
         if (m_size == 0) { return npos; }
-        SizeType i = _min(pos, m_size - 1);
+        SizeType i = gp::math::min(pos, m_size - 1);
         for (;; --i)
         {
             if (_charInSet(m_data[i], sv)) { return i; }
@@ -567,7 +568,7 @@ public:
     GP_NODISCARD constexpr SizeType findLastNotOf(BasicStringView sv, SizeType pos = npos) const noexcept
     {
         if (m_size == 0) { return npos; }
-        SizeType i = _min(pos, m_size - 1);
+        SizeType i = gp::math::min(pos, m_size - 1);
         for (;; --i)
         {
             if (!_charInSet(m_data[i], sv)) { return i; }
@@ -583,7 +584,7 @@ public:
     GP_NODISCARD constexpr SizeType findLastNotOf(CharT ch, SizeType pos = npos) const noexcept
     {
         if (m_size == 0) { return npos; }
-        SizeType i = _min(pos, m_size - 1);
+        SizeType i = gp::math::min(pos, m_size - 1);
         for (;; --i)
         {
             if (!TraitsType::eq(m_data[i], ch)) { return i; }
@@ -612,12 +613,6 @@ public:
     }
 
 private:
-    /// @brief Returns the minimum of two size values without <algorithm>.
-    /// @param[in] a First size value.
-    /// @param[in] b Second size value.
-    /// @return The smaller of a and b.
-    GP_NODISCARD static constexpr SizeType _min(SizeType a, SizeType b) noexcept { return a < b ? a : b; }
-
     /// @brief Checks if a character exists in the given character set view.
     /// @param[in] ch The character to check.
     /// @param[in] set The view representing the set of characters.

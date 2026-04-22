@@ -7,6 +7,7 @@
 #include "container/BasicStringView.hpp"
 #include "container/Forward.hpp"
 #include "CoreMinimal.hpp"
+#include "math/LinearAlgebra.hpp"
 #include "memory/AllocatorTraits.hpp"
 #include <cstring>
 #include <initializer_list>
@@ -220,7 +221,7 @@ public:
     {
         GP_ASSERT(pos <= other.size());
         std::memset(&m_storage, 0, ssoUnionSize);
-        const SizeType rcount = _min(count, other.size() - pos);
+        const SizeType rcount = gp::math::min(count, other.size() - pos);
         _initFrom(other.data() + pos, rcount);
     }
 
@@ -424,7 +425,7 @@ public:
     BasicString& assign(const BasicString& str, SizeType pos = 0, SizeType count = npos)
     {
         GP_ASSERT(pos <= str.size());
-        const SizeType rcount = _min(count, str.size() - pos);
+        const SizeType rcount = gp::math::min(count, str.size() - pos);
         _assignChars(str.data() + pos, rcount);
         return *this;
     }
@@ -742,7 +743,7 @@ public:
     BasicString& erase(SizeType pos = 0, SizeType count = npos)
     {
         GP_ASSERT(pos <= size());
-        const SizeType rcount = _min(count, size() - pos);
+        const SizeType rcount = gp::math::min(count, size() - pos);
         const SizeType oldLen = size();
         const SizeType newLen = oldLen - rcount;
         Pointer d = data();
@@ -783,7 +784,7 @@ public:
     BasicString& replace(SizeType pos, SizeType count, const CharT* str, SizeType strCount)
     {
         GP_ASSERT(pos <= size());
-        const SizeType rcount = _min(count, size() - pos);
+        const SizeType rcount = gp::math::min(count, size() - pos);
         const SizeType oldLen = size();
         const SizeType newLen = oldLen - rcount + strCount;
         if (newLen > capacity()) { _ensureHeapCapacity(_growCap(capacity(), newLen)); }
@@ -858,7 +859,7 @@ public:
     SizeType copy(CharT* dest, SizeType count, SizeType pos = 0) const
     {
         GP_ASSERT(pos <= size());
-        const SizeType rcount = _min(count, size() - pos);
+        const SizeType rcount = gp::math::min(count, size() - pos);
         Traits::copy(dest, data() + pos, rcount);
         return rcount;
     }
@@ -870,7 +871,7 @@ public:
     GP_NODISCARD BasicString substr(SizeType pos = 0, SizeType count = npos) const
     {
         GP_ASSERT(pos <= size());
-        return BasicString(data() + pos, _min(count, size() - pos), m_allocator);
+        return BasicString(data() + pos, gp::math::min(count, size() - pos), m_allocator);
     }
 
     /// @brief Compares with another string.
@@ -1269,12 +1270,6 @@ private:
         m_storage.heap.size = oldLen;
         _setHeapCapacity(newCap);
     }
-
-    /// @brief Minimum utility without <algorithm>.
-    /// @param[in] a First value.
-    /// @param[in] b Second value.
-    /// @return The smaller of a and b.
-    GP_NODISCARD static constexpr SizeType _min(SizeType a, SizeType b) noexcept { return a < b ? a : b; }
 
     /// @brief Replaces the allocator via destroy + placement new (works even if operator= is deleted).
     /// @param[in] newAlloc The new allocator to set.
