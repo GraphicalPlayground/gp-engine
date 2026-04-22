@@ -81,4 +81,9 @@ using HashMap = UnorderedMap<K, V, Hash, Pred, Alloc>;
 template <typename K, typename V, typename Hash, typename Pred, typename Alloc>
 using MultiHashMap = UnorderedMultiMap<K, V, Hash, Pred, Alloc>;
 
+/// @section Other Containers
+
+template <typename T>
+class Optional;
+
 }   // namespace gp
