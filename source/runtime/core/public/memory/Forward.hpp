@@ -30,3 +30,30 @@ template <typename Alloc>
 struct AllocatorTraits;
 
 }   // namespace gp::memory
+
+namespace gp
+{
+
+/// @section Concepts
+
+/// @brief Concept describing types manageable by gp::RefCountPtr.
+template <typename T>
+concept IsRefCounted = requires(T* object) {
+    { object->addRef() };
+    { object->release() };
+};
+
+/// @section Smart Pointers
+
+template <typename T>
+struct DefaultDelete;
+template <typename T, typename Deleter>
+class UniquePtr;
+template <typename T, typename Policy>
+class SharedPtr;
+template <typename T, typename Policy>
+class WeakPtr;
+template <gp::IsRefCounted T>
+class RefCountPtr;
+
+}   // namespace gp
