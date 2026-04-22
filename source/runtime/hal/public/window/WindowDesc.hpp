@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "container/BasicStringView.hpp"
+#include "container/BasicStringView.hpp" // IWYU pragma: keep
 #include "container/Forward.hpp"
 #include "CoreMinimal.hpp"
 #include "window/CursorEnums.hpp"
