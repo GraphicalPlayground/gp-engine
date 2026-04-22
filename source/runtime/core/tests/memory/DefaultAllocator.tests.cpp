@@ -5,7 +5,6 @@
 #include "memory/DefaultAllocator.hpp"
 #include <array>
 #include <catch2/catch_test_macros.hpp>
-#include <cstdint>
 #include <string_view>
 #include <thread>
 #include <vector>
