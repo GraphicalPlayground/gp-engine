@@ -1,0 +1,78 @@
+{
+  "version": 4,
+  "include": [
+    "CMakePresetsBase.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "windows-base",
+      "hidden": true,
+      "description": "Base preset for Windows builds",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-release",
+      "inherits": ["windows-base", "release-base"],
+      "description": "Release configuration for Windows"
+    },
+    {
+      "name": "windows-debug",
+      "inherits": ["windows-base", "debug-base"],
+      "description": "Debug configuration for Windows"
+    },
+    {
+      "name": "windows-asserted",
+      "inherits": ["windows-base", "asserted-base"],
+      "description": "Asserted release configuration for Windows"
+    },
+    {
+      "name": "windows-sanitized",
+      "inherits": ["windows-base", "sanitized-base"],
+      "description": "Sanitized release configuration for Windows"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-base-build",
+      "hidden": true,
+      "description": "Base build preset for Windows builds",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-release",
+      "inherits": "windows-base-build",
+      "configurePreset": "windows-release",
+      "displayName": "Windows Release",
+      "description": "Release build configuration for Windows"
+    },
+    {
+      "name": "windows-debug",
+      "inherits": "windows-base-build",
+      "configurePreset": "windows-debug",
+      "displayName": "Windows Debug",
+      "description": "Debug build configuration for Windows"
+    },
+    {
+      "name": "windows-asserted",
+      "inherits": "windows-base-build",
+      "configurePreset": "windows-asserted",
+      "displayName": "Windows Asserted",
+      "description": "Asserted release build configuration for Windows"
+    },
+    {
+      "name": "windows-sanitized",
+      "inherits": "windows-base-build",
+      "configurePreset": "windows-sanitized",
+      "displayName": "Windows Sanitized",
+      "description": "Sanitized release build configuration for Windows"
+    }
+  ]
+}

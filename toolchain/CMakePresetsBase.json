@@ -1,0 +1,58 @@
+{
+  "version": 4,
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "description": "Base configuration for all presets",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_VERBOSE_MAKEFILE": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      },
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/install/${presetName}"
+    },
+    {
+      "name": "release-base",
+      "inherits": "base",
+      "hidden": true,
+      "description": "Release configuration based on the base preset",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "binaryDir": "${sourceDir}/build/cmake"
+    },
+    {
+      "name": "debug-base",
+      "inherits": "base",
+      "hidden": true,
+      "description": "Debug configuration based on the base preset",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "asserted-base",
+      "inherits": "base",
+      "hidden": true,
+      "description": "Asserted release configuration based on the base preset",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "GP_USE_ASSERTIONS": "ON"
+      },
+      "binaryDir": "${sourceDir}/build/cmake"
+    },
+    {
+      "name": "sanitized-base",
+      "inherits": "base",
+      "hidden": true,
+      "description": "Sanitized release configuration based on the base preset",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "GP_USE_SANITIZER": "ON"
+      },
+      "binaryDir": "${sourceDir}/build/cmake"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "version": 4,
+  "include": [
+    "CMakePresetsBase.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "linux-base",
+      "hidden": true,
+      "description": "Base preset for Linux builds",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "linux-release",
+      "inherits": ["linux-base", "release-base"],
+      "description": "Release configuration for Linux"
+    },
+    {
+      "name": "linux-debug",
+      "inherits": ["linux-base", "debug-base"],
+      "description": "Debug configuration for Linux"
+    },
+    {
+      "name": "linux-asserted",
+      "inherits": ["linux-base", "asserted-base"],
+      "description": "Asserted release configuration for Linux"
+    },
+    {
+      "name": "linux-sanitized",
+      "inherits": ["linux-base", "sanitized-base"],
+      "description": "Sanitized release configuration for Linux"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux-base-build",
+      "hidden": true,
+      "description": "Base build preset for Linux builds",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "linux-release",
+      "inherits": "linux-base-build",
+      "configurePreset": "linux-release",
+      "displayName": "Linux Release",
+      "description": "Release build configuration for Linux"
+    },
+    {
+      "name": "linux-debug",
+      "inherits": "linux-base-build",
+      "configurePreset": "linux-debug",
+      "displayName": "Linux Debug",
+      "description": "Debug build configuration for Linux"
+    },
+    {
+      "name": "linux-asserted",
+      "inherits": "linux-base-build",
+      "configurePreset": "linux-asserted",
+      "displayName": "Linux Asserted",
+      "description": "Asserted release build configuration for Linux"
+    },
+    {
+      "name": "linux-sanitized",
+      "inherits": "linux-base-build",
+      "configurePreset": "linux-sanitized",
+      "displayName": "Linux Sanitized",
+      "description": "Sanitized release build configuration for Linux"
+    }
+  ]
+}

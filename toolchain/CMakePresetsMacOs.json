@@ -1,0 +1,78 @@
+{
+  "version": 4,
+  "include": [
+    "CMakePresetsBase.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "macos-base",
+      "hidden": true,
+      "description": "Base preset for macOS builds",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      }
+    },
+    {
+      "name": "macos-release",
+      "inherits": ["macos-base", "release-base"],
+      "description": "Release configuration for macOS"
+    },
+    {
+      "name": "macos-debug",
+      "inherits": ["macos-base", "debug-base"],
+      "description": "Debug configuration for macOS"
+    },
+    {
+      "name": "macos-asserted",
+      "inherits": ["macos-base", "asserted-base"],
+      "description": "Asserted release configuration for macOS"
+    },
+    {
+      "name": "macos-sanitized",
+      "inherits": ["macos-base", "sanitized-base"],
+      "description": "Sanitized release configuration for macOS"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "macos-base-build",
+      "hidden": true,
+      "description": "Base build preset for macOS builds",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      }
+    },
+    {
+      "name": "macos-release",
+      "inherits": "macos-base-build",
+      "configurePreset": "macos-release",
+      "displayName": "macOS Release",
+      "description": "Release build configuration for macOS"
+    },
+    {
+      "name": "macos-debug",
+      "inherits": "macos-base-build",
+      "configurePreset": "macos-debug",
+      "displayName": "macOS Debug",
+      "description": "Debug build configuration for macOS"
+    },
+    {
+      "name": "macos-asserted",
+      "inherits": "macos-base-build",
+      "configurePreset": "macos-asserted",
+      "displayName": "macOS Asserted",
+      "description": "Asserted release build configuration for macOS"
+    },
+    {
+      "name": "macos-sanitized",
+      "inherits": "macos-base-build",
+      "configurePreset": "macos-sanitized",
+      "displayName": "macOS Sanitized",
+      "description": "Sanitized release build configuration for macOS"
+    }
+  ]
+}
