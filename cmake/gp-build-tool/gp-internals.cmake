@@ -13,9 +13,17 @@ macro(__gpDefineCMakeTarget)
     message(FATAL_ERROR "[GPBT] Internal error: __gpDefineCMakeTargets should only be called during the CONFIGURATION phase. Current phase: ${CURRENT_PHASE}")
   endif()
 
+  # Replace '/' by '_' in target name for CMake target naming
+  string(REPLACE "/" "_" __GP_CLEANED_TARGET_NAME "${__GP_TARGET_NAME}")
+  string(TOLOWER "${__GP_CLEANED_TARGET_NAME}" __GP_CLEANED_TARGET_NAME)
+  string(TOUPPER "${__GP_CLEANED_TARGET_NAME}" __GP_CLEANED_TARGET_NAME_UPPER)
+
+  # Clean up the target name for output naming (keep original case for output name, but still replace '/' with '_')
+  string(REPLACE "/" "_" __GP_TARGET_OUTPUT_NAME "${__GP_TARGET_OUTPUT_NAME}")
+
   # Define the actual CMake target based on the collected information
-  set(__GP_TARGET_EXPORT_NAME "gp_${__GP_TARGET_NAME}")
-  set(__GP_TARGET_ALIAS_NAME "gp::${__GP_TARGET_NAME}")
+  set(__GP_TARGET_EXPORT_NAME "gp_${__GP_CLEANED_TARGET_NAME}")
+  set(__GP_TARGET_ALIAS_NAME "gp::${__GP_CLEANED_TARGET_NAME}")
   gpVerbose("Defining CMake target '${__GP_TARGET_EXPORT_NAME}' of type '${__GP_TARGET_TYPE}' with alias '${__GP_TARGET_ALIAS_NAME}'")
 
   # If no sources were added, add a dummy source to ensure the target is created
@@ -55,7 +63,7 @@ macro(__gpDefineCMakeTarget)
   # Set target properties for symbol export, visibility, and other relevant settings
   set_target_properties(${__GP_TARGET_EXPORT_NAME} PROPERTIES
     OUTPUT_NAME "${__GP_TARGET_OUTPUT_NAME}"
-    DEFINE_SYMBOL "GP_${__GP_TARGET_NAME_UPPER}_API_EXPORTS"
+    DEFINE_SYMBOL "GP_${__GP_CLEANED_TARGET_NAME_UPPER}_API_EXPORTS"
     CXX_VISIBILITY_PRESET default
     VISIBILITY_INLINES_HIDDEN OFF
     POSITION_INDEPENDENT_CODE ON
@@ -108,7 +116,9 @@ macro(__gpDefineCMakeTarget)
     foreach(_dep IN LISTS __GP_TARGET_PUB_DEPS)
       # If this is one of our internal GP modules, namespace it. Otherwise, leave it alone.
       if (_dep IN_LIST _ALL_TARGETS AND NOT _dep MATCHES "^gp::")
-        list(APPEND _FINAL_PUB_DEPS "gp::${_dep}")
+        string(REPLACE "/" "_" _cleaned_dep "${_dep}")
+        list(APPEND _FINAL_PUB_DEPS "gp::${_cleaned_dep}")
+        unset(_cleaned_dep)
       else()
         list(APPEND _FINAL_PUB_DEPS "${_dep}")
       endif()
@@ -121,7 +131,9 @@ macro(__gpDefineCMakeTarget)
     set(_FINAL_PRV_DEPS)
     foreach(_dep IN LISTS __GP_TARGET_PRV_DEPS)
       if (_dep IN_LIST _ALL_TARGETS AND NOT _dep MATCHES "^gp::")
-        list(APPEND _FINAL_PRV_DEPS "gp::${_dep}")
+        string(REPLACE "/" "_" _cleaned_dep "${_dep}")
+        list(APPEND _FINAL_PRV_DEPS "gp::${_cleaned_dep}")
+        unset(_cleaned_dep)
       else()
         list(APPEND _FINAL_PRV_DEPS "${_dep}")
       endif()
@@ -134,7 +146,9 @@ macro(__gpDefineCMakeTarget)
     set(_FINAL_INT_DEPS)
     foreach(_dep IN LISTS __GP_TARGET_INT_DEPS)
       if (_dep IN_LIST _ALL_TARGETS AND NOT _dep MATCHES "^gp::")
-        list(APPEND _FINAL_INT_DEPS "gp::${_dep}")
+        string(REPLACE "/" "_" _cleaned_dep "${_dep}")
+        list(APPEND _FINAL_INT_DEPS "gp::${_cleaned_dep}")
+        unset(_cleaned_dep)
       else()
         list(APPEND _FINAL_INT_DEPS "${_dep}")
       endif()
@@ -192,6 +206,8 @@ macro(__gpDefineCMakeTarget)
   endif()
 
   # Clean up internal variables that should not persist after target definition
+  unset(__GP_CLEANED_TARGET_NAME)
+  unset(__GP_CLEANED_TARGET_NAME_UPPER)
   unset(__GP_TARGET_EXPORT_NAME)
   unset(__GP_TARGET_ALIAS_NAME)
   unset(__GP_TARGET_ALL_HEADERS)

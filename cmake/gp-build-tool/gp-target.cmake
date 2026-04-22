@@ -70,6 +70,7 @@ macro(gpStartTarget TARGET_NAME TARGET_TYPE)
   set(__GP_TARGET_PUB_DEPS)
   set(__GP_TARGET_PRV_DEPS)
   set(__GP_TARGET_INT_DEPS)
+  set(__GP_TARGET_DYN_DEPS)
 
   # Include Directories
   set(__GP_TARGET_PUB_INCLUDES)
@@ -118,11 +119,12 @@ macro(gpEndTarget)
   gpGetCurrentPhase(__GP_CURRENT_PHASE)
 
   # Combine all dependencies into a single list for easy graph resolution later
-  set(_ALL_DEPS ${__GP_TARGET_PUB_DEPS} ${__GP_TARGET_PRV_DEPS}  ${__GP_TARGET_INT_DEPS})
+  set(_ALL_DEPS ${__GP_TARGET_PUB_DEPS} ${__GP_TARGET_PRV_DEPS}  ${__GP_TARGET_INT_DEPS} ${__GP_TARGET_DYN_DEPS})
   # Store specific and combined dependencies using dynamic property names
   set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_PUB_DEPS "${__GP_TARGET_PUB_DEPS}")
   set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_PRV_DEPS "${__GP_TARGET_PRV_DEPS}")
   set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_INT_DEPS "${__GP_TARGET_INT_DEPS}")
+  set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_DYN_DEPS "${__GP_TARGET_DYN_DEPS}")
   set_property(GLOBAL PROPERTY GP_TARGET_${__GP_TARGET_NAME}_ALL_DEPS "${_ALL_DEPS}")
 
   if ("${__GP_CURRENT_PHASE}" STREQUAL "CONFIGURATION")
@@ -154,6 +156,7 @@ macro(gpEndTarget)
   unset(__GP_TARGET_PUB_DEPS)
   unset(__GP_TARGET_PRV_DEPS)
   unset(__GP_TARGET_INT_DEPS)
+  unset(__GP_TARGET_DYN_DEPS)
 
   # Include Directories
   unset(__GP_TARGET_PUB_INCLUDES)
