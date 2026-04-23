@@ -2,7 +2,7 @@
 # For more information, see https://graphical-playground/legal
 # mailto:support AT graphical-playground DOT com
 
-include (gp-build-tool/gp-stringify)
+include (gp-build-tool/internals/gp-stringify.internal)
 include (gp-build-tool/gp-tests)
 
 _gpStartTestsSection("gp-stringify - UPPER_SNAKE_CASE Validation")
