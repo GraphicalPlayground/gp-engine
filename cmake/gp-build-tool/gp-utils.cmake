@@ -14,12 +14,6 @@ macro(gpCheckNotInTarget)
   endif()
 endmacro()
 
-macro(gpVerbose MESSAGE)
-  if(GP_BUILD_TOOL_VERBOSE)
-    message(STATUS "[GPBT] ~~ ${MESSAGE}")
-  endif()
-endmacro()
-
 function(gpSortTargets OUT_SORTED_LIST)
   # Retrieve the master list of all registered targets
   get_property(_ALL_TARGETS GLOBAL PROPERTY GP_REGISTERED_TARGETS)

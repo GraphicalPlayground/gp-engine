@@ -5,5 +5,6 @@
 message(STATUS "=== Including Build Tool Tests ===")
 
 include(gp-build-tool/tests/gp-stringify.tests)
+include(gp-build-tool/tests/gp-scope.internal.tests)
 
 message(STATUS "=== All Build Tool Tests Included ===")

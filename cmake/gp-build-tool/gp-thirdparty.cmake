@@ -3,6 +3,7 @@
 # mailto:support AT graphical-playground DOT com
 
 include(gp-build-tool/gp-utils)
+include(gp-build-tool/internals/gp-logger.internal)
 include(FetchContent)
 
 function(gpFetchContent)
@@ -17,15 +18,15 @@ function(gpFetchContent)
 
   # Validate required arguments
   if(NOT ARG_NAME)
-    message(FATAL_ERROR "[GPBT] gpFetchContent: 'NAME' argument is required.")
+    gpFatal("gpFetchContent: 'NAME' argument is required.")
   endif()
 
   if(NOT ARG_GIT_REPOSITORY)
-    message(FATAL_ERROR "[GPBT] gpFetchContent: 'GIT_REPOSITORY' argument is required for '${ARG_NAME}'.")
+    gpFatal("gpFetchContent: 'GIT_REPOSITORY' argument is required for '${ARG_NAME}'.")
   endif()
 
   if(NOT ARG_GIT_TAG)
-    message(FATAL_ERROR "[GPBT] gpFetchContent: 'GIT_TAG' argument is required for '${ARG_NAME}'.")
+    gpFatal("gpFetchContent: 'GIT_TAG' argument is required for '${ARG_NAME}'.")
   endif()
 
   # Default PACKAGE_NAME to NAME if not specified
@@ -33,7 +34,7 @@ function(gpFetchContent)
     set(ARG_PACKAGE_NAME ${ARG_NAME})
   endif()
 
-  message(STATUS "[GPBT] Resolving third-party dependency: '${ARG_NAME}'")
+  gpLog("Resolving third-party dependency: '${ARG_NAME}'")
 
   # Construct find_package arguments
   set(FIND_PACKAGE_ARGS ${ARG_PACKAGE_NAME})
@@ -56,7 +57,7 @@ function(gpFetchContent)
   # Check if package was found
   if(${ARG_PACKAGE_NAME}_FOUND)
     # Local installation found - log details
-    message(STATUS "[GPBT] Found local system installation of '${ARG_PACKAGE_NAME}'")
+    gpLog("Found local system installation of '${ARG_PACKAGE_NAME}'")
 
     if(${ARG_PACKAGE_NAME}_VERSION)
       gpVerbose("Version: ${${ARG_PACKAGE_NAME}_VERSION}")
@@ -76,9 +77,9 @@ function(gpFetchContent)
       ${ARG_NAME}
       GIT_REPOSITORY  ${ARG_GIT_REPOSITORY}
       GIT_TAG         ${ARG_GIT_TAG}
-      GIT_SHALLOW     TRUE                    # Clone only the specified tag (faster)
-      GIT_PROGRESS    TRUE                    # Show clone/fetch progress
-      SYSTEM          TRUE                    # Treat as system dependency (suppress warnings)
+      GIT_SHALLOW     TRUE                     # Clone only the specified tag (faster)
+      GIT_PROGRESS    ${GP_BUILD_TOOL_VERBOSE} # Show clone/fetch progress
+      SYSTEM          TRUE                     # Treat as system dependency (suppress warnings)
     )
 
     # Inject custom build options into the CMake cache before configuration
@@ -90,19 +91,19 @@ function(gpFetchContent)
           set(${CMAKE_MATCH_1} "${CMAKE_MATCH_2}" CACHE STRING "GPBT Forced Dependency Option" FORCE)
           gpVerbose("  -> ${CMAKE_MATCH_1} = ${CMAKE_MATCH_2}")
         else()
-          message(FATAL_ERROR "[GPBT] Invalid option format '${_OPTION}' passed to gpFetchContent. Expected format is 'KEY=VALUE'.")
+          gpFatal("Invalid option format '${_OPTION}' passed to gpFetchContent. Expected format is 'KEY=VALUE'.")
         endif()
       endforeach()
     endif()
 
     # Log fetch operation start
-    message(STATUS "[GPBT] Downloading and configuring '${ARG_NAME}'...")
+    gpLog("Downloading and configuring '${ARG_NAME}'...")
 
     # Fetch and make the dependency available
     FetchContent_MakeAvailable(${ARG_NAME})
 
     # Log successful fetch
-    message(STATUS "[GPBT] Successfully fetched and configured '${ARG_NAME}'")
+    gpLog("Successfully fetched and configured '${ARG_NAME}'")
 
     # Get the source and binary directories for additional context (visible in verbose mode)
     FetchContent_GetProperties(${ARG_NAME} SOURCE_DIR SOURCE_DIR BINARY_DIR BINARY_DIR)

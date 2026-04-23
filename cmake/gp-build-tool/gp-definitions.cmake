@@ -3,6 +3,7 @@
 # mailto:support AT graphical-playground DOT com
 
 include(gp-build-tool/gp-utils)
+include(gp-build-tool/internals/gp-logger.internal)
 
 macro(gpAddPrivateDefinitions IN_DEFS)
   # Check that we are currently defining a target
@@ -12,17 +13,17 @@ macro(gpAddPrivateDefinitions IN_DEFS)
 
   # Check that the definitions is not already in the public definitions to avoid conflicts
   if ("${DEF}" IN_LIST __GP_TARGET_PUB_DEFS)
-    message(FATAL_ERROR "[GPBT] definitions '${DEF}' cannot be added as a private definitions because it is already listed as a public definitions.")
+    gpFatal("definitions '${DEF}' cannot be added as a private definitions because it is already listed as a public definitions.")
   endif()
 
   # Check that the definitions is not already in the internal definitions to avoid conflicts
   if ("${DEF}" IN_LIST __GP_TARGET_INT_DEFS)
-    message(FATAL_ERROR "[GPBT] definitions '${DEF}' cannot be added as a private definitions because it is already listed as an internal definitions.")
+    gpFatal("definitions '${DEF}' cannot be added as a private definitions because it is already listed as an internal definitions.")
   endif()
 
   # Check that the definitions is not already in the private definitions to avoid duplicates
   if ("${DEF}" IN_LIST __GP_TARGET_PRV_DEFS)
-    message(FATAL_ERROR "[GPBT] definitions '${DEF}' is already listed as a private definitions.")
+    gpFatal("definitions '${DEF}' is already listed as a private definitions.")
   endif()
 
   list(APPEND __GP_TARGET_PRV_DEFS ${DEF})
@@ -37,17 +38,17 @@ macro(gpAddPublicDefinitions IN_DEFS)
 
   # Check that the definitions is not already in the private definitions to avoid conflicts
   if ("${DEF}" IN_LIST __GP_TARGET_PRV_DEFS)
-    message(FATAL_ERROR "[GPBT] definitions '${DEF}' cannot be added as a public definitions because it is already listed as a private definitions.")
+    gpFatal("definitions '${DEF}' cannot be added as a public definitions because it is already listed as a private definitions.")
   endif()
 
   # Check that the definitions is not already in the internal definitions to avoid conflicts
   if ("${DEF}" IN_LIST __GP_TARGET_INT_DEFS)
-    message(FATAL_ERROR "[GPBT] definitions '${DEF}' cannot be added as a public definitions because it is already listed as an internal definitions.")
+    gpFatal("definitions '${DEF}' cannot be added as a public definitions because it is already listed as an internal definitions.")
   endif()
 
   # Check that the definitions is not already in the public definitions to avoid duplicates
   if ("${DEF}" IN_LIST __GP_TARGET_PUB_DEFS)
-    message(FATAL_ERROR "[GPBT] definitions '${DEF}' is already listed as a public definitions.")
+    gpFatal("definitions '${DEF}' is already listed as a public definitions.")
   endif()
 
   list(APPEND __GP_TARGET_PUB_DEFS ${DEF})
@@ -62,17 +63,17 @@ macro(gpAddInternalDefinitions IN_DEFS)
 
   # Check that the definitions is not already in the public definitions to avoid conflicts
   if ("${DEF}" IN_LIST __GP_TARGET_PUB_DEFS)
-    message(FATAL_ERROR "[GPBT] definitions '${DEF}' cannot be added as a internal definitions because it is already listed as a public definitions.")
+    gpFatal("definitions '${DEF}' cannot be added as a internal definitions because it is already listed as a public definitions.")
   endif()
 
   # Check that the definitions is not already in the private definitions to avoid conflicts
   if ("${DEF}" IN_LIST __GP_TARGET_PRV_DEFS)
-    message(FATAL_ERROR "[GPBT] definitions '${DEF}' cannot be added as a internal definitions because it is already listed as an private definitions.")
+    gpFatal("definitions '${DEF}' cannot be added as a internal definitions because it is already listed as an private definitions.")
   endif()
 
   # Check that the definitions is not already in the internal definitions to avoid duplicates
   if ("${DEF}" IN_LIST __GP_TARGET_INT_DEFS)
-    message(FATAL_ERROR "[GPBT] definitions '${DEF}' is already listed as a internal definitions.")
+    gpFatal("definitions '${DEF}' is already listed as a internal definitions.")
   endif()
 
   list(APPEND __GP_TARGET_INT_DEFS ${DEF})
