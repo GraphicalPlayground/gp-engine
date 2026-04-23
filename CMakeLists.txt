@@ -57,6 +57,14 @@ endforeach()
 # Include the module creation function
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+# Option to run tests on the Build Tool
+option(GP_TEST_BUILD_TOOL "Run tests for the Build Tool" OFF)
+
+if (GP_TEST_BUILD_TOOL)
+  include(gp-build-tool/tests/gp-all.tests)
+  return()
+endif() 
+
 # Add Subdirectories
 add_subdirectory(thirdparty)
 add_subdirectory(source)
