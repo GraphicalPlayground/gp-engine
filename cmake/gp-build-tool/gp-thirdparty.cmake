@@ -2,10 +2,18 @@
 # For more information, see https://graphical-playground/legal
 # mailto:support AT graphical-playground DOT com
 
-include(gp-build-tool/gp-utils)
 include(gp-build-tool/internals/gp-logger.internal)
 include(FetchContent)
 
+# @brief A helper function to fetch and manage third-party dependencies. It first attempts to find the package locally, and if it is not found, it
+#        will fetch it from a specified Git repository and tag. This function also allows for custom build options to be injected into the CMake cache before configuration.
+# @param[in] NAME The name of the dependency. This is used for logging and as the identifier for the FetchContent module.
+# @param[in] GIT_REPOSITORY The URL of the Git repository to fetch the dependency from if it is not found locally.
+# @param[in] GIT_TAG The specific Git tag or commit to fetch from the repository.
+# @param[in] PACKAGE_NAME (Optional) The name of the package to find with find_package. If not specified, it defaults to the value of NAME.
+# @param[in] REQUIRED_VERSION (Optional) The version requirement to pass to find_package when checking for a local installation of the package.
+# @param[in] COMPONENTS (Optional) A list of components to pass to find_package when checking for a local installation of the package.
+# @param[in] OPTIONS (Optional) A list of custom build options to set in the CMake cache before fetching the dependency. Each option should be in the format "KEY=VALUE".
 function(gpFetchContent)
   # Parse function arguments
   cmake_parse_arguments(
@@ -119,6 +127,10 @@ function(gpFetchContent)
   endif()
 endfunction()
 
+# @brief A helper function to set the FOLDER property of a target, which organizes the target into a folder in IDEs that support it (like Visual Studio or Xcode).
+#        This is purely for improving the organization and readability of the project structure within the IDE and does not affect the build process.
+# @param[in] TARGET_NAME The name of the target to organize into a folder.
+# @param[in] FOLDER_NAME The name of the folder to place the target in within the IDE.
 function(gpSetTargetFolder TARGET_NAME FOLDER_NAME)
   if(TARGET ${TARGET_NAME})
     get_target_property(_TARGET_TYPE ${TARGET_NAME} TYPE)

@@ -4,4 +4,4 @@
 
 include(gp-build-tool)
 
-gpScanForModules()
+gpScanForTargets()

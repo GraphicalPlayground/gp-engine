@@ -70,6 +70,9 @@ macro(gpPopNamedScope scopeName)
 
   # Delegate to gpPopScope, which will handle the actual cleanup
   gpPopScope()
+
+  # Remove the scope name from the active list
+  list(REMOVE_ITEM __GP_ACTIVE_NAMED_SCOPES "${scopeName}")
 endmacro()
 
 # @brief Sets a variable in the current scope, tracking it so that it can be reverted by gpPopScope().
@@ -186,5 +189,15 @@ macro(gpIsInNamedScope scopeName outVar)
     set(${outVar} TRUE)
   else()
     set(${outVar} FALSE)
+  endif()
+endmacro()
+
+# @brief Guard to ensure a block of code is only executed within a specific named scope.
+# @param[in] scopeName The name of the required scope.
+# @param[in] errorMessage The error message to display if not in the required scope.
+macro(gpFatalIfNotInNamedScope scopeName errorMessage)
+  gpIsInNamedScope("${scopeName}" _is_in_scope)
+  if(NOT _is_in_scope)
+    gpFatal("${errorMessage}")
   endif()
 endmacro()
