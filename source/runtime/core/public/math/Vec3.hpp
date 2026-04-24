@@ -47,12 +47,30 @@ public:
         , z(z)
     {}
 
-    /// @brief Constructs a vector with the same value for both x and y components.
-    /// @param value The value to set for both x and y components.
+    /// @brief Constructs a vector with the same value for all components.
+    /// @param value The value to set for all components.
     explicit constexpr Vec3(T value) noexcept
         : x(value)
         , y(value)
         , z(value)
+    {}
+
+    /// @brief Constructs a vector from an array of three elements.
+    /// @param ptr An array containing the x, y, and z components of the vector.
+    /// @warning No bounds checking is performed on the input array.
+    explicit constexpr Vec3(const T* ptr) noexcept
+        : x(ptr[0])
+        , y(ptr[1])
+        , z(ptr[2])
+    {}
+
+    /// @brief Constructs a vector from an array of three elements.
+    /// @param arr An array containing the x, y, and z components of the vector.
+    /// @warning No bounds checking is performed on the input array.
+    explicit constexpr Vec3(const T (&arr)[3]) noexcept
+        : x(arr[0])
+        , y(arr[1])
+        , z(arr[2])
     {}
 };
 
