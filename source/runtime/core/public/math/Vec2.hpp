@@ -49,6 +49,22 @@ public:
         : x(value)
         , y(value)
     {}
+
+    /// @brief Constructs a vector from an array of two elements.
+    /// @param ptr An array containing the x and y components of the vector.
+    /// @warning No bounds checking is performed on the input array.
+    explicit constexpr Vec2(const T* ptr) noexcept
+        : x(ptr[0])
+        , y(ptr[1])
+    {}
+
+    /// @brief Constructs a vector from an array of two elements.
+    /// @param arr An array containing the x and y components of the vector.
+    /// @warning No bounds checking is performed on the input array.
+    explicit constexpr Vec2(const T (&arr)[2]) noexcept
+        : x(arr[0])
+        , y(arr[1])
+    {}
 };
 
 }   // namespace gp::math
