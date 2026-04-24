@@ -51,13 +51,33 @@ public:
         , w(w)
     {}
 
-    /// @brief Constructs a vector with the same value for both x and y components.
-    /// @param value The value to set for both x and y components.
+    /// @brief Constructs a vector with the same value for all components.
+    /// @param value The value to set for all components.
     explicit constexpr Vec4(T value) noexcept
         : x(value)
         , y(value)
         , z(value)
         , w(value)
+    {}
+
+    /// @brief Constructs a vector from an array of four elements.
+    /// @param ptr An array containing the x, y, z, and w components of the vector.
+    /// @warning No bounds checking is performed on the input array.
+    explicit constexpr Vec4(const T* ptr) noexcept
+        : x(ptr[0])
+        , y(ptr[1])
+        , z(ptr[2])
+        , w(ptr[3])
+    {}
+
+    /// @brief Constructs a vector from an array of four elements.
+    /// @param arr An array containing the x, y, z, and w components of the vector.
+    /// @warning No bounds checking is performed on the input array.
+    explicit constexpr Vec4(const T (&arr)[4]) noexcept
+        : x(arr[0])
+        , y(arr[1])
+        , z(arr[2])
+        , w(arr[3])
     {}
 };
 
