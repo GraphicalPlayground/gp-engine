@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: GraphicalPlayground/gp-docs
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.DOCS_SYNC_PAT }}
           path: gp-docs
 
       - name: Sync Documentation
