@@ -24,7 +24,8 @@ modules outside of these to organize your code.
 This page provides an overview of how modules are structured and how they can benefit your GP Engine
 projects.
 
-:::note GP Engine modules are not related to C++ 20 modules.
+:::note
+GP Engine modules are not related to C++ 20 modules.
 :::
 
 ## Benefits of Using Modules
@@ -136,7 +137,8 @@ The following is an example of the recommended folder structure for a module:
 
 ### Configuring Dependencies in the CMakeLists.txt File
 
-:::warning TODO: Add example of how to set up a module to be loaded at runtime instead of startup,
+:::warning
+TODO: Add example of how to set up a module to be loaded at runtime instead of startup,
 and how to set up a module to be included or excluded based on certain conditions.
 :::
 
@@ -152,8 +154,10 @@ privately, such as in `.cpp` files.
 Private dependencies are preferred wherever possible, as they can reduce your project's compile
 times.
 
-:::tip You can make many dependencies private instead of public by using forward declarations in
-your header files. :::
+:::tip
+You can make many dependencies private instead of public by using forward declarations in
+your header files.
+:::
 
 ### Using the Private and Public Folders
 
