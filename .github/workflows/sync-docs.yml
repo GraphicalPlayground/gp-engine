@@ -28,7 +28,14 @@ jobs:
       - name: Sync Documentation
         run: |
           mkdir -p gp-docs/docs/gp-engine
-          rsync -avm --include='*/' --include='**/docs/**' --exclude='*' gp-engine/ gp-docs/docs/gp-engine/
+          cd gp-engine
+          find . -type f -path "*/docs/*" -print0 | while IFS= read -r -d '' file; do
+            rel_path="${file#./}"
+            dest_path=$(echo "$rel_path" | sed -e 's|^docs/||' -e 's|/docs/|/|g')
+            target_file="../gp-docs/docs/gp-engine/$dest_path"
+            mkdir -p "$(dirname "$target_file")"
+            cp "$file" "$target_file"
+          done
 
       - name: Commit and Push Changes to gp-docs
         run: |
