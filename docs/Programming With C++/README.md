@@ -8,8 +8,7 @@ tags:
 ---
 # Programming with C++
 
-<p style={{ color: '#ffffffa6' }}> Information for programmers developing with Graphical Playground.
-</p>
+<p style={{ color: '#ffffffa6' }}> Information for programmers developing with Graphical Playground.</p>
 
 Graphical Playground provides a robust framework for C++ programmers to help bring their vision to
 life.
