@@ -1,0 +1,47 @@
+name: Sync Documentation to gp-docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/docs/**'
+
+jobs:
+  sync-to-portal:
+    name: Sync docs to Central Portal
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout gp-engine repository
+        uses: actions/checkout@v4
+        with:
+          path: gp-engine
+
+      - name: Checkout gp-docs
+        uses: actions/checkout@v4
+        with:
+          repository: GraphicalPlayground/gp-docs
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: gp-docs
+
+      - name: Sync Documentation
+        run: |
+          mkdir -p gp-docs/docs/gp-engine
+          rsync -avm --include='*/' --include='**/docs/**' --exclude='*' gp-engine/ gp-docs/docs/gp-engine/
+
+      - name: Commit and Push Changes to gp-docs
+        run: |
+          cd gp-docs
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if ! git diff-index --quiet HEAD; then
+            BRANCH_NAME="auto-sync-docs-${GITHUB_SHA::7}"
+            git checkout -b $BRANCH_NAME
+            git commit -m "sync(gp-engine): synchronize documentation from gp-engine"
+            git push -u origin $BRANCH_NAME
+            echo "Successfully pushed new docs to gp-docs!"
+          else
+            echo "No changes to commit"
+          fi
