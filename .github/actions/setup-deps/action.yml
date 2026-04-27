@@ -26,7 +26,8 @@ runs:
     - name: Setup Vulkan SDK
       uses: humbletim/setup-vulkan-sdk@v1.2.1
       with:
-        version: '1.4.341.0'
-        cache: true
+        vulkan-query-version: '1.4.341.0'
+        vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Cross, SPIRV-Tools, SPIRV-Reflect, SPIRV-Headers
+        vulkan-use-cache: true
 
     # TODO: Add steps to install other heavy dependencies like DirectX SDK, OpenGL libraries, SDL3, etc.
