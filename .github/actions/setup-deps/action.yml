@@ -1,0 +1,32 @@
+name: 'Setup Graphical Playground Dependencies'
+description: 'Caches CMake FetchContent dependencies and installs heavy system SDKs.'
+
+inputs:
+  os:
+    description: 'The runner OS (e.g., ubuntu-latest, windows-latest)'
+    required: true
+  build-dir:
+    description: 'The CMake build directory'
+    required: false
+    default: 'build'
+
+runs:
+  using: "composite"
+  steps:
+    # Cache FetchContent dependencies to speed up subsequent builds
+    - name: Cache FetchContent Dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/${{ inputs.build-dir }}/_deps
+        key: ${{ inputs.os }}-cmake-deps-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+        restore-keys: |
+          ${{ inputs.os }}-cmake-deps-
+
+    # Install heavy system SDKs (e.g., Vulkan SDK) that are not easily cached
+    - name: Setup Vulkan SDK
+      uses: humbletim/setup-vulkan-sdk@v1.2.0
+      with:
+        version: '1.4.341.0'
+        cache: true
+
+    # TODO: Add steps to install other heavy dependencies like DirectX SDK, OpenGL libraries, SDL3, etc.
