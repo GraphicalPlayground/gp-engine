@@ -1,0 +1,74 @@
+name: CI Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_call:
+    inputs:
+      package-artifacts:
+        description: 'Whether to package and upload the compiled binaries'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build-type: [Release]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          os: ${{ matrix.os }}
+          build-dir: build
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build-type }} --parallel $(nproc)
+
+      - name: Install Release Artifacts
+        if: inputs.package-artifacts
+        run: cmake --install build --config ${{ matrix.build-type }} --prefix install_staging
+
+      - name: Determine Version
+        if: inputs.package-artifacts
+        id: get_version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            # If the workflow was triggered by a tag (e.g., v1.0.0), use it
+            GP_VERSION="${{ github.ref_name }}"
+          else
+            # Otherwise, read the first line of the VERSION file and strip whitespaces/newlines
+            GP_VERSION=$(head -n 1 VERSION | tr -d '\r\n ')
+          fi
+          # Save it to GITHUB_ENV so subsequent steps can access it
+          echo "VERSION=$GP_VERSION" >> $GITHUB_ENV
+          echo "Resolved version: $GP_VERSION"
+
+      - name: Package Artifacts (Unix)
+        if: ${{ inputs.package-artifacts && (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest') }}
+        run: tar -czvf gp-engine-${{ matrix.os }}-${{ env.VERSION }}.tar.gz -C install_staging .
+
+      - name: Package Artifacts (Windows)
+        if: ${{ inputs.package-artifacts && matrix.os == 'windows-latest' }}
+        run: powershell Compress-Archive -Path install_staging\* -DestinationPath gp-engine-${{ matrix.os }}-${{ env.VERSION }}.zip
+
+      - name: Upload Artifacts
+        if: ${{ inputs.package-artifacts }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.os }}
+          path: gp-engine-${{ matrix.os }}-${{ env.VERSION }}.*
