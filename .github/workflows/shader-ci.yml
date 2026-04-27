@@ -1,0 +1,20 @@
+name: Shader Validation
+
+on:
+  pull_request:
+    paths:
+      - 'source/shaders/**/*.hlsl'
+      - 'source/shaders/**/*.glsl'
+      - 'source/shaders/**/*.vert'
+      - 'source/shaders/**/*.frag'
+      - 'source/shaders/**/*.geom'
+
+jobs:
+  validate-shaders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # TODO: Install Vulkan SDK
+      # TODO: Run shader validation tool (e.g., glslangValidator) on shader files
