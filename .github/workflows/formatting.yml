@@ -1,0 +1,21 @@
+name: Code Formatting
+
+on: [pull_request]
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run clang-format
+        uses: jidicula/clang-format-action@v4.18.0
+        with:
+          clang-format-version: '22'
+          check-path: 'source'
+
+  # TODO: Add a job for clang-tidy
+  # TODO: Add a job for cmake-format
+  # TODO: Add a job for cmake-lint
+  # TODO: Add a job for markdownlint
