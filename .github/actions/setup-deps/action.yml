@@ -24,7 +24,7 @@ runs:
 
     # Install heavy system SDKs (e.g., Vulkan SDK) that are not easily cached
     - name: Setup Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.2.0
+      uses: humbletim/setup-vulkan-sdk@v1.2.1
       with:
         version: '1.4.341.0'
         cache: true
