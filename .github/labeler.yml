@@ -1,0 +1,27 @@
+"type: documentation":
+  - changed-files:
+    - any-glob-to-any-file: ['**/docs/**', 'README.md', 'CHANGELOG.md']
+
+"type: ci-cd":
+  - changed-files:
+    - any-glob-to-any-file: ['.github/workflows/**']
+
+"type: tests":
+  - changed-files:
+    - any-glob-to-any-file: ['**/tests/**']
+
+"domain: math":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/core/{public,private}/math/**']
+
+"domain: memory":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/core/{public,private}/memory/**']
+
+"domain: rhi":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/rhi/**']
+
+"domain: shaders":
+  - changed-files:
+    - any-glob-to-any-file: ['source/shaders/**']
