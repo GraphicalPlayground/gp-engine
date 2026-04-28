@@ -80,12 +80,18 @@ public:
     /// @brief Allocates memory for n objects of type T.
     /// @param[in] n Number of objects to allocate space for.
     /// @return Pointer to the allocated memory, or nullptr on failure.
-    GP_NODISCARD T* allocate(SizeType n) { return static_cast<T*>(m_resource->allocate(n * sizeof(T), alignof(T))); }
+    GP_NODISCARD T* allocate(SizeType n)
+    {
+        return static_cast<T*>(m_resource->allocate(n * sizeof(T), alignof(T)));
+    }
 
     /// @brief Deallocates memory for n objects of type T.
     /// @param[in] ptr Pointer previously returned by allocate().
     /// @param[in] n Number of objects the allocation was sized for.
-    void deallocate(T* ptr, SizeType n) { m_resource->deallocate(ptr, n * sizeof(T)); }
+    void deallocate(T* ptr, SizeType n)
+    {
+        m_resource->deallocate(ptr, n * sizeof(T));
+    }
 
     /// @brief Constructs an object at the given pointer using placement new.
     /// @tparam U The type to construct.
@@ -109,11 +115,17 @@ public:
 
     /// @brief Returns a default-constructed PolymorphicAllocator for copy-constructed containers.
     /// @details Per std::pmr semantics, copied containers do not inherit the source's allocator.
-    PolymorphicAllocator selectOnContainerCopyConstruction() const { return PolymorphicAllocator(); }
+    PolymorphicAllocator selectOnContainerCopyConstruction() const
+    {
+        return PolymorphicAllocator();
+    }
 
     /// @brief Returns the underlying memory resource.
     /// @return Pointer to the backing gp::memory::Allocator.
-    GP_NODISCARD GP_FORCEINLINE memory::Allocator* getResource() const noexcept { return m_resource; }
+    GP_NODISCARD GP_FORCEINLINE memory::Allocator* getResource() const noexcept
+    {
+        return m_resource;
+    }
 };
 
 }   // namespace gp::memory

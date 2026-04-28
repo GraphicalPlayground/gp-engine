@@ -81,7 +81,10 @@ public:
     constexpr Optional(const Optional& other)
         : m_hasValue(other.m_hasValue)
     {
-        if (m_hasValue) { ::new (&m_storage) T(other.value()); }
+        if (m_hasValue)
+        {
+            ::new (&m_storage) T(other.value());
+        }
     }
 
     /// @brief Move-constructs from another optional.
@@ -97,7 +100,10 @@ public:
     }
 
     /// @brief Destroys the contained value (if any).
-    ~Optional() { reset(); }
+    ~Optional()
+    {
+        reset();
+    }
 
     /// @brief Assigns NullOpt, destroying any contained value.
     /// @param[in] NullOpt NullOpt tag.
@@ -113,14 +119,23 @@ public:
     /// @return Reference to this optional.
     Optional& operator=(const Optional& other)
     {
-        if (this == &other) { return *this; }
-        if (m_hasValue && other.m_hasValue) { value() = other.value(); }
+        if (this == &other)
+        {
+            return *this;
+        }
+        if (m_hasValue && other.m_hasValue)
+        {
+            value() = other.value();
+        }
         else if (!m_hasValue && other.m_hasValue)
         {
             ::new (&m_storage) T(other.value());
             m_hasValue = true;
         }
-        else if (m_hasValue) { reset(); }
+        else if (m_hasValue)
+        {
+            reset();
+        }
         return *this;
     }
 
@@ -129,7 +144,10 @@ public:
     /// @return Reference to this optional.
     Optional& operator=(Optional&& other) noexcept(noexcept(T(std::move(other.value()))))
     {
-        if (this == &other) { return *this; }
+        if (this == &other)
+        {
+            return *this;
+        }
         if (m_hasValue && other.m_hasValue)
         {
             value() = std::move(other.value());
@@ -141,7 +159,10 @@ public:
             m_hasValue = true;
             other.reset();
         }
-        else if (m_hasValue) { reset(); }
+        else if (m_hasValue)
+        {
+            reset();
+        }
         return *this;
     }
 
@@ -153,7 +174,10 @@ public:
     requires std::is_constructible_v<T, U&&> && (!std::is_same_v<std::remove_cvref_t<U>, Optional>)Optional&
         operator=(U&& inValue)
     {
-        if (m_hasValue) { value() = std::forward<U>(inValue); }
+        if (m_hasValue)
+        {
+            value() = std::forward<U>(inValue);
+        }
         else
         {
             ::new (&m_storage) T(std::forward<U>(inValue));
@@ -168,19 +192,28 @@ public:
     /// @return True if both optionals are empty or both contain equal values, false otherwise.
     GP_NODISCARD bool operator==(const Optional& other) const noexcept requires std::equality_comparable<T>
     {
-        if (m_hasValue != other.m_hasValue) { return false; }
+        if (m_hasValue != other.m_hasValue)
+        {
+            return false;
+        }
         return !m_hasValue || value() == other.value();
     }
 
     /// @brief Checks if the optional is empty.
     /// @param[in] NullOpt NullOpt tag.
     /// @return True if this optional is empty, false otherwise.
-    GP_NODISCARD bool operator==(NullOptT) const noexcept { return !m_hasValue; }
+    GP_NODISCARD bool operator==(NullOptT) const noexcept
+    {
+        return !m_hasValue;
+    }
 
     /// @brief Checks if the optional is not empty.
     /// @param[in] NullOpt NullOpt tag.
     /// @return True if this optional has a value, false otherwise.
-    GP_NODISCARD bool operator!=(NullOptT) const noexcept { return m_hasValue; }
+    GP_NODISCARD bool operator!=(NullOptT) const noexcept
+    {
+        return m_hasValue;
+    }
 
     /// @brief Checks if the optional contains a value equal to @p inValue.
     /// @param[in] inValue Value to compare with.
@@ -208,32 +241,53 @@ public:
 
     /// @brief Dereferences the optional to access the contained value.
     /// @return Reference to the contained value.
-    GP_NODISCARD constexpr T& operator*() & noexcept { return value(); }
+    GP_NODISCARD constexpr T& operator*() & noexcept
+    {
+        return value();
+    }
 
     /// @brief Dereferences the optional to access the contained value.
     /// @return Reference to the contained value.
-    GP_NODISCARD constexpr const T& operator*() const& noexcept { return value(); }
+    GP_NODISCARD constexpr const T& operator*() const& noexcept
+    {
+        return value();
+    }
 
     /// @brief Dereferences the optional to access the contained value.
     /// @return Rvalue reference to the contained value.
-    GP_NODISCARD constexpr T&& operator*() && noexcept { return std::move(value()); }
+    GP_NODISCARD constexpr T&& operator*() && noexcept
+    {
+        return std::move(value());
+    }
 
     /// @brief Accesses members of the contained value.
     /// @return Pointer to the contained value.
-    GP_NODISCARD constexpr T* operator->() noexcept { return &value(); }
+    GP_NODISCARD constexpr T* operator->() noexcept
+    {
+        return &value();
+    }
 
     /// @brief Accesses members of the contained value.
     /// @return Pointer to the contained value.
-    GP_NODISCARD constexpr const T* operator->() const noexcept { return &value(); }
+    GP_NODISCARD constexpr const T* operator->() const noexcept
+    {
+        return &value();
+    }
 
     /// @brief Explicitly converts to bool to check for value presence.
     /// @return True if the optional has a value, false otherwise.
-    GP_NODISCARD constexpr explicit operator bool() const noexcept { return m_hasValue; }
+    GP_NODISCARD constexpr explicit operator bool() const noexcept
+    {
+        return m_hasValue;
+    }
 
 public:
     /// @brief Checks if the optional contains a value.
     /// @return True if the optional has a value, false otherwise.
-    GP_NODISCARD constexpr bool hasValue() const noexcept { return m_hasValue; }
+    GP_NODISCARD constexpr bool hasValue() const noexcept
+    {
+        return m_hasValue;
+    }
 
     /// @brief Accesses the contained value, asserting if there is none.
     /// @return Reference to the contained value.
@@ -280,7 +334,10 @@ public:
     {
         if (m_hasValue)
         {
-            if constexpr (!std::is_trivially_destructible_v<T>) { reinterpret_cast<T*>(&m_storage)->~T(); }
+            if constexpr (!std::is_trivially_destructible_v<T>)
+            {
+                reinterpret_cast<T*>(&m_storage)->~T();
+            }
             m_hasValue = false;
         }
     }
@@ -302,7 +359,10 @@ public:
     /// @param[in] other Optional to swap with.
     void swap(Optional& other) noexcept(noexcept(T(std::move(std::declval<T&>()))))
     {
-        if (m_hasValue && other.m_hasValue) { std::swap(value(), other.value()); }
+        if (m_hasValue && other.m_hasValue)
+        {
+            std::swap(value(), other.value());
+        }
         else if (!m_hasValue && other.m_hasValue)
         {
             ::new (&m_storage) T(std::move(other.value()));

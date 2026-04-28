@@ -14,8 +14,12 @@ namespace gp
 /// @brief Concept describing types manageable by gp::RefCountPtr.
 template <typename T>
 concept IsRefCounted = requires(T* object) {
-    { object->addRef() };
-    { object->release() };
+    {
+        object->addRef()
+    };
+    {
+        object->release()
+    };
 };
 
 /// @brief Intrusive, concept-gated smart pointer for reference-counted objects.
@@ -54,14 +58,18 @@ public:
     constexpr RefCountPtr() noexcept = default;
 
     /// @brief Constructs an empty RefCountPtr.
-    constexpr RefCountPtr(gp::NullPtr) noexcept {}
+    constexpr RefCountPtr(gp::NullPtr) noexcept
+    {}
 
     /// @brief Adopts a raw pointer and adds a reference to it.
     /// @param[in] ptr Pointer to adopt; may be nullptr. The refcount is incremented if non-null.
     explicit RefCountPtr(Pointer ptr) noexcept
         : m_pointer(ptr)
     {
-        if (m_pointer) { m_pointer->addRef(); }
+        if (m_pointer)
+        {
+            m_pointer->addRef();
+        }
     }
 
     /// @brief Adopts a raw pointer without incrementing the reference count.
@@ -76,7 +84,10 @@ public:
     RefCountPtr(const RefCountPtr& other) noexcept
         : m_pointer(other.m_pointer)
     {
-        if (m_pointer) { m_pointer->addRef(); }
+        if (m_pointer)
+        {
+            m_pointer->addRef();
+        }
     }
 
     /// @brief Constructs a RefCountPtr by copying from another RefCountPtr of a convertible type.
@@ -86,7 +97,10 @@ public:
     RefCountPtr(const RefCountPtr<U>& other) noexcept
         : m_pointer(other.m_pointer)
     {
-        if (m_pointer) { m_pointer->addRef(); }
+        if (m_pointer)
+        {
+            m_pointer->addRef();
+        }
     }
 
     /// @brief Constructs a RefCountPtr by moving from another RefCountPtr.
@@ -110,7 +124,10 @@ public:
     /// @brief Destroys the RefCountPtr, releasing the reference if it manages a non-null pointer.
     ~RefCountPtr() noexcept
     {
-        if (m_pointer) { m_pointer->release(); }
+        if (m_pointer)
+        {
+            m_pointer->release();
+        }
     }
 
     /// @brief Replaces the stored pointer with a new one, adding a reference to it.
@@ -183,12 +200,18 @@ public:
 
     /// @brief Checks if the RefCountPtr is non-empty.
     /// @return true if this RefCountPtr manages a non-null pointer, false otherwise.
-    GP_FORCEINLINE explicit operator bool() const noexcept { return m_pointer != nullptr; }
+    GP_FORCEINLINE explicit operator bool() const noexcept
+    {
+        return m_pointer != nullptr;
+    }
 
 public:
     /// @brief Gets the raw pointer managed by this RefCountPtr.
     /// @return The raw pointer, which may be nullptr if this RefCountPtr is empty.
-    GP_NODISCARD GP_FORCEINLINE Pointer get() const noexcept { return m_pointer; }
+    GP_NODISCARD GP_FORCEINLINE Pointer get() const noexcept
+    {
+        return m_pointer;
+    }
 
     /// @brief Releases ownership without calling release(). Returns the adopted pointer.
     /// @return The adopted pointer, which is now detached from this RefCountPtr.
@@ -211,17 +234,26 @@ public:
 
     /// @brief Checks if the RefCountPtr is non-empty.
     /// @return true if this RefCountPtr manages a non-null pointer, false otherwise.
-    GP_FORCEINLINE bool isValid() const noexcept { return m_pointer != nullptr; }
+    GP_FORCEINLINE bool isValid() const noexcept
+    {
+        return m_pointer != nullptr;
+    }
 
     /// @brief Replaces the stored pointer with a new one, adding a reference to it.
     /// @param[in] ptr The new pointer to manage. The refcount is incremented if non-null.
-    GP_FORCEINLINE void reset(Pointer ptr) noexcept { RefCountPtr(ptr).swap(*this); }
+    GP_FORCEINLINE void reset(Pointer ptr) noexcept
+    {
+        RefCountPtr(ptr).swap(*this);
+    }
 
     /// @brief Adopts a raw pointer without adding a reference (ownership transfer).
     /// @param[in] ptr The new pointer to manage. The refcount is not incremented.
     GP_FORCEINLINE void attach(Pointer ptr) noexcept
     {
-        if (m_pointer) { m_pointer->release(); }
+        if (m_pointer)
+        {
+            m_pointer->release();
+        }
         m_pointer = ptr;
     }
 
@@ -235,7 +267,10 @@ public:
 
     /// @brief Returns the address of the stored pointer without resetting.
     /// @return The address of the stored pointer, which may still hold a reference.
-    GP_NODISCARD GP_FORCEINLINE Pointer* getAddressOfUnsafe() noexcept { return &m_pointer; }
+    GP_NODISCARD GP_FORCEINLINE Pointer* getAddressOfUnsafe() noexcept
+    {
+        return &m_pointer;
+    }
 
     /// @brief Swaps the managed pointers of this and another RefCountPtr.
     /// @param[in] other The RefCountPtr to swap with.

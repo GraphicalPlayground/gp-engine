@@ -92,7 +92,10 @@ public:
     }
 #endif
 
-    GP_NODISCARD const char* getDebugName() const noexcept override { return "DefaultAllocator"; }
+    GP_NODISCARD const char* getDebugName() const noexcept override
+    {
+        return "DefaultAllocator";
+    }
 };
 
 }   // namespace gp::memory

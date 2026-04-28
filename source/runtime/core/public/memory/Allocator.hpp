@@ -58,7 +58,8 @@ public:
     /// @details
     /// Not all allocators support reset. The default implementation is a no-op. Allocators that support bulk
     /// deallocation (linear, stack, arena) override this.
-    virtual void reset() noexcept {}
+    virtual void reset() noexcept
+    {}
 
     /// @brief Queries whether this allocator owns the given pointer.
     /// @details
@@ -66,7 +67,10 @@ public:
     /// deallocation. The default returns false.
     /// @param[in] ptr Pointer to query ownership of.
     /// @return True if this allocator owns the memory at ptr, false otherwise.
-    GP_NODISCARD virtual bool owns(GP_MAYBE_UNUSED const void* ptr) const noexcept { return false; }
+    GP_NODISCARD virtual bool owns(GP_MAYBE_UNUSED const void* ptr) const noexcept
+    {
+        return false;
+    }
 
     /// @brief Allocates an array of elements of type T without constructing them.
     /// @tparam T Type of elements in the array to allocate memory for.
@@ -100,7 +104,10 @@ public:
     GP_NODISCARD T* construct(Args&&... args) noexcept
     {
         void* memory = allocate(sizeof(T), alignof(T));
-        if (!memory) { return nullptr; }
+        if (!memory)
+        {
+            return nullptr;
+        }
         return ::new (memory) T(static_cast<Args&&>(args)...);
     }
 
@@ -119,15 +126,24 @@ public:
 
     /// @brief Gets the total amount of memory currently allocated by this allocator.
     /// @return The number of bytes currently allocated, or 0 if tracking is unsupported.
-    GP_NODISCARD virtual USize getAllocatedSize() const noexcept { return 0; }
+    GP_NODISCARD virtual USize getAllocatedSize() const noexcept
+    {
+        return 0;
+    }
 
     /// @brief Gets the total number of active allocations managed by this allocator.
     /// @return The number of active allocation instances, or 0 if tracking is unsupported.
-    GP_NODISCARD virtual USize getAllocationCount() const noexcept { return 0; }
+    GP_NODISCARD virtual USize getAllocationCount() const noexcept
+    {
+        return 0;
+    }
 
     /// @brief Retrieves a human-readable name for this allocator, useful for debugging.
     /// @return A null-terminated C-string representing the debug name.
-    GP_NODISCARD virtual const char* getDebugName() const noexcept { return "Allocator"; }
+    GP_NODISCARD virtual const char* getDebugName() const noexcept
+    {
+        return "Allocator";
+    }
 };
 
 }   // namespace gp::memory

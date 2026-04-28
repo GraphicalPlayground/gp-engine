@@ -70,16 +70,25 @@ public:
     /// @brief Equality comparison operator.
     /// @param[in] other Point to compare with.
     /// @return true if both points have the same coordinates, false otherwise.
-    GP_NODISCARD constexpr bool operator==(const Point2D& other) const noexcept { return x == other.x && y == other.y; }
+    GP_NODISCARD constexpr bool operator==(const Point2D& other) const noexcept
+    {
+        return x == other.x && y == other.y;
+    }
 
     /// @brief Inequality comparison operator.
     /// @param[in] other Point to compare with.
     /// @return true if the points have different coordinates, false if they are equal.
-    GP_NODISCARD constexpr bool operator!=(const Point2D& other) const noexcept { return !(*this == other); }
+    GP_NODISCARD constexpr bool operator!=(const Point2D& other) const noexcept
+    {
+        return !(*this == other);
+    }
 
     /// @brief Unary negation operator, which negates both coordinates of the point.
     /// @return A new point with both coordinates negated.
-    GP_NODISCARD constexpr Point2D operator-() const noexcept { return Point2D(-x, -y); }
+    GP_NODISCARD constexpr Point2D operator-() const noexcept
+    {
+        return Point2D(-x, -y);
+    }
 
     /// @brief Addition operator, which adds the corresponding coordinates of two points.
     /// @param[in] other Point to add.
@@ -168,7 +177,10 @@ public:
     /// @brief Inequality operator.
     /// @param[in] other Source extent to compare with.
     /// @return True if this extent is not equal to the other, false otherwise.
-    GP_NODISCARD constexpr bool operator!=(const Extent2D& other) const noexcept { return !(*this == other); }
+    GP_NODISCARD constexpr bool operator!=(const Extent2D& other) const noexcept
+    {
+        return !(*this == other);
+    }
 };
 
 }   // namespace gp::hal

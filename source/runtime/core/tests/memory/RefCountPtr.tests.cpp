@@ -19,18 +19,33 @@ class GpRefCounted
 public:
     static inline std::atomic<gp::Int32> s_aliveCount{ 0 };
 
-    GpRefCounted() noexcept { s_aliveCount.fetch_add(1, std::memory_order_relaxed); }
+    GpRefCounted() noexcept
+    {
+        s_aliveCount.fetch_add(1, std::memory_order_relaxed);
+    }
 
-    virtual ~GpRefCounted() noexcept { s_aliveCount.fetch_sub(1, std::memory_order_relaxed); }
+    virtual ~GpRefCounted() noexcept
+    {
+        s_aliveCount.fetch_sub(1, std::memory_order_relaxed);
+    }
 
-    void addRef() noexcept { m_count.fetch_add(1, std::memory_order_relaxed); }
+    void addRef() noexcept
+    {
+        m_count.fetch_add(1, std::memory_order_relaxed);
+    }
 
     void release() noexcept
     {
-        if (m_count.fetch_sub(1, std::memory_order_acq_rel) == 1) { delete this; }
+        if (m_count.fetch_sub(1, std::memory_order_acq_rel) == 1)
+        {
+            delete this;
+        }
     }
 
-    gp::Int32 getRefCount() const noexcept { return m_count.load(std::memory_order_acquire); }
+    gp::Int32 getRefCount() const noexcept
+    {
+        return m_count.load(std::memory_order_acquire);
+    }
 
 private:
     std::atomic<gp::Int32> m_count{ 1 };

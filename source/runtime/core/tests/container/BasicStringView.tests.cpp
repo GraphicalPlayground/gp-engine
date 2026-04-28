@@ -69,7 +69,10 @@ TEST_CASE("StringView - iterators", "[container][StringView]")
     REQUIRE(*v.cbegin() == 'a');
 
     gp::USize count = 0;
-    for (auto it = v.begin(); it != v.end(); ++it) { ++count; }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        ++count;
+    }
     REQUIRE(count == 3);
 }
 

@@ -41,7 +41,10 @@ struct NonTrivial
         ++constructions;
     }
 
-    ~NonTrivial() { ++destructions; }
+    ~NonTrivial()
+    {
+        ++destructions;
+    }
 
     NonTrivial& operator=(const NonTrivial& o)
     {
@@ -56,7 +59,10 @@ struct NonTrivial
         return *this;
     }
 
-    bool operator==(const NonTrivial& o) const { return value == o.value; }
+    bool operator==(const NonTrivial& o) const
+    {
+        return value == o.value;
+    }
 };
 
 int NonTrivial::constructions = 0;
@@ -89,7 +95,10 @@ TEST_CASE("Vector - count construction with default value", "[container][Vector]
 {
     gp::Vector<int> v(5);
     REQUIRE(v.size() == 5);
-    for (gp::USize i = 0; i < 5; ++i) { REQUIRE(v[i] == 0); }
+    for (gp::USize i = 0; i < 5; ++i)
+    {
+        REQUIRE(v[i] == 0);
+    }
 }
 
 TEST_CASE("Vector - count construction with fill value", "[container][Vector]")
@@ -187,7 +196,10 @@ TEST_CASE("Vector - assign count and value", "[container][Vector]")
     gp::Vector<int> v{ 1, 2, 3 };
     v.assign(5, 99);
     REQUIRE(v.size() == 5);
-    for (gp::USize i = 0; i < 5; ++i) { REQUIRE(v[i] == 99); }
+    for (gp::USize i = 0; i < 5; ++i)
+    {
+        REQUIRE(v[i] == 99);
+    }
 }
 
 TEST_CASE("Vector - assign initializer list", "[container][Vector]")
@@ -220,7 +232,10 @@ TEST_CASE("Vector - begin / end iteration", "[container][Vector]")
 {
     gp::Vector<int> v{ 1, 2, 3 };
     int sum = 0;
-    for (auto it = v.begin(); it != v.end(); ++it) { sum += *it; }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        sum += *it;
+    }
     REQUIRE(sum == 6);
 }
 
@@ -228,7 +243,10 @@ TEST_CASE("Vector - const iterators", "[container][Vector]")
 {
     const gp::Vector<int> v{ 1, 2, 3 };
     int sum = 0;
-    for (auto it = v.cbegin(); it != v.cend(); ++it) { sum += *it; }
+    for (auto it = v.cbegin(); it != v.cend(); ++it)
+    {
+        sum += *it;
+    }
     REQUIRE(sum == 6);
 }
 
@@ -243,7 +261,10 @@ TEST_CASE("Vector - range-for loop", "[container][Vector]")
 {
     gp::Vector<int> v{ 10, 20, 30 };
     int sum = 0;
-    for (int x: v) { sum += x; }
+    for (int x: v)
+    {
+        sum += x;
+    }
     REQUIRE(sum == 60);
 }
 
@@ -300,11 +321,17 @@ TEST_CASE("Vector - 1.5x growth factor", "[container][Vector]")
     // This is a degenerate case. Let's test from larger capacity.
     gp::Vector<int> v2;
     v2.reserve(4);
-    for (int i = 0; i < 5; ++i) { v2.pushBack(i); }
+    for (int i = 0; i < 5; ++i)
+    {
+        v2.pushBack(i);
+    }
     // After 4 elements (cap=4), 5th triggers grow: 4 + 4/2 = 6
     REQUIRE(v2.capacity() == 6);
 
-    for (int i = 5; i < 7; ++i) { v2.pushBack(i); }
+    for (int i = 5; i < 7; ++i)
+    {
+        v2.pushBack(i);
+    }
     // Now at 7 elements, cap=6 triggers grow: 6 + 6/2 = 9
     REQUIRE(v2.capacity() == 9);
 }
@@ -312,9 +339,15 @@ TEST_CASE("Vector - 1.5x growth factor", "[container][Vector]")
 TEST_CASE("Vector - pushBack", "[container][Vector]")
 {
     gp::Vector<int> v;
-    for (int i = 0; i < 100; ++i) { v.pushBack(i); }
+    for (int i = 0; i < 100; ++i)
+    {
+        v.pushBack(i);
+    }
     REQUIRE(v.size() == 100);
-    for (int i = 0; i < 100; ++i) { REQUIRE(v[i] == i); }
+    for (int i = 0; i < 100; ++i)
+    {
+        REQUIRE(v[i] == i);
+    }
 }
 
 TEST_CASE("Vector - pushBack move", "[container][Vector]")
@@ -398,7 +431,10 @@ TEST_CASE("Vector - insert initializer list", "[container][Vector]")
     gp::Vector<int> v{ 1, 5 };
     v.insert(v.begin() + 1, { 2, 3, 4 });
     REQUIRE(v.size() == 5);
-    for (int i = 0; i < 5; ++i) { REQUIRE(v[i] == i + 1); }
+    for (int i = 0; i < 5; ++i)
+    {
+        REQUIRE(v[i] == i + 1);
+    }
 }
 
 TEST_CASE("Vector - emplace", "[container][Vector]")
@@ -493,9 +529,15 @@ TEST_CASE("Vector - trivial type memcpy reallocation", "[container][Vector]")
 {
     static_assert(std::is_trivially_copyable_v<int>, "int should be trivially copyable");
     gp::Vector<int> v;
-    for (int i = 0; i < 50; ++i) { v.pushBack(i); }
+    for (int i = 0; i < 50; ++i)
+    {
+        v.pushBack(i);
+    }
     REQUIRE(v.size() == 50);
-    for (int i = 0; i < 50; ++i) { REQUIRE(v[i] == i); }
+    for (int i = 0; i < 50; ++i)
+    {
+        REQUIRE(v[i] == i);
+    }
 }
 
 TEST_CASE("Vector - trivial type insert shifts via memmove", "[container][Vector]")
@@ -503,7 +545,10 @@ TEST_CASE("Vector - trivial type insert shifts via memmove", "[container][Vector
     gp::Vector<int> v{ 1, 2, 5, 6 };
     v.insert(v.begin() + 2, { 3, 4 });
     REQUIRE(v.size() == 6);
-    for (int i = 0; i < 6; ++i) { REQUIRE(v[i] == i + 1); }
+    for (int i = 0; i < 6; ++i)
+    {
+        REQUIRE(v[i] == i + 1);
+    }
 }
 
 TEST_CASE("Vector - trivial type erase shifts via memmove", "[container][Vector]")
@@ -614,9 +659,15 @@ TEST_CASE("Vector - custom allocator basic operations", "[container][Vector][all
     gp::memory::PolymorphicAllocator<int> alloc(&lin);
 
     gp::Vector<int> v(alloc);
-    for (int i = 0; i < 20; ++i) { v.pushBack(i); }
+    for (int i = 0; i < 20; ++i)
+    {
+        v.pushBack(i);
+    }
     REQUIRE(v.size() == 20);
-    for (int i = 0; i < 20; ++i) { REQUIRE(v[i] == i); }
+    for (int i = 0; i < 20; ++i)
+    {
+        REQUIRE(v[i] == i);
+    }
     REQUIRE(lin.getAllocatedSize() > 0);
 }
 

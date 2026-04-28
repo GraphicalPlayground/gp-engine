@@ -64,7 +64,10 @@ public:
         const USize startOffset = alignedStart - bufferAddr;
 
         // Calculate how many blocks fit
-        if (startOffset < bufferSize) { m_blockCount = (bufferSize - startOffset) / stride; }
+        if (startOffset < bufferSize)
+        {
+            m_blockCount = (bufferSize - startOffset) / stride;
+        }
 
         // Build the free list in reverse order so the first block is at the head
         gp::Byte* blockPtr = m_buffer + startOffset + (m_blockCount > 0 ? (m_blockCount - 1) * stride : 0);
@@ -90,7 +93,10 @@ public:
         GP_ASSERT(size <= m_blockSize, "pool_allocator: requested size exceeds block size");
         GP_ASSERT(alignment <= m_blockAlignment, "pool_allocator: requested alignment exceeds block alignment");
 
-        if GP_UNLIKELY (!m_freeList) { return nullptr; }
+        if GP_UNLIKELY (!m_freeList)
+        {
+            return nullptr;
+        }
 
         FreeNode* node = m_freeList;
         m_freeList = node->next;
@@ -104,7 +110,10 @@ public:
     /// @param[in] size Ignored (blocks are fixed-size).
     void deallocate(void* ptr, GP_MAYBE_UNUSED USize size) noexcept override
     {
-        if (!ptr) { return; }
+        if (!ptr)
+        {
+            return;
+        }
 
         GP_ASSERT(owns(ptr), "pool_allocator: deallocating a pointer not owned by this pool");
 
@@ -146,19 +155,37 @@ public:
     }
 
     /// @brief Returns the configured block size (may be larger than the requested size).
-    GP_NODISCARD GP_FORCEINLINE USize getBlockSize() const noexcept { return m_blockSize; }
+    GP_NODISCARD GP_FORCEINLINE USize getBlockSize() const noexcept
+    {
+        return m_blockSize;
+    }
 
     /// @brief Returns the total number of blocks in the pool.
-    GP_NODISCARD GP_FORCEINLINE USize getBlockCount() const noexcept { return m_blockCount; }
+    GP_NODISCARD GP_FORCEINLINE USize getBlockCount() const noexcept
+    {
+        return m_blockCount;
+    }
 
     /// @brief Returns the number of blocks currently available (not allocated).
-    GP_NODISCARD GP_FORCEINLINE USize getFreeCount() const noexcept { return m_blockCount - m_allocatedCount; }
+    GP_NODISCARD GP_FORCEINLINE USize getFreeCount() const noexcept
+    {
+        return m_blockCount - m_allocatedCount;
+    }
 
-    GP_NODISCARD USize getAllocatedSize() const noexcept override { return m_allocatedCount * m_blockSize; }
+    GP_NODISCARD USize getAllocatedSize() const noexcept override
+    {
+        return m_allocatedCount * m_blockSize;
+    }
 
-    GP_NODISCARD USize getAllocationCount() const noexcept override { return m_allocatedCount; }
+    GP_NODISCARD USize getAllocationCount() const noexcept override
+    {
+        return m_allocatedCount;
+    }
 
-    GP_NODISCARD const char* getDebugName() const noexcept override { return "PoolAllocator"; }
+    GP_NODISCARD const char* getDebugName() const noexcept override
+    {
+        return "PoolAllocator";
+    }
 
 private:
     /// @brief Computes the total used buffer size from block geometry.

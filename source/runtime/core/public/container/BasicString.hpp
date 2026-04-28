@@ -82,7 +82,10 @@ private:
 
 public:
     /// @brief Default constructs an empty string (SSO mode, zero length).
-    BasicString() noexcept { _initSsoEmpty(); }
+    BasicString() noexcept
+    {
+        _initSsoEmpty();
+    }
 
     /// @brief Constructs an empty string with the given allocator.
     /// @param[in] alloc The allocator instance to use for future allocations.
@@ -104,7 +107,10 @@ public:
             const SizeType len = Traits::length(str);
             _initFrom(str, len);
         }
-        else { _setSsoSize(0); }
+        else
+        {
+            _setSsoSize(0);
+        }
     }
 
     /// @brief Constructs a string from a character buffer and length.
@@ -128,14 +134,20 @@ public:
         std::memset(&m_storage, 0, ssoUnionSize);
         if (count <= ssoMaxChars)
         {
-            for (SizeType i = 0; i < count; ++i) { _ssoData()[i] = ch; }
+            for (SizeType i = 0; i < count; ++i)
+            {
+                _ssoData()[i] = ch;
+            }
             _ssoData()[count] = CharT{};
             _setSsoSize(count);
         }
         else
         {
             Pointer buffer = _heapAlloc(count);
-            for (SizeType i = 0; i < count; ++i) { buffer[i] = ch; }
+            for (SizeType i = 0; i < count; ++i)
+            {
+                buffer[i] = ch;
+            }
             buffer[count] = CharT{};
             m_storage.heap.data = buffer;
             m_storage.heap.size = count;
@@ -226,14 +238,20 @@ public:
     }
 
     /// @brief Destructor. Frees any allocated heap memory.
-    ~BasicString() { _heapFree(); }
+    ~BasicString()
+    {
+        _heapFree();
+    }
 
     /// @brief Copy assignment operator.
     /// @param[in] other The string to copy from.
     /// @return Reference to this string.
     BasicString& operator=(const BasicString& other)
     {
-        if (this == &other) { return *this; }
+        if (this == &other)
+        {
+            return *this;
+        }
 
         constexpr bool propagate = AllocTraits::PropagateOnContainerCopyAssignment::value;
         if constexpr (propagate)
@@ -243,7 +261,10 @@ public:
                 _heapFree();
                 _replaceAllocator(other.m_allocator);
             }
-            else { _replaceAllocator(other.m_allocator); }
+            else
+            {
+                _replaceAllocator(other.m_allocator);
+            }
         }
 
         _assignChars(other.data(), other.size());
@@ -255,7 +276,10 @@ public:
     /// @return Reference to this string.
     BasicString& operator=(BasicString&& other) noexcept
     {
-        if (this == &other) { return *this; }
+        if (this == &other)
+        {
+            return *this;
+        }
 
         constexpr bool propagate = AllocTraits::PropagateOnContainerMoveAssignment::value;
 
@@ -274,7 +298,10 @@ public:
                 std::memcpy(&m_storage, &other.m_storage, ssoUnionSize);
                 other._initSsoEmpty();
             }
-            else { _assignChars(other.data(), other.size()); }
+            else
+            {
+                _assignChars(other.data(), other.size());
+            }
         }
         return *this;
     }
@@ -310,22 +337,34 @@ public:
     /// @brief Unchecked character access.
     /// @param[in] pos The index of the character to access.
     /// @return Reference to the character at the specified index.
-    GP_NODISCARD GP_FORCEINLINE Reference operator[](SizeType pos) noexcept { return data()[pos]; }
+    GP_NODISCARD GP_FORCEINLINE Reference operator[](SizeType pos) noexcept
+    {
+        return data()[pos];
+    }
 
     /// @brief Unchecked const character access.
     /// @param[in] pos The index of the character to access.
     /// @return Const reference to the character at the specified index.
-    GP_NODISCARD GP_FORCEINLINE ConstReference operator[](SizeType pos) const noexcept { return data()[pos]; }
+    GP_NODISCARD GP_FORCEINLINE ConstReference operator[](SizeType pos) const noexcept
+    {
+        return data()[pos];
+    }
 
     /// @brief String concatenation (append).
     /// @param[in] other The string to append.
     /// @return Reference to this string after appending.
-    BasicString& operator+=(const BasicString& other) { return append(other); }
+    BasicString& operator+=(const BasicString& other)
+    {
+        return append(other);
+    }
 
     /// @brief String concatenation with a C string.
     /// @param[in] str The C string to append.
     /// @return Reference to this string after appending.
-    BasicString& operator+=(const CharT* str) { return append(str); }
+    BasicString& operator+=(const CharT* str)
+    {
+        return append(str);
+    }
 
     /// @brief String concatenation with a single character.
     /// @param[in] ch The character to append.
@@ -339,7 +378,10 @@ public:
     /// @brief String concatenation with a string_view.
     /// @param[in] sv The string_view to append.
     /// @return Reference to this string after appending.
-    BasicString& operator+=(BasicStringView<CharT, Traits> sv) { return append(sv); }
+    BasicString& operator+=(BasicStringView<CharT, Traits> sv)
+    {
+        return append(sv);
+    }
 
     /// @brief Equality comparison.
     /// @param[in] other The string to compare against.
@@ -361,12 +403,18 @@ public:
     /// @brief Inequality comparison.
     /// @param[in] other The string to compare against.
     /// @return True if the strings are not equal, false otherwise.
-    GP_NODISCARD bool operator!=(const BasicString& other) const noexcept { return !(*this == other); }
+    GP_NODISCARD bool operator!=(const BasicString& other) const noexcept
+    {
+        return !(*this == other);
+    }
 
     /// @brief Inequality comparison with a C string.
     /// @param[in] str The C string to compare against.
     /// @return True if this string is not equal to the C string, false otherwise.
-    GP_NODISCARD bool operator!=(const CharT* str) const noexcept { return !(*this == str); }
+    GP_NODISCARD bool operator!=(const CharT* str) const noexcept
+    {
+        return !(*this == str);
+    }
 
     /// @brief Three-way comparison.
     /// @param[in] other The string to compare against.
@@ -388,7 +436,10 @@ public:
 
     /// @brief Implicit conversion to string_view.
     /// @return A BasicStringView representing the contents of this string.
-    GP_NODISCARD operator BasicStringView<CharT, Traits>() const noexcept { return _view(); }
+    GP_NODISCARD operator BasicStringView<CharT, Traits>() const noexcept
+    {
+        return _view();
+    }
 
 public:
     /// @brief Replaces contents with count copies of character ch.
@@ -401,14 +452,20 @@ public:
         std::memset(&m_storage, 0, ssoUnionSize);
         if (count <= ssoMaxChars)
         {
-            for (SizeType i = 0; i < count; ++i) { _ssoData()[i] = ch; }
+            for (SizeType i = 0; i < count; ++i)
+            {
+                _ssoData()[i] = ch;
+            }
             _ssoData()[count] = CharT{};
             _setSsoSize(count);
         }
         else
         {
             Pointer buffer = _heapAlloc(count);
-            for (SizeType i = 0; i < count; ++i) { buffer[i] = ch; }
+            for (SizeType i = 0; i < count; ++i)
+            {
+                buffer[i] = ch;
+            }
             buffer[count] = CharT{};
             m_storage.heap.data = buffer;
             m_storage.heap.size = count;
@@ -443,7 +500,10 @@ public:
     /// @brief Replaces contents from a null-terminated C string.
     /// @param[in] str Pointer to a null-terminated character array.
     /// @return Reference to this string after assignment.
-    BasicString& assign(const CharT* str) { return *this = str; }
+    BasicString& assign(const CharT* str)
+    {
+        return *this = str;
+    }
 
     /// @brief Gets a reference to the character at the specified position with bounds checking.
     /// @param[in] pos The index of the character to access.
@@ -465,23 +525,38 @@ public:
 
     /// @brief Returns a reference to the first character.
     /// @return Reference to the first character in the string.
-    GP_NODISCARD GP_FORCEINLINE Reference front() noexcept { return data()[0]; }
+    GP_NODISCARD GP_FORCEINLINE Reference front() noexcept
+    {
+        return data()[0];
+    }
 
     /// @brief Returns a const reference to the first character.
     /// @return Const reference to the first character in the string.
-    GP_NODISCARD GP_FORCEINLINE ConstReference front() const noexcept { return data()[0]; }
+    GP_NODISCARD GP_FORCEINLINE ConstReference front() const noexcept
+    {
+        return data()[0];
+    }
 
     /// @brief Returns a reference to the last character.
     /// @return Reference to the last character in the string.
-    GP_NODISCARD GP_FORCEINLINE Reference back() noexcept { return data()[size() - 1]; }
+    GP_NODISCARD GP_FORCEINLINE Reference back() noexcept
+    {
+        return data()[size() - 1];
+    }
 
     /// @brief Returns a const reference to the last character.
     /// @return Const reference to the last character in the string.
-    GP_NODISCARD GP_FORCEINLINE ConstReference back() const noexcept { return data()[size() - 1]; }
+    GP_NODISCARD GP_FORCEINLINE ConstReference back() const noexcept
+    {
+        return data()[size() - 1];
+    }
 
     /// @brief Returns a pointer to the underlying character array (always null-terminated).
     /// @return Pointer to the character data.
-    GP_NODISCARD GP_FORCEINLINE Pointer data() noexcept { return _isHeap() ? m_storage.heap.data : _ssoData(); }
+    GP_NODISCARD GP_FORCEINLINE Pointer data() noexcept
+    {
+        return _isHeap() ? m_storage.heap.data : _ssoData();
+    }
 
     /// @brief Returns a const pointer to the underlying character array (always null-terminated).
     /// @return Const pointer to the character data.
@@ -492,87 +567,147 @@ public:
 
     /// @brief Returns a null-terminated C string.
     /// @return Pointer to the character data.
-    GP_NODISCARD GP_FORCEINLINE ConstPointer cStr() const noexcept { return data(); }
+    GP_NODISCARD GP_FORCEINLINE ConstPointer cStr() const noexcept
+    {
+        return data();
+    }
 
     /// @brief Gets an iterator to the beginning of the string.
     /// @return Iterator pointing to the first character.
-    GP_NODISCARD GP_FORCEINLINE Iterator begin() noexcept { return data(); }
+    GP_NODISCARD GP_FORCEINLINE Iterator begin() noexcept
+    {
+        return data();
+    }
 
     /// @brief Gets a const iterator to the beginning of the string.
     /// @return Const iterator pointing to the first character.
-    GP_NODISCARD GP_FORCEINLINE ConstIterator begin() const noexcept { return data(); }
+    GP_NODISCARD GP_FORCEINLINE ConstIterator begin() const noexcept
+    {
+        return data();
+    }
 
     /// @brief Gets an iterator to the end of the string.
     /// @return Iterator pointing to one past the last character.
-    GP_NODISCARD GP_FORCEINLINE Iterator end() noexcept { return data() + size(); }
+    GP_NODISCARD GP_FORCEINLINE Iterator end() noexcept
+    {
+        return data() + size();
+    }
 
     /// @brief Gets a const iterator to the end of the string.
     /// @return Const iterator pointing to one past the last character.
-    GP_NODISCARD GP_FORCEINLINE ConstIterator end() const noexcept { return data() + size(); }
+    GP_NODISCARD GP_FORCEINLINE ConstIterator end() const noexcept
+    {
+        return data() + size();
+    }
 
     /// @brief Gets a const iterator to the beginning of the string.
     /// @return Const iterator pointing to the first character.
-    GP_NODISCARD GP_FORCEINLINE ConstIterator cbegin() const noexcept { return data(); }
+    GP_NODISCARD GP_FORCEINLINE ConstIterator cbegin() const noexcept
+    {
+        return data();
+    }
 
     /// @brief Gets a const iterator to the end of the string.
     /// @return Const iterator pointing to one past the last character.
-    GP_NODISCARD GP_FORCEINLINE ConstIterator cend() const noexcept { return data() + size(); }
+    GP_NODISCARD GP_FORCEINLINE ConstIterator cend() const noexcept
+    {
+        return data() + size();
+    }
 
     /// @brief Gets a reverse iterator to the end of the string.
     /// @return Reverse iterator pointing to the last character.
-    GP_NODISCARD GP_FORCEINLINE ReverseIterator rbegin() noexcept { return ReverseIterator(end()); }
+    GP_NODISCARD GP_FORCEINLINE ReverseIterator rbegin() noexcept
+    {
+        return ReverseIterator(end());
+    }
 
     /// @brief Gets a const reverse iterator to the end of the string.
     /// @return Const reverse iterator pointing to the last character.
-    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator rbegin() const noexcept { return ConstReverseIterator(end()); }
+    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator rbegin() const noexcept
+    {
+        return ConstReverseIterator(end());
+    }
 
     /// @brief Gets a reverse iterator to the beginning of the string.
     /// @return Reverse iterator pointing to one before the first character.
-    GP_NODISCARD GP_FORCEINLINE ReverseIterator rend() noexcept { return ReverseIterator(begin()); }
+    GP_NODISCARD GP_FORCEINLINE ReverseIterator rend() noexcept
+    {
+        return ReverseIterator(begin());
+    }
 
     /// @brief Gets a const reverse iterator to the beginning of the string.
     /// @return Const reverse iterator pointing to one before the first character.
-    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator rend() const noexcept { return ConstReverseIterator(begin()); }
+    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator rend() const noexcept
+    {
+        return ConstReverseIterator(begin());
+    }
 
     /// @brief Gets a const reverse iterator to the end of the string.
     /// @return Const reverse iterator pointing to the last character.
-    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator crbegin() const noexcept { return ConstReverseIterator(cend()); }
+    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator crbegin() const noexcept
+    {
+        return ConstReverseIterator(cend());
+    }
 
     /// @brief Gets a const reverse iterator to the beginning of the string.
     /// @return Const reverse iterator pointing to one before the first character.
-    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator crend() const noexcept { return ConstReverseIterator(cbegin()); }
+    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator crend() const noexcept
+    {
+        return ConstReverseIterator(cbegin());
+    }
 
     /// @brief Returns the number of characters (not counting the null terminator).
     /// @return The size of the string.
-    GP_NODISCARD GP_FORCEINLINE SizeType size() const noexcept { return _isHeap() ? m_storage.heap.size : _ssoSize(); }
+    GP_NODISCARD GP_FORCEINLINE SizeType size() const noexcept
+    {
+        return _isHeap() ? m_storage.heap.size : _ssoSize();
+    }
 
     /// @brief Alias for size().
     /// @return The size of the string.
-    GP_NODISCARD GP_FORCEINLINE SizeType length() const noexcept { return size(); }
+    GP_NODISCARD GP_FORCEINLINE SizeType length() const noexcept
+    {
+        return size();
+    }
 
     /// @brief Checks if the string is empty.
     /// @return True if the string is empty, false otherwise.
-    GP_NODISCARD GP_FORCEINLINE bool empty() const noexcept { return size() == 0; }
+    GP_NODISCARD GP_FORCEINLINE bool empty() const noexcept
+    {
+        return size() == 0;
+    }
 
     /// @brief Returns the current allocated capacity (not counting the null terminator).
     /// @return The capacity of the string.
-    GP_NODISCARD GP_FORCEINLINE SizeType capacity() const noexcept { return _isHeap() ? _heapCapacity() : ssoMaxChars; }
+    GP_NODISCARD GP_FORCEINLINE SizeType capacity() const noexcept
+    {
+        return _isHeap() ? _heapCapacity() : ssoMaxChars;
+    }
 
     /// @brief Returns the maximum possible string length.
     /// @return The maximum size of the string.
-    GP_NODISCARD constexpr SizeType maxSize() const noexcept { return AllocTraits::maxSize(m_allocator) - 1; }
+    GP_NODISCARD constexpr SizeType maxSize() const noexcept
+    {
+        return AllocTraits::maxSize(m_allocator) - 1;
+    }
 
     /// @brief Reserves storage for at least newCap characters (not counting the null terminator).
     /// @param[in] newCap The minimum capacity to reserve.
     void reserve(SizeType newCap)
     {
-        if (newCap > capacity()) { _ensureHeapCapacity(newCap); }
+        if (newCap > capacity())
+        {
+            _ensureHeapCapacity(newCap);
+        }
     }
 
     /// @brief Releases unused heap memory, or transitions back to SSO if possible.
     void shrinkToFit()
     {
-        if (!_isHeap()) { return; }
+        if (!_isHeap())
+        {
+            return;
+        }
         const SizeType len = m_storage.heap.size;
         if (len <= ssoMaxChars)
         {
@@ -620,7 +755,10 @@ public:
     {
         const SizeType len = size();
         const SizeType cap = capacity();
-        if (len == cap) { _ensureHeapCapacity(_growCap(cap, len + 1)); }
+        if (len == cap)
+        {
+            _ensureHeapCapacity(_growCap(cap, len + 1));
+        }
         Pointer d = data();
         d[len] = ch;
         d[len + 1] = CharT{};
@@ -639,12 +777,18 @@ public:
     /// @brief Appends another string.
     /// @param[in] other The string to append.
     /// @return Reference to this string after appending.
-    BasicString& append(const BasicString& other) { return append(other.data(), other.size()); }
+    BasicString& append(const BasicString& other)
+    {
+        return append(other.data(), other.size());
+    }
 
     /// @brief Appends a null-terminated C string.
     /// @param[in] str The C string to append.
     /// @return Reference to this string after appending.
-    BasicString& append(const CharT* str) { return append(str, Traits::length(str)); }
+    BasicString& append(const CharT* str)
+    {
+        return append(str, Traits::length(str));
+    }
 
     /// @brief Appends a buffer of characters.
     /// @param[in] str Pointer to the character buffer to append.
@@ -652,10 +796,16 @@ public:
     /// @return Reference to this string after appending.
     BasicString& append(const CharT* str, SizeType count)
     {
-        if (count == 0) { return *this; }
+        if (count == 0)
+        {
+            return *this;
+        }
         const SizeType oldLen = size();
         const SizeType newLen = oldLen + count;
-        if (newLen > capacity()) { _ensureHeapCapacity(_growCap(capacity(), newLen)); }
+        if (newLen > capacity())
+        {
+            _ensureHeapCapacity(_growCap(capacity(), newLen));
+        }
         Traits::copy(data() + oldLen, str, count);
         data()[newLen] = CharT{};
         _setSize(newLen);
@@ -668,12 +818,21 @@ public:
     /// @return Reference to this string after appending.
     BasicString& append(SizeType count, CharT ch)
     {
-        if (count == 0) { return *this; }
+        if (count == 0)
+        {
+            return *this;
+        }
         const SizeType oldLen = size();
         const SizeType newLen = oldLen + count;
-        if (newLen > capacity()) { _ensureHeapCapacity(_growCap(capacity(), newLen)); }
+        if (newLen > capacity())
+        {
+            _ensureHeapCapacity(_growCap(capacity(), newLen));
+        }
         Pointer d = data() + oldLen;
-        for (SizeType i = 0; i < count; ++i) { d[i] = ch; }
+        for (SizeType i = 0; i < count; ++i)
+        {
+            d[i] = ch;
+        }
         data()[newLen] = CharT{};
         _setSize(newLen);
         return *this;
@@ -682,7 +841,10 @@ public:
     /// @brief Appends from a string_view.
     /// @param[in] sv The string_view to append.
     /// @return Reference to this string after appending.
-    BasicString& append(BasicStringView<CharT, Traits> sv) { return append(sv.data(), sv.size()); }
+    BasicString& append(BasicStringView<CharT, Traits> sv)
+    {
+        return append(sv.data(), sv.size());
+    }
 
     /// @brief Inserts count copies of ch at position pos.
     /// @param[in] pos The index at which to insert.
@@ -692,13 +854,22 @@ public:
     BasicString& insert(SizeType pos, SizeType count, CharT ch)
     {
         GP_ASSERT(pos <= size());
-        if (count == 0) { return *this; }
+        if (count == 0)
+        {
+            return *this;
+        }
         const SizeType oldLen = size();
         const SizeType newLen = oldLen + count;
-        if (newLen > capacity()) { _ensureHeapCapacity(_growCap(capacity(), newLen)); }
+        if (newLen > capacity())
+        {
+            _ensureHeapCapacity(_growCap(capacity(), newLen));
+        }
         Pointer d = data();
         Traits::move(d + pos + count, d + pos, oldLen - pos);
-        for (SizeType i = 0; i < count; ++i) { d[pos + i] = ch; }
+        for (SizeType i = 0; i < count; ++i)
+        {
+            d[pos + i] = ch;
+        }
         d[newLen] = CharT{};
         _setSize(newLen);
         return *this;
@@ -708,7 +879,10 @@ public:
     /// @param[in] pos The index at which to insert.
     /// @param[in] str The C string to insert.
     /// @return Reference to this string after insertion.
-    BasicString& insert(SizeType pos, const CharT* str) { return insert(pos, str, Traits::length(str)); }
+    BasicString& insert(SizeType pos, const CharT* str)
+    {
+        return insert(pos, str, Traits::length(str));
+    }
 
     /// @brief Inserts a buffer at position pos.
     /// @param[in] pos The index at which to insert.
@@ -718,10 +892,16 @@ public:
     BasicString& insert(SizeType pos, const CharT* str, SizeType count)
     {
         GP_ASSERT(pos <= size());
-        if (count == 0) { return *this; }
+        if (count == 0)
+        {
+            return *this;
+        }
         const SizeType oldLen = size();
         const SizeType newLen = oldLen + count;
-        if (newLen > capacity()) { _ensureHeapCapacity(_growCap(capacity(), newLen)); }
+        if (newLen > capacity())
+        {
+            _ensureHeapCapacity(_growCap(capacity(), newLen));
+        }
         Pointer d = data();
         Traits::move(d + pos + count, d + pos, oldLen - pos);
         Traits::copy(d + pos, str, count);
@@ -734,7 +914,10 @@ public:
     /// @param[in] pos The index at which to insert.
     /// @param[in] str The string to insert.
     /// @return Reference to this string after insertion.
-    BasicString& insert(SizeType pos, const BasicString& str) { return insert(pos, str.data(), str.size()); }
+    BasicString& insert(SizeType pos, const BasicString& str)
+    {
+        return insert(pos, str.data(), str.size());
+    }
 
     /// @brief Erases count characters starting at position pos.
     /// @param[in] pos The index of the first character to erase.
@@ -787,7 +970,10 @@ public:
         const SizeType rcount = gp::math::min(count, size() - pos);
         const SizeType oldLen = size();
         const SizeType newLen = oldLen - rcount + strCount;
-        if (newLen > capacity()) { _ensureHeapCapacity(_growCap(capacity(), newLen)); }
+        if (newLen > capacity())
+        {
+            _ensureHeapCapacity(_growCap(capacity(), newLen));
+        }
         Pointer d = data();
         Traits::move(d + pos + strCount, d + pos + rcount, oldLen - pos - rcount);
         Traits::copy(d + pos, str, strCount);
@@ -828,7 +1014,10 @@ public:
             data()[count] = CharT{};
             _setSize(count);
         }
-        else { append(count - oldLen, ch); }
+        else
+        {
+            append(count - oldLen, ch);
+        }
     }
 
     /// @brief Swaps contents with another string.
@@ -836,7 +1025,10 @@ public:
     void swap(BasicString& other) noexcept
     {
         constexpr bool propagate = AllocTraits::PropagateOnContainerSwap::value;
-        if constexpr (!propagate) { GP_ASSERT(m_allocator == other.m_allocator); }
+        if constexpr (!propagate)
+        {
+            GP_ASSERT(m_allocator == other.m_allocator);
+        }
 
         StorageUnion tmp;
         std::memcpy(&tmp, &m_storage, ssoUnionSize);
@@ -878,13 +1070,19 @@ public:
     /// @param[in] other The string to compare against.
     /// @return A value less than, equal to, or greater than zero if this string is found, respectively, to be less
     ///         than, to match, or be greater than other.
-    GP_NODISCARD int compare(const BasicString& other) const noexcept { return _view().compare(_viewOf(other)); }
+    GP_NODISCARD int compare(const BasicString& other) const noexcept
+    {
+        return _view().compare(_viewOf(other));
+    }
 
     /// @brief Compares with a C string.
     /// @param[in] str The C string to compare against.
     /// @return A value less than, equal to, or greater than zero if this string is found, respectively, to be less
     ///         than, to match, or be greater than the C string.
-    GP_NODISCARD int compare(const CharT* str) const { return _view().compare(BasicStringView<CharT, Traits>(str)); }
+    GP_NODISCARD int compare(const CharT* str) const
+    {
+        return _view().compare(BasicStringView<CharT, Traits>(str));
+    }
 
     /// @brief Compares a substring with another string.
     /// @param[in] pos Starting position in this string (clamped to size).
@@ -921,13 +1119,19 @@ public:
     /// @param[in] str The C string to find.
     /// @param[in] pos Starting position for the search (clamped to size).
     /// @return The index of the first occurrence of str, or npos if not found.
-    GP_NODISCARD SizeType find(const CharT* str, SizeType pos = 0) const { return _view().find(str, pos); }
+    GP_NODISCARD SizeType find(const CharT* str, SizeType pos = 0) const
+    {
+        return _view().find(str, pos);
+    }
 
     /// @brief Finds the first occurrence of a character.
     /// @param[in] ch The character to find.
     /// @param[in] pos Starting position for the search (clamped to size).
     /// @return The index of the first occurrence of ch, or npos if not found.
-    GP_NODISCARD SizeType find(CharT ch, SizeType pos = 0) const noexcept { return _view().find(ch, pos); }
+    GP_NODISCARD SizeType find(CharT ch, SizeType pos = 0) const noexcept
+    {
+        return _view().find(ch, pos);
+    }
 
     /// @brief Finds the last occurrence of a substring.
     /// @param[in] str The string to find.
@@ -942,13 +1146,19 @@ public:
     /// @param[in] str The C string to find.
     /// @param[in] pos Starting position for the search (clamped to size).
     /// @return The index of the last occurrence of str, or npos if not found.
-    GP_NODISCARD SizeType rfind(const CharT* str, SizeType pos = npos) const { return _view().rfind(str, pos); }
+    GP_NODISCARD SizeType rfind(const CharT* str, SizeType pos = npos) const
+    {
+        return _view().rfind(str, pos);
+    }
 
     /// @brief Finds the last occurrence of a character.
     /// @param[in] ch The character to find.
     /// @param[in] pos Starting position for the search (clamped to size).
     /// @return The index of the last occurrence of ch, or npos if not found.
-    GP_NODISCARD SizeType rfind(CharT ch, SizeType pos = npos) const noexcept { return _view().rfind(ch, pos); }
+    GP_NODISCARD SizeType rfind(CharT ch, SizeType pos = npos) const noexcept
+    {
+        return _view().rfind(ch, pos);
+    }
 
     /// @brief Finds the first occurrence of any character from a set.
     /// @param[in] str The string containing the set of characters to find.
@@ -1061,59 +1271,95 @@ public:
     /// @brief Checks if the string starts with a substring.
     /// @param[in] sv The substring to check.
     /// @return True if this string starts with sv, false otherwise.
-    GP_NODISCARD bool startsWith(BasicStringView<CharT, Traits> sv) const noexcept { return _view().startsWith(sv); }
+    GP_NODISCARD bool startsWith(BasicStringView<CharT, Traits> sv) const noexcept
+    {
+        return _view().startsWith(sv);
+    }
 
     /// @brief Checks if the string starts with a character.
     /// @param[in] ch The character to check.
     /// @return True if this string starts with ch, false otherwise.
-    GP_NODISCARD bool startsWith(CharT ch) const noexcept { return _view().startsWith(ch); }
+    GP_NODISCARD bool startsWith(CharT ch) const noexcept
+    {
+        return _view().startsWith(ch);
+    }
 
     /// @brief Checks if the string starts with a C string.
     /// @param[in] str The C string to check.
     /// @return True if this string starts with str, false otherwise.
-    GP_NODISCARD bool startsWith(const CharT* str) const { return _view().startsWith(str); }
+    GP_NODISCARD bool startsWith(const CharT* str) const
+    {
+        return _view().startsWith(str);
+    }
 
     /// @brief Checks if the string ends with a substring.
     /// @param[in] sv The substring to check.
     /// @return True if this string ends with sv, false otherwise.
-    GP_NODISCARD bool endsWith(BasicStringView<CharT, Traits> sv) const noexcept { return _view().endsWith(sv); }
+    GP_NODISCARD bool endsWith(BasicStringView<CharT, Traits> sv) const noexcept
+    {
+        return _view().endsWith(sv);
+    }
 
     /// @brief Checks if the string ends with a character.
     /// @param[in] ch The character to check.
     /// @return True if this string ends with ch, false otherwise.
-    GP_NODISCARD bool endsWith(CharT ch) const noexcept { return _view().endsWith(ch); }
+    GP_NODISCARD bool endsWith(CharT ch) const noexcept
+    {
+        return _view().endsWith(ch);
+    }
 
     /// @brief Checks if the string ends with a C string.
     /// @param[in] str The C string to check.
     /// @return True if this string ends with str, false otherwise.
-    GP_NODISCARD bool endsWith(const CharT* str) const { return _view().endsWith(str); }
+    GP_NODISCARD bool endsWith(const CharT* str) const
+    {
+        return _view().endsWith(str);
+    }
 
     /// @brief Checks if the string contains a substring.
     /// @param[in] sv The substring to check.
     /// @return True if this string contains sv, false otherwise.
-    GP_NODISCARD bool contains(BasicStringView<CharT, Traits> sv) const noexcept { return _view().contains(sv); }
+    GP_NODISCARD bool contains(BasicStringView<CharT, Traits> sv) const noexcept
+    {
+        return _view().contains(sv);
+    }
 
     /// @brief Checks if the string contains a character.
     /// @param[in] ch The character to check.
     /// @return True if this string contains ch, false otherwise.
-    GP_NODISCARD bool contains(CharT ch) const noexcept { return _view().contains(ch); }
+    GP_NODISCARD bool contains(CharT ch) const noexcept
+    {
+        return _view().contains(ch);
+    }
 
     /// @brief Checks if the string contains a C string.
     /// @param[in] str The C string to check.
     /// @return True if this string contains str, false otherwise.
-    GP_NODISCARD bool contains(const CharT* str) const { return _view().contains(str); }
+    GP_NODISCARD bool contains(const CharT* str) const
+    {
+        return _view().contains(str);
+    }
 
     /// @brief Returns a copy of the allocator.
     /// @return The allocator used by this string.
-    GP_NODISCARD AllocatorType getAllocator() const noexcept { return m_allocator; }
+    GP_NODISCARD AllocatorType getAllocator() const noexcept
+    {
+        return m_allocator;
+    }
 
 private:
     /// @brief Sets the size in either SSO or heap mode.
     /// @param[in] len The new size of the string (not counting null terminator).
     GP_FORCEINLINE void _setSize(SizeType len) noexcept
     {
-        if (_isHeap()) { m_storage.heap.size = len; }
-        else { _setSsoSize(len); }
+        if (_isHeap())
+        {
+            m_storage.heap.size = len;
+        }
+        else
+        {
+            _setSsoSize(len);
+        }
     }
 
     /// @brief Common assignment path: replaces current content with [str, str+len).
@@ -1164,11 +1410,17 @@ private:
 
     /// @brief Returns true if the string is using heap storage.
     /// @return True if in heap mode, false if in SSO mode.
-    GP_NODISCARD GP_FORCEINLINE bool _isHeap() const noexcept { return (_tag() & heapFlag) != 0; }
+    GP_NODISCARD GP_FORCEINLINE bool _isHeap() const noexcept
+    {
+        return (_tag() & heapFlag) != 0;
+    }
 
     /// @brief Sets the SSO tag to indicate the current length.
     /// @param[in] len The length of the string in SSO mode (not counting null terminator).
-    GP_FORCEINLINE void _setSsoSize(SizeType len) noexcept { _tag() = static_cast<gp::UInt8>(ssoMaxChars - len); }
+    GP_FORCEINLINE void _setSsoSize(SizeType len) noexcept
+    {
+        _tag() = static_cast<gp::UInt8>(ssoMaxChars - len);
+    }
 
     /// @brief Returns the string length when in SSO mode.
     /// @return The length of the string in SSO mode (not counting null terminator).
@@ -1179,9 +1431,15 @@ private:
 
     /// @brief Returns a mutable pointer to the SSO buffer.
     /// @return Pointer to the SSO character buffer.
-    GP_NODISCARD GP_FORCEINLINE Pointer _ssoData() noexcept { return m_storage.sso; }
+    GP_NODISCARD GP_FORCEINLINE Pointer _ssoData() noexcept
+    {
+        return m_storage.sso;
+    }
 
-    GP_NODISCARD GP_FORCEINLINE ConstPointer _ssoData() const noexcept { return m_storage.sso; }
+    GP_NODISCARD GP_FORCEINLINE ConstPointer _ssoData() const noexcept
+    {
+        return m_storage.sso;
+    }
 
     /// @brief Sets the heap capacity with the heap flag bit set in the MSB.
     /// @param[in] cap The capacity to set (not counting null terminator).
@@ -1206,7 +1464,10 @@ private:
 
     /// @brief Allocates heap storage for a string of the given capacity plus null terminator.
     /// @return Pointer to the heap buffer.
-    GP_NODISCARD Pointer _heapAlloc(SizeType cap) { return AllocTraits::allocate(m_allocator, cap + 1); }
+    GP_NODISCARD Pointer _heapAlloc(SizeType cap)
+    {
+        return AllocTraits::allocate(m_allocator, cap + 1);
+    }
 
     /// @brief Frees the heap buffer.
     void _heapFree()

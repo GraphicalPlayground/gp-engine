@@ -14,7 +14,10 @@
 namespace gp::tests
 {
 
-TEST_CASE("String - sizeof is exactly 32 bytes", "[container][String]") { STATIC_REQUIRE(sizeof(gp::String) == 32); }
+TEST_CASE("String - sizeof is exactly 32 bytes", "[container][String]")
+{
+    STATIC_REQUIRE(sizeof(gp::String) == 32);
+}
 
 TEST_CASE("String - SSO threshold is 23 characters", "[container][String]")
 {
@@ -63,14 +66,20 @@ TEST_CASE("String - construction with fill character", "[container][String]")
 {
     gp::String s(10, 'x');
     REQUIRE(s.size() == 10);
-    for (gp::USize i = 0; i < 10; ++i) { REQUIRE(s[i] == 'x'); }
+    for (gp::USize i = 0; i < 10; ++i)
+    {
+        REQUIRE(s[i] == 'x');
+    }
 }
 
 TEST_CASE("String - construction with fill character (heap)", "[container][String]")
 {
     gp::String s(30, 'A');
     REQUIRE(s.size() == 30);
-    for (gp::USize i = 0; i < 30; ++i) { REQUIRE(s[i] == 'A'); }
+    for (gp::USize i = 0; i < 30; ++i)
+    {
+        REQUIRE(s[i] == 'A');
+    }
 }
 
 TEST_CASE("String - initializer list construction", "[container][String]")
@@ -343,7 +352,10 @@ TEST_CASE("String - clear on heap preserves capacity", "[container][String]")
 TEST_CASE("String - pushBack", "[container][String]")
 {
     gp::String s;
-    for (char c = 'a'; c <= 'z'; ++c) { s.pushBack(c); }
+    for (char c = 'a'; c <= 'z'; ++c)
+    {
+        s.pushBack(c);
+    }
     REQUIRE(s.size() == 26);
     REQUIRE(s[0] == 'a');
     REQUIRE(s[25] == 'z');
@@ -620,7 +632,10 @@ TEST_CASE("String - custom allocator with heap allocation", "[string][allocator]
     gp::String s(50, 'x', alloc);
     REQUIRE(s.size() == 50);
     REQUIRE(lin.getAllocatedSize() > 0);
-    for (gp::USize i = 0; i < 50; ++i) { REQUIRE(s[i] == 'x'); }
+    for (gp::USize i = 0; i < 50; ++i)
+    {
+        REQUIRE(s[i] == 'x');
+    }
 }
 
 TEST_CASE("String - exactly at SSO boundary (23 chars)", "[string][sso]")
@@ -660,9 +675,15 @@ TEST_CASE("String - empty string is in SSO mode", "[string][sso]")
 TEST_CASE("String - repeated pushBack across SSO boundary", "[container][String]")
 {
     gp::String s;
-    for (int i = 0; i < 200; ++i) { s.pushBack(static_cast<char>('a' + (i % 26))); }
+    for (int i = 0; i < 200; ++i)
+    {
+        s.pushBack(static_cast<char>('a' + (i % 26)));
+    }
     REQUIRE(s.size() == 200);
-    for (int i = 0; i < 200; ++i) { REQUIRE(s[i] == static_cast<char>('a' + (i % 26))); }
+    for (int i = 0; i < 200; ++i)
+    {
+        REQUIRE(s[i] == static_cast<char>('a' + (i % 26)));
+    }
 }
 
 }   // namespace gp::tests

@@ -31,7 +31,10 @@ TEST_CASE("DefaultAllocator - Basic allocation", "[memory][DefaultAllocator]")
 
     // Verify memory is accessible and writable (will segfault/ASAN trigger if invalid)
     auto* bytes = static_cast<gp::UInt8*>(ptr);
-    for (USize i = 0; i < allocSize; ++i) { bytes[i] = static_cast<gp::UInt8>(i % 256); }
+    for (USize i = 0; i < allocSize; ++i)
+    {
+        bytes[i] = static_cast<gp::UInt8>(i % 256);
+    }
 
     // Verify written data remains intact
     volatile gp::UInt8 checkSum = bytes[128];
@@ -129,18 +132,30 @@ TEST_CASE("DefaultAllocator - Multithreaded Contention", "[memory][DefaultAlloca
         ptrs.reserve(allocationsPerThread);
 
         // Heavy allocation phase
-        for (USize i = 0; i < allocationsPerThread; ++i) { ptrs.push_back(allocator.allocate(allocSize)); }
+        for (USize i = 0; i < allocationsPerThread; ++i)
+        {
+            ptrs.push_back(allocator.allocate(allocSize));
+        }
 
         // Deallocation phase
-        for (void* ptr: ptrs) { allocator.deallocate(ptr, allocSize); }
+        for (void* ptr: ptrs)
+        {
+            allocator.deallocate(ptr, allocSize);
+        }
     };
 
     std::vector<std::thread> threads;
     threads.reserve(numThreads);
 
-    for (USize i = 0; i < numThreads; ++i) { threads.emplace_back(worker); }
+    for (USize i = 0; i < numThreads; ++i)
+    {
+        threads.emplace_back(worker);
+    }
 
-    for (auto& t: threads) { t.join(); }
+    for (auto& t: threads)
+    {
+        t.join();
+    }
 
     // Ensure atomic counters are perfectly resolved after high contention
 #if GP_BUILD_DEBUG

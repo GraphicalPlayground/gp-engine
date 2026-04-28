@@ -22,7 +22,10 @@ struct DestroyTracker
     DestroyTracker& operator=(const DestroyTracker&) = default;
     DestroyTracker& operator=(DestroyTracker&&) noexcept = default;
 
-    ~DestroyTracker() { ++(*m_count); }
+    ~DestroyTracker()
+    {
+        ++(*m_count);
+    }
 };
 
 struct MoveSpy
@@ -54,9 +57,15 @@ struct MoveSpy
         return *this;
     }
 
-    bool operator==(const MoveSpy& other) const noexcept { return value == other.value; }
+    bool operator==(const MoveSpy& other) const noexcept
+    {
+        return value == other.value;
+    }
 
-    bool operator!=(const MoveSpy& other) const noexcept { return value != other.value; }
+    bool operator!=(const MoveSpy& other) const noexcept
+    {
+        return value != other.value;
+    }
 };
 
 struct MultiArg
@@ -71,7 +80,10 @@ struct MultiArg
         , z(inZ)
     {}
 
-    bool operator==(const MultiArg& other) const noexcept { return x == other.x && y == other.y && z == other.z; }
+    bool operator==(const MultiArg& other) const noexcept
+    {
+        return x == other.x && y == other.y && z == other.z;
+    }
 };
 
 TEST_CASE("Optional - Default construction yields empty optional", "[container][Optional]")

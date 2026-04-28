@@ -157,13 +157,19 @@ struct AllocatorTraits
     /// @param[in] alloc The allocator to use for memory allocation.
     /// @param[in] n The number of objects to allocate memory for.
     /// @return A pointer to the allocated memory.
-    GP_NODISCARD static Pointer allocate(Alloc& alloc, SizeType n) { return alloc.allocate(n); }
+    GP_NODISCARD static Pointer allocate(Alloc& alloc, SizeType n)
+    {
+        return alloc.allocate(n);
+    }
 
     /// @brief Deallocates memory pointed to by ptr using the allocator alloc.
     /// @param[in] alloc The allocator to use for memory deallocation.
     /// @param[in] ptr The pointer to the memory location to deallocate.
     /// @param[in] n The number of objects to deallocate.
-    static void deallocate(Alloc& alloc, Pointer ptr, SizeType n) { alloc.deallocate(ptr, n); }
+    static void deallocate(Alloc& alloc, Pointer ptr, SizeType n)
+    {
+        alloc.deallocate(ptr, n);
+    }
 
     /// @brief Constructs an object of type T at the location pointed to by ptr using the allocator alloc and the
     /// provided arguments.
@@ -175,8 +181,14 @@ struct AllocatorTraits
     template <typename T, typename... Args>
     static void construct(Alloc& alloc, T* ptr, Args&&... args)
     {
-        if constexpr (detail::HasConstruct<Alloc>::value) { alloc.construct(ptr, static_cast<Args&&>(args)...); }
-        else { ::new (static_cast<void*>(ptr)) T(static_cast<Args&&>(args)...); }
+        if constexpr (detail::HasConstruct<Alloc>::value)
+        {
+            alloc.construct(ptr, static_cast<Args&&>(args)...);
+        }
+        else
+        {
+            ::new (static_cast<void*>(ptr)) T(static_cast<Args&&>(args)...);
+        }
     }
 
     /// @brief Destroys the object of type T at the location pointed to by ptr using the allocator alloc.
@@ -186,8 +198,14 @@ struct AllocatorTraits
     template <typename T>
     static void destroy(Alloc& alloc, T* ptr)
     {
-        if constexpr (detail::HasDestroy<Alloc>::value) { alloc.destroy(ptr); }
-        else { ptr->~T(); }
+        if constexpr (detail::HasDestroy<Alloc>::value)
+        {
+            alloc.destroy(ptr);
+        }
+        else
+        {
+            ptr->~T();
+        }
     }
 
     /// @brief Returns the maximum number of elements that can be allocated by the allocator alloc.
@@ -195,8 +213,14 @@ struct AllocatorTraits
     /// @return The maximum number of elements that can be allocated by the allocator alloc.
     static constexpr SizeType maxSize(const Alloc& alloc) noexcept
     {
-        if constexpr (detail::HasMaxSize<Alloc>::value) { return alloc.maxSize(); }
-        else { return static_cast<SizeType>(-1) / sizeof(ValueType); }
+        if constexpr (detail::HasMaxSize<Alloc>::value)
+        {
+            return alloc.maxSize();
+        }
+        else
+        {
+            return static_cast<SizeType>(-1) / sizeof(ValueType);
+        }
     }
 
     /// @brief Returns a copy of the allocator alloc to be used for copy construction of a container. If the allocator
@@ -210,7 +234,10 @@ struct AllocatorTraits
         {
             return alloc.selectOnContainerCopyConstruction();
         }
-        else { return alloc; }
+        else
+        {
+            return alloc;
+        }
     }
 };
 

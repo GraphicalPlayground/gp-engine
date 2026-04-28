@@ -54,7 +54,10 @@ public:
         const USize alignedOffset = memory::alignUp(m_offset, alignment);
         const USize newOffset = alignedOffset + size;
 
-        if GP_UNLIKELY (newOffset > m_capacity) { return nullptr; }
+        if GP_UNLIKELY (newOffset > m_capacity)
+        {
+            return nullptr;
+        }
 
         m_offset = newOffset;
         m_allocatedSize += size;
@@ -92,17 +95,32 @@ public:
 
     /// @brief Returns the current byte offset into the buffer.
     /// @return Number of bytes consumed (including alignment padding).
-    GP_NODISCARD GP_FORCEINLINE USize getOffset() const noexcept { return m_offset; }
+    GP_NODISCARD GP_FORCEINLINE USize getOffset() const noexcept
+    {
+        return m_offset;
+    }
 
     /// @brief Returns the number of bytes remaining in the buffer.
     /// @return Available bytes before the allocator is exhausted.
-    GP_NODISCARD GP_FORCEINLINE USize getRemaining() const noexcept { return m_capacity - m_offset; }
+    GP_NODISCARD GP_FORCEINLINE USize getRemaining() const noexcept
+    {
+        return m_capacity - m_offset;
+    }
 
-    GP_NODISCARD USize getAllocatedSize() const noexcept override { return m_allocatedSize; }
+    GP_NODISCARD USize getAllocatedSize() const noexcept override
+    {
+        return m_allocatedSize;
+    }
 
-    GP_NODISCARD USize getAllocationCount() const noexcept override { return m_allocationCount; }
+    GP_NODISCARD USize getAllocationCount() const noexcept override
+    {
+        return m_allocationCount;
+    }
 
-    GP_NODISCARD const char* getDebugName() const noexcept override { return "LinearAllocator"; }
+    GP_NODISCARD const char* getDebugName() const noexcept override
+    {
+        return "LinearAllocator";
+    }
 };
 
 }   // namespace gp::memory

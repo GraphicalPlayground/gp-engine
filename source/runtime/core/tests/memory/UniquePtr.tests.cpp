@@ -18,7 +18,10 @@ struct LifetimeProbe
     static inline gp::Int32 s_aliveCount = 0;
     gp::Int32 value{ 0 };
 
-    LifetimeProbe() noexcept { ++s_aliveCount; }
+    LifetimeProbe() noexcept
+    {
+        ++s_aliveCount;
+    }
 
     explicit LifetimeProbe(gp::Int32 v) noexcept
         : value(v)
@@ -38,7 +41,10 @@ struct LifetimeProbe
         ++s_aliveCount;
     }
 
-    ~LifetimeProbe() noexcept { --s_aliveCount; }
+    ~LifetimeProbe() noexcept
+    {
+        --s_aliveCount;
+    }
 
     LifetimeProbe& operator=(const LifetimeProbe&) noexcept = default;
     LifetimeProbe& operator=(LifetimeProbe&&) noexcept = default;
@@ -48,12 +54,18 @@ struct Base
 {
     virtual ~Base() noexcept = default;
 
-    virtual gp::Int32 tag() const noexcept { return 1; }
+    virtual gp::Int32 tag() const noexcept
+    {
+        return 1;
+    }
 };
 
 struct Derived : Base
 {
-    gp::Int32 tag() const noexcept override { return 2; }
+    gp::Int32 tag() const noexcept override
+    {
+        return 2;
+    }
 };
 
 }   // namespace

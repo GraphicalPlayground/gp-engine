@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <new>
-#include <utility> // IWYU pragma: keep
+#include <utility>   // IWYU pragma: keep
 
 namespace gp
 {

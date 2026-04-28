@@ -184,13 +184,19 @@ public:
     }
 
     /// @brief Destructor destroys elements and frees memory.
-    ~Vector() { _destroyAndFree(); }
+    ~Vector()
+    {
+        _destroyAndFree();
+    }
 
     /// @brief Copy assignment operator.
     /// @param[in] other The vector to copy from.
     Vector& operator=(const Vector& other)
     {
-        if (this == &other) { return *this; }
+        if (this == &other)
+        {
+            return *this;
+        }
 
         constexpr bool propagate = Traits::PropagateOnContainerCopyAssignment::value;
 
@@ -204,7 +210,10 @@ public:
                 m_size = 0;
                 m_capacity = 0;
             }
-            else { _replaceAllocator(other.m_allocator); }
+            else
+            {
+                _replaceAllocator(other.m_allocator);
+            }
         }
 
         _assignFrom(other.m_data, other.m_size);
@@ -215,7 +224,10 @@ public:
     /// @param[in] other The vector to move from.
     Vector& operator=(Vector&& other) noexcept
     {
-        if (this == &other) { return *this; }
+        if (this == &other)
+        {
+            return *this;
+        }
 
         constexpr bool propagate = Traits::PropagateOnContainerMoveAssignment::value;
 
@@ -242,7 +254,10 @@ public:
                 other.m_size = 0;
                 other.m_capacity = 0;
             }
-            else { _assignFromMove(other.m_data, other.m_size); }
+            else
+            {
+                _assignFromMove(other.m_data, other.m_size);
+            }
         }
         return *this;
     }
@@ -259,19 +274,28 @@ public:
     /// @brief Unchecked element access.
     /// @param[in] pos The index of the element to access.
     /// @return Reference to the element at the given index.
-    GP_NODISCARD GP_FORCEINLINE Reference operator[](SizeType pos) noexcept { return m_data[pos]; }
+    GP_NODISCARD GP_FORCEINLINE Reference operator[](SizeType pos) noexcept
+    {
+        return m_data[pos];
+    }
 
     /// @brief Unchecked element access (const).
     /// @param[in] pos The index of the element to access.
     /// @return Const reference to the element at the given index.
-    GP_NODISCARD GP_FORCEINLINE ConstReference operator[](SizeType pos) const noexcept { return m_data[pos]; }
+    GP_NODISCARD GP_FORCEINLINE ConstReference operator[](SizeType pos) const noexcept
+    {
+        return m_data[pos];
+    }
 
     /// @brief Equality comparison.
     /// @param[in] other The vector to compare with.
     /// @return True if the vectors are equal, false otherwise.
     GP_NODISCARD bool operator==(const Vector& other) const noexcept
     {
-        if (m_size != other.m_size) { return false; }
+        if (m_size != other.m_size)
+        {
+            return false;
+        }
         if constexpr (std::is_trivially_copyable_v<T>)
         {
             return m_size == 0 || std::memcmp(m_data, other.m_data, m_size * sizeof(T)) == 0;
@@ -280,7 +304,10 @@ public:
         {
             for (SizeType i = 0; i < m_size; ++i)
             {
-                if (!(m_data[i] == other.m_data[i])) { return false; }
+                if (!(m_data[i] == other.m_data[i]))
+                {
+                    return false;
+                }
             }
             return true;
         }
@@ -289,7 +316,10 @@ public:
     /// @brief Inequality comparison.
     /// @param[in] other The vector to compare with.
     /// @return True if the vectors are not equal, false otherwise.
-    GP_NODISCARD bool operator!=(const Vector& other) const noexcept { return !(*this == other); }
+    GP_NODISCARD bool operator!=(const Vector& other) const noexcept
+    {
+        return !(*this == other);
+    }
 
 public:
     /// @brief Replaces contents with count copies of value.
@@ -299,7 +329,10 @@ public:
     {
         _destroyRange(m_data, m_size);
         m_size = 0;
-        if (count > m_capacity) { _reallocExact(count); }
+        if (count > m_capacity)
+        {
+            _reallocExact(count);
+        }
         _fillConstructRange(m_data, count, value);
         m_size = count;
     }
@@ -318,7 +351,10 @@ public:
 
     /// @brief Replaces contents with an initializer list.
     /// @param[in] init The initializer list.
-    void assign(std::initializer_list<T> init) { _assignFrom(init.begin(), init.size()); }
+    void assign(std::initializer_list<T> init)
+    {
+        _assignFrom(init.begin(), init.size());
+    }
 
     /// @brief Bounds-checked element access.
     /// @param[in] pos The index of the element to access.
@@ -340,97 +376,166 @@ public:
 
     /// @brief Returns a reference to the first element.
     /// @return Reference to the first element.
-    GP_NODISCARD GP_FORCEINLINE Reference front() noexcept { return m_data[0]; }
+    GP_NODISCARD GP_FORCEINLINE Reference front() noexcept
+    {
+        return m_data[0];
+    }
 
     /// @brief Returns a reference to the first element (const).
     /// @return Const reference to the first element.
-    GP_NODISCARD GP_FORCEINLINE ConstReference front() const noexcept { return m_data[0]; }
+    GP_NODISCARD GP_FORCEINLINE ConstReference front() const noexcept
+    {
+        return m_data[0];
+    }
 
     /// @brief Returns a reference to the last element.
     /// @return Reference to the last element.
-    GP_NODISCARD GP_FORCEINLINE Reference back() noexcept { return m_data[m_size - 1]; }
+    GP_NODISCARD GP_FORCEINLINE Reference back() noexcept
+    {
+        return m_data[m_size - 1];
+    }
 
     /// @brief Returns a reference to the last element (const).
     /// @return Const reference to the last element.
-    GP_NODISCARD GP_FORCEINLINE ConstReference back() const noexcept { return m_data[m_size - 1]; }
+    GP_NODISCARD GP_FORCEINLINE ConstReference back() const noexcept
+    {
+        return m_data[m_size - 1];
+    }
 
     /// @brief Returns a pointer to the underlying array.
     /// @return Pointer to the underlying array.
-    GP_NODISCARD GP_FORCEINLINE Pointer data() noexcept { return m_data; }
+    GP_NODISCARD GP_FORCEINLINE Pointer data() noexcept
+    {
+        return m_data;
+    }
 
     /// @brief Returns a pointer to the underlying array (const).
     /// @return Const pointer to the underlying array.
-    GP_NODISCARD GP_FORCEINLINE ConstPointer data() const noexcept { return m_data; }
+    GP_NODISCARD GP_FORCEINLINE ConstPointer data() const noexcept
+    {
+        return m_data;
+    }
 
     /// @brief Returns an iterator to the beginning of the vector.
     /// @return Iterator to the beginning of the vector.
-    GP_NODISCARD GP_FORCEINLINE Iterator begin() noexcept { return m_data; }
+    GP_NODISCARD GP_FORCEINLINE Iterator begin() noexcept
+    {
+        return m_data;
+    }
 
     /// @brief Returns an iterator to the beginning of the vector (const).
     /// @return Const iterator to the beginning of the vector.
-    GP_NODISCARD GP_FORCEINLINE ConstIterator begin() const noexcept { return m_data; }
+    GP_NODISCARD GP_FORCEINLINE ConstIterator begin() const noexcept
+    {
+        return m_data;
+    }
 
     /// @brief Returns an iterator to the end of the vector.
     /// @return Iterator to the end of the vector.
-    GP_NODISCARD GP_FORCEINLINE Iterator end() noexcept { return m_data + m_size; }
+    GP_NODISCARD GP_FORCEINLINE Iterator end() noexcept
+    {
+        return m_data + m_size;
+    }
 
     /// @brief Returns an iterator to the end of the vector (const).
     /// @return Const iterator to the end of the vector.
-    GP_NODISCARD GP_FORCEINLINE ConstIterator end() const noexcept { return m_data + m_size; }
+    GP_NODISCARD GP_FORCEINLINE ConstIterator end() const noexcept
+    {
+        return m_data + m_size;
+    }
 
     /// @brief Returns a const iterator to the beginning of the vector.
     /// @return Const iterator to the beginning of the vector.
-    GP_NODISCARD GP_FORCEINLINE ConstIterator cbegin() const noexcept { return m_data; }
+    GP_NODISCARD GP_FORCEINLINE ConstIterator cbegin() const noexcept
+    {
+        return m_data;
+    }
 
     /// @brief Returns a const iterator to the end of the vector.
     /// @return Const iterator to the end of the vector.
-    GP_NODISCARD GP_FORCEINLINE ConstIterator cend() const noexcept { return m_data + m_size; }
+    GP_NODISCARD GP_FORCEINLINE ConstIterator cend() const noexcept
+    {
+        return m_data + m_size;
+    }
 
     /// @brief Returns a reverse iterator to the beginning of the reversed vector.
     /// @return Reverse iterator to the beginning of the reversed vector.
-    GP_NODISCARD GP_FORCEINLINE ReverseIterator rbegin() noexcept { return ReverseIterator(end()); }
+    GP_NODISCARD GP_FORCEINLINE ReverseIterator rbegin() noexcept
+    {
+        return ReverseIterator(end());
+    }
 
     /// @brief Returns a reverse iterator to the beginning of the reversed vector (const).
     /// @return Const reverse iterator to the beginning of the reversed vector.
-    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator rbegin() const noexcept { return ConstReverseIterator(end()); }
+    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator rbegin() const noexcept
+    {
+        return ConstReverseIterator(end());
+    }
 
     /// @brief Returns a reverse iterator to the end of the reversed vector.
     /// @return Reverse iterator to the end of the reversed vector.
-    GP_NODISCARD GP_FORCEINLINE ReverseIterator rend() noexcept { return ReverseIterator(begin()); }
+    GP_NODISCARD GP_FORCEINLINE ReverseIterator rend() noexcept
+    {
+        return ReverseIterator(begin());
+    }
 
     /// @brief Returns a reverse iterator to the end of the reversed vector (const).
     /// @return Const reverse iterator to the end of the reversed vector.
-    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator rend() const noexcept { return ConstReverseIterator(begin()); }
+    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator rend() const noexcept
+    {
+        return ConstReverseIterator(begin());
+    }
 
     /// @brief Returns a const reverse iterator to the beginning of the reversed vector.
     /// @return Const reverse iterator to the beginning of the reversed vector.
-    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator crbegin() const noexcept { return ConstReverseIterator(cend()); }
+    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator crbegin() const noexcept
+    {
+        return ConstReverseIterator(cend());
+    }
 
     /// @brief Returns a const reverse iterator to the end of the reversed vector.
     /// @return Const reverse iterator to the end of the reversed vector.
-    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator crend() const noexcept { return ConstReverseIterator(cbegin()); }
+    GP_NODISCARD GP_FORCEINLINE ConstReverseIterator crend() const noexcept
+    {
+        return ConstReverseIterator(cbegin());
+    }
 
     /// @brief Returns the number of elements.
     /// @return The number of elements in the vector.
-    GP_NODISCARD GP_FORCEINLINE SizeType size() const noexcept { return m_size; }
+    GP_NODISCARD GP_FORCEINLINE SizeType size() const noexcept
+    {
+        return m_size;
+    }
 
     /// @brief Checks if the vector is empty.
     /// @return True if the vector is empty, false otherwise.
-    GP_NODISCARD GP_FORCEINLINE bool empty() const noexcept { return m_size == 0; }
+    GP_NODISCARD GP_FORCEINLINE bool empty() const noexcept
+    {
+        return m_size == 0;
+    }
 
     /// @brief Returns the current allocated capacity.
     /// @return The current allocated capacity.
-    GP_NODISCARD GP_FORCEINLINE SizeType capacity() const noexcept { return m_capacity; }
+    GP_NODISCARD GP_FORCEINLINE SizeType capacity() const noexcept
+    {
+        return m_capacity;
+    }
 
     /// @brief Returns the maximum possible number of elements.
     /// @return The maximum possible number of elements.
-    GP_NODISCARD constexpr SizeType maxSize() const noexcept { return Traits::maxSize(m_allocator); }
+    GP_NODISCARD constexpr SizeType maxSize() const noexcept
+    {
+        return Traits::maxSize(m_allocator);
+    }
 
     /// @brief Reserves storage for at least newCap elements.
     /// @param[in] newCap Minimum desired capacity.
     void reserve(SizeType newCap)
     {
-        if (newCap > m_capacity) { _reallocExact(newCap); }
+        if (newCap > m_capacity)
+        {
+            _reallocExact(newCap);
+        }
     }
 
     /// @brief Releases unused capacity, reallocating to fit size().
@@ -445,7 +550,10 @@ public:
                 m_capacity = 0;
             }
         }
-        else if (m_size < m_capacity) { _reallocExact(m_size); }
+        else if (m_size < m_capacity)
+        {
+            _reallocExact(m_size);
+        }
     }
 
     /// @brief Erases all elements. Does not release memory.
@@ -459,7 +567,10 @@ public:
     /// @param[in] value The value to append.
     void pushBack(const T& value)
     {
-        if (m_size == m_capacity) { _grow(); }
+        if (m_size == m_capacity)
+        {
+            _grow();
+        }
         Traits::construct(m_allocator, m_data + m_size, value);
         ++m_size;
     }
@@ -468,7 +579,10 @@ public:
     /// @param[in] value The value to move-append.
     void pushBack(T&& value)
     {
-        if (m_size == m_capacity) { _grow(); }
+        if (m_size == m_capacity)
+        {
+            _grow();
+        }
         Traits::construct(m_allocator, m_data + m_size, static_cast<T&&>(value));
         ++m_size;
     }
@@ -480,7 +594,10 @@ public:
     template <typename... Args>
     Reference emplaceBack(Args&&... args)
     {
-        if (m_size == m_capacity) { _grow(); }
+        if (m_size == m_capacity)
+        {
+            _grow();
+        }
         Traits::construct(m_allocator, m_data + m_size, static_cast<Args&&>(args)...);
         return m_data[m_size++];
     }
@@ -500,7 +617,10 @@ public:
     Iterator insert(ConstIterator pos, const T& value)
     {
         const SizeType idx = static_cast<SizeType>(pos - m_data);
-        if (m_size == m_capacity) { _grow(); }
+        if (m_size == m_capacity)
+        {
+            _grow();
+        }
         _shiftRight(m_data + idx, m_size - idx);
         Traits::construct(m_allocator, m_data + idx, value);
         ++m_size;
@@ -514,7 +634,10 @@ public:
     Iterator insert(ConstIterator pos, T&& value)
     {
         const SizeType idx = static_cast<SizeType>(pos - m_data);
-        if (m_size == m_capacity) { _grow(); }
+        if (m_size == m_capacity)
+        {
+            _grow();
+        }
         _shiftRight(m_data + idx, m_size - idx);
         Traits::construct(m_allocator, m_data + idx, static_cast<T&&>(value));
         ++m_size;
@@ -528,11 +651,17 @@ public:
     /// @return Iterator to the first inserted element.
     Iterator insert(ConstIterator pos, SizeType count, const T& value)
     {
-        if (count == 0) { return const_cast<Iterator>(pos); }
+        if (count == 0)
+        {
+            return const_cast<Iterator>(pos);
+        }
         const SizeType idx = static_cast<SizeType>(pos - m_data);
         _ensureCapacity(m_size + count);
         _shiftRight(m_data + idx, m_size - idx, count);
-        for (SizeType i = 0; i < count; ++i) { Traits::construct(m_allocator, m_data + idx + i, value); }
+        for (SizeType i = 0; i < count; ++i)
+        {
+            Traits::construct(m_allocator, m_data + idx + i, value);
+        }
         m_size += count;
         return m_data + idx;
     }
@@ -543,7 +672,10 @@ public:
     /// @return Iterator to the first inserted element.
     Iterator insert(ConstIterator pos, std::initializer_list<T> init)
     {
-        if (init.size() == 0) { return const_cast<Iterator>(pos); }
+        if (init.size() == 0)
+        {
+            return const_cast<Iterator>(pos);
+        }
         const SizeType idx = static_cast<SizeType>(pos - m_data);
         const SizeType count = init.size();
         _ensureCapacity(m_size + count);
@@ -567,7 +699,10 @@ public:
     Iterator emplace(ConstIterator pos, Args&&... args)
     {
         const SizeType idx = static_cast<SizeType>(pos - m_data);
-        if (m_size == m_capacity) { _grow(); }
+        if (m_size == m_capacity)
+        {
+            _grow();
+        }
         _shiftRight(m_data + idx, m_size - idx);
         Traits::construct(m_allocator, m_data + idx, static_cast<Args&&>(args)...);
         ++m_size;
@@ -592,7 +727,10 @@ public:
     /// @return Iterator to the element following the last erased one.
     Iterator erase(ConstIterator first, ConstIterator last)
     {
-        if (first == last) { return const_cast<Iterator>(first); }
+        if (first == last)
+        {
+            return const_cast<Iterator>(first);
+        }
         const SizeType idx = static_cast<SizeType>(first - m_data);
         const SizeType count = static_cast<SizeType>(last - first);
         _destroyRange(m_data + idx, count);
@@ -641,7 +779,10 @@ public:
     void swap(Vector& other) noexcept
     {
         constexpr bool propagate = Traits::PropagateOnContainerSwap::value;
-        if constexpr (!propagate) { GP_ASSERT(m_allocator == other.m_allocator); }
+        if constexpr (!propagate)
+        {
+            GP_ASSERT(m_allocator == other.m_allocator);
+        }
 
         Pointer tmp_data = m_data;
         SizeType tmp_size = m_size;
@@ -663,7 +804,10 @@ public:
 
     /// @brief Returns a copy of the allocator.
     /// @return A copy of the allocator used by the vector.
-    GP_NODISCARD AllocatorType getAllocator() const noexcept { return m_allocator; }
+    GP_NODISCARD AllocatorType getAllocator() const noexcept
+    {
+        return m_allocator;
+    }
 
 private:
     /// @brief Replaces the allocator via destroy + placement new (works even if operator= is deleted).
@@ -686,19 +830,28 @@ private:
     /// @return The next capacity to grow to.
     GP_NODISCARD GP_FORCEINLINE SizeType _nextCapacity() const noexcept
     {
-        if (m_capacity == 0) { return 1; }
+        if (m_capacity == 0)
+        {
+            return 1;
+        }
         const SizeType growth = m_capacity >> 1;
         return m_capacity + (growth > 0 ? growth : 1);
     }
 
     /// @brief Grows the backing store by the 1.5x growth factor.
-    void _grow() { _reallocExact(_nextCapacity()); }
+    void _grow()
+    {
+        _reallocExact(_nextCapacity());
+    }
 
     /// @brief Ensures capacity is at least minCap, growing by 1.5x if needed.
     /// @param[in] minCap The minimum required capacity.
     void _ensureCapacity(SizeType minCap)
     {
-        if (minCap <= m_capacity) { return; }
+        if (minCap <= m_capacity)
+        {
+            return;
+        }
         SizeType newCap = _nextCapacity();
         while (newCap < minCap)
         {
@@ -713,8 +866,14 @@ private:
     void _reallocExact(SizeType newCap)
     {
         Pointer newData = Traits::allocate(m_allocator, newCap);
-        if (m_size > 0) { _relocate(newData, m_data, m_size); }
-        if (m_data) { Traits::deallocate(m_allocator, m_data, m_capacity); }
+        if (m_size > 0)
+        {
+            _relocate(newData, m_data, m_size);
+        }
+        if (m_data)
+        {
+            Traits::deallocate(m_allocator, m_data, m_capacity);
+        }
         m_data = newData;
         m_capacity = newCap;
     }
@@ -725,7 +884,10 @@ private:
     /// @param[in] n The number of elements to relocate.
     static void _relocate(Pointer dst, Pointer src, SizeType n)
     {
-        if constexpr (std::is_trivially_copyable_v<T>) { std::memcpy(dst, src, n * sizeof(T)); }
+        if constexpr (std::is_trivially_copyable_v<T>)
+        {
+            std::memcpy(dst, src, n * sizeof(T));
+        }
         else
         {
             for (SizeType i = 0; i < n; ++i)
@@ -742,8 +904,14 @@ private:
     /// @param[in] count The number of positions to shift (default is 1).
     void _shiftRight(Pointer pos, SizeType n, SizeType count = 1)
     {
-        if (n == 0) { return; }
-        if constexpr (std::is_trivially_copyable_v<T>) { std::memmove(pos + count, pos, n * sizeof(T)); }
+        if (n == 0)
+        {
+            return;
+        }
+        if constexpr (std::is_trivially_copyable_v<T>)
+        {
+            std::memmove(pos + count, pos, n * sizeof(T));
+        }
         else
         {
             for (SizeType i = n; i > 0; --i)
@@ -760,8 +928,14 @@ private:
     /// @param[in] count The number of positions to shift (default is 1).
     static void _shiftLeft(Pointer pos, SizeType n, SizeType count = 1)
     {
-        if (n == 0) { return; }
-        if constexpr (std::is_trivially_copyable_v<T>) { std::memmove(pos - count, pos, n * sizeof(T)); }
+        if (n == 0)
+        {
+            return;
+        }
+        if constexpr (std::is_trivially_copyable_v<T>)
+        {
+            std::memmove(pos - count, pos, n * sizeof(T));
+        }
         else
         {
             for (SizeType i = 0; i < n; ++i)
@@ -779,7 +953,10 @@ private:
     {
         if constexpr (!std::is_trivially_destructible_v<T>)
         {
-            for (SizeType i = 0; i < n; ++i) { Traits::destroy(m_allocator, ptr + i); }
+            for (SizeType i = 0; i < n; ++i)
+            {
+                Traits::destroy(m_allocator, ptr + i);
+            }
         }
     }
 
@@ -788,10 +965,16 @@ private:
     /// @param[in] n The number of elements to default-construct.
     void _defaultConstructRange(Pointer ptr, SizeType n)
     {
-        if constexpr (std::is_trivially_default_constructible_v<T>) { std::memset(ptr, 0, n * sizeof(T)); }
+        if constexpr (std::is_trivially_default_constructible_v<T>)
+        {
+            std::memset(ptr, 0, n * sizeof(T));
+        }
         else
         {
-            for (SizeType i = 0; i < n; ++i) { Traits::construct(m_allocator, ptr + i); }
+            for (SizeType i = 0; i < n; ++i)
+            {
+                Traits::construct(m_allocator, ptr + i);
+            }
         }
     }
 
@@ -801,10 +984,16 @@ private:
     /// @param[in] n The number of elements to copy-construct.
     void _copyConstructRange(Pointer dst, ConstPointer src, SizeType n)
     {
-        if constexpr (std::is_trivially_copyable_v<T>) { std::memcpy(dst, src, n * sizeof(T)); }
+        if constexpr (std::is_trivially_copyable_v<T>)
+        {
+            std::memcpy(dst, src, n * sizeof(T));
+        }
         else
         {
-            for (SizeType i = 0; i < n; ++i) { Traits::construct(m_allocator, dst + i, src[i]); }
+            for (SizeType i = 0; i < n; ++i)
+            {
+                Traits::construct(m_allocator, dst + i, src[i]);
+            }
         }
     }
 
@@ -814,7 +1003,10 @@ private:
     /// @param[in] value The value to copy for fill-construction.
     void _fillConstructRange(Pointer ptr, SizeType n, const T& value)
     {
-        for (SizeType i = 0; i < n; ++i) { Traits::construct(m_allocator, ptr + i, value); }
+        for (SizeType i = 0; i < n; ++i)
+        {
+            Traits::construct(m_allocator, ptr + i, value);
+        }
     }
 
     /// @brief Move-constructs n elements at dst from src.
@@ -823,10 +1015,16 @@ private:
     /// @param[in] n The number of elements to move-construct.
     void _moveConstructRange(Pointer dst, Pointer src, SizeType n)
     {
-        if constexpr (std::is_trivially_copyable_v<T>) { std::memcpy(dst, src, n * sizeof(T)); }
+        if constexpr (std::is_trivially_copyable_v<T>)
+        {
+            std::memcpy(dst, src, n * sizeof(T));
+        }
         else
         {
-            for (SizeType i = 0; i < n; ++i) { Traits::construct(m_allocator, dst + i, static_cast<T&&>(src[i])); }
+            for (SizeType i = 0; i < n; ++i)
+            {
+                Traits::construct(m_allocator, dst + i, static_cast<T&&>(src[i]));
+            }
         }
     }
 
@@ -850,7 +1048,10 @@ private:
     {
         _destroyRange(m_data, m_size);
         m_size = 0;
-        if (count > m_capacity) { _reallocExact(count); }
+        if (count > m_capacity)
+        {
+            _reallocExact(count);
+        }
         _copyConstructRange(m_data, src, count);
         m_size = count;
     }
@@ -862,7 +1063,10 @@ private:
     {
         _destroyRange(m_data, m_size);
         m_size = 0;
-        if (count > m_capacity) { _reallocExact(count); }
+        if (count > m_capacity)
+        {
+            _reallocExact(count);
+        }
         _moveConstructRange(m_data, src, count);
         m_size = count;
     }
@@ -874,9 +1078,10 @@ private:
     template <typename InputIt>
     void _rangeInit(InputIt first, InputIt last)
     {
-        if constexpr (std::is_base_of_v<
-                          std::random_access_iterator_tag,
-                          typename std::iterator_traits<InputIt>::iterator_category>)
+        if constexpr (
+            std::
+                is_base_of_v<std::random_access_iterator_tag, typename std::iterator_traits<InputIt>::iterator_category>
+        )
         {
             const SizeType count = static_cast<SizeType>(last - first);
             if (count > 0)
@@ -900,7 +1105,10 @@ private:
         }
         else
         {
-            for (; first != last; ++first) { pushBack(*first); }
+            for (; first != last; ++first)
+            {
+                pushBack(*first);
+            }
         }
     }
 };
