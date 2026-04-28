@@ -1,14 +1,13 @@
 ---
 sidebar_position: 0
-title: Container
-description: Reference documentation for the Container C++ API in the runtime core module.
+title: Math
+description: Reference documentation for the Math C++ API in the runtime core module.
 tags:
   - c++
-  - container
-  - template
+  - math
 ---
 
-# Containers in Graphical Playground
+# Math in Graphical Playground
 
 :::warning
 This is work in progress.

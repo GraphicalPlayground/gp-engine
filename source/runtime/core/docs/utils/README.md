@@ -1,14 +1,13 @@
 ---
 sidebar_position: 0
-title: Container
-description: Reference documentation for the Container C++ API in the runtime core module.
+title: Utilities
+description: Reference documentation for the Utilities C++ API in the runtime core module.
 tags:
   - c++
-  - container
-  - template
+  - utilities
 ---
 
-# Containers in Graphical Playground
+# Utilities in Graphical Playground
 
 :::warning
 This is work in progress.

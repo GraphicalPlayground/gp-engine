@@ -1,14 +1,13 @@
 ---
 sidebar_position: 0
-title: Container
-description: Reference documentation for the Container C++ API in the runtime core module.
+title: Memory
+description: Reference documentation for the Memory C++ API in the runtime core module.
 tags:
   - c++
-  - container
-  - template
+  - memory
 ---
 
-# Containers in Graphical Playground
+# Memory in Graphical Playground
 
 :::warning
 This is work in progress.
