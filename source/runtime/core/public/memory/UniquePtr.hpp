@@ -24,10 +24,24 @@ public:
     /// @brief Default constructor.
     constexpr DefaultDelete() noexcept = default;
 
+    /// @brief Default copy constructor and copy assignment operator.
+    constexpr DefaultDelete(const DefaultDelete&) noexcept = default;
+    constexpr DefaultDelete& operator=(const DefaultDelete&) noexcept = default;
+
+    /// @brief Default destructor.
+    ~DefaultDelete() noexcept = default;
+
     /// @brief Enables converting construction from a compatible deleter (e.g. Derived -> Base).
     template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
     constexpr DefaultDelete(const DefaultDelete<U>&) noexcept
     {}
+
+    /// @brief Enables converting assignment from a compatible deleter (e.g. Derived -> Base).
+    template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+    constexpr DefaultDelete& operator=(const DefaultDelete<U>&) noexcept
+    {
+        return *this;
+    }
 
 public:
     /// @brief Destroys the object and frees its memory through the engine default allocator.
@@ -63,6 +77,10 @@ public:
     using DeleterType = Deleter;
 
 private:
+    template <typename OtherT, typename OtherD>
+    friend class UniquePtr;
+
+private:
     Pointer m_pointer{ nullptr };
     GP_NO_UNIQUE_ADDRESS Deleter m_deleter{};
 
@@ -71,7 +89,8 @@ public:
     constexpr UniquePtr() noexcept = default;
 
     /// @brief Constructs an empty UniquePtr from nullptr_t.
-    constexpr UniquePtr(gp::NullPtr) noexcept {}
+    constexpr UniquePtr(gp::NullPtr) noexcept
+    {}
 
     /// @brief Takes exclusive ownership of the given raw pointer.
     /// @param[in] ptr Pointer to adopt; may be nullptr.
@@ -123,7 +142,10 @@ public:
     {}
 
     /// @brief Destructor that destroys the owned object (if any) via the deleter.
-    ~UniquePtr() noexcept { reset(); }
+    ~UniquePtr() noexcept
+    {
+        reset();
+    }
 
     /// @brief Move assignment operator. Destroys the currently owned object.
     /// @param[in] other The UniquePtr to move from.
@@ -181,20 +203,32 @@ public:
 
     /// @brief Tests whether the pointer is non-null.
     /// @return true if the UniquePtr owns an object; false if it is empty.
-    GP_FORCEINLINE explicit operator bool() const noexcept { return m_pointer != nullptr; }
+    GP_FORCEINLINE explicit operator bool() const noexcept
+    {
+        return m_pointer != nullptr;
+    }
 
 public:
     /// @brief Returns the underlying raw pointer without releasing ownership.
     /// @return The raw pointer to the owned object, or nullptr if empty.
-    GP_NODISCARD GP_FORCEINLINE Pointer get() const noexcept { return m_pointer; }
+    GP_NODISCARD GP_FORCEINLINE Pointer get() const noexcept
+    {
+        return m_pointer;
+    }
 
     /// @brief Returns a mutable reference to the stored deleter.
     /// @return A reference to the deleter.
-    GP_NODISCARD GP_FORCEINLINE Deleter& getDeleter() noexcept { return m_deleter; }
+    GP_NODISCARD GP_FORCEINLINE Deleter& getDeleter() noexcept
+    {
+        return m_deleter;
+    }
 
     /// @brief Returns a const reference to the stored deleter.
     /// @return A const reference to the deleter.
-    GP_NODISCARD GP_FORCEINLINE const Deleter& getDeleter() const noexcept { return m_deleter; }
+    GP_NODISCARD GP_FORCEINLINE const Deleter& getDeleter() const noexcept
+    {
+        return m_deleter;
+    }
 
     /// @brief Relinquishes ownership, returning the raw pointer without destroying the object.
     /// @return The previously owned pointer; the UniquePtr becomes empty.
@@ -211,7 +245,10 @@ public:
     {
         Pointer old = m_pointer;
         m_pointer = ptr;
-        if (old) { m_deleter(old); }
+        if (old)
+        {
+            m_deleter(old);
+        }
     }
 
     /// @brief Swaps the contents of this UniquePtr with another.
@@ -242,7 +279,10 @@ GP_NODISCARD UniquePtr<T> makeUnique(Args&&... args) noexcept
 {
     auto& allocator = gp::memory::DefaultAllocator::get();
     void* memory = allocator.allocate(sizeof(T), alignof(T));
-    if (!memory) { return UniquePtr<T>{}; }
+    if (!memory)
+    {
+        return UniquePtr<T>{};
+    }
     T* object = ::new (memory) T(std::forward<Args>(args)...);
     return UniquePtr<T>(object);
 }
