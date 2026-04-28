@@ -228,11 +228,11 @@
     #define GP_ALIGNED_FREE(ptr) _aligned_free(ptr)
 #elif GP_COMPILER_GCC || GP_COMPILER_CLANG
     #include <stdlib.h>
-    #define GP_ALIGNED_ALLOC(size, alignment) aligned_alloc(alignment, size)
-    #define GP_ALIGNED_FREE(ptr) free(ptr)
+    #define GP_ALIGNED_ALLOC(size, alignment) ::aligned_alloc(alignment, size)
+    #define GP_ALIGNED_FREE(ptr) ::free(ptr)
 #else
-    #define GP_ALIGNED_ALLOC(size, alignment) malloc(size)
-    #define GP_ALIGNED_FREE(ptr) free(ptr)
+    #define GP_ALIGNED_ALLOC(size, alignment) ::malloc(size)
+    #define GP_ALIGNED_FREE(ptr) ::free(ptr)
 #endif
 
 /// @brief Macro to mark a variable or parameter as intentionally unused.
