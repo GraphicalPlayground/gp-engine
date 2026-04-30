@@ -61,7 +61,7 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
-        run: cmake --build build --config ${{ matrix.build-type }} --parallel
+        run: cmake --build build --config ${{ matrix.build-type }} --parallel --verbose
 
       - name: Install Release Artifacts
         if: inputs.package-artifacts
