@@ -36,6 +36,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up MSVC Dev Cmd
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Setup Dependencies
         uses: ./.github/actions/setup-deps
         with:
