@@ -326,6 +326,9 @@ macro(_implGpDefineCMakeTarget)
 
   # Ensure C++23 standard is used for all targets
   target_compile_features(${__targetExportName} PUBLIC cxx_std_23)
+  if (MSVC OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+    target_compile_options(${__targetExportName} PRIVATE /Zc:__cplusplus)
+  endif()
 
   # Setup installation rules for the target (optional, but common for libraries)
   install(TARGETS ${__targetExportName}
