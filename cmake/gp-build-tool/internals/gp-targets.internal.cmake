@@ -416,6 +416,9 @@ macro(_implGpDefineTestsTarget)
       )
 
       target_compile_features(${__targetExportName}_tests PUBLIC cxx_std_23)
+      if (MSVC OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+        target_compile_options(${__targetExportName}_tests PRIVATE /Zc:__cplusplus)
+      endif()
 
       add_test(NAME ${__targetName}_tests COMMAND ${__targetExportName}_tests)
       set_tests_properties(${__targetName}_tests PROPERTIES
