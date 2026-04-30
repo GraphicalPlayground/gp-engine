@@ -5,7 +5,9 @@
 #pragma once
 
 // C++ standard detection
-#if defined(_MSVC_LANG)
+#if defined(__clang__)
+    #define GP_CXX_STANDARD __cplusplus
+#elif defined(_MSVC_LANG)
     #define GP_CXX_STANDARD _MSVC_LANG
 #elif defined(__cplusplus)
     #define GP_CXX_STANDARD __cplusplus
