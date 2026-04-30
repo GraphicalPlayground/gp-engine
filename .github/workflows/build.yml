@@ -48,11 +48,11 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.build-type }}
 
       - name: Configure CMake
-        run: >
-          cmake -S . -B build
-            -G Ninja
-            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
