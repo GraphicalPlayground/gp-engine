@@ -14,12 +14,12 @@ jobs:
 
     steps:
       - name: Checkout gp-engine repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: gp-engine
 
       - name: Checkout gp-docs
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: GraphicalPlayground/gp-docs
           token: ${{ secrets.DOCS_SYNC_PAT }}
