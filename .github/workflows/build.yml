@@ -3,8 +3,20 @@ name: CI Build
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'source/**'
+      - 'thirdparty/**'
+      - 'toolchain/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'source/**'
+      - 'thirdparty/**'
+      - 'toolchain/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
   workflow_call:
     inputs:
       package-artifacts:
