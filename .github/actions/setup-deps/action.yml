@@ -43,10 +43,19 @@ runs:
         # We need LLVM/Clang and Ninja.
         choco install llvm ninja -y
 
-    - name: Enforce Clang for CMake
+    - name: Enforce Clang for CMake on Unix
+      if: runner.os != 'Windows'
       shell: bash
       run: |
         # Exporting CC and CXX environment variables tells CMake to use Clang 
-        # instead of defaulting to GCC (Linux) or MSVC (Windows).
+        # instead of defaulting to GCC (Linux).
         echo "CC=clang" >> $GITHUB_ENV
         echo "CXX=clang++" >> $GITHUB_ENV
+
+    - name: Enforce Clang-cl for CMake on Windows
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        # On Windows, we want to use clang-cl to ensure compatibility with the Windows SDK.
+        echo "CC=clang-cl" >> $GITHUB_ENV
+        echo "CXX=clang-cl" >> $GITHUB_ENV
