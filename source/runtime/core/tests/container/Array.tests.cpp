@@ -237,8 +237,8 @@ TEST_CASE("Array - Operations and Search Algorithms", "[container][Array]")
 
     SECTION("contains()")
     {
-        REQUIRE(arr.doesContains(20) == true);
-        REQUIRE(arr.doesContains(99) == false);
+        REQUIRE(arr.contains(20) == true);
+        REQUIRE(arr.contains(99) == false);
     }
 
     SECTION("count()")
