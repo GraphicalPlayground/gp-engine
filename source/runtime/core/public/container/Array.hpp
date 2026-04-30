@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <compare>   // IWYU pragma: keep
 #include <cstring>
+#include <initializer_list>
 #include <iterator>
 #include <ranges>
 #include <type_traits>
@@ -67,6 +68,14 @@ public:
     /// @brief Move constructor and move assignment operator.
     constexpr Array(Array&&) noexcept = default;
     constexpr Array& operator=(Array&&) noexcept = default;
+
+    /// @brief Constructs an Array with the specified initializer list.
+    /// @param[in] init The initializer list to initialize the elements of the array.
+    constexpr Array(std::initializer_list<T> init) noexcept
+    {
+        GP_ASSERT(init.size() <= N, "Too many initializers for Array");
+        std::copy_n(init.begin(), init.size(), m_data);
+    }
 
     /// @brief Constructs an Array with the specified arguments.
     /// @warning If the number of arguments is less than the size of the array, the remaining elements will be

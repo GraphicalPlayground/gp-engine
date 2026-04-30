@@ -42,6 +42,16 @@ TEST_CASE("Array - Initialization and Capacity", "[container][Array]")
         REQUIRE(arr[2] == 0);
     }
 
+    SECTION("Initializer List Construction")
+    {
+        gp::Array<int, 4> arr{ 1, 2, 3, 4 };
+        REQUIRE(arr.size() == 4);
+        REQUIRE(arr.capacity() == 4);
+        REQUIRE(arr.empty() == false);
+        REQUIRE(arr[0] == 1);
+        REQUIRE(arr[3] == 4);
+    }
+
     SECTION("Variadic Initialization")
     {
         gp::Array<int, 4> arr{ 10, 20, 30, 40 };
