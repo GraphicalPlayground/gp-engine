@@ -12,6 +12,11 @@ on:
         type: boolean
         required: false
         default: false
+      target-os:
+        description: 'Comma-separated list of OS to build (e.g., linux,windows). Leave empty for all.'
+        type: string
+        required: false
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,18 +26,88 @@ permissions:
   contents: read
 
 jobs:
+  setup-matrix:
+    name: Determine Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      should_run: ${{ steps.set-matrix.outputs.should_run }}
+    steps:
+      - name: Parse Tags and Inputs
+        id: set-matrix
+        uses: actions/github-script@v7
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          INPUT_TARGET_OS: ${{ inputs.target-os }}
+        with:
+          script: |
+            const eventName = process.env.EVENT_NAME;
+            const commitMsg = (process.env.COMMIT_MESSAGE || '').toLowerCase();
+            const inputOs = (process.env.INPUT_TARGET_OS || '').toLowerCase();
+
+            const allOs = ['ubuntu-latest', 'windows-latest', 'macos-latest'];
+            const osMap = {
+              'linux': 'ubuntu-latest',
+              'ubuntu': 'ubuntu-latest',
+              'windows': 'windows-latest',
+              'macos': 'macos-latest'
+            };
+
+            let selectedOs = new Set(allOs);
+
+            if (eventName === 'push') {
+              // Note: GitHub actions natively skips runs with [skip ci],
+              // but we handle it here just in case native skip is bypassed.
+              if (commitMsg.includes('[skip ci]')) {
+                selectedOs.clear();
+              } else {
+                const runMatch = commitMsg.match(/\[run\s+([^\]]+)\]/);
+                const skipMatch = commitMsg.match(/\[skip\s+([^\]]+)\]/);
+
+                if (runMatch) {
+                  selectedOs.clear();
+                  runMatch[1].split(',').forEach(t => {
+                    const key = t.trim();
+                    if (osMap[key]) selectedOs.add(osMap[key]);
+                  });
+                } else if (skipMatch) {
+                  skipMatch[1].split(',').forEach(t => {
+                    const key = t.trim();
+                    if (osMap[key]) selectedOs.delete(osMap[key]);
+                  });
+                }
+              }
+            } else if (eventName === 'workflow_call') {
+              if (inputOs) {
+                selectedOs.clear();
+                inputOs.split(',').forEach(t => {
+                  const key = t.trim();
+                  if (osMap[key]) selectedOs.add(osMap[key]);
+                  else if (allOs.includes(key)) selectedOs.add(key); // Fallback if they type exact runner name
+                });
+              }
+            }
+            // For 'pull_request', it bypasses the above blocks and defaults to allOs.
+
+            const finalOs = Array.from(selectedOs);
+            core.setOutput('matrix', finalOs);
+            core.setOutput('should_run', finalOs.length > 0);
+
   build:
     name: Build on ${{ matrix.os }}
+    needs: setup-matrix
+    if: needs.setup-matrix.outputs.should_run == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
         build-type: [Release]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -52,7 +127,7 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.build-type }}
 
       - name: Cache CMake FetchContent
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/cmake_deps
           key: ${{ runner.os }}-cmake-deps-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
