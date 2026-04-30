@@ -35,7 +35,7 @@ TEST_CASE("Array - Initialization and Capacity", "[container][Array]")
         gp::Array<int, 3> arr;
         REQUIRE(arr.size() == 3);
         REQUIRE(arr.capacity() == 3);
-        REQUIRE(arr.empty() == false);
+        REQUIRE(arr.isEmpty() == false);
         // Value initialization ensures elements are zero
         REQUIRE(arr[0] == 0);
         REQUIRE(arr[1] == 0);
@@ -47,7 +47,7 @@ TEST_CASE("Array - Initialization and Capacity", "[container][Array]")
         gp::Array<int, 4> arr{ 1, 2, 3, 4 };
         REQUIRE(arr.size() == 4);
         REQUIRE(arr.capacity() == 4);
-        REQUIRE(arr.empty() == false);
+        REQUIRE(arr.isEmpty() == false);
         REQUIRE(arr[0] == 1);
         REQUIRE(arr[3] == 4);
     }
@@ -73,7 +73,7 @@ TEST_CASE("Array - Initialization and Capacity", "[container][Array]")
         gp::Array<int, 0> emptyArr;
         REQUIRE(emptyArr.size() == 0);
         REQUIRE(emptyArr.capacity() == 0);
-        REQUIRE(emptyArr.empty() == true);
+        REQUIRE(emptyArr.isEmpty() == true);
         REQUIRE(emptyArr.data() == nullptr);
         REQUIRE(emptyArr.begin() == emptyArr.end());
     }
@@ -237,8 +237,8 @@ TEST_CASE("Array - Operations and Search Algorithms", "[container][Array]")
 
     SECTION("contains()")
     {
-        REQUIRE(arr.contains(20) == true);
-        REQUIRE(arr.contains(99) == false);
+        REQUIRE(arr.doesContains(20) == true);
+        REQUIRE(arr.doesContains(99) == false);
     }
 
     SECTION("count()")

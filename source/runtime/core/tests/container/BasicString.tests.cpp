@@ -36,7 +36,7 @@ TEST_CASE("String - default construction", "[container][String]")
 {
     gp::String s;
     REQUIRE(s.size() == 0);
-    REQUIRE(s.empty());
+    REQUIRE(s.isEmpty());
     REQUIRE(s.capacity() == 23);
     REQUIRE(s[0] == '\0');
 }
@@ -52,7 +52,7 @@ TEST_CASE("String - construction from C string", "[container][String]")
 TEST_CASE("String - construction from nullptr", "[container][String]")
 {
     gp::String s(static_cast<const char*>(nullptr));
-    REQUIRE(s.empty());
+    REQUIRE(s.isEmpty());
 }
 
 TEST_CASE("String - construction from pointer and count", "[container][String]")
@@ -129,7 +129,7 @@ TEST_CASE("String - move construction", "[container][String]")
     gp::String a("hello");
     gp::String b(static_cast<gp::String&&>(a));
     REQUIRE(b == "hello");
-    REQUIRE(a.empty());
+    REQUIRE(a.isEmpty());
 }
 
 TEST_CASE("String - move construction from heap", "[container][String]")
@@ -138,7 +138,7 @@ TEST_CASE("String - move construction from heap", "[container][String]")
     const char* old_data = a.data();
     gp::String b(static_cast<gp::String&&>(a));
     REQUIRE(b.data() == old_data);
-    REQUIRE(a.empty());
+    REQUIRE(a.isEmpty());
 }
 
 TEST_CASE("String - copy assignment", "[container][String]")
@@ -155,7 +155,7 @@ TEST_CASE("String - move assignment", "[container][String]")
     gp::String b;
     b = static_cast<gp::String&&>(a);
     REQUIRE(b == "hello");
-    REQUIRE(a.empty());
+    REQUIRE(a.isEmpty());
 }
 
 TEST_CASE("String - self-copy assignment", "[container][String]")
@@ -336,7 +336,7 @@ TEST_CASE("String - clear", "[container][String]")
 {
     gp::String s("hello");
     s.clear();
-    REQUIRE(s.empty());
+    REQUIRE(s.isEmpty());
     REQUIRE(s[0] == '\0');
 }
 
@@ -345,7 +345,7 @@ TEST_CASE("String - clear on heap preserves capacity", "[container][String]")
     gp::String s(50, 'x');
     gp::USize cap = s.capacity();
     s.clear();
-    REQUIRE(s.empty());
+    REQUIRE(s.isEmpty());
     REQUIRE(s.capacity() == cap);
 }
 

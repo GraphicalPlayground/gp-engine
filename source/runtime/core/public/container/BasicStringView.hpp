@@ -146,7 +146,7 @@ public:
 
     /// @brief Checks if the view is empty.
     /// @return True if the view is empty, false otherwise.
-    GP_NODISCARD constexpr bool empty() const noexcept
+    GP_NODISCARD constexpr bool isEmpty() const noexcept
     {
         return m_size == 0;
     }

@@ -14,7 +14,7 @@ TEST_CASE("StringView - default construction", "[container][StringView]")
     gp::StringView v;
     REQUIRE(v.data() == nullptr);
     REQUIRE(v.size() == 0);
-    REQUIRE(v.empty());
+    REQUIRE(v.isEmpty());
 }
 
 TEST_CASE("StringView - construct from C string", "[container][StringView]")
@@ -132,7 +132,7 @@ TEST_CASE("StringView - substr", "[container][StringView]")
     REQUIRE(v.substr(0, 5) == gp::StringView("hello"));
     REQUIRE(v.substr(6) == gp::StringView("world"));
     REQUIRE(v.substr(6, 100) == gp::StringView("world"));
-    REQUIRE(v.substr(0, 0).empty());
+    REQUIRE(v.substr(0, 0).isEmpty());
 }
 
 TEST_CASE("StringView - compare", "[container][StringView]")
@@ -345,7 +345,7 @@ TEST_CASE("StringView - substr with pos == size", "[container][StringView]")
 {
     gp::StringView v("hello");
     gp::StringView sub = v.substr(5);
-    REQUIRE(sub.empty());
+    REQUIRE(sub.isEmpty());
 }
 
 }   // namespace gp::tests

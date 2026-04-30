@@ -79,7 +79,7 @@ TEST_CASE("Vector - default construction", "[container][Vector]")
     gp::Vector<int> v;
     REQUIRE(v.size() == 0);
     REQUIRE(v.capacity() == 0);
-    REQUIRE(v.empty());
+    REQUIRE(v.isEmpty());
     REQUIRE(v.data() == nullptr);
 }
 
@@ -87,7 +87,7 @@ TEST_CASE("Vector - construction with allocator", "[container][Vector]")
 {
     gp::memory::PolymorphicAllocator<int> alloc;
     gp::Vector<int> v(alloc);
-    REQUIRE(v.empty());
+    REQUIRE(v.isEmpty());
     REQUIRE(v.getAllocator() == alloc);
 }
 
@@ -130,7 +130,7 @@ TEST_CASE("Vector - iterator range construction", "[container][Vector]")
 TEST_CASE("Vector - zero-count construction", "[container][Vector]")
 {
     gp::Vector<int> v(static_cast<gp::USize>(0));
-    REQUIRE(v.empty());
+    REQUIRE(v.isEmpty());
     REQUIRE(v.data() == nullptr);
 }
 
@@ -151,7 +151,7 @@ TEST_CASE("Vector - move construction", "[container][Vector]")
     gp::Vector<int> b(static_cast<gp::Vector<int>&&>(a));
     REQUIRE(b.size() == 3);
     REQUIRE(b.data() == old_data);
-    REQUIRE(a.empty());
+    REQUIRE(a.isEmpty());
     REQUIRE(a.data() == nullptr);
 }
 
@@ -172,7 +172,7 @@ TEST_CASE("Vector - move assignment", "[container][Vector]")
     b = static_cast<gp::Vector<int>&&>(a);
     REQUIRE(b.size() == 3);
     REQUIRE(b.data() == old_data);
-    REQUIRE(a.empty());
+    REQUIRE(a.isEmpty());
 }
 
 TEST_CASE("Vector - self-copy assignment", "[container][Vector]")
@@ -382,7 +382,7 @@ TEST_CASE("Vector - clear", "[container][Vector]")
     gp::USize old_cap = v.capacity();
     v.clear();
     REQUIRE(v.size() == 0);
-    REQUIRE(v.empty());
+    REQUIRE(v.isEmpty());
     REQUIRE(v.capacity() == old_cap);
 }
 
@@ -633,7 +633,7 @@ TEST_CASE("Vector - move transfers allocator", "[container][Vector][allocator]")
 
     gp::Vector<int> b(static_cast<gp::Vector<int>&&>(a));
     REQUIRE(b.getAllocator().getResource() == &lin);
-    REQUIRE(a.empty());
+    REQUIRE(a.isEmpty());
 }
 
 TEST_CASE("Vector - move assignment with propagation", "[container][Vector][allocator]")

@@ -672,7 +672,7 @@ public:
 
     /// @brief Checks if the string is empty.
     /// @return True if the string is empty, false otherwise.
-    GP_NODISCARD GP_FORCEINLINE bool empty() const noexcept
+    GP_NODISCARD GP_FORCEINLINE bool isEmpty() const noexcept
     {
         return size() == 0;
     }

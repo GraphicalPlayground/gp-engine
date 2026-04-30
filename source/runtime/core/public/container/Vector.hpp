@@ -509,7 +509,7 @@ public:
 
     /// @brief Checks if the vector is empty.
     /// @return True if the vector is empty, false otherwise.
-    GP_NODISCARD GP_FORCEINLINE bool empty() const noexcept
+    GP_NODISCARD GP_FORCEINLINE bool isEmpty() const noexcept
     {
         return m_size == 0;
     }

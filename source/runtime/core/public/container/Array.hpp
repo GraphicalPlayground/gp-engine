@@ -209,7 +209,7 @@ public:
 
     /// @brief Checks if the array is empty.
     /// @return True if the array is empty, false otherwise.
-    GP_NODISCARD constexpr bool empty() const noexcept
+    GP_NODISCARD constexpr bool isEmpty() const noexcept
     {
         return N == 0;
     }
