@@ -13,11 +13,19 @@ on:
         required: false
         default: false
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         build-type: [Release]
@@ -25,6 +33,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Dependencies
         uses: ./.github/actions/setup-deps
@@ -32,11 +42,20 @@ jobs:
           os: ${{ matrix.os }}
           build-dir: build
 
+      - name: Setup Ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.os }}-${{ matrix.build-type }}
+
       - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+        run: >
+          cmake -S . -B build
+            -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
-        run: cmake --build build --config ${{ matrix.build-type }} --parallel $(nproc)
+        run: cmake --build build --config ${{ matrix.build-type }} --parallel
 
       - name: Install Release Artifacts
         if: inputs.package-artifacts
@@ -72,3 +91,5 @@ jobs:
         with:
           name: release-${{ matrix.os }}
           path: gp-engine-${{ matrix.os }}-${{ env.VERSION }}.*
+          if-no-files-found: error
+          retention-days: 14

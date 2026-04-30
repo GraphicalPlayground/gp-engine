@@ -13,21 +13,40 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # Cache FetchContent dependencies to speed up subsequent builds
-    - name: Cache FetchContent Dependencies
-      uses: actions/cache@v5
-      with:
-        path: ${{ github.workspace }}/${{ inputs.build-dir }}/_deps
-        key: ${{ inputs.os }}-cmake-deps-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-        restore-keys: |
-          ${{ inputs.os }}-cmake-deps-
+    - name: Install Linux Dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        # Includes Clang, Ninja, Vulkan headers, and all SDL3 system requirements.
+        # (Removed git/cmake/build-essential as they are pre-installed on GitHub runners)
+        sudo apt-get install -y clang llvm ninja-build pkg-config \
+          libasound2-dev libpulse-dev libaudio-dev libjack-dev libsndio-dev \
+          libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev \
+          libxi-dev libxss-dev libxtst-dev libxkbcommon-dev libdrm-dev \
+          libgbm-dev libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
+          libdbus-1-dev libibus-1.0-dev libudev-dev libwayland-dev libvulkan-dev
 
-    # Install heavy system SDKs (e.g., Vulkan SDK) that are not easily cached
-    - name: Setup Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.2.1
-      with:
-        vulkan-query-version: '1.4.341.0'
-        vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang, SPIRV-Cross, SPIRV-Tools, SPIRV-Reflect, SPIRV-Headers
-        vulkan-use-cache: true
+    - name: Install macOS Dependencies
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        # Apple Clang, Metal, and OpenGL are pre-installed via Xcode CLI tools.
+        # We just need to install Ninja.
+        brew install ninja
 
-    # TODO: Add steps to install other heavy dependencies like DirectX SDK, OpenGL libraries, SDL3, etc.
+    - name: Install Windows Dependencies
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        # Windows SDK (D3D11/D3D12) is pre-installed on GitHub runners.
+        # We need LLVM/Clang and Ninja.
+        choco install llvm ninja -y
+
+    - name: Enforce Clang for CMake
+      shell: bash
+      run: |
+        # Exporting CC and CXX environment variables tells CMake to use Clang 
+        # instead of defaulting to GCC (Linux) or MSVC (Windows).
+        echo "CC=clang" >> $GITHUB_ENV
+        echo "CXX=clang++" >> $GITHUB_ENV
