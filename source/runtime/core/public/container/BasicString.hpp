@@ -1345,6 +1345,13 @@ public:
         return _view().contains(str);
     }
 
+    /// @brief Returns a string_view of this string.
+    /// @return A BasicStringView representing the contents of this string.
+    GP_NODISCARD BasicStringView<CharT, Traits> asView() const noexcept
+    {
+        return _view();
+    }
+
     /// @brief Returns a copy of the allocator.
     /// @return The allocator used by this string.
     GP_NODISCARD AllocatorType getAllocator() const noexcept
