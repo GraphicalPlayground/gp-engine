@@ -4,8 +4,6 @@
 
 include(gp-build-tool)
 
-option(GP_USE_D3D12 "Enable D3D12 support" ON)
-
 if (NOT GP_USE_D3D12 OR NOT WIN32)
   return()
 endif()

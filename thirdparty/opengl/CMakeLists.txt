@@ -4,8 +4,6 @@
 
 include(gp-build-tool)
 
-option(GP_USE_OPENGL "Enable OpenGL support" ON)
-
 if (NOT GP_USE_OPENGL)
   return()
 endif()

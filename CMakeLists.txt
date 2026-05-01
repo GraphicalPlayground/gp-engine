@@ -60,6 +60,22 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 # Option to run tests on the Build Tool
 option(GP_TEST_BUILD_TOOL "Run tests for the Build Tool" OFF)
 
+# Option for engine features
+option(GP_ENABLE_PROFILING "Enable Tracy Profiler integration" ON)
+
+# Target options
+option(GP_BUILD_TESTS "Build test targets" ON)
+option(GP_BUILD_BENCHMARKS "Build benchmark targets" ON)
+option(GP_BUILD_EXAMPLES "Build example targets" ON)
+option(GP_BUILD_EDITOR "Build engine tools and offline compilers" ON)
+
+# Graphics API Options
+option(GP_USE_VULKAN "Enable Vulkan support" ON)
+option(GP_USE_OPENGL "Enable OpenGL support" ON)
+option(GP_USE_METAL "Enable Metal support" ON)
+option(GP_USE_D3D12 "Enable D3D12 support" ON)
+option(GP_USE_D3D11 "Enable D3D11 support" ON)
+
 if (GP_TEST_BUILD_TOOL)
   include(gp-build-tool/tests/gp-all.tests)
   return()

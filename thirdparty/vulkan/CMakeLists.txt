@@ -4,8 +4,6 @@
 
 include(gp-build-tool)
 
-option(GP_USE_VULKAN "Enable Vulkan support" ON)
-
 if (NOT GP_USE_VULKAN)
   return()
 endif()

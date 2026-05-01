@@ -4,8 +4,6 @@
 
 include(gp-build-tool)
 
-option(GP_USE_METAL "Enable Metal support" ON)
-
 if (NOT GP_USE_METAL OR NOT APPLE)
   return()
 endif()

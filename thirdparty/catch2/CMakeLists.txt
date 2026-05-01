@@ -4,6 +4,10 @@
 
 include(gp-build-tool)
 
+if(NOT GP_BUILD_TESTS AND NOT GP_BUILD_BENCHMARKS)
+  return()
+endif()
+
 gpFetchContent(
   NAME Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
