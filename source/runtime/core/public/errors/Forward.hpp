@@ -16,8 +16,21 @@ struct FilterConfig;
 struct ThreadConfig;
 struct ErrorSystemConfig;
 
+// Sinks
+class Sink;
+class AbortSink;
+class BreakpointSink;
+class ConsoleSink;
+class DeferredSink;
+class FileSink;
+class MultiSink;
+class RateLimitedSink;
+class TelemetrySink;
+
 // Forward declarations
 
 class ErrorCode;
+class ErrorRecord;
+class ErrorSystem;
 
 }   // namespace gp::error
