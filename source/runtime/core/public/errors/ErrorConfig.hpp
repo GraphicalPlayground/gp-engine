@@ -7,7 +7,7 @@
 #include "container/BasicString.hpp"   // IWYU pragma: keep
 #include "container/Forward.hpp"
 #include "CoreMinimal.hpp"
-#include "errors/Severity.hpp"
+#include "errors/ErrorSeverity.hpp"
 
 namespace gp::error
 {

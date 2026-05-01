@@ -10,7 +10,7 @@
 #include "container/Vector.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "errors/ErrorCode.hpp"
-#include "errors/Severity.hpp"
+#include "errors/ErrorSeverity.hpp"
 #include <chrono>   // TODO: gp::TimePoint?, gp::Duration?, etc.
 #include <memory>   // TODO: gp::SharedPtr?
 #include <source_location>

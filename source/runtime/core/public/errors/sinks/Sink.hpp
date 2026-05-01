@@ -10,7 +10,7 @@
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "errors/ErrorCode.hpp"
 #include "errors/ErrorRecord.hpp"
-#include "errors/Severity.hpp"
+#include "errors/ErrorSeverity.hpp"
 
 namespace gp::error
 {

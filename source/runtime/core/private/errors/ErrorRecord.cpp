@@ -3,7 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "errors/ErrorRecord.hpp"
-#include "errors/Severity.hpp"
+#include "errors/ErrorSeverity.hpp"
 
 namespace gp::error
 {
