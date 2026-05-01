@@ -63,9 +63,9 @@ option(GP_TEST_BUILD_TOOL "Run tests for the Build Tool" OFF)
 if (GP_TEST_BUILD_TOOL)
   include(gp-build-tool/tests/gp-all.tests)
   return()
-endif() 
+endif()
 
 # Add Subdirectories
 add_subdirectory(thirdparty)
 add_subdirectory(source)
-# add_subdirectory(examples)
+add_subdirectory(examples)
