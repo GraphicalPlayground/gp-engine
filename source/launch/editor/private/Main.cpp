@@ -5,6 +5,7 @@
 #include "container/BasicString.hpp"
 #include "container/Forward.hpp"
 #include "errors/Error.hpp"
+#include "errors/ErrorConfig.hpp"
 #include "errors/ErrorRegistry.hpp"
 #include "errors/ErrorSystem.hpp"
 #include <iostream>
@@ -20,7 +21,9 @@ int main()
     auto& registry = gp::error::ErrorRegistry::instance();
     std::cout << registry.dumpAll() << std::endl;
 
-    gp::error::ErrorSystem::initialize();
+    gp::error::ErrorSystemConfig config = gp::error::ErrorSystemConfig::getDevelopmentConfig();
+    config.abort.abortFrom = gp::error::Severity::Critical;
+    gp::error::ErrorSystem::initialize(config);
 
     GP_TRACE("This is a trace message!");
     GP_DEBUG("This is a debug message!");
