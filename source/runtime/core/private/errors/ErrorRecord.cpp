@@ -3,6 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "errors/ErrorRecord.hpp"
+#include "errors/Severity.hpp"
 
 namespace gp::error
 {
@@ -43,8 +44,7 @@ GP_NODISCARD gp::USize ErrorRecord::causeDepth() const noexcept
 
 GP_NODISCARD gp::String ErrorRecord::summary() const
 {
-    // TODO: implement a compact one-line summary of the error record (e.g. "[Error] File not found: foo.txt")
-    return {};
+    return gp::String::format("[{}] {}", getSeverityDisplay(severity), message);
 }
 
 GP_NODISCARD gp::String ErrorRecord::fullReport() const
