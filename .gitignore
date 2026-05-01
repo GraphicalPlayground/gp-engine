@@ -109,6 +109,7 @@ CLAUDE.md
 # ====================
 *.o
 *.obj
+!assets/**/*.obj
 *.dSYM/
 *.su
 *.idb
