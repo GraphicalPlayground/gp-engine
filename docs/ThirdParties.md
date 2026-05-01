@@ -72,6 +72,16 @@ require a separate installation step, as they are provided by the host platform.
 - **License**: [MIT](https://github.com/microsoft/DirectX-Headers/blob/main/LICENSE)
 - **Repository**: [microsoft/DirectX-Headers](https://github.com/microsoft/DirectX-Headers)
 
+### D3D12 Memory Allocator
+
+- **Version**: `v3.1.0`
+- **Role**: GPU memory suballocation library for the Direct3D 12 rendering backend.
+- We use D3D12MA to manage all D3D12 heap allocations. Do not call `ID3D12Device::CreateCommittedResource`
+  directly in rendering code; route all resource creation through the allocator to ensure correct
+  pooling and budget tracking.
+- **License**: [MIT](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator/blob/master/LICENSE.txt)
+- **Repository**: [GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator)
+
 ### Metal *(integrated)*
 
 - **Version**: Integrated, provided by the macOS/iOS SDK.
@@ -105,6 +115,16 @@ require a separate installation step, as they are provided by the host platform.
 - **License**: [Apache-2.0](https://github.com/KhronosGroup/Vulkan-Loader/blob/main/LICENSE.txt)
 - **Repository**: [KhronosGroup/Vulkan-Loader](https://github.com/KhronosGroup/Vulkan-Loader)
 
+### Vulkan Memory Allocator
+
+- **Version**: `v3.3.0`
+- **Role**: GPU memory suballocation library for the Vulkan rendering backend.
+- We use VMA to manage all `VkDeviceMemory` allocations. Do not call `vkAllocateMemory` directly
+  in rendering code; route all resource creation through the allocator to ensure correct pooling,
+  defragmentation support, and budget tracking.
+- **License**: [MIT](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/blob/master/LICENSE.txt)
+- **Repository**: [GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
+
 ## Shader Toolchain
 
 The engine uses a SPIR-V–centric shader pipeline. GLSL source shaders are compiled to SPIR-V at
@@ -118,6 +138,17 @@ languages where required.
   Do not check in precompiled SPIR-V binaries; they are generated as part of the standard build.
 - **License**: [Multiple, see repository](https://github.com/KhronosGroup/glslang/blob/main/LICENSE.txt)
 - **Repository**: [KhronosGroup/glslang](https://github.com/KhronosGroup/glslang)
+
+### DXC
+
+- **Version**: `v1.9.2602`
+- **Role**: Microsoft's DirectX Shader Compiler, used to compile HLSL shader sources to DXIL and
+  SPIR-V.
+- DXC is the preferred compiler for all HLSL sources targeting the D3D12 backend. It is also used
+  as an alternative SPIR-V front-end for HLSL shaders on the Vulkan path. Do not use the legacy
+  `fxc` compiler for any new shader work.
+- **License**: [University of Illinois Open Source License](https://github.com/microsoft/DirectXShaderCompiler/blob/main/LICENSE.TXT)
+- **Repository**: [microsoft/DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
 
 ### SPIRV-Cross
 
