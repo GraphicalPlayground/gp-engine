@@ -20,12 +20,29 @@ gpFetchContent(
 )
 
 if(TARGET spirv-reflect)
-  if(MSVC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    # /W0 silences all warnings, /WX- ensures warnings aren't treated as errors
-    # We use 'PRIVATE' so it doesn't affect the engine targets linking to it
-    target_compile_options(spirv-reflect PRIVATE /W0 /WX-)
-  endif()
+  # SPIRV-Reflect exposes three linkable targets; all three need warning suppression
+  # because they share the same problematic headers (spirv.h trailing-comma enumerators).
+  set(_SPIRV_REFLECT_TARGETS spirv-reflect spirv-reflect-static spirv-reflect-pp)
 
-  gpSetTargetFolder(spirv-reflect "thirdparty/graphics")
-  gpSetTargetFolder(spirv-reflect-static "thirdparty/graphics")
+  foreach(_target IN LISTS _SPIRV_REFLECT_TARGETS)
+    if(TARGET ${_target})
+      if(MSVC)
+        # /W0   - suppress all MSVC-level diagnostics
+        # /WX-  - prevent any remaining warnings from being promoted to errors
+        target_compile_options(${_target} PRIVATE /W0 /WX-)
+
+        # clang-cl accepts MSVC flags at the driver level, but clang-specific
+        # diagnostics (like -Wc++98-compat-pedantic) live in the clang frontend
+        # and must be silenced through the /clang: passthrough prefix.
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+          target_compile_options(${_target} PRIVATE /clang:-Wno-everything)
+        endif()
+      else()
+        # GCC / vanilla Clang: -w disables all warnings outright
+        target_compile_options(${_target} PRIVATE -w)
+      endif()
+
+      gpSetTargetFolder(${_target} "thirdparty/graphics")
+    endif()
+  endforeach()
 endif()
