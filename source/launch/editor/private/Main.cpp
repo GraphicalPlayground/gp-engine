@@ -3,9 +3,8 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "container/BasicString.hpp"
-#include "container/BasicStringView.hpp"
 #include "container/Forward.hpp"
-#include "CoreMinimal.hpp"
+#include "errors/ErrorRegistry.hpp"
 #include <iostream>
 
 int main()
@@ -15,6 +14,9 @@ int main()
 
     gp::String str = "Hello, World!";
     std::cout << "gp::String says: " << str << std::endl;
+
+    auto& registry = gp::error::ErrorRegistry::instance();
+    std::cout << registry.dumpAll() << std::endl;
 
     return 0;
 }
