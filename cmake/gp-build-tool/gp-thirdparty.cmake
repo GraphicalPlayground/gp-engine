@@ -148,3 +148,5 @@ function(gpSetTargetFolder TARGET_NAME FOLDER_NAME)
     endif()
   endif()
 endfunction()
+
+# TODO: ADd gpThirdPartyFetchBinaries to handle binary fetching instead of whole source code
