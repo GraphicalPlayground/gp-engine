@@ -95,7 +95,7 @@ public:
 public:
     /// @brief Factory method for a preset development configuration (all features on).
     /// @return An ErrorSystemConfig instance with development settings.
-    GP_NODISCARD static constexpr ErrorSystemConfig getDevelopmentConfig() noexcept
+    GP_NODISCARD static inline ErrorSystemConfig getDevelopmentConfig() noexcept
     {
         ErrorSystemConfig config;
         config.stacktrace.captureFrom = Severity::Warning;
@@ -108,7 +108,7 @@ public:
 
     /// @brief Factory method for a preset staging configuration (some features on, some off).
     /// @return An ErrorSystemConfig instance with staging settings.
-    GP_NODISCARD static constexpr ErrorSystemConfig getStagingConfig() noexcept
+    GP_NODISCARD static inline ErrorSystemConfig getStagingConfig() noexcept
     {
         ErrorSystemConfig config;
         config.stacktrace.captureFrom = Severity::Error;
@@ -122,7 +122,7 @@ public:
 
     /// @brief Factory method for a preset shipping configuration (most features off for performance).
     /// @return An ErrorSystemConfig instance with shipping settings.
-    GP_NODISCARD static constexpr ErrorSystemConfig getShippingConfig() noexcept
+    GP_NODISCARD static inline ErrorSystemConfig getShippingConfig() noexcept
     {
         ErrorSystemConfig config;
         config.stacktrace.enabled = false;                     // No stack traces
@@ -137,7 +137,7 @@ public:
 
     /// @brief Factory method for a preset test configuration (strict settings for testing).
     /// @return An ErrorSystemConfig instance with test settings.
-    GP_NODISCARD static constexpr ErrorSystemConfig getTestConfig() noexcept
+    GP_NODISCARD static inline ErrorSystemConfig getTestConfig() noexcept
     {
         ErrorSystemConfig config;
         config.stacktrace.captureFrom = Severity::Fatal;
