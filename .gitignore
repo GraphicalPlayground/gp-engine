@@ -10,6 +10,13 @@ Build/
 build/
 cmake-build-*/
 out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+*.ninja
+.ninja_deps
+.ninja_log
 
 # ====================
 # Binary Output
@@ -179,6 +186,9 @@ Doxyfile.bak
 # Clang Specific
 # ====================
 .clangd.*
+.clangd/
+.cache/
+compile_commands.json
 
 # ====================
 # Custom Project Specific
