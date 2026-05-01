@@ -2,7 +2,7 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "errors/sinks/Sink.hpp"
+#include "errors/ErrorSink.hpp"
 
 namespace gp::error
 {
