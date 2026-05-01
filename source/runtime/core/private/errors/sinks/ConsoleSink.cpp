@@ -3,7 +3,6 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "errors/sinks/ConsoleSink.hpp"
-#include "errors/ErrorSeverity.hpp"
 
 namespace gp::error
 {
