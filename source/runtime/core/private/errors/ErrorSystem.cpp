@@ -8,6 +8,7 @@
 #include "container/Forward.hpp"
 #include "CoreMinimal.hpp"
 #include "errors/ErrorSeverity.hpp"
+#include "errors/sinks/ConsoleSink.hpp"
 #include "memory/UniquePtr.hpp"
 #if GP_PLATFORM_WINDOWS
     #include <windows.h>
@@ -29,9 +30,9 @@ ErrorSystem::ErrorSystem(ErrorSystemConfig config)
 {
     if (m_config.addDefaultConsoleSink)
     {
-        // auto console = std::make_shared<ConsoleSink>(/*useAnsiColor=*/true);
-        // console->setMinSeverity(m_config.filter.globalMinSeverity);
-        // m_rootSink->addSink(std::move(console));
+        auto console = std::make_shared<ConsoleSink>(/*useAnsiColor=*/true);
+        console->setMinSeverity(m_config.filter.globalMinSeverity);
+        m_rootSink->addSink(std::move(console));
     }
 
     if (!m_config.defaultLogFilePath.isEmpty())
@@ -90,10 +91,14 @@ void ErrorSystem::initialize(ErrorSystemConfig config)
         // TODO: Replace with internal logging once available
         std::fprintf(
             stderr,
-            "\033[36m[GP ErrorSystem] Initialized — build: %s %s" " | stacktrace: %s | globalMin: %s\033[0m\n",
+            "\033[36m[GP ErrorSystem] Initialized - build: %s %s" " | stacktrace: %s | globalMin: %s\033[0m\n",
             __DATE__,
             __TIME__,
+#if GP_HAS_STACKTRACE
             instance->m_config.stacktrace.enabled ? "on" : "off",
+#else
+            "n/a",
+#endif
             getSeverityDisplay(instance->m_config.filter.globalMinSeverity).data()
         );
     }
