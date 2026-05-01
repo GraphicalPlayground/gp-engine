@@ -11,7 +11,6 @@
 #include "errors/ErrorRecord.hpp"
 #include "errors/ErrorSeverity.hpp"
 #include "errors/ErrorSystem.hpp"
-#include <expected>
 #include <source_location>
 
 namespace gp::error
@@ -69,11 +68,6 @@ inline void wrap(
 namespace gp
 {
 
-/// @brief A template alias for a type that represents either a successful value of type T or an error record.
-/// @tparam T The type of the successful value.
-template <typename T>
-using Expected = std::expected<T, error::ErrorRecord>;
-
 /// @brief Creates an ErrorRecord with the specified severity, code, message, and source location.
 /// @param[in] severity The severity level of the error (e.g., trace, debug, info, warning, error, fatal).
 /// @param[in] code The specific error code representing the type of error.
@@ -101,14 +95,6 @@ GP_NODISCARD inline error::ErrorRecord makeError(
     return r;
 }
 
-/// @brief Creates an Expected<T> representing a successful value.
-/// @param[in] value The value to be wrapped in the Expected<T>.
-/// @return An Expected<T> containing the provided value, indicating success.
-template <typename T>
-GP_NODISCARD constexpr Expected<T> makeOk(T&& value)
-{
-    return Expected<T>{ std::forward<T>(value) };
-}
 }   // namespace gp
 
 /// @brief Macro to raise an error with the specified severity, code, and message, automatically capturing the source
