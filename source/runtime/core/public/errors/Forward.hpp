@@ -32,5 +32,8 @@ class TelemetrySink;
 class ErrorCode;
 class ErrorRecord;
 class ErrorSystem;
+class ErrorContext;
+struct ContextFrame;
+class ContextScope;
 
 }   // namespace gp::error
