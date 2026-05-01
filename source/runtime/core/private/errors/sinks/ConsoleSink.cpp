@@ -3,6 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "errors/sinks/ConsoleSink.hpp"
+#include <ctime>
 
 namespace gp::error
 {

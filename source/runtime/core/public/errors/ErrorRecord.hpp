@@ -29,7 +29,6 @@
         GP_NODISCARD bool empty() const { return true; }
         GP_NODISCARD std::size_t size() const { return 0; }
     };
-    namespace std { using stacktrace = GpStacktrace; }
 #endif
 // clang-format on
 

@@ -3,6 +3,9 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "errors/sinks/AbortSink.hpp"
+#include <cstdio>
+#include <exception>
+#include <stdlib.h>
 
 namespace gp::error
 {

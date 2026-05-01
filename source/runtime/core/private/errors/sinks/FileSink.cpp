@@ -5,6 +5,7 @@
 #include "errors/sinks/FileSink.hpp"
 #include "errors/ErrorCode.hpp"
 #include "errors/ErrorSeverity.hpp"
+#include <ctime>
 #include <stdexcept>
 
 namespace gp::error
