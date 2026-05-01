@@ -1,0 +1,119 @@
+{
+  "name": "Graphical Playground Dev Environment",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "C_Cpp.default.compilerPath": "/usr/bin/clang++",
+        "C_Cpp.default.cStandard": "c17",
+        "C_Cpp.default.cppStandard": "c++23",
+        "cmake.generator": "Ninja",
+        "git.addAICoAuthor": "off",
+        "cmake.configureSettings": {
+          "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+          "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+        },
+        "clangd.arguments": ["--compile-commands-dir=${workspaceFolder}/build"],
+        "doxdocgen.c.triggerSequence": "///",
+        "doxdocgen.c.firstLine": "",
+        "doxdocgen.c.lastLine": "",
+        "doxdocgen.c.commentPrefix": "/// ",
+        "doxdocgen.generic.briefTemplate": "@brief {text}",
+        "doxdocgen.generic.paramTemplate": "@param[in] {param} ",
+        "doxdocgen.generic.returnTemplate": "@return ",
+        "doxdocgen.generic.includeTypeAtReturn": false,
+        "doxdocgen.generic.boolReturnsTrueFalse": false,
+        "doxdocgen.generic.order": ["brief", "param", "return"],
+        "doxdocgen.generic.filteredKeywords": ["GP_FORCEINLINE", "GP_NODISCARD", "GP_INLINE", "constexpr", "noexcept"],
+        "[json]": {
+          "editor.tabSize": 2,
+          "editor.insertSpaces": true,
+          "editor.defaultFormatter": "vscode.json-language-features"
+        },
+        "[jsonc]": {
+          "editor.tabSize": 2,
+          "editor.insertSpaces": true,
+          "editor.defaultFormatter": "vscode.json-language-features"
+        },
+        "[jsonl]": {
+          "editor.tabSize": 2,
+          "editor.insertSpaces": true,
+          "editor.defaultFormatter": "vscode.json-language-features"
+        },
+        "[hlsl]": {
+          "editor.tabSize": 2,
+          "editor.insertSpaces": true,
+          "editor.rulers": [120]
+        },
+        "[c]": {
+          "editor.tabSize": 4,
+          "editor.insertSpaces": true,
+          "editor.rulers": [120]
+        },
+        "[cpp]": {
+          "editor.tabSize": 4,
+          "editor.insertSpaces": true,
+          "editor.rulers": [120],
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "xaver.clang-format"
+        },
+        "[markdown]": {
+          "editor.tabSize": 2,
+          "editor.insertSpaces": true,
+          "editor.rulers": [100]
+        },
+        "[cmake]": {
+          "editor.tabSize": 2,
+          "editor.insertSpaces": true
+        },
+        "[yaml]": {
+          "editor.tabSize": 2,
+          "editor.insertSpaces": true
+        }
+      },
+      "extensions": [
+        "twxs.cmake",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "jeff-hykin.better-cpp-syntax",
+        "josetr.cmake-language-support-vscode",
+        "cschlosser.doxdocgen",
+        "me-dutour-mathieu.vscode-github-actions",
+        "github.vscode-github-actions",
+        "bierner.github-markdown-preview",
+        "TimGJones.hlsltools",
+        "yzhang.markdown-all-in-one",
+        "bierner.markdown-preview-github-styles",
+        "slevesque.shader"
+      ]
+    }
+  },
+
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "remoteEnv": {
+    "DISPLAY": "${localEnv:DISPLAY}",
+    "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+    "XDG_RUNTIME_DIR": "/tmp/xdg-runtime"
+  },
+
+  "runArgs": [
+    "--net=host",
+    "--device=/dev/dri"
+    // WARNING: Only uncomment this if your host machine has an NVIDIA GPU AND the nvidia-container-toolkit installed.
+    // If you uncomment this on an AMD/Intel machine, Docker will crash on startup.
+    // "--gpus=all"
+  ],
+
+  "mounts": [
+    // X11 Socket Mount
+    "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached",
+    // Wayland Socket Mount (Binds the host's entire XDG dir so Wayland + Pipewire audio work seamlessly)
+    "source=${localEnv:XDG_RUNTIME_DIR},target=/tmp/xdg-runtime,type=bind,consistency=cached"
+  ]
+}
