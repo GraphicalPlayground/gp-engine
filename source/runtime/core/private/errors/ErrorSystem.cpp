@@ -8,7 +8,12 @@
 #include "container/Forward.hpp"
 #include "CoreMinimal.hpp"
 #include "errors/ErrorSeverity.hpp"
+#include "errors/sinks/AbortSink.hpp"
+#if GP_BUILD_DEBUG
+    #include "errors/sinks/BreakpointSink.hpp"
+#endif
 #include "errors/sinks/ConsoleSink.hpp"
+#include "errors/sinks/FileSink.hpp"
 #include "memory/UniquePtr.hpp"
 #if GP_PLATFORM_WINDOWS
     #include <windows.h>
@@ -30,36 +35,37 @@ ErrorSystem::ErrorSystem(ErrorSystemConfig config)
 {
     if (m_config.addDefaultConsoleSink)
     {
-        auto console = std::make_shared<ConsoleSink>(/*useAnsiColor=*/true);
-        console->setMinSeverity(m_config.filter.globalMinSeverity);
-        m_rootSink->addSink(std::move(console));
+        auto consoleSink = std::make_shared<ConsoleSink>(/*useAnsiColor=*/true);
+        consoleSink->setMinSeverity(m_config.filter.globalMinSeverity);
+        m_rootSink->addSink(std::move(consoleSink));
     }
 
     if (!m_config.defaultLogFilePath.isEmpty())
     {
-        // try
-        // {
-        //     auto file = std::make_shared<FileSink>(m_config.defaultLogFilePath);
-        //     file->setMinSeverity(m_config.filter.globalMinSeverity);
-        //     m_rootSink->addSink(std::move(file));
-        // }
-        // catch (const std::exception& e)
-        // {
-        //     std::fprintf(stderr, "[GP ErrorSystem] WARNING: Could not open log file: %s\n", e.what());
-        // }
+        try
+        {
+            auto fileSink = std::make_shared<FileSink>(m_config.defaultLogFilePath);
+            fileSink->setMinSeverity(m_config.filter.globalMinSeverity);
+            m_rootSink->addSink(std::move(fileSink));
+        }
+        catch (const std::exception& e)
+        {
+            std::fprintf(stderr, "[GP ErrorSystem] WARNING: Could not open log file: %s\n", e.what());
+        }
     }
 
 #if GP_BUILD_DEBUG
     {
-        //     auto bp = std::make_shared<BreakpointSink>(m_config.breakpoint.breakFrom);
-        //     m_rootSink->addSink(std::move(bp));
+        auto breakpointSink = std::make_shared<BreakpointSink>(m_config.breakpoint.breakFrom);
+        m_rootSink->addSink(std::move(breakpointSink));
     }
 #endif
 
     {
-        // auto abort_sink = std::make_shared<AbortSink>(m_config.abort.abortFrom,
-        //     m_config.abort.useTerminate ? AbortSink::Mode::Terminate : AbortSink::Mode::Abort);
-        // m_rootSink->addSink(std::move(abort_sink));
+        auto abortSink = std::make_shared<AbortSink>(
+            m_config.abort.abortFrom, m_config.abort.useTerminate ? AbortSink::Mode::Terminate : AbortSink::Mode::Abort
+        );
+        m_rootSink->addSink(std::move(abortSink));
     }
 }
 
