@@ -10,9 +10,11 @@
 #include "math/LinearAlgebra.hpp"
 #include "memory/AllocatorTraits.hpp"
 #include <cstring>
+#include <format>
 #include <initializer_list>
 #include <iterator>
 #include <ostream>
+#include <string_view>
 
 namespace gp
 {
@@ -52,6 +54,9 @@ public:
     using ConstIterator = ConstPointer;
     using ReverseIterator = std::reverse_iterator<Iterator>;
     using ConstReverseIterator = std::reverse_iterator<ConstIterator>;
+
+    // std::string compatibility typedefs
+    using value_type = CharT;
 
     static constexpr SizeType npos = static_cast<SizeType>(-1);
 
@@ -1547,6 +1552,27 @@ private:
         m_allocator.~AllocatorType();
         ::new (static_cast<void*>(&m_allocator)) AllocatorType(static_cast<AllocatorType&&>(newAlloc));
     }
+
+public:
+    /// @brief Formats a string using std::format syntax and returns it as a gp::String.
+    /// @details
+    /// Pre-computes the required buffer size via std::formatted_size, performs exactly
+    /// one allocation via resize(), then writes directly to the buffer via a raw-pointer
+    /// output iterator. The result is always null-terminated.
+    /// This avoids the need for a push_back-compatible back_inserter on gp::String.
+    /// @tparam Args Variadic template parameters for the format arguments.
+    /// @param[in] format The format string, following std::format syntax.
+    /// @param[in] args The arguments to format.
+    /// @return The formatted string as a gp::String.
+    template <typename... Args>
+    static BasicString format(std::format_string<Args...> format, Args&&... args)
+    {
+        BasicString result;
+        const size_t requiredSize = std::formatted_size(format, std::forward<Args>(args)...);
+        result.resize(requiredSize);
+        std::format_to(result.data(), format, std::forward<Args>(args)...);
+        return result;
+    }
 };
 
 static_assert(sizeof(BasicString<char>) == 32, "gp::string must be exactly 32 bytes");
@@ -1625,3 +1651,17 @@ std::ostream& operator<<(std::ostream& os, const gp::BasicString<CharT, Traits, 
 {
     return os << str.cStr();
 }
+
+/// @brief std::formatter specialization for gp::BasicString.
+/// @details Inherits from std::formatter<std::basic_string_view> to gain all standard string format specifiers.
+template <typename CharT, typename Traits, typename Alloc>
+struct std::formatter<gp::BasicString<CharT, Traits, Alloc>, CharT>
+    : std::formatter<std::basic_string_view<CharT>, CharT>
+{
+    template <typename FormatContext>
+    auto format(const gp::BasicString<CharT, Traits, Alloc>& str, FormatContext& ctx) const
+    {
+        std::basic_string_view<CharT> sv(str.data(), str.size());
+        return std::formatter<std::basic_string_view<CharT>, CharT>::format(sv, ctx);
+    }
+};
