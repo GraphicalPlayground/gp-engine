@@ -20,6 +20,12 @@ gpFetchContent(
 )
 
 if(TARGET spirv-reflect)
+  if(MSVC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # /W0 silences all warnings, /WX- ensures warnings aren't treated as errors
+    # We use 'PRIVATE' so it doesn't affect the engine targets linking to it
+    target_compile_options(spirv-reflect PRIVATE /W0 /WX-)
+  endif()
+
   gpSetTargetFolder(spirv-reflect "thirdparty/graphics")
   gpSetTargetFolder(spirv-reflect-static "thirdparty/graphics")
 endif()
