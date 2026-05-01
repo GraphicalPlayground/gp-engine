@@ -8,7 +8,10 @@
 #include "CoreMinimal.hpp"
 #include "math/LinearAlgebra.hpp"
 #include <compare>
+#include <format>
+#include <iterator>
 #include <ostream>
+#include <string_view>
 
 namespace gp
 {
@@ -797,3 +800,15 @@ std::ostream& operator<<(std::ostream& os, const gp::BasicStringView<CharT, Trai
 {
     return os << sv.data();
 }
+
+/// @brief std::formatter specialization for gp::BasicStringView.
+template <typename CharT, typename Traits>
+struct std::formatter<gp::BasicStringView<CharT, Traits>, CharT> : std::formatter<std::basic_string_view<CharT>, CharT>
+{
+    template <typename FormatContext>
+    auto format(gp::BasicStringView<CharT, Traits> sv, FormatContext& ctx) const
+    {
+        std::basic_string_view<CharT> std_sv(sv.data(), sv.size());
+        return std::formatter<std::basic_string_view<CharT>, CharT>::format(std_sv, ctx);
+    }
+};
