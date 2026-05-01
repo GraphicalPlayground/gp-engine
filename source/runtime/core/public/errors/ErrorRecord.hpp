@@ -14,8 +14,24 @@
 #include <chrono>   // TODO: gp::TimePoint?, gp::Duration?, etc.
 #include <memory>   // TODO: gp::SharedPtr?
 #include <source_location>
-#include <stacktrace>
 #include <thread>   // TODO: gp::Thread?
+
+// clang-format off
+#if defined(__cpp_lib_stacktrace) && __cpp_lib_stacktrace >= 202011L
+    #include <stacktrace>
+    #define GP_HAS_STACKTRACE 1
+    using GpStacktrace = std::stacktrace;
+#else
+    #define GP_HAS_STACKTRACE 0
+    struct GpStacktrace
+    {
+        GP_NODISCARD static GpStacktrace current(std::size_t = 0, std::size_t = 0) { return {}; }
+        GP_NODISCARD bool empty() const { return true; }
+        GP_NODISCARD std::size_t size() const { return 0; }
+    };
+    namespace std { using stacktrace = GpStacktrace; }
+#endif
+// clang-format on
 
 namespace gp::error
 {
@@ -48,7 +64,7 @@ public:
     std::source_location location{ std::source_location::current() };
 
     // Empty when tracing is disabled.
-    std::stacktrace stacktrace;
+    GpStacktrace stacktrace;
 
     std::thread::id threadId{ std::this_thread::get_id() };
     gp::String threadName;
