@@ -14,6 +14,11 @@ MultiSink::MultiSink()
 
 void MultiSink::addSink(std::shared_ptr<Sink> sink)
 {
+    if (!sink)
+    {
+        return;
+    }
+
     std::lock_guard lock(m_mutex);
     m_sinks.pushBack(std::move(sink));
 }
@@ -38,19 +43,29 @@ GP_NODISCARD gp::USize MultiSink::sinkCount() const noexcept
 
 void MultiSink::onRecord(const ErrorRecord& record)
 {
-    std::lock_guard lock(m_mutex);
-    for (auto& s: m_sinks)
+    decltype(m_sinks) sinks;
     {
-        s->dispatch(record);
+        std::lock_guard lock(m_mutex);
+        sinks = m_sinks;
+    }
+
+    for (auto& sink: sinks)
+    {
+        sink->dispatch(record);
     }
 }
 
 void MultiSink::flush()
 {
-    std::lock_guard lock(m_mutex);
-    for (auto& s: m_sinks)
+    decltype(m_sinks) sinks;
     {
-        s->flush();
+        std::lock_guard lock(m_mutex);
+        sinks = m_sinks;
+    }
+
+    for (auto& sink: sinks)
+    {
+        sink->flush();
     }
 }
 

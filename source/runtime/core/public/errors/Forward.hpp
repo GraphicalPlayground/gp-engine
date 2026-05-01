@@ -40,7 +40,6 @@ class CrashReporter;
 struct MetaEntry;
 class ErrorCode;
 class ErrorRecord;
-class ErrorSystem;
 class ErrorContext;
 struct ContextFrame;
 class ContextScope;

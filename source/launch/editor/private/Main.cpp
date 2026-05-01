@@ -10,7 +10,7 @@
 #include "errors/ErrorSystem.hpp"
 #include <iostream>
 
-int main()
+int main(int argc, char* argv[])
 {
     std::cout << "Hello, Graphical Playground Editor!" << std::endl;
     // TODO: Implement editor main function.
@@ -25,13 +25,24 @@ int main()
     config.abort.abortFrom = gp::error::Severity::Critical;
     gp::error::ErrorSystem::initialize(config);
 
-    GP_TRACE("This is a trace message!");
-    GP_DEBUG("This is a debug message!");
-    GP_INFO("This is an info message!");
-    GP_WARN("This is a warning message!");
-    GP_ERROR("This is an error message!");
-    GP_FATAL("This is a fatal message!");
-    GP_PANIC("This is a critical message!");
+    gp::Vector<gp::StringView> args;
+    for (int i = 0; i < argc; ++i)
+    {
+        args.pushBack(argv[i]);
+    }
+
+    for (const auto& arg: args)
+    {
+        // clang-format off
+        if (arg == "--trace") GP_TRACE("This is a trace message!");
+        else if (arg == "--debug") GP_DEBUG("This is a debug message!");
+        else if (arg == "--info") GP_INFO("This is an info message!");
+        else if (arg == "--warn") GP_WARN("This is a warning message!");
+        else if (arg == "--error") GP_ERROR("This is an error message!");
+        else if (arg == "--fatal") GP_FATAL("This is a fatal message!");
+        else if (arg == "--panic") GP_PANIC("This is a critical message!");
+        // clang-format on
+    }
 
     gp::error::ErrorSystem::flushAll();
     gp::error::ErrorSystem::shutdown();

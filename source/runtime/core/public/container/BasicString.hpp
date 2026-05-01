@@ -1574,6 +1574,7 @@ public:
     template <typename... Args>
     static BasicString format(std::format_string<Args...> format, Args&&... args)
     {
+        // TODO: use std::basic_format_string in order to support wide-character strings without code duplication.
         BasicString result;
         const size_t requiredSize = std::formatted_size(format, std::forward<Args>(args)...);
         result.resize(requiredSize);

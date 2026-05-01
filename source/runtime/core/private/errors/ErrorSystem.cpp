@@ -21,12 +21,15 @@
     #include <execinfo.h>
 #endif
 #include <csignal>
+#include <cstdio>
+#include <exception>
 
 namespace gp::error
 {
 
 std::atomic<ErrorSystem*> ErrorSystem::s_instance{ nullptr };
 std::mutex ErrorSystem::s_initMutex;
+std::mutex ErrorSystem::m_sinkMutex;
 
 ErrorSystem::ErrorSystem(ErrorSystemConfig config)
     : m_config(std::move(config))
@@ -55,6 +58,7 @@ ErrorSystem::ErrorSystem(ErrorSystemConfig config)
     }
 
 #if GP_BUILD_DEBUG
+    if (m_config.breakpoint.checkIsDebugged)
     {
         auto breakpointSink = std::make_shared<BreakpointSink>(m_config.breakpoint.breakFrom);
         m_rootSink->addSink(std::move(breakpointSink));
@@ -128,6 +132,7 @@ bool ErrorSystem::isInitialized() noexcept
 
 void ErrorSystem::addSink(std::shared_ptr<Sink> sink)
 {
+    std::lock_guard lock(m_sinkMutex);
     if (auto* instance = s_instance.load(std::memory_order_acquire))
     {
         instance->m_rootSink->addSink(std::move(sink));
@@ -136,6 +141,7 @@ void ErrorSystem::addSink(std::shared_ptr<Sink> sink)
 
 void ErrorSystem::removeSink(const gp::String& name)
 {
+    std::lock_guard lock(m_sinkMutex);
     if (auto* instance = s_instance.load(std::memory_order_acquire))
     {
         instance->m_rootSink->removeSink(name);
@@ -144,6 +150,7 @@ void ErrorSystem::removeSink(const gp::String& name)
 
 void ErrorSystem::clearSinks()
 {
+    std::lock_guard lock(m_sinkMutex);
     if (auto* instance = s_instance.load(std::memory_order_acquire))
     {
         instance->m_rootSink = gp::makeUnique<MultiSink>();
@@ -152,6 +159,7 @@ void ErrorSystem::clearSinks()
 
 void ErrorSystem::flushAll()
 {
+    std::lock_guard lock(m_sinkMutex);
     if (auto* instance = s_instance.load(std::memory_order_acquire))
     {
         instance->m_rootSink->flush();
@@ -160,11 +168,14 @@ void ErrorSystem::flushAll()
 
 GP_NODISCARD MultiSink& ErrorSystem::rootSink()
 {
+    GP_ASSERT(isInitialized() && "ErrorSystem must be initialized before accessing rootSink");
+    std::lock_guard lock(m_sinkMutex);
     return *s_instance.load(std::memory_order_acquire)->m_rootSink;
 }
 
 const ErrorSystemConfig& ErrorSystem::config() noexcept
 {
+    GP_ASSERT(isInitialized() && "ErrorSystem must be initialized before accessing rootSink");
     return s_instance.load(std::memory_order_acquire)->m_config;
 }
 
@@ -178,6 +189,7 @@ void ErrorSystem::setGlobalMinSeverity(Severity severity) noexcept
 
 const ErrorStatistics& ErrorSystem::stats() noexcept
 {
+    GP_ASSERT(isInitialized() && "ErrorSystem must be initialized before accessing rootSink");
     return s_instance.load(std::memory_order_acquire)->m_stats;
 }
 

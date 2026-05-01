@@ -321,6 +321,10 @@ GP_NODISCARD inline FilterPredicate sample(gp::UInt32 oneInN)
     auto counter = std::make_shared<std::atomic<gp::UInt32>>(0u);
     return FilterPredicate{ [counter, oneInN](const ErrorRecord&)
     {
+        if (oneInN == 0)
+        {
+            return true;   // Avoid division by zero, treat as accept all
+        }
         return counter->fetch_add(1, std::memory_order_relaxed) % oneInN == 0;
     } };
 }

@@ -5,6 +5,8 @@
 #include "errors/ErrorRecord.hpp"
 #include "errors/ErrorCode.hpp"
 #include "errors/ErrorSeverity.hpp"
+#include <ctime>
+#include <functional>
 
 namespace gp::error
 {
