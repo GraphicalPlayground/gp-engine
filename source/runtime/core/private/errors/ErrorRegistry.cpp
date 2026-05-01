@@ -31,18 +31,18 @@ GP_NODISCARD gp::Optional<ErrorEntry> ErrorRegistry::lookup(ErrorCode code) cons
     return it->second;
 }
 
-GP_NODISCARD gp::StringView ErrorRegistry::describe(ErrorCode code) const
+GP_NODISCARD gp::String ErrorRegistry::describe(ErrorCode code) const
 {
     std::lock_guard lock(m_mutex);
     auto it = m_table.find(code.raw());
     if (it == m_table.end())
     {
-        return "<unregistered code>";
+        return gp::String("<unregistered code>");
     }
-    return it->second.description;
+    return gp::String(it->second.description);
 }
 
-GP_NODISCARD gp::StringView ErrorRegistry::remediationHint(ErrorCode code) const
+GP_NODISCARD gp::String ErrorRegistry::remediationHint(ErrorCode code) const
 {
     std::lock_guard lock(m_mutex);
     auto it = m_table.find(code.raw());
@@ -50,10 +50,10 @@ GP_NODISCARD gp::StringView ErrorRegistry::remediationHint(ErrorCode code) const
     {
         return {};
     }
-    return it->second.remediation;
+    return gp::String(it->second.remediation);
 }
 
-GP_NODISCARD gp::StringView ErrorRegistry::wikiUrl(ErrorCode code) const
+GP_NODISCARD gp::String ErrorRegistry::wikiUrl(ErrorCode code) const
 {
     std::lock_guard lock(m_mutex);
     auto it = m_table.find(code.raw());
@@ -61,7 +61,7 @@ GP_NODISCARD gp::StringView ErrorRegistry::wikiUrl(ErrorCode code) const
     {
         return {};
     }
-    return it->second.wikiUrl;
+    return gp::String(it->second.wikiUrl);
 }
 
 GP_NODISCARD bool ErrorRegistry::isExpected(ErrorCode code) const

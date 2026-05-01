@@ -4,8 +4,7 @@
 
 #pragma once
 
-#include "container/BasicString.hpp"       // IWYU pragma: keep
-#include "container/BasicStringView.hpp"   // IWYU pragma: keep
+#include "container/BasicString.hpp"   // IWYU pragma: keep
 #include "container/Forward.hpp"
 #include "container/Optional.hpp"
 #include "CoreMinimal.hpp"
@@ -81,21 +80,20 @@ public:
 
     /// @brief Gets the human-readable description associated with the given ErrorCode.
     /// @note
-    /// Returns from a temp, callers must store the optional first.
-    /// This overload is for logging only, not storage.
+    /// Returns a copy of the description string, safe to hold across concurrent registry mutations.
     /// @param[in] code The ErrorCode for which to retrieve the description.
-    /// @return A StringView containing the description if the code is registered; otherwise, an empty string.
-    GP_NODISCARD gp::StringView describe(ErrorCode code) const;
+    /// @return A String containing the description if the code is registered; otherwise, "<unregistered code>".
+    GP_NODISCARD gp::String describe(ErrorCode code) const;
 
     /// @brief Gets the remediation hint associated with the given ErrorCode, if available.
     /// @param[in] code The ErrorCode for which to retrieve the remediation hint.
-    /// @return A StringView containing the remediation hint if it exists; otherwise, an empty string.
-    GP_NODISCARD gp::StringView remediationHint(ErrorCode code) const;
+    /// @return A String containing the remediation hint if it exists; otherwise, an empty string.
+    GP_NODISCARD gp::String remediationHint(ErrorCode code) const;
 
     /// @brief Gets the documentation URL associated with the given ErrorCode, if available.
     /// @param[in] code The ErrorCode for which to retrieve the documentation URL.
-    /// @return An optional StringView containing the documentation URL if it exists; otherwise, an empty string.
-    GP_NODISCARD gp::StringView wikiUrl(ErrorCode code) const;
+    /// @return A String containing the documentation URL if it exists; otherwise, an empty string.
+    GP_NODISCARD gp::String wikiUrl(ErrorCode code) const;
 
     /// @brief Checks if the given ErrorCode is registered and marked as expected (i.e. not a bug).
     /// @param[in] code The ErrorCode to check for expected status.
