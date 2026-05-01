@@ -162,7 +162,7 @@ MaxEmptyLinesToKeep: 1
 MainIncludeChar: Any
 LineEnding: CRLF
 Language: Cpp
-LambdaBodyIndentation: Signature
+LambdaBodyIndentation: OuterScope
 KeepEmptyLines:
   AtEndOfFile: true
   AtStartOfBlock: false

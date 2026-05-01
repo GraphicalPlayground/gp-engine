@@ -28,6 +28,15 @@ enum class Severity : gp::UInt8
     COUNT = 7       //<! Sentinel, do NOT use as a real severity.
 };
 
+// Convenience aliases matching the public API style:  gp::error::fatal, etc.
+inline constexpr Severity trace = Severity::Trace;
+inline constexpr Severity debug = Severity::Debug;
+inline constexpr Severity info = Severity::Info;
+inline constexpr Severity warning = Severity::Warning;
+inline constexpr Severity error = Severity::Error;
+inline constexpr Severity fatal = Severity::Fatal;
+inline constexpr Severity critical = Severity::Critical;
+
 namespace detail
 {
 

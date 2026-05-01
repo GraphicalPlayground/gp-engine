@@ -372,9 +372,9 @@ public:
         auto it = std::ranges::find_if_not(
             m_data,
             [&value](const T& elem)
-            {
-                return elem == value;
-            }
+        {
+            return elem == value;
+        }
         );
         return it != end() ? static_cast<SizeType>(it - begin()) : npos;
     }
@@ -388,9 +388,9 @@ public:
         auto it = std::ranges::find_if_not(
             std::views::reverse(m_data),
             [&value](const T& elem)
-            {
-                return elem == value;
-            }
+        {
+            return elem == value;
+        }
         );
         return it != std::views::reverse(m_data).end() ? static_cast<SizeType>(it.base() - begin() - 1) : npos;
     }

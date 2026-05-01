@@ -686,4 +686,86 @@ TEST_CASE("String - repeated pushBack across SSO boundary", "[container][String]
     }
 }
 
+TEST_CASE("String - formatting a string via gp::String::format", "[container][String][format]")
+{
+    SECTION("Standard types (integers, floats, C-strings)")
+    {
+        gp::String s = gp::String::format("Hello, {}! The answer is {}.", "world", 42);
+        REQUIRE(s == "Hello, world! The answer is 42.");
+
+        gp::String f = gp::String::format("Pi is roughly {:.2f}", 3.14159);
+        REQUIRE(f == "Pi is roughly 3.14");
+    }
+
+    SECTION("Formatting with gp::String as an argument")
+    {
+        gp::String name = "Alice";
+        gp::String s = gp::String::format("User name: {}", name);
+        REQUIRE(s == "User name: Alice");
+    }
+
+    SECTION("Formatting with gp::StringView as an argument")
+    {
+        // Assuming gp::StringView is the typedef for your BasicStringView
+        gp::String original = "Bob";
+        gp::BasicStringView<char, std::char_traits<char>> view = original;
+
+        gp::String s = gp::String::format("User view: {}", view);
+        REQUIRE(s == "User view: Bob");
+    }
+
+    SECTION("Multiple gp::String and gp::StringView arguments combined")
+    {
+        gp::String first = "Graphical";
+        gp::StringView second = "Playground";
+
+        gp::String s = gp::String::format("{} {}", first, second);
+        REQUIRE(s == "Graphical Playground");
+    }
+
+    SECTION("Format specifiers: Width, Fill, and Alignment")
+    {
+        // Because we inherited from std::formatter<std::string_view>,
+        // these should work automatically for gp::String and gp::StringView!
+        gp::String str = "C++";
+        gp::StringView view = "20";
+
+        // Right align, width 6, padded with spaces
+        REQUIRE(gp::String::format("{:>6}", str) == "   C++");
+
+        // Left align, width 6, padded with dashes
+        REQUIRE(gp::String::format("{:-<6}", view) == "20----");
+
+        // Center align, width 9, padded with asterisks
+        REQUIRE(gp::String::format("{:*^9}", str) == "***C++***");
+    }
+
+    SECTION("Empty strings and views")
+    {
+        gp::String emptyStr;
+        gp::StringView emptyView;
+
+        REQUIRE(gp::String::format("[{}]", emptyStr) == "[]");
+        REQUIRE(gp::String::format("[{}]", emptyView) == "[]");
+        REQUIRE(gp::String::format("{}", gp::String("")) == "");
+    }
+
+    SECTION("Heap allocation (Exceeding SSO buffer)")
+    {
+        // gp::BasicString has a 23-character SSO limit.
+        // We want to format a string that guarantees a heap allocation.
+        gp::String s1 = "This is a string ";
+        gp::String s2 = "that is definitely way longer than 23 characters.";
+
+        gp::String result = gp::String::format("{}{}", s1, s2);
+
+        REQUIRE(result.size() > 23);
+        REQUIRE(result == "This is a string that is definitely way longer than 23 characters.");
+
+        // Verify formatting a long gp::String into another format works
+        gp::String wrapped = gp::String::format("<<{}>>", result);
+        REQUIRE(wrapped == "<<This is a string that is definitely way longer than 23 characters.>>");
+    }
+}
+
 }   // namespace gp::tests

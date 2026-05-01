@@ -671,4 +671,92 @@ TEST_CASE("Vector - custom allocator basic operations", "[container][Vector][all
     REQUIRE(lin.getAllocatedSize() > 0);
 }
 
+TEST_CASE("Vector - eraseIf", "[container][Vector]")
+{
+    gp::Vector<int> v = { 1, 2, 3, 4, 5, 6 };
+
+    SECTION("Removes elements matching the predicate and returns count")
+    {
+        auto removedCount = gp::eraseIf(
+            v,
+            [](int x)
+        {
+            return x % 2 == 0;
+        }
+        );   // Remove evens
+
+        REQUIRE(removedCount == 3);
+        REQUIRE(v.size() == 3);
+        REQUIRE(v[0] == 1);
+        REQUIRE(v[1] == 3);
+        REQUIRE(v[2] == 5);
+    }
+
+    SECTION("Returns 0 and modifies nothing if no elements match")
+    {
+        auto removedCount = gp::eraseIf(
+            v,
+            [](int x)
+        {
+            return x > 10;
+        }
+        );
+
+        REQUIRE(removedCount == 0);
+        REQUIRE(v.size() == 6);
+        REQUIRE(v[0] == 1);   // Spot check
+    }
+
+    SECTION("Clears the vector if all elements match")
+    {
+        auto removedCount = gp::eraseIf(
+            v,
+            [](int)
+        {
+            return true;
+        }
+        );
+
+        REQUIRE(removedCount == 6);
+        REQUIRE(v.isEmpty());
+        REQUIRE(v.size() == 0);
+    }
+}
+
+TEST_CASE("Vector - erase", "[container][Vector]")
+{
+    gp::Vector<int> v = { 1, 2, 3, 2, 4, 2, 5 };
+
+    SECTION("Removes all exact matches of a value and returns count")
+    {
+        auto removedCount = gp::erase(v, 2);
+
+        REQUIRE(removedCount == 3);
+        REQUIRE(v.size() == 4);
+        REQUIRE(v[0] == 1);
+        REQUIRE(v[1] == 3);
+        REQUIRE(v[2] == 4);
+        REQUIRE(v[3] == 5);
+    }
+
+    SECTION("Returns 0 and modifies nothing if value is not found")
+    {
+        auto removedCount = gp::erase(v, 99);
+
+        REQUIRE(removedCount == 0);
+        REQUIRE(v.size() == 7);
+    }
+
+    SECTION("Works correctly when the target value is at the boundaries")
+    {
+        gp::Vector<int> edgeVector = { 9, 1, 2, 9 };
+        auto removedCount = gp::erase(edgeVector, 9);
+
+        REQUIRE(removedCount == 2);
+        REQUIRE(edgeVector.size() == 2);
+        REQUIRE(edgeVector[0] == 1);
+        REQUIRE(edgeVector[1] == 2);
+    }
+}
+
 }   // namespace gp::tests
