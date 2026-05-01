@@ -4,7 +4,9 @@
 
 #include "container/BasicString.hpp"
 #include "container/Forward.hpp"
+#include "errors/Error.hpp"
 #include "errors/ErrorRegistry.hpp"
+#include "errors/ErrorSystem.hpp"
 #include <iostream>
 
 int main()
@@ -17,6 +19,19 @@ int main()
 
     auto& registry = gp::error::ErrorRegistry::instance();
     std::cout << registry.dumpAll() << std::endl;
+
+    gp::error::ErrorSystem::initialize();
+
+    GP_TRACE("This is a trace message!");
+    GP_DEBUG("This is a debug message!");
+    GP_INFO("This is an info message!");
+    GP_WARN("This is a warning message!");
+    GP_ERROR("This is an error message!");
+    GP_FATAL("This is a fatal message!");
+    GP_PANIC("This is a critical message!");
+
+    gp::error::ErrorSystem::flushAll();
+    gp::error::ErrorSystem::shutdown();
 
     return 0;
 }
