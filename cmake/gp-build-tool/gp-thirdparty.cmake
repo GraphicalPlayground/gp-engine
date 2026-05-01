@@ -133,12 +133,18 @@ endfunction()
 # @param[in] FOLDER_NAME The name of the folder to place the target in within the IDE.
 function(gpSetTargetFolder TARGET_NAME FOLDER_NAME)
   if(TARGET ${TARGET_NAME})
-    get_target_property(_TARGET_TYPE ${TARGET_NAME} TYPE)
+    get_target_property(_IS_ALIAS ${TARGET_NAME} ALIASED_TARGET)
 
-    # We cannot set the FOLDER property on Interface or Alias libraries
-    if(NOT _TARGET_TYPE STREQUAL "INTERFACE_LIBRARY" AND NOT _TARGET_TYPE STREQUAL "ALIAS_LIBRARY")
-      set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "${FOLDER_NAME}")
-      gpVerbose("Organized target '${TARGET_NAME}' into IDE folder '${FOLDER_NAME}'")
+    # If _IS_ALIAS is true, it contains the name of the aliased target.
+    # If it is false (NOTFOUND), it's a real target and safe to proceed.
+    if(NOT _IS_ALIAS)
+      get_target_property(_TARGET_TYPE ${TARGET_NAME} TYPE)
+
+      # We cannot set the FOLDER property on Interface or Alias libraries
+      if(NOT _TARGET_TYPE STREQUAL "INTERFACE_LIBRARY" AND NOT _TARGET_TYPE STREQUAL "ALIAS_LIBRARY")
+        set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "${FOLDER_NAME}")
+        gpVerbose("Organized target '${TARGET_NAME}' into IDE folder '${FOLDER_NAME}'")
+      endif()
     endif()
   endif()
 endfunction()
