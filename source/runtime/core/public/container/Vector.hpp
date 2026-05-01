@@ -8,6 +8,7 @@
 #include "CoreMinimal.hpp"
 #include "memory/AllocatorTraits.hpp"
 #include "memory/Forward.hpp"
+#include <algorithm>
 #include <cstring>
 #include <initializer_list>
 #include <iterator>
@@ -1112,5 +1113,33 @@ private:
         }
     }
 };
+
+/// @brief Erases all elements that satisfy the predicate from gp::Vector.
+/// @tparam Predicate The type of the predicate function or function object.
+/// @param[in,out] vec The vector to erase elements from.
+/// @param[in] pred The predicate function or function object that returns true for elements to erase
+/// @return The number of erased elements.
+template <class T, class Allocator, class Predicate>
+constexpr typename Vector<T, Allocator>::SizeType eraseIf(Vector<T, Allocator>& vec, Predicate pred)
+{
+    auto it = std::remove_if(vec.begin(), vec.end(), pred);
+    auto r = static_cast<typename Vector<T, Allocator>::SizeType>(std::distance(it, vec.end()));
+    vec.erase(it, vec.end());
+    return r;
+}
+
+/// @brief Erases all elements that are equal to value from gp::Vector.
+/// @tparam U The type of the value to compare against (can be different from T if T supports heterogeneous equality).
+/// @param[in,out] vec The vector to erase elements from.
+/// @param[in] value The value to compare against for erasure.
+/// @return The number of erased elements.
+template <class T, class Allocator, class U>
+constexpr typename Vector<T, Allocator>::SizeType erase(Vector<T, Allocator>& vec, const U& value)
+{
+    auto it = std::remove(vec.begin(), vec.end(), value);
+    auto r = static_cast<typename Vector<T, Allocator>::SizeType>(std::distance(it, vec.end()));
+    vec.erase(it, vec.end());
+    return r;
+}
 
 }   // namespace gp
