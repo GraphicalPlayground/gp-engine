@@ -52,9 +52,9 @@ public:
     {
         auto lhs = m_func, rhs = other.m_func;
         return FilterPredicate{ [lhs, rhs](const ErrorRecord& record)
-                                {
-                                    return lhs(record) && rhs(record);
-                                } };
+        {
+            return lhs(record) && rhs(record);
+        } };
     }
 
     /// @brief Combine this predicate with another using logical OR.
@@ -64,9 +64,9 @@ public:
     {
         auto lhs = m_func, rhs = other.m_func;
         return FilterPredicate{ [lhs, rhs](const ErrorRecord& record)
-                                {
-                                    return lhs(record) || rhs(record);
-                                } };
+        {
+            return lhs(record) || rhs(record);
+        } };
     }
 
     /// @brief Negate this predicate.
@@ -75,9 +75,9 @@ public:
     {
         auto lhs = m_func;
         return FilterPredicate{ [lhs](const ErrorRecord& record)
-                                {
-                                    return !lhs(record);
-                                } };
+        {
+            return !lhs(record);
+        } };
     }
 };
 
@@ -90,9 +90,9 @@ namespace filters
 GP_NODISCARD inline FilterPredicate atLeast(Severity severity)
 {
     return FilterPredicate{ [severity](const ErrorRecord& record)
-                            {
-                                return record.severity >= severity;
-                            } };
+    {
+        return record.severity >= severity;
+    } };
 }
 
 /// @brief Predicate that returns true for records with severity at most @p severity.
@@ -101,9 +101,9 @@ GP_NODISCARD inline FilterPredicate atLeast(Severity severity)
 GP_NODISCARD inline FilterPredicate atMost(Severity severity)
 {
     return FilterPredicate{ [severity](const ErrorRecord& record)
-                            {
-                                return record.severity <= severity;
-                            } };
+    {
+        return record.severity <= severity;
+    } };
 }
 
 /// @brief Predicate that returns true for records with severity exactly @p severity.
@@ -112,9 +112,9 @@ GP_NODISCARD inline FilterPredicate atMost(Severity severity)
 GP_NODISCARD inline FilterPredicate exactly(Severity severity)
 {
     return FilterPredicate{ [severity](const ErrorRecord& record)
-                            {
-                                return record.severity == severity;
-                            } };
+    {
+        return record.severity == severity;
+    } };
 }
 
 /// @brief Predicate that returns true for records with severity in the range [minimumSeverity, maximumSeverity].
@@ -124,9 +124,9 @@ GP_NODISCARD inline FilterPredicate exactly(Severity severity)
 GP_NODISCARD inline FilterPredicate severityRange(Severity minimumSeverity, Severity maximumSeverity)
 {
     return FilterPredicate{ [minimumSeverity, maximumSeverity](const ErrorRecord& record)
-                            {
-                                return record.severity >= minimumSeverity && record.severity <= maximumSeverity;
-                            } };
+    {
+        return record.severity >= minimumSeverity && record.severity <= maximumSeverity;
+    } };
 }
 
 /// @brief Predicate that returns true for records with a specific domain.
@@ -135,9 +135,9 @@ GP_NODISCARD inline FilterPredicate severityRange(Severity minimumSeverity, Seve
 GP_NODISCARD inline FilterPredicate domain(Domain domain)
 {
     return FilterPredicate{ [domain](const ErrorRecord& record)
-                            {
-                                return record.code.domain() == domain;
-                            } };
+    {
+        return record.code.domain() == domain;
+    } };
 }
 
 /// @brief Predicate that returns true for records with a specific error code.
@@ -146,9 +146,9 @@ GP_NODISCARD inline FilterPredicate domain(Domain domain)
 GP_NODISCARD inline FilterPredicate code(ErrorCode code)
 {
     return FilterPredicate{ [code](const ErrorRecord& record)
-                            {
-                                return record.code == code;
-                            } };
+    {
+        return record.code == code;
+    } };
 }
 
 /// @brief Predicate that returns true for records with any of the specified error codes.
@@ -158,16 +158,16 @@ GP_NODISCARD inline FilterPredicate anyCode(std::initializer_list<ErrorCode> cod
 {
     std::vector<ErrorCode> v{ codes };
     return FilterPredicate{ [v](const ErrorRecord& record)
-                            {
-                                for (const auto& c: v)
-                                {
-                                    if (record.code == c)
-                                    {
-                                        return true;
-                                    }
-                                }
-                                return false;
-                            } };
+    {
+        for (const auto& c: v)
+        {
+            if (record.code == c)
+            {
+                return true;
+            }
+        }
+        return false;
+    } };
 }
 
 /// @brief Predicate that returns true for records originating from a specific subsystem.
@@ -176,9 +176,9 @@ GP_NODISCARD inline FilterPredicate anyCode(std::initializer_list<ErrorCode> cod
 GP_NODISCARD inline FilterPredicate subsystem(gp::String name)
 {
     return FilterPredicate{ [name](const ErrorRecord& record)
-                            {
-                                return record.subsystem == name;
-                            } };
+    {
+        return record.subsystem == name;
+    } };
 }
 
 /// @brief Predicate that returns true for records originating from a specific thread.
@@ -187,9 +187,9 @@ GP_NODISCARD inline FilterPredicate subsystem(gp::String name)
 GP_NODISCARD inline FilterPredicate thread(gp::String name)
 {
     return FilterPredicate{ [name](const ErrorRecord& record)
-                            {
-                                return record.threadName == name;
-                            } };
+    {
+        return record.threadName == name;
+    } };
 }
 
 /// @brief Predicate that returns true for records whose message contains a specific substring.
@@ -198,9 +198,9 @@ GP_NODISCARD inline FilterPredicate thread(gp::String name)
 GP_NODISCARD inline FilterPredicate messageContains(gp::String needle)
 {
     return FilterPredicate{ [needle](const ErrorRecord& record)
-                            {
-                                return record.message.find(needle) != gp::String::npos;
-                            } };
+    {
+        return record.message.find(needle) != gp::String::npos;
+    } };
 }
 
 /// @brief Predicate that returns true for records whose message matches a regex pattern.
@@ -210,9 +210,9 @@ GP_NODISCARD inline FilterPredicate messageMatches(const gp::String& pattern)
 {
     auto re = std::make_shared<std::regex>(pattern.cStr());
     return FilterPredicate{ [re](const ErrorRecord& record)
-                            {
-                                return std::regex_search(record.message.cStr(), *re);
-                            } };
+    {
+        return std::regex_search(record.message.cStr(), *re);
+    } };
 }
 
 /// @brief Predicate that returns true for records originating from a source file whose path contains a specific
@@ -223,9 +223,9 @@ GP_NODISCARD inline FilterPredicate messageMatches(const gp::String& pattern)
 GP_NODISCARD inline FilterPredicate sourceFile(gp::String path)
 {
     return FilterPredicate{ [path](const ErrorRecord& record)
-                            {
-                                return gp::StringView{ record.location.file_name() }.find(path) != gp::StringView::npos;
-                            } };
+    {
+        return gp::StringView{ record.location.file_name() }.find(path) != gp::StringView::npos;
+    } };
 }
 
 /// @brief Predicate that returns true for records that have a specific metadata key-value pair.
@@ -235,9 +235,9 @@ GP_NODISCARD inline FilterPredicate sourceFile(gp::String path)
 GP_NODISCARD inline FilterPredicate hasMeta(gp::String key, gp::String value)
 {
     return FilterPredicate{ [key, value](const ErrorRecord& r)
-                            {
-                                return r.getMetadata(key) == value;
-                            } };
+    {
+        return r.getMetadata(key) == value;
+    } };
 }
 
 /// @brief Predicate that returns true for records that have a specific metadata key, regardless of its value.
@@ -246,9 +246,9 @@ GP_NODISCARD inline FilterPredicate hasMeta(gp::String key, gp::String value)
 GP_NODISCARD inline FilterPredicate hasMetaKey(gp::String key)
 {
     return FilterPredicate{ [key](const ErrorRecord& record)
-                            {
-                                return !record.getMetadata(key).isEmpty();
-                            } };
+    {
+        return !record.getMetadata(key).isEmpty();
+    } };
 }
 
 /// @brief Predicate that returns true for records raised after a specific time point (wall clock).
@@ -257,9 +257,9 @@ GP_NODISCARD inline FilterPredicate hasMetaKey(gp::String key)
 GP_NODISCARD inline FilterPredicate after(std::chrono::system_clock::time_point when)
 {
     return FilterPredicate{ [when](const ErrorRecord& record)
-                            {
-                                return record.wallTime > when;
-                            } };
+    {
+        return record.wallTime > when;
+    } };
 }
 
 /// @brief Predicate that returns true for records raised before a specific time point (wall clock).
@@ -268,9 +268,9 @@ GP_NODISCARD inline FilterPredicate after(std::chrono::system_clock::time_point 
 GP_NODISCARD inline FilterPredicate before(std::chrono::system_clock::time_point when)
 {
     return FilterPredicate{ [when](const ErrorRecord& record)
-                            {
-                                return record.wallTime < when;
-                            } };
+    {
+        return record.wallTime < when;
+    } };
 }
 
 /// @brief Predicate that matches all records (always returns true).
@@ -278,9 +278,9 @@ GP_NODISCARD inline FilterPredicate before(std::chrono::system_clock::time_point
 GP_NODISCARD inline FilterPredicate acceptAll()
 {
     return FilterPredicate{ [](const ErrorRecord&)
-                            {
-                                return true;
-                            } };
+    {
+        return true;
+    } };
 }
 
 /// @brief Predicate that matches no records (always returns false).
@@ -288,9 +288,9 @@ GP_NODISCARD inline FilterPredicate acceptAll()
 GP_NODISCARD inline FilterPredicate rejectAll()
 {
     return FilterPredicate{ [](const ErrorRecord&)
-                            {
-                                return false;
-                            } };
+    {
+        return false;
+    } };
 }
 
 /// @brief Predicate that returns true for records that have a non-empty cause (i.e., were raised with a cause).
@@ -298,9 +298,9 @@ GP_NODISCARD inline FilterPredicate rejectAll()
 GP_NODISCARD inline FilterPredicate hasCause()
 {
     return FilterPredicate{ [](const ErrorRecord& record)
-                            {
-                                return record.hasCause();
-                            } };
+    {
+        return record.hasCause();
+    } };
 }
 
 /// @brief Predicate that returns true for records that are marked as expected in the registry.
@@ -308,9 +308,9 @@ GP_NODISCARD inline FilterPredicate hasCause()
 GP_NODISCARD inline FilterPredicate isExpected()
 {
     return FilterPredicate{ [](const ErrorRecord& record)
-                            {
-                                return ErrorRegistry::instance().isExpected(record.code);
-                            } };
+    {
+        return ErrorRegistry::instance().isExpected(record.code);
+    } };
 }
 
 /// @brief Predicate that returns true for a random sample of records, with a sampling rate of 1 in N.
@@ -320,9 +320,9 @@ GP_NODISCARD inline FilterPredicate sample(gp::UInt32 oneInN)
 {
     auto counter = std::make_shared<std::atomic<gp::UInt32>>(0u);
     return FilterPredicate{ [counter, oneInN](const ErrorRecord&)
-                            {
-                                return counter->fetch_add(1, std::memory_order_relaxed) % oneInN == 0;
-                            } };
+    {
+        return counter->fetch_add(1, std::memory_order_relaxed) % oneInN == 0;
+    } };
 }
 
 }   // namespace filters
