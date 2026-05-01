@@ -1,0 +1,22 @@
+# https://clangd.llvm.org/config
+
+---
+
+# Default conditions, apply everywhere.
+
+CompileFlags:
+  Add:
+    # Some thirdparty includes seem to require a high -ferror-limit to pass checks.
+    - -ferror-limit=100
+
+---
+
+# Suppress warnings for third-party or partial code.
+
+If:
+  PathMatch:
+    - "thirdparty/.*"
+    - "build/_deps/.*"
+
+Diagnostics:
+  Suppress: "*"
