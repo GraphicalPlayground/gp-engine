@@ -81,6 +81,11 @@ if (GP_TEST_BUILD_TOOL)
   return()
 endif()
 
+# Enable testing if tests are enabled for any target
+if(GP_BUILD_TESTS)
+  enable_testing()
+endif()
+
 # Add Subdirectories
 add_subdirectory(thirdparty)
 add_subdirectory(source)
