@@ -247,6 +247,26 @@ macro(_implGpDefineCMakeTarget)
     gpFatal("Internal error: Unsupported target type '${__targetType}' for target '${__targetName}'. This indicates a logic error in the build tool implementation.")
   endif()
 
+  # Add common compile definitions for all targets based on the build configuration (Debug, Release, etc.)
+  target_compile_definitions(${__targetExportName} PRIVATE
+    # Build Configurations (Already there)
+    $<$<CONFIG:Debug>:GP_BUILD_DEBUG=1>
+    $<$<CONFIG:Release>:GP_BUILD_RELEASE=1>
+    $<$<CONFIG:RelWithDebInfo>:GP_BUILD_RELWITHDEBINFO=1>
+    $<$<CONFIG:MinSizeRel>:GP_BUILD_MINSIZEREL=1>
+
+    # Feature Options
+    $<$<BOOL:${GP_ENABLE_PROFILING}>:GP_ENABLE_PROFILING=1>
+    $<$<BOOL:${GP_BUILD_EDITOR}>:GP_BUILD_EDITOR=1>
+
+    # Graphics API Options
+    $<$<BOOL:${GP_USE_VULKAN}>:GP_USE_VULKAN=1>
+    $<$<BOOL:${GP_USE_D3D12}>:GP_USE_D3D12=1>
+    $<$<BOOL:${GP_USE_D3D11}>:GP_USE_D3D11=1>
+    $<$<BOOL:${GP_USE_METAL}>:GP_USE_METAL=1>
+    $<$<BOOL:${GP_USE_OPENGL}>:GP_USE_OPENGL=1>
+  )
+
   # Set target properties for symbol export, visibility, and other relevant settings
   set_target_properties(${__targetExportName} PROPERTIES
     OUTPUT_NAME "${__targetOutputName}"
@@ -419,6 +439,14 @@ macro(_implGpDefineTestsTarget)
       if (MSVC OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
         target_compile_options(${__targetExportName}_tests PRIVATE /Zc:__cplusplus)
       endif()
+
+      # Add common compile definitions for all targets based on the build configuration (Debug, Release, etc.)
+      target_compile_definitions(${__targetExportName}_tests PRIVATE
+        $<$<CONFIG:Debug>:GP_BUILD_DEBUG=1>
+        $<$<CONFIG:Release>:GP_BUILD_RELEASE=1>
+        $<$<CONFIG:RelWithDebInfo>:GP_BUILD_RELWITHDEBINFO=1>
+        $<$<CONFIG:MinSizeRel>:GP_BUILD_MINSIZEREL=1>
+      )
 
       add_test(NAME ${__targetName}_tests COMMAND ${__targetExportName}_tests)
       set_tests_properties(${__targetName}_tests PROPERTIES
