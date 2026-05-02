@@ -31,10 +31,34 @@
 #endif
 
 // Build configuration
-#if defined(DEBUG) || defined(_DEBUG)
-    #define GP_BUILD_DEBUG 1
-    #define GP_BUILD_RELEASE 0
+#if !defined(GP_BUILD_DEBUG) && !defined(GP_BUILD_RELEASE) && !defined(GP_BUILD_RELWITHDEBINFO) && \
+    !defined(GP_BUILD_MINSIZEREL)
+    // If no build configuration macros are defined, attempt to detect based on common debug macros
+    #if defined(DEBUG) || defined(_DEBUG)
+        #define GP_BUILD_DEBUG 1
+        #define GP_BUILD_RELEASE 0
+    #else
+        #define GP_BUILD_DEBUG 0
+        #define GP_BUILD_RELEASE 1
+    #endif
+
+    // Assume RelWithDebInfo and MinSizeRel are not defined in this case
+    #define GP_BUILD_RELWITHDEBINFO 0
+    #define GP_BUILD_MINSIZEREL 0
 #else
-    #define GP_BUILD_DEBUG 0
-    #define GP_BUILD_RELEASE 1
+    #ifndef GP_BUILD_DEBUG
+        #define GP_BUILD_DEBUG 0
+    #endif
+
+    #ifndef GP_BUILD_RELEASE
+        #define GP_BUILD_RELEASE 0
+    #endif
+
+    #ifndef GP_BUILD_RELWITHDEBINFO
+        #define GP_BUILD_RELWITHDEBINFO 0
+    #endif
+
+    #ifndef GP_BUILD_MINSIZEREL
+        #define GP_BUILD_MINSIZEREL 0
+    #endif
 #endif
