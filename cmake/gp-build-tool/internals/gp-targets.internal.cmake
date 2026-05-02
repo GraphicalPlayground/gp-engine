@@ -168,7 +168,7 @@ function(_implGpCleanDependencyName inName outName)
   if("${inName}" IN_LIST allRegisteredTargets AND NOT "${inName}" MATCHES "^gp::")
     string(REPLACE "/" "_" cleanedName "${inName}")
     # Dereference outName and export it to the caller
-    set(${outName} "gp::${cleanedName}" PARENT_SCOPE) 
+    set(${outName} "gp::${cleanedName}" PARENT_SCOPE)
   else()
     # Dereference outName and export it to the caller
     set(${outName} "${inName}" PARENT_SCOPE)
@@ -442,10 +442,22 @@ macro(_implGpDefineTestsTarget)
 
       # Add common compile definitions for all targets based on the build configuration (Debug, Release, etc.)
       target_compile_definitions(${__targetExportName}_tests PRIVATE
+        # Build Configurations (Already there)
         $<$<CONFIG:Debug>:GP_BUILD_DEBUG=1>
         $<$<CONFIG:Release>:GP_BUILD_RELEASE=1>
         $<$<CONFIG:RelWithDebInfo>:GP_BUILD_RELWITHDEBINFO=1>
         $<$<CONFIG:MinSizeRel>:GP_BUILD_MINSIZEREL=1>
+
+        # Feature Options
+        $<$<BOOL:${GP_ENABLE_PROFILING}>:GP_ENABLE_PROFILING=1>
+        $<$<BOOL:${GP_BUILD_EDITOR}>:GP_BUILD_EDITOR=1>
+
+        # Graphics API Options
+        $<$<BOOL:${GP_USE_VULKAN}>:GP_USE_VULKAN=1>
+        $<$<BOOL:${GP_USE_D3D12}>:GP_USE_D3D12=1>
+        $<$<BOOL:${GP_USE_D3D11}>:GP_USE_D3D11=1>
+        $<$<BOOL:${GP_USE_METAL}>:GP_USE_METAL=1>
+        $<$<BOOL:${GP_USE_OPENGL}>:GP_USE_OPENGL=1>
       )
 
       add_test(NAME ${__targetName}_tests COMMAND ${__targetExportName}_tests)
