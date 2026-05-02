@@ -2,7 +2,21 @@
 # See https://git-scm.com/docs/gitattributes for details.
 
 # Set default behavior to automatically normalize line endings
-* text=auto
+* text=auto eol=lf
+
+# Explicitly declare text files you want to always be LF
+*.cpp   text eol=lf
+*.c     text eol=lf
+*.cxx   text eol=lf
+*.h     text eol=lf
+*.hpp   text eol=lf
+*.hxx   text eol=lf
+*.inl   text eol=lf
+*.inc   text eol=lf
+*.cmake text eol=lf
+*.txt   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
 
 # Mark image files as binary
 *.png   binary

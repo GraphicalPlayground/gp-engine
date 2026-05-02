@@ -79,7 +79,7 @@ private:
     std::chrono::steady_clock::time_point m_initTime;
     std::mutex m_dedupMutex;
     std::unordered_map<gp::USize, std::chrono::steady_clock::time_point> m_dedupTable;
-    
+
     static std::atomic<ErrorSystem*> s_instance;
     static std::mutex s_initMutex;
     static std::mutex m_sinkMutex;

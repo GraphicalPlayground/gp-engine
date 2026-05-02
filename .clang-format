@@ -160,7 +160,7 @@ ObjCSpaceBeforeProtocolList: false
 NamespaceIndentation: None
 MaxEmptyLinesToKeep: 1
 MainIncludeChar: Any
-LineEnding: CRLF
+LineEnding: LF
 Language: Cpp
 LambdaBodyIndentation: OuterScope
 KeepEmptyLines:
