@@ -4,6 +4,9 @@
 # Set default behavior to automatically normalize line endings
 * text=auto eol=lf
 
+# Git blame ignore file for mass auto-formatting commits
+.git-blame-ignore-revs export-ignore
+
 # Explicitly declare text files you want to always be LF
 *.cpp   text eol=lf
 *.c     text eol=lf
