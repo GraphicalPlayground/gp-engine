@@ -159,39 +159,70 @@ jobs:
       - name: Build
         run: cmake --build build --config ${{ matrix.build-type }} --parallel --verbose
 
-      - name: Install Release Artifacts
-        if: inputs.package-artifacts
-        run: cmake --install build --config ${{ matrix.build-type }} --prefix install_staging
+      - name: Upload Build Tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-tree-${{ matrix.os }}
+          path: build/
+          retention-days: 1
 
-      - name: Determine Version
-        if: inputs.package-artifacts
-        id: get_version
+  test:
+    name: Test (${{ matrix.os }})
+    needs: [setup-matrix, build]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+        build-type: [Release]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download Build Tree
+        uses: actions/download-artifact@v4
+        with:
+          name: build-tree-${{ matrix.os }}
+          path: build/
+
+      - name: Run Tests
         shell: bash
         run: |
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            # If the workflow was triggered by a tag (e.g., v1.0.0), use it
-            GP_VERSION="${{ github.ref_name }}"
-          else
-            # Otherwise, read the first line of the VERSION file and strip whitespaces/newlines
-            GP_VERSION=$(head -n 1 VERSION | tr -d '\r\n ')
-          fi
-          # Save it to GITHUB_ENV so subsequent steps can access it
-          echo "VERSION=$GP_VERSION" >> $GITHUB_ENV
-          echo "Resolved version: $GP_VERSION"
+          cd build
+          ctest --output-on-failure -C ${{ matrix.build-type }}
 
-      - name: Package Artifacts (Unix)
-        if: ${{ inputs.package-artifacts && (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest') }}
+  package:
+    name: Package (${{ matrix.os }})
+    needs: [setup-matrix, build, test]
+    if: inputs.package-artifacts == true
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+        build-type: [Release]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download Build Tree
+        uses: actions/download-artifact@v4
+        with:
+          name: build-tree-${{ matrix.os }}
+          path: build/
+
+      - name: Install & Versioning
+        shell: bash
+        run: |
+          cmake --install build --prefix install_staging
+          GP_VERSION=$(head -n 1 VERSION | tr -d '\r\n ')
+          echo "VERSION=$GP_VERSION" >> $GITHUB_ENV
+
+      - name: Archive (Unix)
+        if: runner.os != 'Windows'
         run: tar -czvf gp-engine-${{ matrix.os }}-${{ env.VERSION }}.tar.gz -C install_staging .
 
-      - name: Package Artifacts (Windows)
-        if: ${{ inputs.package-artifacts && matrix.os == 'windows-latest' }}
+      - name: Archive (Windows)
+        if: runner.os == 'Windows'
         run: powershell Compress-Archive -Path install_staging\* -DestinationPath gp-engine-${{ matrix.os }}-${{ env.VERSION }}.zip
 
-      - name: Upload Artifacts
-        if: ${{ inputs.package-artifacts }}
+      - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.os }}
           path: gp-engine-${{ matrix.os }}-${{ env.VERSION }}.*
-          if-no-files-found: error
           retention-days: 14
