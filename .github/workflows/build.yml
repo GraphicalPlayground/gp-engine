@@ -166,6 +166,13 @@ jobs:
           path: build/
           retention-days: 1
 
+      - name: Upload Compiled Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-binaries-${{ matrix.os }}
+          path: binaries/
+          retention-days: 1
+
   test:
     name: Test (${{ matrix.os }})
     needs: [setup-matrix, build]
@@ -181,6 +188,12 @@ jobs:
         with:
           name: build-tree-${{ matrix.os }}
           path: build/
+
+      - name: Download Compiled Binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: engine-binaries-${{ matrix.os }}
+          path: binaries/
 
       - name: Run Tests
         shell: bash
@@ -204,6 +217,11 @@ jobs:
         with:
           name: build-tree-${{ matrix.os }}
           path: build/
+
+      - name: Download Compiled Binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: engine-binaries-${{ matrix.os }}
 
       - name: Install & Versioning
         shell: bash
