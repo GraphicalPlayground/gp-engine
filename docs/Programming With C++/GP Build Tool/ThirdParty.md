@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-title: Third Party Management
+title: Third-Party Management
 tags:
   - c++
   - build system
@@ -11,90 +11,130 @@ tags:
   - fetchcontent
 ---
 
-# Third-Party Management (`gp-thirdparty`)
+<p style={{ color: '#ffffffa6' }}>
+  A Local-First, Fetch-Second strategy for integrating external dependencies without cluttering
+  the codebase or violating licenses.
+</p>
 
-Managing external dependencies in C++ can quickly clutter build scripts. The Graphical Playground
-Build Tool (GPBT) simplifies this through the `gp-thirdparty` module. It acts as an intelligent
-wrapper around CMake's standard `find_package` and `FetchContent` modules.
+Managing external dependencies in C++ is notoriously brittle. Header-only libraries get copied
+manually, Git submodules drift out of sync, and CMake's `find_package` fails silently on
+developer machines that have the wrong version installed. GPBT solves this through the
+`gp-thirdparty` module.
 
-The core philosophy of GPBT's third-party management is **Local First, Fetch Second**. It will attempt
-to find the dependency already installed on your system; if it fails, it will automatically clone a
-specified Git repository, inject custom build options, and build the dependency from source.
+The core philosophy is **Local First, Fetch Second**: for every dependency, GPBT first checks
+whether a compatible version is already installed on the host system. Only if that check fails
+does it fall back to fetching the exact pinned version from Git, building it from source, and
+making it available, transparently and reproducibly.
+
+---
 
 ## Directory Organization and Licensing
 
-To maintain a healthy codebase and respect legal constraints, the engine strictly enforces how
-third-party dependencies are organized on disk.
+To maintain a healthy codebase and respect legal constraints, the engine enforces a strict layout
+for all third-party code.
 
-:::warning
-### Licensing and Directory Structure
+:::warning Licensing is mandatory
+When integrating any new third-party dependency, you must isolate it in its own dedicated
+subfolder under the root `/thirdparty` directory. Within that subfolder you are required to
+include:
 
-When integrating a new third-party dependency, you must isolate it within its own dedicated
-subfolder under the root `/thirdparty` directory.
+1. A `CMakeLists.txt` file containing the `gpFetchContent` call for that dependency.
+2. A copy of the library's license file, named `LICENSE.md` (or the upstream format, e.g.,
+   `LICENSE`, `LICENSE.txt`).
 
-Within this subfolder, you are strictly required to include:
-
-1. The `CMakeLists.txt` file containing the `gpFetchContent` configuration for that specific
-   dependency.
-2. A copy of the library's `LICENSE.md`. This ensures full legal compliance and makes it easy to
-   audit the licenses of all shipped dependencies.
+Shipping a library without its license is a legal violation. GPBT's directory structure makes
+auditing trivial, every dependency and its license live side by side.
 :::
 
-Your local directory structure should look exactly like this:
+The expected layout:
 
-```
+```text
 /thirdparty
-  /mydependency
+  /sdl3
+    CMakeLists.txt
+    LICENSE.md
+  /catch2
+    CMakeLists.txt
+    LICENSE.md
+  /vulkan
     CMakeLists.txt
     LICENSE.md
 ```
 
-## Core Functions
+Each subdirectory is added to the build via the root `thirdparty/CMakeLists.txt`, which calls
+`add_subdirectory` for each one (conditionally, for platform-specific libraries).
 
-`gpFetchContent`
+---
 
-This is the primary function for resolving external dependencies. It takes a list of named arguments
-to configure the fetch behavior.
+## `gpFetchContent`
 
-**Arguments:**
+This is the primary function for resolving external dependencies. It wraps CMake's standard
+`find_package` and `FetchContent` modules with additional validation, logging, and option
+injection.
 
-- `NAME` _(Required)_: The identifier for the dependency.
-- `GIT_REPOSITORY` _(Required)_: The URL of the Git repository to fallback to.
-- `GIT_TAG` _(Required)_: The specific Git tag, branch, or commit hash to checkout (shallow clones
-  are used for speed).
-- `PACKAGE_NAME` _(Optional)_: The name passed to `find_package`. If omitted, it defaults to the
-  `NAME` argument.
-- `REQUIRED_VERSION` _(Optional)_: The version requirement to pass to `find_package`.
-- `COMPONENTS` _(Optional)_: Specific components to request from `find_package`.
-- `OPTIONS` _(Optional)_: A list of custom CMake build options to inject into the cache before
-  the dependency is configured, formatted as `"KEY=VALUE"`.
+### Arguments
 
-`gpSetTargetFolder`
+| Argument | Required | Description |
+| --- | --- | --- |
+| `NAME` | Yes | The identifier for this dependency. Used as the FetchContent name. |
+| `GIT_REPOSITORY` | Yes | The Git repository URL to clone if no local installation is found. |
+| `GIT_TAG` | Yes | The exact tag, branch, or commit hash to clone (shallow clone). |
+| `PACKAGE_NAME` | No | The name passed to `find_package`. Defaults to `NAME`. |
+| `REQUIRED_VERSION` | No | The version passed to `find_package`. |
+| `COMPONENTS` | No | Specific components to request from `find_package`. |
+| `OPTIONS` | No | Cache variables to inject before configuring the dependency, formatted as `"KEY=VALUE"`. |
 
-When integrating third-party code, your IDE's solution explorer can quickly become overwhelmed
-with external targets. This helper function sets the `FOLDER` property of a target, organizing it
-into a specific IDE folder (like in Visual Studio or Xcode) without affecting the actual build
-process.
+### How It Works
 
-:::note
-GPBT automatically ignores `INTERFACE_LIBRARY` and `ALIAS_LIBRARY` target types, as CMake does not
-allow folders to be set on them.
+1. **Local check**, `find_package(<PACKAGE_NAME> <REQUIRED_VERSION> QUIET)` is called first.
+   GPBT uses `QUIET` to suppress the verbose "not found" output that CMake normally emits.
+2. **Local success**, If the package is found, its path and version are logged and the function
+   returns. The fetched sources are never touched.
+3. **Fallback fetch**, If the package is not found locally, `FetchContent_Declare` registers the
+   Git repository with `GIT_SHALLOW TRUE` for speed. Any `OPTIONS` entries are injected into the
+   CMake cache as `CACHE STRING ... FORCE` before `FetchContent_MakeAvailable` is called.
+4. **Available**, The dependency's targets are now visible to the rest of the build.
+
+:::tip For students
+`GIT_SHALLOW TRUE` means CMake only downloads the single commit pointed to by `GIT_TAG`, not the
+entire Git history. For large repositories like SDL3 this can reduce download time from minutes
+to seconds. Always pin to a specific release tag (e.g., `release-3.4.0`) rather than a branch
+name, branches move, tags do not.
 :::
 
-**Arguments:**
+---
 
-- `TARGET_NAME`: The name of the target to organize.
-- `FOLDER_NAME`: The IDE folder path (e.g., `"thirdparty/graphics"`).
+## `gpSetTargetFolder`
+
+When third-party libraries are integrated, their CMake targets appear alongside engine targets in
+your IDE. This can make the solution explorer difficult to navigate. `gpSetTargetFolder` moves a
+target into a named IDE folder without affecting the build at all.
+
+```cmake
+gpSetTargetFolder(TARGET_NAME FOLDER_NAME)
+```
+
+GPBT automatically skips `INTERFACE_LIBRARY` and `ALIAS_LIBRARY` targets, since CMake does not
+permit setting the `FOLDER` property on them.
+
+```cmake showLineNumbers
+if(TARGET SDL3)
+  gpSetTargetFolder(SDL3         "thirdparty/sdl3")
+  gpSetTargetFolder(SDL3-static  "thirdparty/sdl3")
+  gpSetTargetFolder(SDL_uclibc   "thirdparty/sdl3")
+endif()
+```
+
+---
 
 ## Usage Examples
 
-Below are examples demonstrating how to properly integrate third-party libraries using GPBT.
+### Example 1, SDL3 (Static Build)
 
-### Example 1: Integrating SDL3 (Static Build)
-
-This example attempts to find `SDL3` locally. If it fails, it fetches release `3.4.0` from GitHub
-and forces it to build statically while disabling its internal test suite. Finally, it organizes
-the resulting targets into an IDE folder.
+This example attempts to find SDL3 locally. If it is not found, it fetches release `3.4.0` from
+GitHub, forces a static build, disables SDL's internal test suite (which would otherwise add
+dozens of test executables to your IDE), and organizes the targets into a `thirdparty/sdl3`
+folder.
 
 ```cmake showLineNumbers
 include(gp-build-tool)
@@ -112,23 +152,21 @@ gpFetchContent(
 )
 
 if(TARGET SDL3)
-  gpSetTargetFolder(SDL_uclibc "thirdparty/sdl3")
-  gpSetTargetFolder(SDL3 "thirdparty/sdl3")
+  gpSetTargetFolder(SDL_uclibc  "thirdparty/sdl3")
+  gpSetTargetFolder(SDL3        "thirdparty/sdl3")
   gpSetTargetFolder(SDL3-static "thirdparty/sdl3")
 endif()
 ```
 
-### Example 2: Platform-Specific Header Integration (DirectX 12)
+### Example 2, Platform-Specific Headers (DirectX 12)
 
-You can easily wrap `gpFetchContent` in standard CMake conditionals to only pull dependencies on
-specific platforms or when specific engine features are enabled.
+Wrap `gpFetchContent` in a CMake `return()` guard to skip the entire file on platforms where
+the dependency is irrelevant. This is cleaner than an `if/endif` around the entire block.
 
 ```cmake showLineNumbers
 include(gp-build-tool)
 
-option(GP_USE_D3D12 "Enable D3D12 support" ON)
-
-if (NOT GP_USE_D3D12 OR NOT WIN32)
+if(NOT GP_USE_D3D12 OR NOT WIN32)
   return()
 endif()
 
@@ -150,10 +188,14 @@ if(TARGET DirectX-Headers)
 endif()
 ```
 
-### Example 3: Tooling Integration (Catch2)
+### Example 3, Testing Frameworks (Catch2)
 
-When fetching tools like Catch2, you often want to disable their internal examples, tests, and
-documentation to keep your build times fast.
+Catch2 ships with its own set of examples, tests, and documentation targets. Disabling them
+keeps build times fast and keeps the IDE clean.
+
+After fetching Catch2, its extras directory must be appended to `CMAKE_MODULE_PATH` so that
+the `Catch` CMake module (which provides `catch_discover_tests`) is available to the rest
+of the build. The `PARENT_SCOPE` propagates this change up to the calling `CMakeLists.txt`.
 
 ```cmake showLineNumbers
 include(gp-build-tool)
@@ -175,11 +217,54 @@ gpFetchContent(
 )
 
 if(TARGET Catch2)
-  gpSetTargetFolder(Catch2 "thirdparty/testing")
   gpSetTargetFolder(Catch2WithMain "thirdparty/testing")
+  gpSetTargetFolder(Catch2         "thirdparty/testing")
 
-  # Expose Catch2's extra CMake modules to the parent scope
   list(APPEND CMAKE_MODULE_PATH "${catch2_SOURCE_DIR}/extras")
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} PARENT_SCOPE)
 endif()
 ```
+
+### Example 4, Shader Toolchain (glslang)
+
+Some dependencies need multiple targets organized. Using a helper variable keeps the
+`gpSetTargetFolder` calls readable.
+
+```cmake showLineNumbers
+include(gp-build-tool)
+
+gpFetchContent(
+  NAME glslang
+  GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
+  GIT_TAG vulkan-sdk-1.3.296.0
+  OPTIONS
+    "GLSLANG_TESTS=OFF"
+    "GLSLANG_ENABLE_INSTALL=OFF"
+    "BUILD_EXTERNAL=OFF"
+    "ENABLE_GLSLANG_BINARIES=OFF"
+    "ENABLE_SPVREMAPPER=OFF"
+)
+
+foreach(_glslangTarget IN ITEMS
+    glslang glslang-default-resource-limits
+    MachineIndependent OSDependent GenericCodeGen
+    SPIRV glslang-build-info)
+  gpSetTargetFolder(${_glslangTarget} "thirdparty/shaders/glslang")
+endforeach()
+```
+
+---
+
+## Adding a New Dependency Checklist
+
+When adding a third-party library to the engine, follow this checklist:
+
+1. Create `/thirdparty/<library_name>/CMakeLists.txt`.
+2. Copy the library's license into `/thirdparty/<library_name>/LICENSE.md`.
+3. Write a `gpFetchContent(...)` call pinned to an exact release tag, never a branch.
+4. Disable the library's own tests, examples, and documentation via `OPTIONS`.
+5. Add `gpSetTargetFolder(...)` calls to keep the IDE organized.
+6. Add `add_subdirectory(<library_name>)` in `/thirdparty/CMakeLists.txt`, guarded by
+   platform conditions if the library is platform-specific.
+7. Test the build on a clean machine (or inside the CI Docker image) to verify the fetch path
+   works, not just the local-installation path.
