@@ -7,8 +7,8 @@ include(gp-build-tool/internals/gp-logger.internal)
 include(gp-build-tool/internals/gp-stringify.internal)
 include(gp-build-tool/internals/gp-utils.internal)
 
-# List of valid target types for the build system. This can be extended in the future if new target types are added.
-set(GPBT_TARGET_TYPES "module;executable" CACHE INTERNAL "List of valid target types for the build system")
+# List of valid target types for the build system.
+set(GPBT_TARGET_TYPES "module;executable;plugin" CACHE INTERNAL "List of valid target types for the build system")
 
 # @brief Internal macro to initialize a new target with the given name and type.
 # @param[in] targetName The name of the target being defined.
@@ -61,11 +61,15 @@ macro(_implGpStartTarget targetName targetType)
     __targetEnableExamples FALSE
     __targetEnableISPC FALSE
     __targetEnableStrictWarnings FALSE
+    __targetUnityBuild FALSE
 
     # Executable-specific properties
     __targetExecutableEntryPoint ""
     __targetExecutableResourceFiles ""
     __targetExecutableIsGUI FALSE
+
+    # Optional overrides
+    __targetCustomFolder ""
   )
 
   # Populate the target metadata variables based on the provided name and type
@@ -190,6 +194,26 @@ function(_implGpGetCleanedDependencyList inList outList)
   set(${outList} "${_tempList}" PARENT_SCOPE)
 endfunction()
 
+# @brief Internal helper to stamp the standard GP compile definitions onto any target.
+#        Centralises all build-config, feature, and graphics-API definitions so they are
+#        applied identically to the main target, tests, benchmarks, and any future sub-targets.
+# @param[in] targetName The CMake target name to receive the definitions.
+macro(_implGpApplyCommonDefinitions targetName)
+  target_compile_definitions(${targetName} PRIVATE
+    $<$<CONFIG:Debug>:GP_BUILD_DEBUG=1>
+    $<$<CONFIG:Release>:GP_BUILD_RELEASE=1>
+    $<$<CONFIG:RelWithDebInfo>:GP_BUILD_RELWITHDEBINFO=1>
+    $<$<CONFIG:MinSizeRel>:GP_BUILD_MINSIZEREL=1>
+    $<$<BOOL:${GP_ENABLE_PROFILING}>:GP_ENABLE_PROFILING=1>
+    $<$<BOOL:${GP_BUILD_EDITOR}>:GP_BUILD_EDITOR=1>
+    $<$<BOOL:${GP_USE_VULKAN}>:GP_USE_VULKAN=1>
+    $<$<BOOL:${GP_USE_D3D12}>:GP_USE_D3D12=1>
+    $<$<BOOL:${GP_USE_D3D11}>:GP_USE_D3D11=1>
+    $<$<BOOL:${GP_USE_METAL}>:GP_USE_METAL=1>
+    $<$<BOOL:${GP_USE_OPENGL}>:GP_USE_OPENGL=1>
+  )
+endmacro()
+
 # @brief Internal macro to define the actual CMake target based on the properties collected during the registration phase.
 #        This is called during the configuration phase after all targets have been registered.
 macro(_implGpDefineCMakeTarget)
@@ -228,9 +252,25 @@ macro(_implGpDefineCMakeTarget)
     endif()
   endforeach()
 
-  # Create the CMake target based on the collected properties and the target type
+  # Determine the IDE folder for this target. Prefer the user-supplied override, then
+  # fall back to a canonical name derived from the target type.
+  gpSetScoped(_ideFolder "modules")
+  if("${__targetType}" STREQUAL "executable")
+    set(_ideFolder "executables")
+  elseif("${__targetType}" STREQUAL "plugin")
+    set(_ideFolder "plugins")
+  endif()
+  if(NOT "${__targetCustomFolder}" STREQUAL "")
+    set(_ideFolder "${__targetCustomFolder}")
+  endif()
+
+  # Create the CMake target based on the collected properties and the target type.
   if(__targetType STREQUAL "module")
     add_library(${__targetExportName} ${__targetSources} ${headerFiles})
+    add_library(${__targetAliasName} ALIAS ${__targetExportName})
+  elseif(__targetType STREQUAL "plugin")
+    # Plugins are always SHARED: they are runtime-loaded and must produce a .so/.dll.
+    add_library(${__targetExportName} SHARED ${__targetSources} ${headerFiles})
     add_library(${__targetAliasName} ALIAS ${__targetExportName})
   elseif(__targetType STREQUAL "executable")
     add_executable(${__targetExportName} ${__targetSources} ${headerFiles} ${__targetExecutableResourceFiles} ${__targetExecutableEntryPoint})
@@ -244,44 +284,44 @@ macro(_implGpDefineCMakeTarget)
 
     target_compile_definitions(${__targetExportName} PRIVATE "GP_EXECUTABLE_IS_GUI=$<BOOL:${__targetExecutableIsGUI}>")
   else()
-    gpFatal("Internal error: Unsupported target type '${__targetType}' for target '${__targetName}'. This indicates a logic error in the build tool implementation.")
+    gpFatal("Internal error: Unsupported target type '${__targetType}' for target '${__targetName}'.")
   endif()
 
-  # Add common compile definitions for all targets based on the build configuration (Debug, Release, etc.)
-  target_compile_definitions(${__targetExportName} PRIVATE
-    # Build Configurations (Already there)
-    $<$<CONFIG:Debug>:GP_BUILD_DEBUG=1>
-    $<$<CONFIG:Release>:GP_BUILD_RELEASE=1>
-    $<$<CONFIG:RelWithDebInfo>:GP_BUILD_RELWITHDEBINFO=1>
-    $<$<CONFIG:MinSizeRel>:GP_BUILD_MINSIZEREL=1>
+  # Apply the standard GP compile definitions (build config, features, graphics APIs).
+  _implGpApplyCommonDefinitions(${__targetExportName})
 
-    # Feature Options
-    $<$<BOOL:${GP_ENABLE_PROFILING}>:GP_ENABLE_PROFILING=1>
-    $<$<BOOL:${GP_BUILD_EDITOR}>:GP_BUILD_EDITOR=1>
+  # Determine whether Windows DLL export-all-symbols is needed.
+  # Modules: follow BUILD_SHARED_LIBS. Plugins: always shared, so always export.
+  gpSetScoped(_isShared FALSE)
+  if(__targetType STREQUAL "plugin")
+    set(_isShared TRUE)
+  elseif(BUILD_SHARED_LIBS)
+    set(_isShared TRUE)
+  endif()
 
-    # Graphics API Options
-    $<$<BOOL:${GP_USE_VULKAN}>:GP_USE_VULKAN=1>
-    $<$<BOOL:${GP_USE_D3D12}>:GP_USE_D3D12=1>
-    $<$<BOOL:${GP_USE_D3D11}>:GP_USE_D3D11=1>
-    $<$<BOOL:${GP_USE_METAL}>:GP_USE_METAL=1>
-    $<$<BOOL:${GP_USE_OPENGL}>:GP_USE_OPENGL=1>
-  )
-
-  # Set target properties for symbol export, visibility, and other relevant settings
+  # Set target properties for symbol export, visibility, and other relevant settings.
   set_target_properties(${__targetExportName} PROPERTIES
     OUTPUT_NAME "${__targetOutputName}"
     DEFINE_SYMBOL "GP_${__targetNameUpper}_API_EXPORTS"
     CXX_VISIBILITY_PRESET default
     VISIBILITY_INLINES_HIDDEN OFF
     POSITION_INDEPENDENT_CODE ON
-    FOLDER "${__targetType}"
+    FOLDER "${_ideFolder}"
   )
 
-  # On Windows, if we're building a shared library, we need to ensure that all symbols are exported correctly.
-  if(WIN32 AND BUILD_SHARED_LIBS)
+  if(WIN32 AND _isShared)
     set_target_properties(${__targetExportName} PROPERTIES
       WINDOWS_EXPORT_ALL_SYMBOLS ON
     )
+  endif()
+
+  # Unity build: batch source files together for faster cold-build throughput.
+  if(__targetUnityBuild)
+    set_target_properties(${__targetExportName} PROPERTIES
+      UNITY_BUILD ON
+      UNITY_BUILD_BATCH_SIZE 16
+    )
+    gpVerbose("Unity build enabled for target '${__targetName}' (batch size 16)")
   endif()
 
   # Set include directories with proper visibility (PUBLIC, PRIVATE, INTERFACE)
@@ -297,7 +337,20 @@ macro(_implGpDefineCMakeTarget)
       ${__targetInternalIncludes}
   )
 
-  # TODO: Add support for compile definitions with proper visibility (PUBLIC, PRIVATE, INTERNAL).
+  # Apply user-defined compile definitions with the correct CMake visibility.
+  # "internal" definitions are scoped to this target's own translation units (PRIVATE).
+  list(LENGTH __targetPublicCompileDefinitions _numPublicDefs)
+  if(_numPublicDefs GREATER 0)
+    target_compile_definitions(${__targetExportName} PUBLIC ${__targetPublicCompileDefinitions})
+  endif()
+  list(LENGTH __targetPrivateCompileDefinitions _numPrivateDefs)
+  if(_numPrivateDefs GREATER 0)
+    target_compile_definitions(${__targetExportName} PRIVATE ${__targetPrivateCompileDefinitions})
+  endif()
+  list(LENGTH __targetInternalCompileDefinitions _numInternalDefs)
+  if(_numInternalDefs GREATER 0)
+    target_compile_definitions(${__targetExportName} PRIVATE ${__targetInternalCompileDefinitions})
+  endif()
 
   # Add precompile headers if specified
   list(LENGTH __targetPCHs numPCHs)
@@ -337,11 +390,22 @@ macro(_implGpDefineCMakeTarget)
   endif()
 
   # Set the internal dependencies for the target.
+  # "Internal" means used only in this target's own implementation — PRIVATE, not INTERFACE.
   _implGpGetCleanedDependencyList(__targetInternalDependencies internalDeps)
   list(LENGTH internalDeps numInternalDeps)
   if(numInternalDeps GREATER 0)
     gpVerbose("Linking internal dependencies for target '${__targetName}': ${internalDeps}")
-    target_link_libraries(${__targetExportName} INTERFACE ${internalDeps})
+    target_link_libraries(${__targetExportName} PRIVATE ${internalDeps})
+  endif()
+
+  # Wire dynamic dependencies as build-order edges only (no linker coupling).
+  # These are runtime-loaded modules (plugins, RHI backends) that must exist in the
+  # output directory before this target runs, but must NOT be linked at compile time.
+  _implGpGetCleanedDependencyList(__targetDynamicDependencies dynamicDeps)
+  list(LENGTH dynamicDeps numDynamicDeps)
+  if(numDynamicDeps GREATER 0)
+    gpVerbose("Adding build-order edges for dynamic dependencies of '${__targetName}': ${dynamicDeps}")
+    add_dependencies(${__targetExportName} ${dynamicDeps})
   endif()
 
   # Ensure C++23 standard is used for all targets
@@ -367,12 +431,27 @@ macro(_implGpDefineCMakeTarget)
     )
   endforeach()
 
-  # Strict warning handling (optional, but recommended for better code quality)
+  # Compiler-aware strict warnings. Warnings-as-errors keeps the codebase clean.
   if(__targetEnableStrictWarnings)
-    if(MSVC)
-      target_compile_options(${__targetExportName} PRIVATE /W4 /WX)
-    else()
-      target_compile_options(${__targetExportName} PRIVATE -Wall -Wextra -Werror)
+    if(MSVC OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+      target_compile_options(${__targetExportName} PRIVATE
+        /W4           # Warning level 4
+        /WX           # Warnings as errors
+        /permissive-  # Standards-conformance mode
+        /Zc:preprocessor # Standards-compliant preprocessor
+      )
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+      target_compile_options(${__targetExportName} PRIVATE
+        -Wall -Wextra -Werror
+        -Wno-unused-parameter
+        -Wno-missing-field-initializers
+      )
+    else() # GCC
+      target_compile_options(${__targetExportName} PRIVATE
+        -Wall -Wextra -Werror
+        -Wno-unused-parameter
+        -Wno-missing-field-initializers
+      )
     endif()
   endif()
 
@@ -436,29 +515,11 @@ macro(_implGpDefineTestsTarget)
       )
 
       target_compile_features(${__targetExportName}_tests PUBLIC cxx_std_23)
-      if (MSVC OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+      if(MSVC OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
         target_compile_options(${__targetExportName}_tests PRIVATE /Zc:__cplusplus)
       endif()
 
-      # Add common compile definitions for all targets based on the build configuration (Debug, Release, etc.)
-      target_compile_definitions(${__targetExportName}_tests PRIVATE
-        # Build Configurations (Already there)
-        $<$<CONFIG:Debug>:GP_BUILD_DEBUG=1>
-        $<$<CONFIG:Release>:GP_BUILD_RELEASE=1>
-        $<$<CONFIG:RelWithDebInfo>:GP_BUILD_RELWITHDEBINFO=1>
-        $<$<CONFIG:MinSizeRel>:GP_BUILD_MINSIZEREL=1>
-
-        # Feature Options
-        $<$<BOOL:${GP_ENABLE_PROFILING}>:GP_ENABLE_PROFILING=1>
-        $<$<BOOL:${GP_BUILD_EDITOR}>:GP_BUILD_EDITOR=1>
-
-        # Graphics API Options
-        $<$<BOOL:${GP_USE_VULKAN}>:GP_USE_VULKAN=1>
-        $<$<BOOL:${GP_USE_D3D12}>:GP_USE_D3D12=1>
-        $<$<BOOL:${GP_USE_D3D11}>:GP_USE_D3D11=1>
-        $<$<BOOL:${GP_USE_METAL}>:GP_USE_METAL=1>
-        $<$<BOOL:${GP_USE_OPENGL}>:GP_USE_OPENGL=1>
-      )
+      _implGpApplyCommonDefinitions(${__targetExportName}_tests)
 
       add_test(NAME ${__targetName}_tests COMMAND ${__targetExportName}_tests)
       set_tests_properties(${__targetName}_tests PROPERTIES
@@ -497,7 +558,43 @@ macro(_implGpDefineBenchmarksTarget)
     gpFatal("Internal error: _implGpDefineBenchmarksTarget() called during phase '${GPBT_CURRENT_PHASE}'. This function should only be called during the CONFIGURATION phase.")
   endif()
 
-  gpWarning("Benchmarks target generation is not yet implemented for target '${__targetName}'.")
+  if(NOT TARGET Catch2WithMain)
+    gpFatal("Catch2 target 'Catch2WithMain' not found. Ensure Catch2 is properly added as a dependency for benchmarks.")
+  endif()
+
+  gpLog("Defining benchmarks target '${__targetExportName}_benchmarks' for target '${__targetName}'")
+
+  gpSetScoped(__targetBenchmarksDir "${__targetLocation}/benchmarks")
+  if(NOT EXISTS "${__targetBenchmarksDir}")
+    gpWarning("No benchmark sources found in '${__targetBenchmarksDir}' for target '${__targetName}'. No benchmarks will be generated.")
+  else()
+    file(GLOB_RECURSE __targetBenchmarksSources "${__targetBenchmarksDir}/*.cpp" "${__targetBenchmarksDir}/*.cc")
+
+    if(NOT __targetBenchmarksSources)
+      gpWarning("No benchmark sources found in '${__targetBenchmarksDir}' for target '${__targetName}'. No benchmarks will be generated.")
+    else()
+      add_executable(${__targetExportName}_benchmarks ${__targetBenchmarksSources})
+      target_link_libraries(${__targetExportName}_benchmarks PRIVATE Catch2WithMain ${__targetExportName})
+      set_target_properties(${__targetExportName}_benchmarks PROPERTIES
+        OUTPUT_NAME "${__targetOutputName}_benchmarks"
+        FOLDER "benchmarks"
+      )
+
+      target_compile_features(${__targetExportName}_benchmarks PUBLIC cxx_std_23)
+      if(MSVC OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+        target_compile_options(${__targetExportName}_benchmarks PRIVATE /Zc:__cplusplus)
+      endif()
+
+      # Activate Catch2's built-in benchmark support.
+      target_compile_definitions(${__targetExportName}_benchmarks PRIVATE CATCH_CONFIG_ENABLE_BENCHMARKING=1)
+      _implGpApplyCommonDefinitions(${__targetExportName}_benchmarks)
+
+      add_test(NAME ${__targetName}_benchmarks COMMAND ${__targetExportName}_benchmarks "[benchmark]")
+      set_tests_properties(${__targetName}_benchmarks PROPERTIES
+        LABELS "gp;${__targetName};benchmarks"
+      )
+    endif()
+  endif()
 endmacro()
 
 # @brief Internal macro to define an examples target for the current target.

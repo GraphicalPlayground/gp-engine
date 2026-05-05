@@ -122,15 +122,15 @@ macro(_implGpAddCompileFlag visibility flag)
 
   # Check if the compile flag is already listed in the appropriate list to prevent duplicates
   if("${visibility}" STREQUAL "public")
-    if("${flag}" IN_LIST __targetPublicCompileFlags)
+    if("${flag}" IN_LIST __targetPublicCompileOptions)
       gpFatal("Compile flag '${flag}' is already in the public compile flags list.")
     endif()
-    list(APPEND __targetPublicCompileFlags "${flag}")
+    list(APPEND __targetPublicCompileOptions "${flag}")
   else() # private
-    if("${flag}" IN_LIST __targetPrivateCompileFlags)
+    if("${flag}" IN_LIST __targetPrivateCompileOptions)
       gpFatal("Compile flag '${flag}' is already in the private compile flags list.")
     endif()
-    list(APPEND __targetPrivateCompileFlags "${flag}")
+    list(APPEND __targetPrivateCompileOptions "${flag}")
   endif()
 
   # Log the added compile flag for debugging purposes
@@ -231,4 +231,42 @@ macro(_implGpSetBooleanTargetValue commandName targetVariable value)
 
   # Verbose logging for debugging purposes
   gpVerbose("Set '${commandName}' to '${value}' for target '${__targetName}'")
+endmacro()
+
+# @brief Internal macro to conditionally add a dependency only when the target platform matches.
+#        Supported platform tokens: WINDOWS, LINUX, MAC, UNIX, ALL.
+# @param[in] visibility The visibility level for the dependency (public, private, internal, or dynamic).
+# @param[in] dependency The name of the dependency to add.
+# @param[in] platform   The platform token controlling when the dependency is active.
+macro(_implGpAddDependencyOnPlatform visibility dependency platform)
+  gpFatalIfNotInNamedScope("target" "gpAdd*DependencyOnPlatform can only be called within a target scope.")
+
+  set(GPBT_VALID_PLATFORMS "WINDOWS;LINUX;MAC;UNIX;ALL")
+  string(TOUPPER "${platform}" _gpPlatformUpper)
+
+  if(NOT "${_gpPlatformUpper}" IN_LIST GPBT_VALID_PLATFORMS)
+    gpFatal("Invalid platform '${platform}'. Valid options are: WINDOWS, LINUX, MAC, UNIX, ALL")
+  endif()
+
+  set(_gpShouldAdd FALSE)
+  if("${_gpPlatformUpper}" STREQUAL "ALL")
+    set(_gpShouldAdd TRUE)
+  elseif("${_gpPlatformUpper}" STREQUAL "WINDOWS" AND WIN32)
+    set(_gpShouldAdd TRUE)
+  elseif("${_gpPlatformUpper}" STREQUAL "LINUX" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(_gpShouldAdd TRUE)
+  elseif("${_gpPlatformUpper}" STREQUAL "MAC" AND APPLE)
+    set(_gpShouldAdd TRUE)
+  elseif("${_gpPlatformUpper}" STREQUAL "UNIX" AND UNIX)
+    set(_gpShouldAdd TRUE)
+  endif()
+
+  if(_gpShouldAdd)
+    _implGpAddDependency("${visibility}" "${dependency}")
+  else()
+    gpVerbose("Skipped dependency '${dependency}' (platform '${platform}' not active) for target '${__targetName}'")
+  endif()
+
+  unset(_gpPlatformUpper)
+  unset(_gpShouldAdd)
 endmacro()

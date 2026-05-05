@@ -60,10 +60,20 @@ function(_implGpSortTargets outSortedList)
     set(unsorted ${nextUnsorted})
   endwhile()
 
-  # Circular Dependency Detection
-  # If the loop exited but unsorted is not empty, it means we stopped making progress.
+  # Dependency validation: distinguish unresolved deps from true circular deps.
+  # An unresolved dep is one that was never registered at all (typo, missing module).
+  # A circular dep means every remaining target has at least one dep still in unsorted.
   if(unsorted)
-    gpFatal("Circular dependency detected! The following modules form an infinite loop and cannot be ordered: ${unsorted}")
+    foreach(target IN LISTS unsorted)
+      gpToUpperSnakeCase("${target}" targetUpper)
+      get_property(allDependencies GLOBAL PROPERTY GPBT_TARGET_${targetUpper}_ALL_DEPS)
+      foreach(dependency IN LISTS allDependencies)
+        if(NOT dependency IN_LIST registeredTargets AND NOT dependency IN_LIST sorted)
+          gpWarning("Target '${target}' depends on '${dependency}' which is not a registered GP target. Check for typos or a missing add_subdirectory().")
+        endif()
+      endforeach()
+    endforeach()
+    gpFatal("Circular dependency detected! The following targets form an infinite dependency loop and cannot be ordered: ${unsorted}")
   endif()
 
   # Return the sorted list to the caller's scope

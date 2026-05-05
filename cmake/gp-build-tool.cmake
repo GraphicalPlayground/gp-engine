@@ -7,7 +7,7 @@ option(GP_BUILD_TOOL_VERBOSE "Enable verbose output for the GP Build Tool" OFF)
 
 # Version control
 set(GP_BUILD_TOOL_VERSION_MAJOR 0)
-set(GP_BUILD_TOOL_VERSION_MINOR 2)
+set(GP_BUILD_TOOL_VERSION_MINOR 3)
 set(GP_BUILD_TOOL_VERSION_PATCH 0)
 set(GP_BUILD_TOOL_VERSION "${GP_BUILD_TOOL_VERSION_MAJOR}.${GP_BUILD_TOOL_VERSION_MINOR}.${GP_BUILD_TOOL_VERSION_PATCH}")
 
@@ -51,6 +51,10 @@ macro(gpStartExecutable targetName)
   gpStartTarget("${targetName}" "executable")
 endmacro()
 
+macro(gpStartPlugin targetName)
+  gpStartTarget("${targetName}" "plugin")
+endmacro()
+
 macro(gpEndTarget)
   _implGpEndTarget()
 endmacro()
@@ -60,6 +64,10 @@ macro(gpEndModule)
 endmacro()
 
 macro(gpEndExecutable)
+  _implGpEndTarget()
+endmacro()
+
+macro(gpEndPlugin)
   _implGpEndTarget()
 endmacro()
 
@@ -207,3 +215,66 @@ endmacro()
 macro(gpScanForTargets)
   _implGpScanForTargets()
 endmacro()
+
+# Platform-conditional dependencies — add a dependency only when building for the
+# specified platform. Platform tokens: WINDOWS, LINUX, MAC, UNIX, ALL.
+macro(gpAddPrivateDependencyOnPlatform dependency platform)
+  _implGpAddDependencyOnPlatform("private" "${dependency}" "${platform}")
+endmacro()
+
+macro(gpAddPublicDependencyOnPlatform dependency platform)
+  _implGpAddDependencyOnPlatform("public" "${dependency}" "${platform}")
+endmacro()
+
+macro(gpAddInternalDependencyOnPlatform dependency platform)
+  _implGpAddDependencyOnPlatform("internal" "${dependency}" "${platform}")
+endmacro()
+
+macro(gpAddDynamicDependencyOnPlatform dependency platform)
+  _implGpAddDependencyOnPlatform("dynamic" "${dependency}" "${platform}")
+endmacro()
+
+# Unity build — batch source files for faster cold compilation.
+macro(gpTargetSetUnityBuildEnabled value)
+  _implGpSetBooleanTargetValue("gpTargetSetUnityBuildEnabled" __targetUnityBuild "${value}")
+endmacro()
+
+# Custom IDE folder — overrides the default folder derived from the target type.
+macro(gpTargetSetFolder folderPath)
+  gpFatalIfNotInNamedScope("target" "gpTargetSetFolder can only be called within a target scope.")
+  set(__targetCustomFolder "${folderPath}")
+  gpVerbose("Set custom IDE folder '${folderPath}' for target '${__targetName}'")
+endmacro()
+
+# @brief Generates the CMake package config and install export for the entire engine.
+#        Call this once from the root CMakeLists.txt AFTER all add_subdirectory() calls.
+#        This enables downstream CMake projects to consume GP Engine via find_package().
+function(gpGenerateInstallExport)
+  include(CMakePackageConfigHelpers)
+
+  install(EXPORT GPEngineTargets
+    FILE GPEngineTargets.cmake
+    NAMESPACE gp::
+    DESTINATION lib/cmake/GPEngine
+  )
+
+  write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/GPEngineConfigVersion.cmake"
+    VERSION "${PROJECT_VERSION}"
+    COMPATIBILITY SameMajorVersion
+  )
+
+  configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GPEngineConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/GPEngineConfig.cmake"
+    INSTALL_DESTINATION lib/cmake/GPEngine
+  )
+
+  install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/GPEngineConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/GPEngineConfigVersion.cmake"
+    DESTINATION lib/cmake/GPEngine
+  )
+
+  gpSuccess("Install export 'GPEngineTargets' configured. Run cmake --install to deploy.")
+endfunction()
