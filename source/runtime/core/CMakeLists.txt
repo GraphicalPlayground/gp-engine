@@ -8,4 +8,16 @@ gpStartModule(core)
   gpTargetSetTestsEnabled(TRUE)
   # gpTargetSetBenchmarksEnabled(FALSE)
   # gpTargetSetExamplesEnabled(FALSE)
+
+  if (NOT WIN32)
+    gpTargetExcludeDirectory("platform/windows")
+  endif()
+
+  if (NOT UNIX OR APPLE)
+    gpTargetExcludeDirectory("platform/linux")
+  endif()
+
+  if (NOT APPLE)
+    gpTargetExcludeDirectory("platform/macos")
+  endif()
 gpEndModule()

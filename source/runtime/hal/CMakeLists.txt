@@ -11,7 +11,7 @@ gpStartModule(hal)
     gpTargetExcludeDirectory("windows")
   endif()
 
-  if (NOT UNIX AND NOT APPLE)
+  if (NOT UNIX OR APPLE)
     gpTargetExcludeDirectory("linux")
   endif()
 
