@@ -7,34 +7,34 @@
 namespace gp::memory
 {
 
-void* Malloc::tryMalloc(gp::USize size, gp::USize alignment)
+void* Malloc::tryMalloc(gp::USize size, gp::UInt32 alignment)
 {
     return this->malloc(size, alignment);
 }
 
-void* Malloc::tryRealloc(void* ptr, gp::USize newSize, gp::USize alignment)
+void* Malloc::tryRealloc(void* ptr, gp::USize newSize, gp::UInt32 alignment)
 {
     return this->realloc(ptr, newSize, alignment);
 }
 
-void* Malloc::mallocZeroed(gp::USize /* size */, gp::USize /* alignment */)
+void* Malloc::mallocZeroed(gp::USize /* size */, gp::UInt32 /* alignment */)
 {
     return nullptr;
 }
 
-void* Malloc::tryMallocZeroed(gp::USize /* size */, gp::USize /* alignment */)
+void* Malloc::tryMallocZeroed(gp::USize /* size */, gp::UInt32 /* alignment */)
 {
     return nullptr;
 }
 
-gp::USize Malloc::adjustSize(gp::USize size, gp::USize /* alignment */) const
+gp::USize Malloc::adjustSize(gp::USize size, gp::UInt32 /* alignment */) const
 {
-    return size;
+    return size;   // Default implementation has no way of determining this.
 }
 
 gp::USize Malloc::getAllocationSize(void* /* ptr */, gp::USize& /* outSize */) const
 {
-    return false;
+    return false;   // Default implementation has no way of determining this.
 }
 
 void Malloc::trim()
