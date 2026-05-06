@@ -68,6 +68,26 @@
     #define GP_NOINLINE
 #endif
 
+/// @brief Strongly requests inlining, but explicitly suppresses compiler warnings if the compiler refuses.
+#if GP_COMPILER_MSVC
+    // __pragma allows us to wrap the warning suppression directly inside the macro.
+    // This tells MSVC: "Force inline this, but if it's too complex, don't throw Warning C4714."
+    #define GP_FORCEINLINE_HINT __pragma(warning(suppress: 4714)) __forceinline
+#elif GP_COMPILER_GCC || GP_COMPILER_CLANG
+    // On GCC/Clang, standard 'inline' is already a very strong hint under -O2/-O3. 
+    // always_inline can throw strict errors (not just warnings) if used improperly.
+    #define GP_FORCEINLINE_HINT inline
+#else
+    #define GP_FORCEINLINE_HINT inline
+#endif
+
+/// @brief Uses standard inline in Debug builds to allow stepping through code, but forces inline in Release.
+#if defined(GP_BUILD_DEBUG)
+    #define GP_FORCEINLINE_DEBUGGABLE inline
+#else
+    #define GP_FORCEINLINE_DEBUGGABLE GP_FORCEINLINE
+#endif
+
 /// @brief Asserts a pointer does not alias any other pointer in scope.
 #if GP_COMPILER_MSVC
     #define GP_RESTRICT __restrict
