@@ -6,6 +6,9 @@
 
 #include "macros/DetectBuild.hpp"
 #include "macros/DetectCompiler.hpp"
+#if GP_COMPILER_GCC || GP_COMPILER_CLANG
+    #include <cstdlib>   // For malloc
+#endif
 
 /// @brief Macro to concatenate two tokens.
 #define GP_INTERNAL_CONCAT_IMPL(a, b) a##b
@@ -74,7 +77,7 @@
     // This tells MSVC: "Force inline this, but if it's too complex, don't throw Warning C4714."
     #define GP_FORCEINLINE_HINT __pragma(warning(suppress: 4714)) __forceinline
 #elif GP_COMPILER_GCC || GP_COMPILER_CLANG
-    // On GCC/Clang, standard 'inline' is already a very strong hint under -O2/-O3. 
+    // On GCC/Clang, standard 'inline' is already a very strong hint under -O2/-O3.
     // always_inline can throw strict errors (not just warnings) if used improperly.
     #define GP_FORCEINLINE_HINT inline
 #else
@@ -253,6 +256,17 @@
 #else
     #define GP_ALIGNED_ALLOC(size, alignment) ::malloc(size)
     #define GP_ALIGNED_FREE(ptr) ::free(ptr)
+#endif
+
+/// @brief Macro to annotate a function as an allocation function, which can help the compiler optimize calls to it.
+/// @param[in] ... The argument indices that specify the size parameters for the allocation function (e.g., 1 for
+///                malloc(size), or 1, 2 for realloc(ptr, size)).
+#if GP_COMPILER_MSVC
+    #define GP_ALLOCATION_FUNCTION(...) __declspec(allocator)
+#elif GP_COMPILER_GCC || GP_COMPILER_CLANG
+    #define GP_ALLOCATION_FUNCTION(...) __attribute__((alloc_size(__VA_ARGS__)))
+#else
+    #define GP_ALLOCATION_FUNCTION(...)
 #endif
 
 /// @brief Macro to mark a variable or parameter as intentionally unused.
