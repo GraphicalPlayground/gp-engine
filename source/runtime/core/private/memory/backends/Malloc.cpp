@@ -40,7 +40,7 @@ gp::USize Malloc::adjustSize(gp::USize size, gp::UInt32 /* alignment */) const
     return size;   // Default implementation has no way of determining this.
 }
 
-gp::USize Malloc::getAllocationSize(void* /* ptr */, gp::USize& /* outSize */) const
+bool Malloc::getAllocationSize(void* /* ptr */, gp::USize& /* outSize */) const
 {
     return false;   // Default implementation has no way of determining this.
 }

@@ -78,7 +78,7 @@ public:
     /// function returns true.
     /// @return true if the size of the allocated memory block was successfully retrieved, or false if the allocator
     /// cannot determine the size of the allocation.
-    virtual gp::USize getAllocationSize(void* ptr, gp::USize& outSize) const;
+    virtual bool getAllocationSize(void* ptr, gp::USize& outSize) const;
 
     /// @brief Releases unused memory back to the system. This function may be a no-op for some allocators, but can be
     /// used by allocators that manage their own memory pools to release unused memory back to the operating system.
