@@ -29,6 +29,17 @@ class PolymorphicAllocator;
 template <typename Alloc>
 struct AllocatorTraits;
 
+/// @section Malloc Backends
+
+class MallocAnsi;
+class MallocBinned;
+class MallocBinned64;
+class MallocJeMalloc;
+class MallocLibPAS;
+class MallocMiMalloc;
+class MallocStomp;
+class MallocTBB;
+
 }   // namespace gp::memory
 
 namespace gp
