@@ -397,7 +397,7 @@ gpTargetReplaceCompileFlag(-O3 "-O[0-9]+" private)
 By default, GPBT enables strict warnings for all targets. The exact flags depend on the detected
 compiler:
 
-- **MSVC**: `/W4 /WX /permissive- /Zc:preprocessor`
+- **MSVC**: `/W4 /WX /permissive-`
 - **Clang / AppleClang**: `-Wall -Wextra -Werror -Wno-unused-parameter -Wno-missing-field-initializers`
 - **GCC**: `-Wall -Wextra -Werror -Wno-unused-parameter -Wno-missing-field-initializers`
 

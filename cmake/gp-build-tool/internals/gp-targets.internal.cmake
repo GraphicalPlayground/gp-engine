@@ -438,7 +438,6 @@ macro(_implGpDefineCMakeTarget)
         /W4           # Warning level 4
         /WX           # Warnings as errors
         /permissive-  # Standards-conformance mode
-        /Zc:preprocessor # Standards-compliant preprocessor
       )
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
       target_compile_options(${__targetExportName} PRIVATE
