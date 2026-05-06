@@ -8,7 +8,7 @@
 #include "memory/MemoryUtilities.hpp"   // IWYU pragma: keep
 #include "platform/PlatformMemory.hpp"
 #if GP_PLATFORM_USE_ANSI_POSIX_MALLOC
-    #include <malloc.h>
+    #include <stdlib.h>
 #elif GP_PLATFORM_WINDOWS
     #include "platform/windows/WindowsWrapper.hpp"
 #endif
