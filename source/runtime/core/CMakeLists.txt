@@ -18,6 +18,6 @@ gpStartModule(core)
   endif()
 
   if (NOT APPLE)
-    gpTargetExcludeDirectory("platform/macos")
+    gpTargetExcludeDirectory("platform/apple")
   endif()
 gpEndModule()
