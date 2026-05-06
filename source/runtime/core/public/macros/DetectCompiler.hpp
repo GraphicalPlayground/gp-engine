@@ -40,3 +40,16 @@
 #ifndef GP_COMPILER_INTEL
     #define GP_COMPILER_INTEL 0
 #endif
+
+// Check compiler support
+#if (GP_COMPILER_MSVC && GP_COMPILER_VERSION < 1920) || (!GP_COMPILER_MSVC && !defined(__cpp_if_constexpr))
+    #error "[GP] Compiler is expected to support `if constexpr` statements."
+#endif
+
+#if !defined(__cpp_fold_expressions)
+    #error "[GP] Compiler is expected to support fold expressions."
+#endif
+
+#if !__has_feature(cxx_decltype_auto)
+    #error "[GP] Compiler is expected to support `decltype(auto)`."
+#endif

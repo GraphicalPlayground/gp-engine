@@ -6,6 +6,7 @@
 
 #include "macros/DetectBuild.hpp"
 #include "macros/DetectCompiler.hpp"
+#include "macros/DetectPlatform.hpp"
 #if GP_COMPILER_GCC || GP_COMPILER_CLANG
     #include <cstdlib>   // For malloc
 #endif
@@ -125,15 +126,13 @@
 
 /// @brief Hints that the expression is likely to be true (hot path).
 /// @brief Hints that the expression is likely to be false (cold path).
-#if GP_INTERNAL_CXX20
-    #define GP_LIKELY(x) (x) [[likely]]
-    #define GP_UNLIKELY(x) (x) [[unlikely]]
-#elif GP_COMPILER_GCC || GP_COMPILER_CLANG
+#if GP_COMPILER_GCC || GP_COMPILER_CLANG
     #define GP_LIKELY(x) __builtin_expect(!!(x), 1)
     #define GP_UNLIKELY(x) __builtin_expect(!!(x), 0)
 #else
-    #define GP_LIKELY(x) (x)
-    #define GP_UNLIKELY(x) (x)
+    // Additional "!!" added to silence "warning: equality comparison with exteraneous parenthese" on android.
+    #define GP_LIKELY(x) (!!(x))
+    #define GP_UNLIKELY(x) (!!(x))
 #endif
 
 /// @brief Tells the compiler a code path is unreachable. Undefined behaviour if executed.
@@ -269,6 +268,16 @@
     #define GP_ALLOCATION_FUNCTION(...)
 #endif
 
+/// @brief Macro to mark a variable or function as having "selectany" linkage, allowing multiple definitions across
+/// translation units without violating the One Definition Rule.
+#if GP_COMPILER_MSVC
+    #define GP_SELECT_ANY __declspec(selectany)
+#elif GP_COMPILER_GCC || GP_COMPILER_CLANG
+    #define GP_SELECT_ANY __attribute__((selectany))
+#else
+    #define GP_SELECT_ANY
+#endif
+
 /// @brief Macro to mark a variable or parameter as intentionally unused.
 #define GP_UNUSED(x) (void)(x)
 
@@ -276,3 +285,16 @@
 /// @todo Implement a custom assertion mechanism that integrates with the engine's logging system and provides more
 /// context on failure. For now, this is a no-op to avoid dependencies on the logging system in core headers.
 #define GP_ASSERT(expr, ...) (void)(expr)
+
+/// @brief Macro to define export/import symbols for shared libraries, depending on the platform and whether we're
+/// building or using the library.
+#if GP_PLATFORM_UNIX
+    #define GP_DLLEXPORT __attribute__((visibility("default")))
+    #define GP_DLLIMPORT __attribute__((visibility("default")))
+#elif GP_PLATFORM_WINDOWS
+    #define GP_DLLEXPORT __declspec(dllexport)
+    #define GP_DLLIMPORT __declspec(dllimport)
+#else
+    #define GP_DLLEXPORT
+    #define GP_DLLIMPORT
+#endif
