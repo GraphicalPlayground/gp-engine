@@ -8,7 +8,26 @@
 #include "errors/ErrorConfig.hpp"
 #include "errors/ErrorRegistry.hpp"
 #include "errors/ErrorSystem.hpp"
+#include "platform/PlatformMemory.hpp"
 #include <iostream>
+
+void tryAllocation()
+{
+    unsigned char buffer[16];
+
+    gp::memory::PlatformMemory::setMemory(buffer, 0xAB, sizeof(buffer));
+
+    for (size_t i = 0; i < sizeof(buffer); ++i)
+    {
+        if (buffer[i] != 0xAB)
+        {
+            std::cout << "memset failed at byte " << i << std::endl;
+            return;
+        }
+    }
+
+    std::cout << "memset works!" << std::endl;
+}
 
 int main(int argc, char* argv[])
 {
@@ -17,6 +36,8 @@ int main(int argc, char* argv[])
 
     gp::String str = "Hello, World!";
     std::cout << "gp::String says: " << str << std::endl;
+
+    tryAllocation();
 
     auto& registry = gp::error::ErrorRegistry::instance();
     std::cout << registry.dumpAll() << std::endl;

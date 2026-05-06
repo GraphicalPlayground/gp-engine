@@ -1,9 +1,9 @@
 // Copyright (c) - Graphical Playground. All rights reserved.
 
 #include "container/Vector.hpp"
-#include "memory/DefaultAllocator.hpp"
-#include "memory/LinearAllocator.hpp"
-#include "memory/PolymorphicAllocator.hpp"
+#include "memory/allocators/DefaultAllocator.hpp"
+#include "memory/allocators/LinearAllocator.hpp"
+#include "memory/allocators/PolymorphicAllocator.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <string>
 

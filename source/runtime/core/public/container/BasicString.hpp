@@ -8,7 +8,7 @@
 #include "container/Forward.hpp"
 #include "CoreMinimal.hpp"
 #include "math/LinearAlgebra.hpp"
-#include "memory/AllocatorTraits.hpp"
+#include "memory/traits/AllocatorTraits.hpp"
 #include <cstring>
 #include <format>
 #include <initializer_list>

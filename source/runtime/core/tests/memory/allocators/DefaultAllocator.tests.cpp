@@ -2,7 +2,7 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "memory/DefaultAllocator.hpp"
+#include "memory/allocators/DefaultAllocator.hpp"
 #include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <string_view>

@@ -2,7 +2,7 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "memory/RefCountPtr.hpp"
+#include "memory/ownership/RefCountPtr.hpp"
 #include <atomic>
 #include <catch2/catch_test_macros.hpp>
 #include <utility>

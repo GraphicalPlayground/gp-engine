@@ -5,8 +5,8 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
-#include "memory/Allocator.hpp"
-#include "memory/DefaultAllocator.hpp"
+#include "memory/allocators/Allocator.hpp"
+#include "memory/allocators/DefaultAllocator.hpp"
 
 namespace gp::memory
 {

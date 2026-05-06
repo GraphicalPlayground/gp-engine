@@ -14,7 +14,7 @@
 #endif
 #include "errors/sinks/ConsoleSink.hpp"
 #include "errors/sinks/FileSink.hpp"
-#include "memory/UniquePtr.hpp"
+#include "memory/ownership/UniquePtr.hpp"
 #if GP_PLATFORM_WINDOWS
     #include <windows.h>
 #elif GP_PLATFORM_LINUX || GP_PLATFORM_APPLE

@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
-#include "memory/Allocator.hpp"
+#include "memory/allocators/Allocator.hpp"
 #include "memory/Utilities.hpp"
 
 #if GP_BUILD_DEBUG

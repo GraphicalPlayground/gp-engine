@@ -6,7 +6,7 @@
 
 #include "container/Forward.hpp"
 #include "CoreMinimal.hpp"
-#include "memory/AllocatorTraits.hpp"
+#include "memory/traits/AllocatorTraits.hpp"
 #include "memory/Forward.hpp"
 #include <algorithm>
 #include <cstring>

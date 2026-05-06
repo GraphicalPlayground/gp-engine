@@ -2,7 +2,7 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "memory/UniquePtr.hpp"
+#include "memory/ownership/UniquePtr.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <utility>
 

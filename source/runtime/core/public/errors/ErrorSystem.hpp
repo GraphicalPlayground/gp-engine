@@ -12,7 +12,7 @@
 #include "errors/ErrorRecord.hpp"
 #include "errors/ErrorSink.hpp"
 #include "errors/sinks/MultiSink.hpp"
-#include "memory/UniquePtr.hpp"
+#include "memory/ownership/UniquePtr.hpp"
 #include <atomic>          // TODO: gp::Atomic?
 #include <chrono>          // TODO: gp::Chrono?, gp::TimePoint?
 #include <mutex>           // TODO: gp::Mutex?

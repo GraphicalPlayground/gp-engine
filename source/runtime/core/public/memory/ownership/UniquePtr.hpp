@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
-#include "memory/DefaultAllocator.hpp"
+#include "memory/allocators/DefaultAllocator.hpp"
 #include "memory/Forward.hpp"
 
 namespace gp
