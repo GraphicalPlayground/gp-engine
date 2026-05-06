@@ -3,6 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "memory/backends/Malloc.hpp"
+#include "platform/PlatformMemory.hpp"
 
 namespace gp::memory
 {
@@ -17,14 +18,21 @@ void* Malloc::tryRealloc(void* ptr, gp::USize newSize, gp::UInt32 alignment)
     return this->realloc(ptr, newSize, alignment);
 }
 
-void* Malloc::mallocZeroed(gp::USize /* size */, gp::UInt32 /* alignment */)
+void* Malloc::mallocZeroed(gp::USize size, gp::UInt32 alignment)
 {
-    return nullptr;
+    void* memory = this->malloc(size, alignment);
+
+    if (memory)
+    {
+        PlatformMemory::zeroMemory(memory, size);
+    }
+
+    return memory;
 }
 
-void* Malloc::tryMallocZeroed(gp::USize /* size */, gp::UInt32 /* alignment */)
+void* Malloc::tryMallocZeroed(gp::USize size, gp::UInt32 alignment)
 {
-    return nullptr;
+    return this->mallocZeroed(size, alignment);
 }
 
 gp::USize Malloc::adjustSize(gp::USize size, gp::UInt32 /* alignment */) const
@@ -38,18 +46,25 @@ gp::USize Malloc::getAllocationSize(void* /* ptr */, gp::USize& /* outSize */) c
 }
 
 void Malloc::trim()
-{}
+{
+    // Default implementation does not manage its own memory pool, so there is nothing to trim.
+}
 
 void Malloc::updateStatistics()
-{}
+{
+    // TODO: Implement this function to update the allocator's statistics.
+}
 
 MemoryStatistics Malloc::getAllocatorStatistics() const
 {
+    // TODO: Implement this function to return the allocator's statistics.
     return {};
 }
 
 void Malloc::getAllocatorStatistics(MemoryStatistics& /* outStats */) const
-{}
+{
+    // TODO: Implement this function to fill in outStats with the allocator's statistics.
+}
 
 bool Malloc::isInternallyThreadSafe() const
 {
