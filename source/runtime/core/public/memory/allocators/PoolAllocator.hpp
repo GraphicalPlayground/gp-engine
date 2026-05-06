@@ -93,7 +93,7 @@ public:
         GP_ASSERT(size <= m_blockSize, "pool_allocator: requested size exceeds block size");
         GP_ASSERT(alignment <= m_blockAlignment, "pool_allocator: requested alignment exceeds block alignment");
 
-        if GP_UNLIKELY (!m_freeList)
+        if (GP_UNLIKELY(!m_freeList))
         {
             return nullptr;
         }

@@ -54,7 +54,7 @@ public:
         const USize alignedOffset = memory::alignUp(m_offset, alignment);
         const USize newOffset = alignedOffset + size;
 
-        if GP_UNLIKELY (newOffset > m_capacity)
+        if (GP_UNLIKELY(newOffset > m_capacity))
         {
             return nullptr;
         }
