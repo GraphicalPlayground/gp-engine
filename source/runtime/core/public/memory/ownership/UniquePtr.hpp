@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.hpp"
 #include "memory/allocators/DefaultAllocator.hpp"
-#include "memory/Forward.hpp"
+#include "memory/MemoryForward.hpp"
 
 namespace gp
 {

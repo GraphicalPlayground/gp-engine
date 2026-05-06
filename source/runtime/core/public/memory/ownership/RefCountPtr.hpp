@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.hpp"
 #include "macros/MacroUtilities.hpp"
-#include "memory/Forward.hpp"
+#include "memory/MemoryForward.hpp"
 
 namespace gp
 {

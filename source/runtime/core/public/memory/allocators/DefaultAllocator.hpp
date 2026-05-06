@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.hpp"
 #include "memory/allocators/Allocator.hpp"
-#include "memory/Utilities.hpp"
+#include "memory/MemoryUtilities.hpp"
 
 #if GP_BUILD_DEBUG
     #include <atomic>

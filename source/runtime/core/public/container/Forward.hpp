@@ -5,8 +5,8 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
-#include "memory/Forward.hpp"
 #include "memory/allocators/PolymorphicAllocator.hpp"
+#include "memory/MemoryForward.hpp"
 #include <string>   // required for std::char_traits
 
 // Volountary not inside a specific namespace to avoid excessive nesting for commonly used types like string,

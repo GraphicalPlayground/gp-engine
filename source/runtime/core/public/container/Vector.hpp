@@ -6,8 +6,8 @@
 
 #include "container/Forward.hpp"
 #include "CoreMinimal.hpp"
+#include "memory/MemoryForward.hpp"
 #include "memory/traits/AllocatorTraits.hpp"
-#include "memory/Forward.hpp"
 #include <algorithm>
 #include <cstring>
 #include <initializer_list>
@@ -1079,10 +1079,9 @@ private:
     template <typename InputIt>
     void _rangeInit(InputIt first, InputIt last)
     {
-        if constexpr (
-            std::
-                is_base_of_v<std::random_access_iterator_tag, typename std::iterator_traits<InputIt>::iterator_category>
-        )
+        if constexpr (std::is_base_of_v<
+                          std::random_access_iterator_tag,
+                          typename std::iterator_traits<InputIt>::iterator_category>)
         {
             const SizeType count = static_cast<SizeType>(last - first);
             if (count > 0)
