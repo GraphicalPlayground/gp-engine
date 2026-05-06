@@ -195,6 +195,12 @@ jobs:
           name: engine-binaries-${{ matrix.os }}
           path: binaries/
 
+      - name: Restore executable permissions
+        if: runner.os != 'Windows'
+        run: |
+          chmod -R +x binaries/bin || true
+          chmod -R +x build/ || true
+
       - name: Run Tests
         shell: bash
         run: |
