@@ -103,6 +103,10 @@ CMakeLists.txt.user.*
 
 CLAUDE.md
 .claude/
+AGENTS.md
+AGENTS/
+.gemini/
+GEMINI.md
 
 # ====================
 # Compiler Output
