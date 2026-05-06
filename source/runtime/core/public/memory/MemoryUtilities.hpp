@@ -6,9 +6,20 @@
 
 #include "CoreMinimal.hpp"
 #include "macros/MacroUtilities.hpp"
+#include <type_traits>
 
 namespace gp::memory
 {
+
+/// @brief Aligns a value to the nearest multiple of the specified alignment.
+/// @param[in] ptr The pointer to align. Must not be nullptr.
+/// @param[in] alignment The alignment boundary (must be a power of two).
+/// @return The aligned pointer.
+template <typename T>
+requires std::is_integral_v<T> || std::is_pointer_v<T> GP_FORCEINLINE constexpr T alignT(T ptr, gp::UInt64 alignment)
+{
+    return (T)(((gp::UInt64)ptr + alignment - 1) & ~(alignment - 1));
+}
 
 /// @brief Rounds a value up to the nearest multiple of the given alignment.
 /// @details
