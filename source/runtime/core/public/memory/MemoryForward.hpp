@@ -4,58 +4,14 @@
 
 #pragma once
 
+#include "CoreMinimal.hpp"   // IWYU pragma: keep
+
 namespace gp::memory
 {
 
-/// @section Allocators Forward Declarations
+/// @section Malloc primitives forward declarations
 
-class Allocator;
-class DefaultAllocator;
-class StackAllocator;
-class PoolAllocator;
-class ArenaAllocator;
-class LinearAllocator;
-class InlineAllocator;
-class FreeListAllocator;
-class ProxyAllocator;
-class TLSFAllocator;
-class BuddyAllocator;
-
-template <typename T>
-class PolymorphicAllocator;
-
-/// @section Allocator Utilities
-
-template <typename Alloc>
-struct AllocatorTraits;
-
-/// @section Malloc Backends
-
+class Malloc;
 class MallocAnsi;
-class MallocBinned;
-class MallocBinned64;
-class MallocJeMalloc;
-class MallocLibPAS;
-class MallocMiMalloc;
-class MallocStomp;
-class MallocTBB;
 
 }   // namespace gp::memory
-
-namespace gp
-{
-
-/// @section Smart Pointers
-
-template <typename T>
-struct DefaultDelete;
-template <typename T, typename Deleter>
-class UniquePtr;
-template <typename T, typename Policy>
-class SharedPtr;
-template <typename T, typename Policy>
-class WeakPtr;
-template <typename T>
-class RefCountPtr;
-
-}   // namespace gp

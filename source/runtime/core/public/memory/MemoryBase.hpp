@@ -4,19 +4,58 @@
 
 #pragma once
 
+#include "concepts/Concepts.hpp"
 #include "CoreMinimal.hpp"
 
 namespace gp::memory
 {
 
-/// @brief Default alignment for memory allocations. This value is used when no specific alignment is provided.
-/// If the default is specified, the allocator applies to engine rules.
-/// Blocks >= 16 bytes will be 16-byte-aligned, Blocks < 16 will be 8-byte aligned. If the allocator does not support
-/// allocation alignment, the alignment will be ignored.
-static constexpr gp::UInt32 kDefaultAlignment = 0;
+static constexpr UInt32 kDefaultAlignment = 0;
+static constexpr UInt32 kMinimumAlignment = 8;
 
-/// @brief Minimum alignment for memory allocations. This value is the smallest alignment that can be requested from an
-/// allocator.
-static constexpr gp::UInt32 kMinAlignment = 8;
+/// @brief Aligns a value to the nearest higher multiple of the specified alignment.
+/// @tparam T Must be an integral or pointer type.
+/// @param[in] value The value to be aligned.
+/// @param[in] alignment The alignment boundary. Must be a power of two.
+/// @return The aligned value.
+template <typename T>
+requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T align(T value, UInt64 alignment)
+{
+    return (T)(((UInt64)value + alignment - 1) & ~(alignment - 1));
+}
+
+/// @brief Aligns a value to the nearest lower multiple of the specified alignment.
+/// @tparam T Must be an integral or pointer type.
+/// @param[in] value The value to be aligned.
+/// @param[in] alignment The alignment boundary. Must be a power of two.
+/// @return The aligned value.
+template <typename T>
+requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T alignDown(T value, UInt64 alignment)
+{
+    return (T)((UInt64)value & ~(alignment - 1));
+}
+
+/// @brief Checks if a value is already aligned to the specified alignment boundary.
+/// @tparam T Must be an integral or pointer type.
+/// @param[in] value The value to check for alignment.
+/// @param[in] alignment The alignment boundary. Must be a power of two.
+/// @return true if the value is aligned, false otherwise.
+template <typename T>
+requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr bool isAligned(T value, UInt64 alignment)
+{
+    return (UInt64(value) & (alignment - 1)) == 0;
+}
+
+/// @brief Aligns a value to the nearest higher multiple of the specified alignment without requiring the alignment to
+///        be a power of two.
+/// @tparam T Must be an integral or pointer type.
+/// @param[in] value The value to be aligned.
+/// @param[in] alignment The alignment boundary.
+/// @return The aligned value.
+template <typename T>
+requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T alignArbitrary(T value, UInt64 alignment)
+{
+    return (T)((((UInt64)value + alignment - 1) / alignment) * alignment);
+}
 
 }   // namespace gp::memory
