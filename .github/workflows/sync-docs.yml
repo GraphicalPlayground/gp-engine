@@ -29,7 +29,7 @@ jobs:
         run: |
           mkdir -p gp-docs/docs/gp-engine
           cd gp-engine
-          find . -type f -path "*/docs/*" -print0 | while IFS= read -r -d '' file; do
+          find . -type f -path "*/docs/*" -not -path "./thirdparty/*" -print0 | while IFS= read -r -d '' file; do
             rel_path="${file#./}"
             dest_path=$(echo "$rel_path" | sed -e 's|^docs/||' -e 's|/docs/|/|g')
             target_file="../gp-docs/docs/gp-engine/$dest_path"
