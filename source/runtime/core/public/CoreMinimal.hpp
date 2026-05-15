@@ -10,7 +10,7 @@
 #if GP_IS_MONOLITHIC
     #define GP_CORE_API
 #else
-    #ifdef GP_CORE_API_EXPORTS
+    #ifdef GP_CORE_EXPORTS
         #define GP_CORE_API GP_DLLEXPORT
     #else
         #define GP_CORE_API GP_DLLIMPORT

@@ -21,7 +21,14 @@ static constexpr UInt32 kMinimumAlignment = 8;
 template <typename T>
 requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T align(T value, UInt64 alignment)
 {
-    return (T)(((UInt64)value + alignment - 1) & ~(alignment - 1));
+    if constexpr (concepts::IsPointer<T>)
+    {
+        return reinterpret_cast<T>((reinterpret_cast<UInt64>(value) + alignment - 1) & ~(alignment - 1));
+    }
+    else
+    {
+        return static_cast<T>((static_cast<UInt64>(value) + alignment - 1) & ~(alignment - 1));
+    }
 }
 
 /// @brief Aligns a value to the nearest lower multiple of the specified alignment.
@@ -32,7 +39,14 @@ requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T al
 template <typename T>
 requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T alignDown(T value, UInt64 alignment)
 {
-    return (T)((UInt64)value & ~(alignment - 1));
+    if constexpr (concepts::IsPointer<T>)
+    {
+        return reinterpret_cast<T>(reinterpret_cast<UInt64>(value) & ~(alignment - 1));
+    }
+    else
+    {
+        return static_cast<T>(static_cast<UInt64>(value) & ~(alignment - 1));
+    }
 }
 
 /// @brief Checks if a value is already aligned to the specified alignment boundary.
@@ -43,7 +57,14 @@ requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T al
 template <typename T>
 requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr bool isAligned(T value, UInt64 alignment)
 {
-    return (UInt64(value) & (alignment - 1)) == 0;
+    if constexpr (concepts::IsPointer<T>)
+    {
+        return (reinterpret_cast<UInt64>(value) & (alignment - 1)) == 0;
+    }
+    else
+    {
+        return (static_cast<UInt64>(value) & (alignment - 1)) == 0;
+    }
 }
 
 /// @brief Aligns a value to the nearest higher multiple of the specified alignment without requiring the alignment to
@@ -55,7 +76,14 @@ requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr bool
 template <typename T>
 requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T alignArbitrary(T value, UInt64 alignment)
 {
-    return (T)((((UInt64)value + alignment - 1) / alignment) * alignment);
+    if constexpr (concepts::IsPointer<T>)
+    {
+        return reinterpret_cast<T>(((reinterpret_cast<UInt64>(value) + alignment - 1) / alignment) * alignment);
+    }
+    else
+    {
+        return static_cast<T>(((static_cast<UInt64>(value) + alignment - 1) / alignment) * alignment);
+    }
 }
 
 }   // namespace gp::memory

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Concepts/Fundamental.hpp"
+#include "concepts/Fundamental.hpp"
 
 namespace gp::concepts
 {

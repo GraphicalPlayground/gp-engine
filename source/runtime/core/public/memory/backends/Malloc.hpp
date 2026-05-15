@@ -17,6 +17,10 @@ class GP_CORE_API Malloc
 {
 public:
     /// @brief
+    virtual ~Malloc() = default;
+
+public:
+    /// @brief
     /// @param[in] size
     /// @param[in] alignment
     /// @return

@@ -88,7 +88,7 @@ GP_NODISCARD static void* reallocate(void* ptr, USize newSize, UInt32 alignment)
 #elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC
     if (ptr && newSize != 0)
     {
-        USize usableSize = malloc_usable_size(ptr);
+        GP_MAYBE_UNUSED USize usableSize = malloc_usable_size(ptr);
         if (GP_UNLIKELY(posix_memalign(&newPtr, alignment, newSize) != 0))
         {
             newPtr = nullptr;
