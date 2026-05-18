@@ -21,7 +21,20 @@ template <concepts::IsFloatingPoint T> struct Matrix3x3;
 template <concepts::IsFloatingPoint T> struct Matrix3x4;
 template <concepts::IsFloatingPoint T> struct Matrix4x4;
 
+template <concepts::IsFloatingPoint T> struct Rotator;
+template <concepts::IsFloatingPoint T> struct Rotator2D;
 template <concepts::IsFloatingPoint T> struct Quaternion;
+template <concepts::IsFloatingPoint T> struct DualQuaternion;
+
+template <concepts::IsFloatingPoint T> struct Frustum;
+template <concepts::IsFloatingPoint T> struct Plane;
+template <concepts::IsFloatingPoint T> struct Ray;
+template <concepts::IsFloatingPoint T> struct Sphere;
+template <concepts::IsFloatingPoint T> struct Triangle;
+
+template <concepts::IsFloatingPoint T> struct Transform;
+template <concepts::IsFloatingPoint T> struct Projection;
+template <concepts::IsFloatingPoint T> struct View;
 
 // clang-format on
 
