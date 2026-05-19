@@ -28,6 +28,7 @@
 ┕ [Security](#security)  
 ┕ [License](#license)  
 ┕ [Donations](#donations)  
+[Contact](#contact)  
 
 ## Overview
 
@@ -195,6 +196,20 @@ You can see the full list of sponsors and supporters on our
 [Sponsors Page](https://graphical-playground.com/sponsors) or in [DONORS.md](./DONORS.md).
 Your support helps us continue to develop high-quality educational resources and maintain the engine
 for the next generation of graphics engineers.
+
+## Contact
+
+If you have any questions, suggestions, or want to share your projects built with `gp-engine`, we
+would love to hear from you! You can reach out to us through the following channels:
+
+- **GitHub Discussions**: [Join the Conversation](https://github.com/orgs/GraphicalPlayground/discussions)
+- **Email**:
+  - [support@graphical-playground.com](mailto:support@graphical-playground.com)
+  - [security@graphical-playground.com](mailto:security@graphical-playground.com)
+  - [contact@graphical-playground.com](mailto:contact@graphical-playground.com)
+- **Social Media**:
+  - [LinkedIn](https://www.linkedin.com/company/graphical-playground)
+  - [Discord](https://discord.gg/GraphicalPlayground)
 
 ---
 © 2026 Graphical Playground. Built for the next generation of graphics engineers.
