@@ -5,5 +5,5 @@
 include(gp-build-tool)
 
 gpStartModule(renderer)
-  gpAddPublicDependency(core)
+  gpAddDependency(PUBLIC core)
 gpEndModule()

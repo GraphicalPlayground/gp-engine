@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
       - name: Download All Artifacts
         uses: actions/download-artifact@v5

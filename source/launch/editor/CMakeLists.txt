@@ -5,10 +5,8 @@
 include(gp-build-tool)
 
 gpStartExecutable(editor)
-  gpSetTargetOutputName(gpeditor)
-  gpExecutableSetIsGUI(FALSE)
-  gpExecutableAddResource(${__targetLocation}/resources/AppIcon.rc)
-
-  gpAddPublicDependency(core)
-  gpAddPublicDependency(hal)
+  gpAddDependency(PUBLIC core)
+  gpAddDependency(PUBLIC renderer)
+  gpAddDependency(PUBLIC engine)
+  gpAddDependency(PUBLIC application)
 gpEndExecutable()

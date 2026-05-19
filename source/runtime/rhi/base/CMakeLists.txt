@@ -4,28 +4,22 @@
 
 include(gp-build-tool)
 
-gpStartModule(rhi)
-  gpAddPublicDependency(core)
+gpStartModule(rhi/base)
+  gpAddDependency(PUBLIC core)
 
-  gpAddDynamicDependency(rhi/null)
+  gpAddDependency(DYNAMIC rhi/null)
 
-  if (WIN32 AND GP_USE_D3D11)
-    gpAddDynamicDependency(rhi/d3d11)
+  if(WIN32)
+    gpAddDependency(DYNAMIC rhi/d3d11)
+    gpAddDependency(DYNAMIC rhi/d3d12)
   endif()
 
-  if (WIN32 AND GP_USE_D3D12)
-    gpAddDynamicDependency(rhi/d3d12)
+  if(UNIX OR WIN32)
+    gpAddDependency(DYNAMIC rhi/vulkan)
+    gpAddDependency(DYNAMIC rhi/opengl)
   endif()
 
-  if ((UNIX OR WIN32) AND GP_USE_VULKAN)
-    gpAddDynamicDependency(rhi/vulkan)
-  endif()
-
-  if ((WIN32 OR UNIX) AND GP_USE_OPENGL)
-    gpAddDynamicDependency(rhi/opengl)
-  endif()
-
-  if (APPLE AND GP_USE_METAL)
-    gpAddDynamicDependency(rhi/metal)
+  if(APPLE)
+    gpAddDependency(DYNAMIC rhi/metal)
   endif()
 gpEndModule()

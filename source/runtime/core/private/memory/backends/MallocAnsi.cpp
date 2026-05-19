@@ -3,214 +3,200 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "memory/backends/MallocAnsi.hpp"
-#include "CoreMinimal.hpp"
-#include "math/LinearAlgebra.hpp"
-#include "memory/MemoryUtilities.hpp"   // IWYU pragma: keep
-#include "platform/PlatformMemory.hpp"
 #if GP_PLATFORM_USE_ANSI_POSIX_MALLOC
-    #include <stdlib.h>
-#elif GP_PLATFORM_WINDOWS
-    #include "platform/windows/WindowsWrapper.hpp"
+    #include <malloc.h>
 #endif
-#if GP_PLATFORM_IOS
-    #include "mach/mach.h"
+#if GP_PLATFORM_WINDOWS
+    #include <windows.h>   // TODO: Add a wrapper around windows.h and include that instead
 #endif
 
 namespace gp::memory
 {
 
-MallocAnsi::MallocAnsi()
+namespace ansi
 {
-#if GP_PLATFORM_WINDOWS
-    intptr_t crtHeapHandle = _get_heap_handle();
-    ULONG enableLFH = 2;
-    HeapSetInformation((void*)crtHeapHandle, HeapCompatibilityInformation, &enableLFH, sizeof(enableLFH));
-#endif
-}
 
-void* MallocAnsi::malloc(gp::USize size, gp::UInt32 alignment)
+GP_NODISCARD static void* allocate(USize size, UInt32 alignment)
 {
-    void* result = this->tryMalloc(size, alignment);
-
-    if (result == nullptr && size != 0)
-    {
-        // TODO: OnOutOfMemory(size, alignment);
-    }
-
-    return result;
-}
-
-void* MallocAnsi::tryMalloc(gp::USize size, gp::UInt32 alignment)
-{
-    alignment = math::max<gp::UInt32>(size >= 16 ? 16 : 8, alignment);
-
 #if GP_PLATFORM_USE_ALIGNED_MALLOC
-    void* result = _aligned_malloc(size, alignment);
+    void* ptr = _aligned_malloc(size, alignment);
 #elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC
-    void* result = nullptr;
-    if (GP_UNLIKELY(posix_memalign(&result, alignment, size) != 0))
+    void* ptr = nullptr;
+    if (GP_UNLIKELY(posix_memalign(&ptr, alignment, size) != 0))
     {
-        result = nullptr;
+        ptr = nullptr;
     }
+#elif GP_PLATFORM_USE_ANSI_MEMALIGN
+    void* ptr = memalign(alignment, size);
 #else
-    void* ptr = ::malloc(size + alignment + sizeof(void*) + sizeof(gp::USize));
-    void* result = nullptr;
-    if (ptr)
+    void* temp = ::malloc(size + alignment + sizeof(void*) + sizeof(USize));
+    void* ptr = nullptr;
+    if (GP_LIKELY(temp))
     {
-        result = alignT((gp::UInt8*)ptr + sizeof(void*) + sizeof(gp::USize), alignment);
-        *((void**)((gp::UInt8*)result - sizeof(void*))) = ptr;
-        *((gp::USize*)((gp::UInt8*)result - sizeof(void*) - sizeof(gp::USize))) = size;
+        ptr = memory::align((UInt8*)temp + sizeof(void*) + sizeof(USize), alignment);
+        *((void**)((UInt8*)ptr - sizeof(void*))) = temp;
+        *((USize*)((UInt8*)ptr - sizeof(void*) - sizeof(USize))) = size;
     }
 #endif
-    // TODO: Add memory trace (alloc).
-
-    return result;
+    return ptr;
 }
 
-void* MallocAnsi::realloc(void* ptr, gp::USize newSize, gp::UInt32 alignment)
+GP_NODISCARD GP_MAYBE_UNUSED static USize getAllocationSize(void* ptr)
 {
-    void* result = this->tryRealloc(ptr, newSize, alignment);
-
-    if (result == nullptr && newSize != 0)
-    {
-        // TODO: OnOutOfMemory(newSize, alignment);
-    }
-
-    return result;
-}
-
-void* MallocAnsi::tryRealloc(void* ptr, gp::USize newSize, gp::UInt32 alignment)
-{
-    void* result = nullptr;
-
-    alignment = math::max<gp::UInt32>(newSize >= 16 ? 16 : 8, alignment);
-
 #if GP_PLATFORM_USE_ALIGNED_MALLOC
-    // TODO: Add memory trace (realloc free)
-    if (ptr && newSize)
-    {
-        result = _aligned_realloc(ptr, newSize, alignment);
-    }
-    else if (ptr == nullptr)
-    {
-        result = _aligned_malloc(newSize, alignment);
-    }
-    else
-    {
-        _aligned_free(ptr);
-        result = nullptr;
-    }
-    // TODO: Add memory trace (realloc alloc)
-#elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC
-    // TODO: Add memory trace (realloc free)
-    if (ptr && newSize)
-    {
-        gp::USize usableSize = malloc_usable_size(ptr);
-        if (GP_UNLIKELY(posix_memalign(&result, alignment, newSize) != 0))
-        {
-            result = nullptr;
-        }
-        else if (GP_LIKELY(usableSize))
-        {
-            PlatformMemory::copyMemory(result, ptr, math::min(newSize, usableSize));
-        }
-        free(ptr);
-    }
-    else if (ptr == nullptr)
-    {
-        if (GP_UNLIKELY(posix_memalign(&result, alignment, newSize) != 0))
-        {
-            result = nullptr;
-        }
-    }
-    else
-    {
-        ::free(ptr);
-        result = nullptr;
-    }
-    // TODO: Add memory trace (realloc alloc)
+    // TODO: We assume that the alignment is always 16, but this may not be the case.
+    return _aligned_msize(ptr, 16, 0);
+#elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC || GP_PLATFORM_USE_ANSI_MEMALIGN
+    return malloc_usable_size(ptr);
 #else
-    if (ptr && newSize)
-    {
-        // Can't use realloc as it might screw with alignment.
-        result = this->malloc(newSize, alignment);
-        gp::USize ptrSize = 0;
-        this->getAllocationSize(ptr, ptrSize);
-        PlatformMemory::copyMemory(result, ptr, math::min(newSize, ptrSize));
-        this->free(ptr);
-    }
-    else if (ptr == nullptr)
-    {
-        result = this->malloc(newSize, alignment);
-    }
-    else
-    {
-        // TODO: Add memory trace (free)
-        ::free(*((void**)((gp::UInt8*)ptr - sizeof(void*))));
-        result = nullptr;
-    }
+    return *((USize*)((UInt8*)ptr - sizeof(void*) - sizeof(USize)));
 #endif
-
-    return result;
 }
 
-void MallocAnsi::free(void* ptr)
+static void deallocate(void* ptr)
 {
-    // TODO: Add memory trace (free)
 #if GP_PLATFORM_USE_ALIGNED_MALLOC
     _aligned_free(ptr);
-#elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC
+#elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC || GP_PLATFORM_USE_ANSI_MEMALIGN
     ::free(ptr);
 #else
     if (ptr)
     {
-        ::free(*((void**)((gp::UInt8*)ptr - sizeof(void*))));
+        ::free(*((void**)((UInt8*)ptr - sizeof(void*))));
     }
 #endif
 }
 
-bool MallocAnsi::getAllocationSize(void* ptr, GP_MAYBE_UNUSED gp::USize& outSize) const
+GP_NODISCARD static void* reallocate(void* ptr, USize newSize, UInt32 alignment)
 {
-    if (!ptr)
+    void* newPtr = nullptr;
+
+#if GP_PLATFORM_USE_ALIGNED_MALLOC
+    if (ptr && newSize != 0)
     {
-        return false;
+        newPtr = _aligned_realloc(ptr, newSize, alignment);
+    }
+    else if (ptr == nullptr)
+    {
+        newPtr = _aligned_malloc(newSize, alignment);
+    }
+    else /* newSize == 0 */
+    {
+        _aligned_free(ptr);
+        newPtr = nullptr;
+    }
+#elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC
+    if (ptr && newSize != 0)
+    {
+        GP_MAYBE_UNUSED USize usableSize = malloc_usable_size(ptr);
+        if (GP_UNLIKELY(posix_memalign(&newPtr, alignment, newSize) != 0))
+        {
+            newPtr = nullptr;
+        }
+        else if (GP_LIKELY(newPtr))
+        {
+            // Memory::copyMemory(newPtr, ptr, math::min(newSize, usableSize));
+        }
+        ::free(ptr);
+    }
+    else if (ptr == nullptr)
+    {
+        if (GP_UNLIKELY(posix_memalign(&newPtr, alignment, newSize) != 0))
+        {
+            newPtr = nullptr;
+        }
+    }
+    else /* newSize == 0 */
+    {
+        ::free(ptr);
+        newPtr = nullptr;
+    }
+#elif GP_PLATFORM_USE_ANSI_MEMALIGN
+    newPtr = reallocalign(ptr, newSize, alignment);
+#else
+    if (ptr && newSize != 0)
+    {
+        newPtr = ansi::allocate(newSize, alignment);
+        USize oldSize = getAllocationSize(ptr);
+        // Memory::copyMemory(newPtr, ptr, math::min(newSize, oldSize));
+        ansi::deallocate(ptr);
+    }
+    else if (ptr == nullptr)
+    {
+        newPtr = ansi::allocate(newSize, alignment);
+    }
+    else /* newSize == 0 */
+    {
+        ansi::deallocate(ptr);
+        newPtr = nullptr;
+    }
+#endif
+
+    return newPtr;
+}
+
+}   // namespace ansi
+
+void* MallocAnsi::allocate(USize size, UInt32 alignment)
+{
+    void* ptr = tryAllocate(size, alignment);
+    if (ptr == nullptr && size != 0)
+    {
+        // TODO: Raise out of memory error
+    }
+    return ptr;
+}
+
+void* MallocAnsi::tryAllocate(USize size, UInt32 alignment) noexcept
+{
+    // alignment = math::max(size >= 16 ? 16 : 8, alignment);
+    void* ptr = ansi::allocate(size, alignment);
+    return ptr;
+}
+
+void* MallocAnsi::reallocate(void* ptr, USize newSize, UInt32 alignment)
+{
+    void* newPtr = tryReallocate(ptr, newSize, alignment);
+    if (newPtr == nullptr && newSize != 0)
+    {
+        // TODO: Raise out of memory error
+    }
+    return newPtr;
+}
+
+void* MallocAnsi::tryReallocate(void* ptr, USize newSize, UInt32 alignment) noexcept
+{
+    // alignment = math::max(size >= 16 ? 16 : 8, alignment);
+    void* newPtr = ansi::reallocate(ptr, newSize, alignment);
+    return newPtr;
+}
+
+void MallocAnsi::deallocate(void* ptr)
+{
+    ansi::deallocate(ptr);
+}
+
+USize MallocAnsi::getAllocationSize(void* ptr)
+{
+    if (ptr == nullptr)
+    {
+        return 0;
     }
 
 #if GP_PLATFORM_USE_ALIGNED_MALLOC
-    return false;
-#elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC
-    outSize = malloc_usable_size(ptr);
+    return 0;
 #else
-    outSize = *(reinterpret_cast<gp::USize*>(reinterpret_cast<gp::UIntPtr>(ptr) - sizeof(void*) - sizeof(gp::USize)));
+    return ansi::getAllocationSize(ptr);
 #endif
-    return true;
 }
 
-bool MallocAnsi::isInternallyThreadSafe() const
+bool MallocAnsi::canGetAllocationSize()
 {
-#if GP_PLATFORM_IS_ANSI_MALLOC_THREADSAFE
-    return true;
-#else
+#if GP_PLATFORM_USE_ALIGNED_MALLOC
     return false;
-#endif
-}
-
-bool MallocAnsi::validateHeap() const
-{
-#if GP_PLATFORM_WINDOWS   // TODO: Maybe add GP_BUILD_DEBUG here as well?
-    gp::Int32 result = _heapchk();
-    GP_ASSERT(result == _HEAPBADBEGIN, "Heap corruption detected: _HEAPBADBEGIN");
-    GP_ASSERT(result == _HEAPBADNODE, "Heap corruption detected: _HEAPBADNODE");
-    GP_ASSERT(result == _HEAPBADPTR, "Heap corruption detected: _HEAPBADPTR");
-    GP_ASSERT(result == _HEAPEMPTY, "Heap corruption detected: _HEAPEMPTY");
-    GP_ASSERT(result != _HEAPOK, "Heap corruption detected: _HEAPOK");
-#endif
+#else
     return true;
-}
-
-const char* MallocAnsi::getDisplayName() const
-{
-    return "ANSI Malloc";
+#endif
 }
 
 }   // namespace gp::memory

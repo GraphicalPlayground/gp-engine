@@ -115,12 +115,13 @@ jobs:
       fail-fast: false
       matrix:
         os: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
-        build-type: [Release]
+        build-type: [Development]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
+          submodules: recursive
           fetch-depth: 0
 
       - name: Set up MSVC Dev Cmd
@@ -154,7 +155,16 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DFETCHCONTENT_BASE_DIR="$HOME/.cache/cmake_deps"
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DFETCHCONTENT_BASE_DIR="$HOME/.cache/cmake_deps" \
+            -DGPBT_RUNNING_IN_CI=TRUE \
+            -DGPBT_TESTS_ENABLED=FALSE \
+            -DGPBT_LOG_PREFIX_ENABLED=FALSE \
+            -DGPBT_LOG_VERBOSE_ENABLED=TRUE \
+            -DGPBT_DUMP_TARGETS_PROPERTIES=TRUE \
+            -DGPBT_THIRDPARTY_MODE=AUTO \
+            -DGPBT_IS_MONOLITHIC=FALSE \
+            -DGPBT_EXPORT_DEPENDENCY_GRAPH=FALSE
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build-type }} --parallel --verbose
@@ -182,7 +192,11 @@ jobs:
         os: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
         build-type: [Release]
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
       - name: Download Build Tree
         uses: actions/download-artifact@v4
         with:

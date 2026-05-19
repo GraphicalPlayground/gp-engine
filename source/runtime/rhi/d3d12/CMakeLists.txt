@@ -4,9 +4,7 @@
 
 include(gp-build-tool)
 
-if (NOT GP_USE_D3D12 OR NOT WIN32)
-  return()
-endif()
-
 gpStartModule(rhi/d3d12)
+  gpAddDependency(PUBLIC core)
+  gpAddDependency(PUBLIC rhi/base)
 gpEndModule()

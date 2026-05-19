@@ -3,82 +3,49 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "memory/backends/Malloc.hpp"
-#include "platform/PlatformMemory.hpp"
+#include "platforms/base/PlatformMemory.hpp"
 
 namespace gp::memory
 {
 
-void* Malloc::tryMalloc(gp::USize size, gp::UInt32 alignment)
+void* Malloc::tryAllocate(USize size, UInt32 alignment) noexcept
 {
-    return this->malloc(size, alignment);
+    return allocate(size, alignment);
 }
 
-void* Malloc::tryRealloc(void* ptr, gp::USize newSize, gp::UInt32 alignment)
+void* Malloc::allocateZeroed(USize size, UInt32 alignment)
 {
-    return this->realloc(ptr, newSize, alignment);
-}
-
-void* Malloc::mallocZeroed(gp::USize size, gp::UInt32 alignment)
-{
-    void* memory = this->malloc(size, alignment);
-
-    if (memory)
+    void* const ptr = allocate(size, alignment);
+    if (ptr)
     {
-        PlatformMemory::zeroMemory(memory, size);
+        platform::Memory::zeroMemory(ptr, size);
     }
-
-    return memory;
+    return ptr;
 }
 
-void* Malloc::tryMallocZeroed(gp::USize size, gp::UInt32 alignment)
+void* Malloc::tryAllocateZeroed(USize size, UInt32 alignment) noexcept
 {
-    return this->mallocZeroed(size, alignment);
+    void* const ptr = tryAllocate(size, alignment);
+    if (ptr)
+    {
+        platform::Memory::zeroMemory(ptr, size);
+    }
+    return ptr;
 }
 
-gp::USize Malloc::adjustSize(gp::USize size, gp::UInt32 /* alignment */) const
+void* Malloc::tryReallocate(void* ptr, USize newSize, UInt32 alignment) noexcept
 {
-    return size;   // Default implementation has no way of determining this.
+    return reallocate(ptr, newSize, alignment);
 }
 
-bool Malloc::getAllocationSize(void* /* ptr */, gp::USize& /* outSize */) const
+USize Malloc::getAllocationSize(void* /* ptr */)
 {
-    return false;   // Default implementation has no way of determining this.
+    return 0;
 }
 
-void Malloc::trim()
-{
-    // Default implementation does not manage its own memory pool, so there is nothing to trim.
-}
-
-void Malloc::updateStatistics()
-{
-    // TODO: Implement this function to update the allocator's statistics.
-}
-
-MemoryStatistics Malloc::getAllocatorStatistics() const
-{
-    // TODO: Implement this function to return the allocator's statistics.
-    return {};
-}
-
-void Malloc::getAllocatorStatistics(MemoryStatistics& /* outStats */) const
-{
-    // TODO: Implement this function to fill in outStats with the allocator's statistics.
-}
-
-bool Malloc::isInternallyThreadSafe() const
+bool Malloc::canGetAllocationSize()
 {
     return false;
-}
-
-bool Malloc::validateHeap() const
-{
-    return true;
-}
-
-const char* Malloc::getDisplayName() const
-{
-    return "Unspecified Malloc";
 }
 
 }   // namespace gp::memory

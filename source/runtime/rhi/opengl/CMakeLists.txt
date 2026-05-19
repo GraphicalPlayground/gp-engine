@@ -4,9 +4,7 @@
 
 include(gp-build-tool)
 
-if (NOT GP_USE_OPENGL)
-  return()
-endif()
-
 gpStartModule(rhi/opengl)
+  gpAddDependency(PUBLIC core)
+  gpAddDependency(PUBLIC rhi/base)
 gpEndModule()

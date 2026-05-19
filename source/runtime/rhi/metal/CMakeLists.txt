@@ -4,9 +4,7 @@
 
 include(gp-build-tool)
 
-if (NOT GP_USE_METAL OR NOT APPLE)
-  return()
-endif()
-
 gpStartModule(rhi/metal)
+  gpAddDependency(PUBLIC core)
+  gpAddDependency(PUBLIC rhi/base)
 gpEndModule()

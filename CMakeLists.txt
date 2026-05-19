@@ -2,7 +2,7 @@
 # For more information, see https://graphical-playground/legal
 # mailto:support AT graphical-playground DOT com
 
-cmake_minimum_required(VERSION 3.21.0)
+cmake_minimum_required(VERSION 3.28.0)
 
 # Project Definition
 project(GraphicalPlayground
@@ -11,82 +11,14 @@ project(GraphicalPlayground
   DESCRIPTION "Graphical Playground Engine, learning and prototyping platform for graphics programming."
 )
 
-# Enforce C++23 globally
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF) # Forces standard C++ (no GCC extensions)
+# Add the source directory to the module path and include the GPBT build tool module
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/gp-build-tool/source")
+include(gp-build-tool)
 
-# If not specified, build type is Release
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "[GP] Setting build type to 'Release' as none was specified.")
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-  # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
+# Apply the default policies and configurations for Graphical Playground targets.
+gpApplyGraphicalPlaygroundDefaultPolicy()
 
-# If not specified, export compile commands for IDEs
-if(NOT CMAKE_EXPORT_COMPILE_COMMANDS)
-  message(STATUS "[GP] Enabling export of compile commands for IDEs.")
-  set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export compile commands." FORCE)
-endif()
-
-# Build Shared Libraries (DLLs) by default?
-# Set to OFF for Monolithic builds (Static Linking)
-option(GP_BUILD_SHARED "Build Engine as DLLs" ON)
-if(GP_BUILD_SHARED)
-  set(BUILD_SHARED_LIBS ON)
-  add_compile_definitions(GP_BUILD_DLL) # Global define for DLL logic
-endif()
-
-# Output Directories (Clean bin/ folder structure)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/binaries/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/binaries/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/binaries/bin)
-
-# Enable Position Independent Code (PIC) for static libraries to allow linking into shared libraries on all platforms
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-# Put Debug/Release in subfolders (Bin/Debug, Bin/Release)
-foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
-  string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/bin/${OUTPUTCONFIG})
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/lib/${OUTPUTCONFIG})
-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/binaries/lib/${OUTPUTCONFIG})
-endforeach()
-
-# Include the module creation function
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-
-# Option to run tests on the Build Tool
-option(GP_TEST_BUILD_TOOL "Run tests for the Build Tool" OFF)
-
-# Option for engine features
-option(GP_ENABLE_PROFILING "Enable Tracy Profiler integration" ON)
-
-# Target options
-option(GP_BUILD_TESTS "Build test targets" ON)
-option(GP_BUILD_BENCHMARKS "Build benchmark targets" ON)
-option(GP_BUILD_EXAMPLES "Build example targets" ON)
-option(GP_BUILD_EDITOR "Build engine tools and offline compilers" ON)
-
-# Graphics API Options
-option(GP_USE_VULKAN "Enable Vulkan support" ON)
-option(GP_USE_OPENGL "Enable OpenGL support" ON)
-option(GP_USE_METAL "Enable Metal support" ON)
-option(GP_USE_D3D12 "Enable D3D12 support" ON)
-option(GP_USE_D3D11 "Enable D3D11 support" ON)
-
-if (GP_TEST_BUILD_TOOL)
-  include(gp-build-tool/tests/gp-all.tests)
-  return()
-endif()
-
-# Enable testing if tests are enabled for any target
-if(GP_BUILD_TESTS)
-  enable_testing()
-endif()
-
-# Add Subdirectories
-add_subdirectory(thirdparty)
-add_subdirectory(source)
-add_subdirectory(examples)
+# Start the GPBT build tool and auto-scan the source directory for targets to build.
+gpStartBuildTool()
+  gpBuildToolAutoScan(source)
+gpEndBuildTool()
