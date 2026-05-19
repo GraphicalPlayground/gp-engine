@@ -12,6 +12,14 @@ indent_style = space
 indent_size = 2
 indent_style = space
 
+[*.{yml,yaml,json,xml}]
+indent_size = 2
+indent_style = space
+
+[*.{sh,cmd,bat,ps1}]
+indent_size = 2
+indent_style = space
+
 [*.{md,mdx,txt}]
 indent_style = space
 indent_size = 2
