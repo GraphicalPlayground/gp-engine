@@ -209,7 +209,7 @@ would love to hear from you! You can reach out to us through the following chann
   - [contact@graphical-playground.com](mailto:contact@graphical-playground.com)
 - **Social Media**:
   - [LinkedIn](https://www.linkedin.com/company/graphical-playground)
-  - [Discord](https://discord.gg/GraphicalPlayground)
+  - [Discord](https://discord.graphical-playground.com)
 
 ---
 © 2026 Graphical Playground. Built for the next generation of graphics engineers.
