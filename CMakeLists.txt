@@ -12,7 +12,7 @@ project(GraphicalPlayground
 )
 
 # Add the source directory to the module path and include the GPBT build tool module
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/gp-build-tool/source")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gp-build-tool/source")
 include(gp-build-tool)
 
 # Apply the default policies and configurations for Graphical Playground targets.
@@ -20,5 +20,5 @@ gpApplyGraphicalPlaygroundDefaultPolicy()
 
 # Start the GPBT build tool and auto-scan the source directory for targets to build.
 gpStartBuildTool()
-  gpBuildToolAutoScan(source)
+  gpBuildToolAutoScan(thirdparty source)
 gpEndBuildTool()

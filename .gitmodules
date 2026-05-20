@@ -1,3 +1,3 @@
 [submodule "thirdparty/gp-build-tool"]
-	path = thirdparty/gp-build-tool
+	path = cmake/gp-build-tool
 	url = https://github.com/GraphicalPlayground/gp-build-tool.git
