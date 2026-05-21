@@ -5,4 +5,5 @@
 include(gp-build-tool)
 
 gpStartModule(core)
+  gpEnableTests()
 gpEndModule()
