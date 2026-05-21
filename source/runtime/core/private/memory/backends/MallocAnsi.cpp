@@ -3,6 +3,8 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "memory/backends/MallocAnsi.hpp"
+#include "maths/base/Scalar.hpp"
+#include "memory/Memory.hpp"
 #if GP_PLATFORM_USE_ANSI_POSIX_MALLOC
     #include <malloc.h>
 #endif
@@ -95,7 +97,7 @@ GP_NODISCARD static void* reallocate(void* ptr, USize newSize, UInt32 alignment)
         }
         else if (GP_LIKELY(newPtr))
         {
-            // Memory::copyMemory(newPtr, ptr, math::min(newSize, usableSize));
+            memory::copyMemory(newPtr, ptr, math::min(newSize, usableSize));
         }
         ::free(ptr);
     }
@@ -118,7 +120,7 @@ GP_NODISCARD static void* reallocate(void* ptr, USize newSize, UInt32 alignment)
     {
         newPtr = ansi::allocate(newSize, alignment);
         USize oldSize = getAllocationSize(ptr);
-        // Memory::copyMemory(newPtr, ptr, math::min(newSize, oldSize));
+        memory::copyMemory(newPtr, ptr, math::min(newSize, oldSize));
         ansi::deallocate(ptr);
     }
     else if (ptr == nullptr)
@@ -149,7 +151,7 @@ void* MallocAnsi::allocate(USize size, UInt32 alignment)
 
 void* MallocAnsi::tryAllocate(USize size, UInt32 alignment) noexcept
 {
-    // alignment = math::max(size >= 16 ? 16 : 8, alignment);
+    alignment = math::max<UInt32>(size >= 16 ? 16 : 8, alignment);
     void* ptr = ansi::allocate(size, alignment);
     return ptr;
 }
@@ -166,7 +168,7 @@ void* MallocAnsi::reallocate(void* ptr, USize newSize, UInt32 alignment)
 
 void* MallocAnsi::tryReallocate(void* ptr, USize newSize, UInt32 alignment) noexcept
 {
-    // alignment = math::max(size >= 16 ? 16 : 8, alignment);
+    alignment = math::max<UInt32>(newSize >= 16 ? 16 : 8, alignment);
     void* newPtr = ansi::reallocate(ptr, newSize, alignment);
     return newPtr;
 }
