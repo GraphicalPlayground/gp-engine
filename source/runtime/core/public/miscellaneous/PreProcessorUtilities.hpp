@@ -41,13 +41,21 @@
 #define GP_IMPL_JOIN_FIRST(token, ...) token##__VA_ARGS__
 
 /// @brief Evaluates a condition and expands to the corresponding token for preprocessor conditions.
-/// @param[in] condition The condition to evaluate. Must be either GP_TRUE or GP_FALSE.
-/// @param[in] tokenTrue The token to expand if the condition is true.
-/// @param[in] tokenFalse The token to expand if the condition is false.
+/// @param[in] condition The condition to evaluate. Accepts GP_TRUE, GP_FALSE, or any value that
+///            expands to 1 or 0. The macro first expands condition, then dispatches on the
+///            resulting integer token, so GP_TRUE (which expands to (1)) is NOT valid, use
+///            values that resolve to the bare token 1 or 0.
+/// @param[in] tokenTrue The token to expand if the condition is true (1).
+/// @param[in] tokenFalse The token to expand if the condition is false (0).
 /// @return The token corresponding to the evaluated condition.
-#define GP_IF(condition, tokenTrue, tokenFalse) GP_IMPL_JOIN(GP_IMPL_IF_, condition)(tokenTrue, tokenFalse)
-#define GP_IMPL_IF_TRUE(tokenTrue, tokenFalse) tokenTrue
-#define GP_IMPL_IF_FALSE(tokenTrue, tokenFalse) tokenFalse
+///
+/// @note The two-level indirection (GP_IF → GP_IMPL_IF_DISPATCH → GP_JOIN) ensures that
+///       macro arguments are fully expanded before the token-paste occurs, which is
+///       required for the dispatch to work with named boolean macros.
+#define GP_IF(condition, tokenTrue, tokenFalse) GP_IMPL_IF_DISPATCH(condition, tokenTrue, tokenFalse)
+#define GP_IMPL_IF_DISPATCH(n, tokenTrue, tokenFalse) GP_JOIN(GP_IMPL_IF_, n)(tokenTrue, tokenFalse)
+#define GP_IMPL_IF_1(tokenTrue, tokenFalse) tokenTrue
+#define GP_IMPL_IF_0(tokenTrue, tokenFalse) tokenFalse
 
 /// @brief Generates a comma-separated list of tokens for preprocessor conditions.
 /// @param[in] first The first token in the list.
