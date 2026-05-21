@@ -31,13 +31,14 @@ GP_NODISCARD static void* allocate(USize size, UInt32 alignment)
 #elif GP_PLATFORM_USE_ANSI_MEMALIGN
     void* ptr = memalign(alignment, size);
 #else
-    void* temp = ::malloc(size + alignment + sizeof(void*) + sizeof(USize));
+    // alignment - 1 is the maximum alignment waste (not alignment)
+    void* temp = ::malloc(size + alignment - 1 + sizeof(void*) + sizeof(USize));
     void* ptr = nullptr;
     if (GP_LIKELY(temp))
     {
-        ptr = memory::align((UInt8*)temp + sizeof(void*) + sizeof(USize), alignment);
-        *((void**)((UInt8*)ptr - sizeof(void*))) = temp;
-        *((USize*)((UInt8*)ptr - sizeof(void*) - sizeof(USize))) = size;
+        ptr = memory::align(static_cast<UInt8*>(temp) + sizeof(void*) + sizeof(USize), alignment);
+        *reinterpret_cast<void**>(static_cast<UInt8*>(ptr) - sizeof(void*)) = temp;
+        *reinterpret_cast<USize*>(static_cast<UInt8*>(ptr) - sizeof(void*) - sizeof(USize)) = size;
     }
 #endif
     return ptr;
@@ -51,7 +52,7 @@ GP_NODISCARD GP_MAYBE_UNUSED static USize getAllocationSize(void* ptr)
 #elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC || GP_PLATFORM_USE_ANSI_MEMALIGN
     return malloc_usable_size(ptr);
 #else
-    return *((USize*)((UInt8*)ptr - sizeof(void*) - sizeof(USize)));
+    return *reinterpret_cast<USize*>(static_cast<UInt8*>(ptr) - sizeof(void*) - sizeof(USize));
 #endif
 }
 
@@ -64,7 +65,7 @@ static void deallocate(void* ptr)
 #else
     if (ptr)
     {
-        ::free(*((void**)((UInt8*)ptr - sizeof(void*))));
+        ::free(*reinterpret_cast<void**>(static_cast<UInt8*>(ptr) - sizeof(void*)));
     }
 #endif
 }
@@ -90,16 +91,23 @@ GP_NODISCARD static void* reallocate(void* ptr, USize newSize, UInt32 alignment)
 #elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC
     if (ptr && newSize != 0)
     {
-        GP_MAYBE_UNUSED USize usableSize = malloc_usable_size(ptr);
+        USize usableSize = malloc_usable_size(ptr);
+        // Reuse the existing block when it already fits and satisfies the new alignment.
+        // posix_memalign always produces aligned results so the runtime check is only
+        // needed when the caller requests a stricter alignment than was originally used.
+        if (newSize <= usableSize && (reinterpret_cast<uintptr_t>(ptr) % alignment == 0))
+        {
+            return ptr;
+        }
         if (GP_UNLIKELY(posix_memalign(&newPtr, alignment, newSize) != 0))
         {
             newPtr = nullptr;
         }
-        else if (GP_LIKELY(newPtr))
+        else
         {
             memory::copyMemory(newPtr, ptr, math::min(newSize, usableSize));
+            ::free(ptr);
         }
-        ::free(ptr);
     }
     else if (ptr == nullptr)
     {
@@ -118,10 +126,13 @@ GP_NODISCARD static void* reallocate(void* ptr, USize newSize, UInt32 alignment)
 #else
     if (ptr && newSize != 0)
     {
-        newPtr = ansi::allocate(newSize, alignment);
         USize oldSize = getAllocationSize(ptr);
-        memory::copyMemory(newPtr, ptr, math::min(newSize, oldSize));
-        ansi::deallocate(ptr);
+        newPtr = ansi::allocate(newSize, alignment);
+        if (GP_LIKELY(newPtr))
+        {
+            memory::copyMemory(newPtr, ptr, math::min(newSize, oldSize));
+            ansi::deallocate(ptr);
+        }
     }
     else if (ptr == nullptr)
     {
@@ -152,6 +163,7 @@ void* MallocAnsi::allocate(USize size, UInt32 alignment)
 void* MallocAnsi::tryAllocate(USize size, UInt32 alignment) noexcept
 {
     alignment = math::max<UInt32>(size >= 16 ? 16 : 8, alignment);
+    GP_ASSUME(alignment >= 8 && (alignment & (alignment - 1)) == 0);
     void* ptr = ansi::allocate(size, alignment);
     return ptr;
 }
@@ -169,6 +181,7 @@ void* MallocAnsi::reallocate(void* ptr, USize newSize, UInt32 alignment)
 void* MallocAnsi::tryReallocate(void* ptr, USize newSize, UInt32 alignment) noexcept
 {
     alignment = math::max<UInt32>(newSize >= 16 ? 16 : 8, alignment);
+    GP_ASSUME(alignment >= 8 && (alignment & (alignment - 1)) == 0);
     void* newPtr = ansi::reallocate(ptr, newSize, alignment);
     return newPtr;
 }
