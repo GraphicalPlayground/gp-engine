@@ -6,8 +6,12 @@
 
 #include "miscellaneous/PreProcessorUtilities.hpp"
 
-// Include the <sal.h> header for Windows-specific annotations and macros
-#include <sal.h>
+// Include the <sal.h> header for Windows-specific annotations and macros.
+// Guarded so that cross-compilation toolchains (e.g. clang on Linux targeting Win32)
+// do not error when the Windows SDK is not present in the sysroot.
+#if defined(_WIN32) || defined(_WIN64)
+    #include <sal.h>
+#endif
 
 #if defined(_WIN64)
     #define _GP_IS_PLATFORM_64BIT GP_TRUE
@@ -27,7 +31,7 @@
 
 #define GP_PLATFORM_BREAK() (__nop(), __debugbreak())
 
-#define PLATFORM_HAS_128BIT_ATOMICS                     (_GP_IS_PLATFORM_64BIT && (WINVER >= 0x602))
+#define GP_PLATFORM_HAS_128BIT_ATOMICS                  (_GP_IS_PLATFORM_64BIT && (WINVER >= 0x602))
 
 #ifdef CDECL
     #undef CDECL
@@ -39,7 +43,11 @@
 #define GP_FORCEINLINE   __forceinline
 #define GP_FORCENOINLINE __declspec(noinline)
 
-#pragma warning(disable : 4481)
+#ifdef _MSC_VER
+    // C4481: nonstandard extension used: override specifier 'override' (pre-C++11 MSVC warning).
+    // Suppressed globally because the engine uses 'override' throughout.
+    #pragma warning(disable : 4481)
+#endif
 
 #define GP_ABSTRACT abstract
 

@@ -8,6 +8,11 @@
 #include "miscellaneous/PreProcessorUtilities.hpp"
 #include <type_traits>
 
+// C++23 language version guard, must appear before any feature-test checks.
+#if __cplusplus < 202302L
+    #error "gp-engine requires C++23 or later. Pass -std=c++23 (or /std:c++latest on MSVC)."
+#endif
+
 // Automatically detect the platform, architecture and compiler if not already defined by GPBT
 #if !defined(GP_SKIP_BUILD_DETECTION) || !GP_SKIP_BUILD_DETECTION
     #include "platforms/base/PlatformDetection.hpp"
@@ -78,7 +83,17 @@
     #error "At least one compiler must be defined as true!"
 #endif
 
-#if (GP_COMPILER_MSVC && _MSC_VER < 1920) || (!GP_COMPILER_MSVC && !defined(__cpp_if_constexpr))
+/// @section Compiler minimum version checks.
+/// @note All feature checks below require C++23 which is already guarded above.
+
+#if GP_COMPILER_MSVC
+    // VS 2022 17.2+ (_MSC_VER 1932) ships full C++23 support behind /std:c++latest.
+    #if _MSC_VER < 1930
+        #error "MSVC 2022 17.0 or later is required for C++23 support."
+    #endif
+#endif
+
+#if !defined(__cpp_if_constexpr)
     #error "Compiler is expected to support `if constexpr` statements."
 #endif
 
@@ -86,7 +101,8 @@
     #error "Compiler is expected to support fold expressions."
 #endif
 
-#if !__has_feature(cxx_decltype_auto)
+// __has_feature is a Clang extension; use the standard feature-test macro instead.
+#if !defined(__cpp_decltype_auto)
     #error "Compiler is expected to support `decltype(auto)`."
 #endif
 
@@ -195,6 +211,10 @@
     #define GP_PLATFORM_SUPPORTS_ASYMMETRIC_FENCES GP_FALSE
 #endif
 
+#ifndef GP_PLATFORM_SUPPORTS_STACK_SYMBOLS
+    #define GP_PLATFORM_SUPPORTS_STACK_SYMBOLS GP_FALSE
+#endif
+
 /// @section Platform-Independent Function Specifiers.
 
 #ifndef GP_VARARGS
@@ -207,7 +227,7 @@
     #define GP_STDCALL
 #endif
 #ifndef GP_FORCEINLINE
-    #define GP_FORCEINLINE
+    #define GP_FORCEINLINE inline
 #endif
 #ifndef GP_FORCENOINLINE
     #define GP_FORCENOINLINE
@@ -217,6 +237,9 @@
 #endif
 #ifndef GP_CALLSITE_FORCEINLINE
     #define GP_CALLSITE_FORCEINLINE
+#endif
+#ifndef GP_FLATTEN
+    #define GP_FLATTEN
 #endif
 
 #ifndef GP_DEFINE_FORCEINLINE_HINT_TO_INLINE
@@ -229,17 +252,49 @@
     #define GP_FORCEINLINE_HINT GP_FORCEINLINE
 #endif
 
+/// @section Abstract keyword.
+/// @note  On MSVC/Apple, 'abstract' is a compiler extension for abstract classes.
+///        On other platforms it is left empty; use pure virtual '= 0' directly.
+#ifndef GP_ABSTRACT
+    #define GP_ABSTRACT
+#endif
+
+/// @section Debug break.
+/// @note Falls back to a no-op trap if the platform header did not provide one.
+
+#ifndef GP_PLATFORM_BREAK
+    #if defined(__has_builtin) && __has_builtin(__builtin_debugtrap)
+        #define GP_PLATFORM_BREAK() __builtin_debugtrap()
+    #elif GP_COMPILER_CLANG || GP_COMPILER_GCC
+        #define GP_PLATFORM_BREAK() __builtin_trap()
+    #else
+        #define GP_PLATFORM_BREAK() (void(0))
+    #endif
+#endif
+
+/// @section Standard C++ attributes (C++11–C++23).
+
+/// @brief [[nodiscard]], emit a warning when the return value is discarded.
 #if !defined(GP_NODISCARD) && defined(__has_cpp_attribute)
     #if __has_cpp_attribute(nodiscard)
-        #if (defined(_MSC_VER) && _MSC_VER >= 1924) || (defined(__clang__) && __clang_major__ >= 10)
-            #define GP_NODISCARD [[nodiscard]]
-        #endif
+        #define GP_NODISCARD [[nodiscard]]
     #endif
 #endif
 #ifndef GP_NODISCARD
     #define GP_NODISCARD
 #endif
 
+/// @brief [[nodiscard(msg)]], nodiscard with an explanatory message (C++20).
+#if !defined(GP_NODISCARD_MSG) && defined(__has_cpp_attribute)
+    #if __has_cpp_attribute(nodiscard) >= 201907L
+        #define GP_NODISCARD_MSG(msg) [[nodiscard(msg)]]
+    #endif
+#endif
+#ifndef GP_NODISCARD_MSG
+    #define GP_NODISCARD_MSG(msg) GP_NODISCARD
+#endif
+
+/// @brief [[maybe_unused]], suppress unused-variable/parameter warnings.
 #if !defined(GP_MAYBE_UNUSED) && defined(__has_cpp_attribute)
     #if __has_cpp_attribute(maybe_unused)
         #define GP_MAYBE_UNUSED [[maybe_unused]]
@@ -249,14 +304,30 @@
     #define GP_MAYBE_UNUSED
 #endif
 
-#ifndef GP_SELECT_ANY
-    #if GP_COMPILER_MSVC
-        #define GP_SELECT_ANY __declspec(selectany)
-    #else
-        #define GP_SELECT_ANY __attribute__((selectany))
+/// @brief [[noreturn]], function never returns (abort, throw, infinite loop).
+#if !defined(GP_NORETURN) && defined(__has_cpp_attribute)
+    #if __has_cpp_attribute(noreturn)
+        #define GP_NORETURN [[noreturn]]
     #endif
 #endif
+#ifndef GP_NORETURN
+    #define GP_NORETURN
+#endif
 
+/// @brief [[deprecated]] / [[deprecated(msg)]], mark a declaration as deprecated.
+#if !defined(GP_DEPRECATED) && defined(__has_cpp_attribute)
+    #if __has_cpp_attribute(deprecated)
+        #define GP_DEPRECATED            [[deprecated]]
+        #define GP_DEPRECATED_MSG(msg)   [[deprecated(msg)]]
+    #endif
+#endif
+#ifndef GP_DEPRECATED
+    #define GP_DEPRECATED
+    #define GP_DEPRECATED_MSG(msg)
+#endif
+
+/// @brief [[no_unique_address]], allow empty members to share storage (C++20).
+///        MSVC requires [[msvc::no_unique_address]] for correct ABI behaviour.
 #if !defined(GP_NO_UNIQUE_ADDRESS) && defined(__has_cpp_attribute)
     #if __has_cpp_attribute(msvc::no_unique_address)
         #define GP_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
@@ -268,6 +339,26 @@
     #define GP_NO_UNIQUE_ADDRESS
 #endif
 
+/// @section Compiler-specific annotation macros.
+
+/// @brief Marks a pointer/reference parameter as lifetime-bound to the call site.
+///        Enables Clang's (and MSVC's) dangling-reference diagnostics.
+#ifndef GP_LIFETIMEBOUND
+    #define GP_LIFETIMEBOUND
+#endif
+
+/// @brief Suppresses debug-info generation for a function.
+#ifndef GP_NODEBUG
+    #define GP_NODEBUG
+#endif
+
+/// @brief Marks an allocator function, enabling alias analysis and leak detection.
+///        Usage: GP_ALLOCATION_FUNCTION() / GP_ALLOCATION_FUNCTION(sizeArgIdx)
+#ifndef GP_ALLOCATION_FUNCTION
+    #define GP_ALLOCATION_FUNCTION(...)
+#endif
+
+/// @brief Marks a function as guaranteed to return a non-null pointer.
 #ifndef GP_FUNCTION_NON_NULL_RETURN_START
     #define GP_FUNCTION_NON_NULL_RETURN_START
 #endif
@@ -275,67 +366,186 @@
     #define GP_FUNCTION_NON_NULL_RETURN_END
 #endif
 
-#ifndef GP_LIFETIMEBOUND
-    #define GP_LIFETIMEBOUND
+/// @brief Marks a function return value or parameter as mandatory to check
+///        (warn_unused_result / [[nodiscard]]-style, but at the end of the declaration).
+#ifndef GP_FUNCTION_CHECK_RETURN_END
+    #define GP_FUNCTION_CHECK_RETURN_END
 #endif
 
-#ifndef GP_NODEBUG
-    #define GP_NODEBUG
+/// @brief Marks a function as never returning (noreturn), placed at end of declaration.
+#ifndef GP_FUNCTION_NO_RETURN_END
+    #define GP_FUNCTION_NO_RETURN_END
 #endif
 
-#ifndef GP_ALLOCATION_FUNCTION
-    #define GP_ALLOCATION_FUNCTION(...)
-#endif
+/// @section selectany / weak linkage.
 
-#ifndef GP_ASSUME
-    #if GP_COMPILER_CLANG
-        #define GP_ASSUME(x) __builtin_assume(x)
-    #elif GP_COMPILER_MSVC
-        #define GP_ASSUME(x) __assume(x)
-    #else
-        #define GP_ASSUME(x)
-    #endif
-#endif
-
-#ifndef GP_INTRINSIC_CAST
-    #define GP_INTRINSIC_CAST
-#endif
-
-#ifndef GP_LIKELY
-    #if GP_COMPILER_CLANG || GP_COMPILER_GCC
-        #define GP_LIKELY(x) __builtin_expect(!!(x), 1)
-    #else
-        #define GP_LIKELY(x) (!!(x))
-    #endif
-#endif
-
-#ifndef GP_UNLIKELY
-    #if GP_COMPILER_CLANG || GP_COMPILER_GCC
-        #define GP_UNLIKELY(x) __builtin_expect(!!(x), 0)
-    #else
-        #define GP_UNLIKELY(x) (!!(x))
-    #endif
-#endif
-
-#ifndef GP_PLATFORM_CACHE_LINE_SIZE
-    #define GP_PLATFORM_CACHE_LINE_SIZE 64
-#endif
-
-#if !defined(GP_COLD)
+#ifndef GP_SELECT_ANY
     #if GP_COMPILER_MSVC
-        #define GP_COLD __declspec(noinline)
-    #elif GP_COMPILER_CLANG || GP_COMPILER_GCC
-        #define GP_COLD __attribute__((cold))
+        #define GP_SELECT_ANY __declspec(selectany)
+    #elif GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
+        #define GP_SELECT_ANY __attribute__((weak))
     #else
-        #define GP_COLD
+        #define GP_SELECT_ANY
     #endif
 #endif
+
+/// @section DLL export / import.
 
 #ifndef GP_DLLEXPORT
     #define GP_DLLEXPORT
 #endif
 #ifndef GP_DLLIMPORT
     #define GP_DLLIMPORT
+#endif
+
+/// @section Struct layout.
+
+/// @brief Forces a struct/class to be packed with no padding bytes.
+///        Use with caution: misaligned access can be costly on some architectures.
+#ifndef GP_PACKED
+    #if GP_COMPILER_MSVC
+        #define GP_PACKED __pragma(pack(push, 1)) /* struct body */ __pragma(pack(pop))
+    // Note: GP_PACKED wraps the struct on MSVC. For per-struct use, prefer:
+    //   #pragma pack(push, 1) / struct Foo { ... }; / #pragma pack(pop)
+    #elif GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
+        #define GP_PACKED __attribute__((packed))
+    #else
+        #define GP_PACKED
+    #endif
+#endif
+
+/// @brief Specifies the alignment of a type or variable. Wraps alignas(n).
+///        alignas is standard since C++11 and available on all supported compilers.
+#ifndef GP_ALIGN
+    #define GP_ALIGN(n) alignas(n)
+#endif
+
+/// @section Branch-prediction hints.
+
+/// @brief Suggests to the compiler that expression x is likely to be true.
+///        In C++23 prefer [[likely]] on the if/else branch body directly.
+#ifndef GP_LIKELY
+    #if GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
+        #define GP_LIKELY(x)   __builtin_expect(!!(x), 1)
+    #else
+        #define GP_LIKELY(x)   (!!(x))
+    #endif
+#endif
+
+/// @brief Suggests to the compiler that expression x is unlikely to be true.
+#ifndef GP_UNLIKELY
+    #if GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
+        #define GP_UNLIKELY(x) __builtin_expect(!!(x), 0)
+    #else
+        #define GP_UNLIKELY(x) (!!(x))
+    #endif
+#endif
+
+/// @section Optimisation hints.
+
+/// @brief Informs the optimiser that expression x is assumed to be true.
+///        Uses C++23 [[assume(x)]] when supported; falls back to compiler intrinsics.
+///        WARNING: undefined behaviour if the assumption is false at runtime.
+#ifndef GP_ASSUME
+    #if defined(__cpp_assume)   // C++23 P1774R8
+        #define GP_ASSUME(x) [[assume(x)]]
+    #elif GP_COMPILER_CLANG
+        #define GP_ASSUME(x) __builtin_assume(x)
+    #elif GP_COMPILER_MSVC
+        #define GP_ASSUME(x) __assume(x)
+    #elif GP_COMPILER_GCC
+        // GCC 13+ supports __attribute__((assume(x))).
+        #if GP_COMPILER_VERSION_MAJOR >= 13
+            #define GP_ASSUME(x) __attribute__((assume(x)))
+        #else
+            // Pre-GCC 13: manufacture an unreachable path as a weaker hint.
+            #define GP_ASSUME(x) do { if (!(x)) __builtin_unreachable(); } while (0)
+        #endif
+    #else
+        #define GP_ASSUME(x) (void(0))
+    #endif
+#endif
+
+/// @brief Marks a code path as unreachable.
+///        Triggers undefined behaviour if reached; allows the optimiser to eliminate
+///        the dead path entirely.
+#ifndef GP_BUILTIN_UNREACHABLE
+    #if GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
+        #define GP_BUILTIN_UNREACHABLE() __builtin_unreachable()
+    #elif GP_COMPILER_MSVC
+        #define GP_BUILTIN_UNREACHABLE() __assume(false)
+    #else
+        #define GP_BUILTIN_UNREACHABLE() (void(0))
+    #endif
+#endif
+
+/// @brief Safe wrapper around __has_builtin.
+///        Evaluates to 1 if the named built-in is available, 0 otherwise.
+#if defined(__has_builtin)
+    #define GP_HAS_BUILTIN(x) __has_builtin(x)
+#else
+    #define GP_HAS_BUILTIN(x) 0
+#endif
+
+/// @brief Marks a function as cold (rarely called).
+///        The optimiser de-prioritises cold functions during inlining and code placement.
+#if !defined(GP_COLD)
+    #if GP_COMPILER_MSVC
+        #define GP_COLD __declspec(noinline)
+    #elif GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
+        #define GP_COLD __attribute__((cold))
+    #else
+        #define GP_COLD
+    #endif
+#endif
+
+/// @section Cache-line size.
+
+#ifndef GP_PLATFORM_CACHE_LINE_SIZE
+    #define GP_PLATFORM_CACHE_LINE_SIZE 64
+#endif
+
+/// @section Warning suppression helpers.
+///
+/// Use these to bracket third-party headers or intentional warning-generating code.
+/// Always prefer fixing the root cause over suppressing warnings.
+///
+/// MSVC example:
+///   GP_MSVC_WARNING_PUSH()
+///   GP_MSVC_WARNING_DISABLE(4100)   // unreferenced formal parameter
+///   #include <some_library.h>
+///   GP_MSVC_WARNING_POP()
+///
+/// GCC/Clang example:
+///   GP_GCC_WARNING_PUSH()
+///   GP_GCC_WARNING_DISABLE("-Wunused-parameter")
+///   #include <some_library.h>
+///   GP_GCC_WARNING_POP()
+
+#if GP_COMPILER_MSVC
+    #define GP_MSVC_WARNING_PUSH()          __pragma(warning(push))
+    #define GP_MSVC_WARNING_POP()           __pragma(warning(pop))
+    #define GP_MSVC_WARNING_DISABLE(code)   __pragma(warning(disable : code))
+#else
+    #define GP_MSVC_WARNING_PUSH()
+    #define GP_MSVC_WARNING_POP()
+    #define GP_MSVC_WARNING_DISABLE(code)
+#endif
+
+#if GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
+    #define GP_GCC_WARNING_PUSH()           _Pragma("GCC diagnostic push")
+    #define GP_GCC_WARNING_POP()            _Pragma("GCC diagnostic pop")
+    #define GP_GCC_WARNING_DISABLE(w)       _Pragma(GP_STRINGIFY(GCC diagnostic ignored w))
+#else
+    #define GP_GCC_WARNING_PUSH()
+    #define GP_GCC_WARNING_POP()
+    #define GP_GCC_WARNING_DISABLE(w)
+#endif
+
+/// @section Intrinsic cast.
+
+#ifndef GP_INTRINSIC_CAST
+    #define GP_INTRINSIC_CAST
 #endif
 
 #include <cstddef>

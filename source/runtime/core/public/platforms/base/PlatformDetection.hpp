@@ -44,16 +44,18 @@
 #define GP_SKIP_COMPILER_DETECTION (GP_COMPILER_MSVC || GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL)
 
 #if !GP_SKIP_COMPILER_DETECTION
-    #if defined(_MSC_VER)
+    // clang-cl sets both _MSC_VER and __clang__, so MSVC must be checked independently.
+    #if defined(_MSC_VER) && !defined(__clang__)
         #define GP_COMPILER_MSVC GP_TRUE
     #endif
-    #if defined(__clang__)
-        #define GP_COMPILER_CLANG GP_TRUE
-    #endif
-    #if defined(__GNUC__)
-        #define GP_COMPILER_GCC GP_TRUE
-    #endif
+    // ICX (Intel's modern compiler) is LLVM/Clang-based and sets __clang__ too.
+    // Detect Intel first so GP_COMPILER_CLANG stays false for ICX.
     #if defined(__INTEL_COMPILER) || defined(__ICC)
         #define GP_COMPILER_INTEL GP_TRUE
+    #elif defined(__clang__)
+        #define GP_COMPILER_CLANG GP_TRUE
+    // Clang defines __GNUC__ for ABI compatibility; exclude it from pure-GCC detection.
+    #elif defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
+        #define GP_COMPILER_GCC GP_TRUE
     #endif
 #endif

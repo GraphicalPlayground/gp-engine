@@ -34,7 +34,7 @@
 #define GP_FUNCTION_CHECK_RETURN_END __attribute__ ((warn_unused_result))
 #define GP_FUNCTION_NO_RETURN_END __attribute__ ((noreturn))
 
-#define ABSTRACT abstract
+#define GP_ABSTRACT abstract
 
-#define DLLEXPORT __attribute__((visibility("default")))
-#define DLLIMPORT __attribute__((visibility("default")))
+#define GP_DLLEXPORT __attribute__((visibility("default")))
+#define GP_DLLIMPORT __attribute__((visibility("default")))
