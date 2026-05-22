@@ -14,14 +14,14 @@
 #ifndef GP_BUILD_DEVELOPMENT
     #define GP_BUILD_DEVELOPMENT            GP_FALSE
 #endif
-#ifndef GP_BUILD_TEST
-    #define GP_BUILD_TEST                   GP_FALSE
+#ifndef GP_BUILD_PROFILE
+    #define GP_BUILD_PROFILE                GP_FALSE
 #endif
 #ifndef GP_BUILD_SHIPPING
     #define GP_BUILD_SHIPPING               GP_FALSE
 #endif
 
-#if (GP_BUILD_DEBUG + GP_BUILD_DEVELOPMENT + GP_BUILD_TEST + GP_BUILD_SHIPPING != 1)
+#if (GP_BUILD_DEBUG + GP_BUILD_DEVELOPMENT + GP_BUILD_PROFILE + GP_BUILD_SHIPPING != 1)
     #error "Exactly one build configuration must be defined as true."
 #endif
 
@@ -49,7 +49,7 @@
 
 /// @brief Indicates whether hot reload is supported in this build configuration.
 #ifndef GP_HAS_HOT_RELOAD
-    #define GP_HAS_HOT_RELOAD               (!GP_IS_MONOLITHIC && !GP_BUILD_SHIPPING && !GP_BUILD_TEST)
+    #define GP_HAS_HOT_RELOAD               (!GP_IS_MONOLITHIC && !GP_BUILD_SHIPPING && !GP_BUILD_PROFILE)
 #endif
 
 /// @section Optional bridge options definitions (Not necessarily provided by GPBT).
@@ -130,7 +130,7 @@
     #ifndef GP_NO_LOGGING
         #define GP_NO_LOGGING               GP_FALSE
     #endif
-#elif GP_BUILD_TEST
+#elif GP_BUILD_PROFILE
     #ifndef GP_DO_GUARD_SLOW
         #define GP_DO_GUARD_SLOW            GP_FALSE
     #endif
