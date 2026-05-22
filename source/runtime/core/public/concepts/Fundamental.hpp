@@ -34,4 +34,9 @@ concept IsEnum = std::is_enum_v<T>;
 template <typename T>
 concept IsClass = std::is_class_v<T>;
 
+/// @brief Concept to check if a type is a character type.
+template <typename T>
+concept IsCharacter =
+    std::is_same_v<T, char> || std::is_same_v<T, wchar_t> || std::is_same_v<T, char16_t> || std::is_same_v<T, char32_t>;
+
 }   // namespace gp::concepts
