@@ -6,8 +6,24 @@
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 
+namespace gp::container
+{
+
+template <typename T, bool AllowDuplicateKeys = false>
+struct DefaultKeyFunctions;
+template <typename KeyType, typename ValueType, bool AllowDuplicateKeys>
+struct DefaultMapHashtableKeyFunctions;
+template <typename T = void>
+struct Less;
+
+}   // namespace gp::container
+
 namespace gp
 {
+
+// TODO: Move this out of there
+template <typename>
+struct TypeTraits;
 
 /// @section Array related forward declarations
 
@@ -31,73 +47,64 @@ using ConstVectorView64 = VectorView<const T, Int64>;
 
 /// @section Map related forward declarations
 
-template <typename T, bool AllowDuplicateKeys = false>
-struct DefaultKeyFunctions;
-template <typename KeyType, typename ValueType, bool AllowDuplicateKeys>
-class DefaultMapHashtableKeyFunctions;
-template <typename T = void>
-struct Less;
-template <typename>
-struct TypeTraits;
-
 template <
     typename KeyType,
     typename ValueType,
     typename SetAllocator /* = DefaultSparseSetAllocator */,
-    typename KeyFunctions = DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
+    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
 class SparseMap;
 template <
     typename KeyType,
     typename ValueType,
     typename SetAllocator /* = DefaultCompactSetAllocator */,
-    typename KeyFunctions = DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
+    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
 class CompactMap;
 template <
     typename KeyType,
     typename ValueType,
     typename SetAllocator /* = DefaultSetAllocator */,
-    typename KeyFunctions = DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
+    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
 class Map;
 template <
     typename KeyType,
     typename ValueType,
     typename SetAllocator /* = DefaultSparseSetAllocator */,
-    typename KeyFunctions = DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
+    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
 class SparseMultiMap;
 template <
     typename KeyType,
     typename ValueType,
     typename SetAllocator /* = DefaultCompactSetAllocator */,
-    typename KeyFunctions = DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
+    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
 class CompactMultiMap;
 template <
     typename KeyType,
     typename ValueType,
     typename SetAllocator /* = DefaultSetAllocator */,
-    typename KeyFunctions = DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
+    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
 class MultiMap;
 
 template <
     typename KeyType,
     typename ValueType,
     typename ArrayAllocator /* = FDefaultAllocator */,
-    typename SortPredicate = Less<typename TypeTraits<KeyType>::ConstPointerType>>
+    typename SortPredicate = container::Less<typename TypeTraits<KeyType>::ConstPointerType>>
 class SortedMap;
-template <typename T, typename ArrayAllocator /* = FDefaultAllocator */, typename SortPredicate = Less<T>>
+template <typename T, typename ArrayAllocator /* = FDefaultAllocator */, typename SortPredicate = container::Less<T>>
 class SortedSet;
 template <
     typename T,
-    typename KeyFunctions = DefaultKeyFunctions<T>,
+    typename KeyFunctions = container::DefaultKeyFunctions<T>,
     typename Allocator = float /* = DefaultSparseSetAllocator */>
 class SparseSet;
 template <
     typename T,
-    typename KeyFunctions = DefaultKeyFunctions<T>,
+    typename KeyFunctions = container::DefaultKeyFunctions<T>,
     typename Allocator = float /* = DefaultCompactSetAllocator */>
 class CompactSet;
 template <
     typename T,
-    typename KeyFunctions = DefaultKeyFunctions<T>,
+    typename KeyFunctions = container::DefaultKeyFunctions<T>,
     typename Allocator = float /* = DefaultSetAllocator */>
 class Set;
 template <typename T, typename InSizeType = Int32>
