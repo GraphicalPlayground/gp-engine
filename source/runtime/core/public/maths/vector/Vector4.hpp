@@ -5,7 +5,7 @@
 #pragma once
 
 #include "concepts/Concepts.hpp"
-#include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "CoreMinimal.hpp"
 #include "maths/MathForward.hpp"
 
 namespace gp::math
