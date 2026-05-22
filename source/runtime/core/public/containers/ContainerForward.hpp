@@ -4,10 +4,13 @@
 
 #pragma once
 
+#include "concepts/Concepts.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 
 namespace gp::container
 {
+
+/// @section Details forward declarations
 
 template <typename T, bool AllowDuplicateKeys = false>
 struct DefaultKeyFunctions;
@@ -15,6 +18,11 @@ template <typename KeyType, typename ValueType, bool AllowDuplicateKeys>
 struct DefaultMapHashtableKeyFunctions;
 template <typename T = void>
 struct Less;
+
+/// @section String related forward declarations
+
+template <concepts::IsCharacter CharType>
+class BasicStringView;
 
 }   // namespace gp::container
 
