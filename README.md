@@ -1,9 +1,9 @@
 ![Graphical Playground - Engine](.github/assets/repository-title.svg)
 
-[![Explore Platform](.github/assets/button-platform.svg)](https://graphical-playground.com)
-[![Read Handbook](.github/assets/button-handbook.svg)](https://graphical-playground.com/handbook)
-[![Documentation](.github/assets/button-docs.svg)](https://docs.graphical-playground.com)
-[![Read Licensing](.github/assets/button-licensing.svg)](https://graphical-playground.com/licensing)
+[![Explore the Platform](https://github.com/GraphicalPlayground/.github/blob/main/assets/cta/cta-explore-platform.svg)](https://graphical-playground.com)
+[![Read the Handbook](https://github.com/GraphicalPlayground/.github/blob/main/assets/cta/cta-read-handbook.svg)](https://handbook.graphical-playground.com)
+[![Documentation](https://github.com/GraphicalPlayground/.github/blob/main/assets/cta/cta-documentation.svg)](https://docs.graphical-playground.com)
+[![Learn about Licensing](https://github.com/GraphicalPlayground/.github/blob/main/assets/cta/cta-learn-licensing.svg)](https://graphical-playground.com/licensing)
 
 # [@graphical-playground](https://github.com/GraphicalPlayground)/gp-engine
 
