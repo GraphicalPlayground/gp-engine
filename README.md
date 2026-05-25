@@ -213,3 +213,5 @@ would love to hear from you! You can reach out to us through the following chann
 
 ---
 © 2026 Graphical Playground. Built for the next generation of graphics engineers.
+
+![Graphical Playground](https://github.com/GraphicalPlayground/.github/blob/main/assets/misc/gplayd-footer.svg)
