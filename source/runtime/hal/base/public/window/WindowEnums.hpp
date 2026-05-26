@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "templates/Enums.hpp"
 
 namespace gp::hal
 {
@@ -89,4 +90,4 @@ enum class WindowStyle : gp::UInt32
 
 }   // namespace gp::hal
 
-// GP_ENABLE_ENUM_BITWISE_OPERATIONS(gp::hal::WindowStyle);
+GP_ENABLE_ENUM_BITWISE_OPERATIONS(gp::hal::WindowStyle);
