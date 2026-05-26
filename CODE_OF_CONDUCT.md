@@ -1,4 +1,4 @@
-![Graphical Playground - Code Of Conduct](.github/assets/code-of-conduct.svg)
+![Graphical Playground - Code Of Conduct](https://github.com/GraphicalPlayground/.github/blob/main/assets/banners/gplayd-code-of-conduct.svg)
 
 ## Our Pledge
 

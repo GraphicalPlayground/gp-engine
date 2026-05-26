@@ -1,4 +1,4 @@
-![Graphical Playground - Security Guidelines](.github/assets/security-guidelines.svg)
+![Graphical Playground - Security Guidelines](https://github.com/GraphicalPlayground/.github/blob/main/assets/banners/gplayd-security.svg)
 
 Our Security Approach
 
