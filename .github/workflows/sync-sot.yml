@@ -14,6 +14,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
+      - name: Fetch Sync Branch Reference
+        run: |
+          git fetch origin refs/heads/sync/source-of-truth:refs/remotes/origin/sync/source-of-truth || true
       - name: Synchronize Source of Truth
         uses: GraphicalPlayground/gp-actions/sync/source-of-truth@main
         with:
