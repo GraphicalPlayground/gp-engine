@@ -52,10 +52,7 @@
     template <> \
     struct ::gp::detail::EnableComparisonOperators<enumType> : std::true_type {}
 
-namespace gp
-{
-
-namespace detail
+namespace gp::detail
 {
 
 /// @brief General template specialization to enable bitwise operators for enum types.
@@ -82,9 +79,9 @@ struct EnableComparisonOperators : std::false_type
 template <typename T>
 inline constexpr bool HasComparisonOperatorsV = EnableComparisonOperators<T>::value;
 
-}   // namespace detail
+}   // namespace gp::detail
 
-namespace concepts
+namespace gp::concepts
 {
 
 /// @brief Concept to check if a type is an enum and has bitwise operators enabled.
@@ -95,76 +92,7 @@ concept IsBitwiseEnum = concepts::IsEnum<T> && detail::HasBitwiseOperatorsV<T>;
 template <typename T>
 concept IsComparableEnum = concepts::IsEnum<T> && detail::HasComparisonOperatorsV<T>;
 
-}   // namespace concepts
-
-namespace enums
-{
-
-/// @brief Checks if any of the specified flags are set in the given enum value.
-/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
-/// @param[in] value The enum value to check for the specified flags.
-template <concepts::IsBitwiseEnum E>
-GP_INLINE constexpr bool hasAnyFlags(E value) noexcept
-{
-    using Underlying = std::underlying_type_t<E>;
-    return static_cast<Underlying>(value) != 0;
-}
-
-/// @brief Checks if all of the specified flags are set in the given enum value.
-/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
-/// @param[in] value The enum value to check for the specified flags.
-/// @param[in] flags The flags to check for in the enum value.
-template <concepts::IsBitwiseEnum E>
-GP_INLINE constexpr bool hasAllFlags(E value, E flags) noexcept
-{
-    using Underlying = std::underlying_type_t<E>;
-    return (static_cast<Underlying>(value) & static_cast<Underlying>(flags)) == static_cast<Underlying>(flags);
-}
-
-/// @brief Checks if none of the specified flags are set in the given enum value.
-/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
-/// @param[in] value The enum value to check for the specified flags.
-/// @param[in] flags The flags to check for in the enum value.
-template <concepts::IsBitwiseEnum E>
-GP_INLINE constexpr bool hasNoFlags(E value, E flags) noexcept
-{
-    using Underlying = std::underlying_type_t<E>;
-    return (static_cast<Underlying>(value) & static_cast<Underlying>(flags)) == 0;
-}
-
-/// @brief Sets the specified flags in the given enum value.
-/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
-/// @param[in] value The enum value to set the flags in.
-/// @param[in] flags The flags to set in the enum value.
-template <concepts::IsBitwiseEnum E>
-GP_INLINE constexpr E setFlags(E value, E flags) noexcept
-{
-    return value | flags;
-}
-
-/// @brief Clears the specified flags in the given enum value.
-/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
-/// @param[in] value The enum value to clear the flags in.
-/// @param[in] flags The flags to clear in the enum value.
-template <concepts::IsBitwiseEnum E>
-GP_INLINE constexpr E clearFlags(E value, E flags) noexcept
-{
-    return value & ~flags;
-}
-
-/// @brief Toggles the specified flags in the given enum value.
-/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
-/// @param[in] value The enum value to toggle the flags in.
-/// @param[in] flags The flags to toggle in the enum value.
-template <concepts::IsBitwiseEnum E>
-GP_INLINE constexpr E toggleFlags(E value, E flags) noexcept
-{
-    return value ^ flags;
-}
-
-}   // namespace enums
-
-}   // namespace gp
+}   // namespace gp::concepts
 
 /// @brief Bitwise OR operator for enum types that satisfy the `BitwiseEnum` concept.
 template <gp::concepts::IsBitwiseEnum E>
@@ -269,3 +197,70 @@ GP_INLINE constexpr bool operator>=(E lhs, E rhs) noexcept
     using Underlying = std::underlying_type_t<E>;
     return static_cast<Underlying>(lhs) >= static_cast<Underlying>(rhs);
 }
+
+namespace gp::enums
+{
+
+/// @brief Checks if any of the specified flags are set in the given enum value.
+/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
+/// @param[in] value The enum value to check for the specified flags.
+template <concepts::IsBitwiseEnum E>
+GP_INLINE constexpr bool hasAnyFlags(E value) noexcept
+{
+    using Underlying = std::underlying_type_t<E>;
+    return static_cast<Underlying>(value) != 0;
+}
+
+/// @brief Checks if all of the specified flags are set in the given enum value.
+/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
+/// @param[in] value The enum value to check for the specified flags.
+/// @param[in] flags The flags to check for in the enum value.
+template <concepts::IsBitwiseEnum E>
+GP_INLINE constexpr bool hasAllFlags(E value, E flags) noexcept
+{
+    using Underlying = std::underlying_type_t<E>;
+    return (static_cast<Underlying>(value) & static_cast<Underlying>(flags)) == static_cast<Underlying>(flags);
+}
+
+/// @brief Checks if none of the specified flags are set in the given enum value.
+/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
+/// @param[in] value The enum value to check for the specified flags.
+/// @param[in] flags The flags to check for in the enum value.
+template <concepts::IsBitwiseEnum E>
+GP_INLINE constexpr bool hasNoFlags(E value, E flags) noexcept
+{
+    using Underlying = std::underlying_type_t<E>;
+    return (static_cast<Underlying>(value) & static_cast<Underlying>(flags)) == 0;
+}
+
+/// @brief Sets the specified flags in the given enum value.
+/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
+/// @param[in] value The enum value to set the flags in.
+/// @param[in] flags The flags to set in the enum value.
+template <concepts::IsBitwiseEnum E>
+GP_INLINE constexpr E setFlags(E value, E flags) noexcept
+{
+    return value | flags;
+}
+
+/// @brief Clears the specified flags in the given enum value.
+/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
+/// @param[in] value The enum value to clear the flags in.
+/// @param[in] flags The flags to clear in the enum value.
+template <concepts::IsBitwiseEnum E>
+GP_INLINE constexpr E clearFlags(E value, E flags) noexcept
+{
+    return value & ~flags;
+}
+
+/// @brief Toggles the specified flags in the given enum value.
+/// @tparam E The enum type, which must satisfy the `BitwiseEnum` concept.
+/// @param[in] value The enum value to toggle the flags in.
+/// @param[in] flags The flags to toggle in the enum value.
+template <concepts::IsBitwiseEnum E>
+GP_INLINE constexpr E toggleFlags(E value, E flags) noexcept
+{
+    return value ^ flags;
+}
+
+}   // namespace gp::enums
