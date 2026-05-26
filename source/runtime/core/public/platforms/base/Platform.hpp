@@ -226,6 +226,9 @@
 #ifndef GP_STDCALL
     #define GP_STDCALL
 #endif
+#ifndef GP_INLINE
+    #define GP_INLINE inline
+#endif
 #ifndef GP_FORCEINLINE
     #define GP_FORCEINLINE inline
 #endif
