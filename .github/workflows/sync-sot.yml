@@ -22,3 +22,4 @@ jobs:
           allow-templatization: true
           # file-to-sync: ''
           push-changes: true
+          create-pr: true
