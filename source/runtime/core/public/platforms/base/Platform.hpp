@@ -505,6 +505,13 @@
     #define GP_PLATFORM_CACHE_LINE_SIZE 64
 #endif
 
+/// @section Assertion macros.
+
+/// @brief GP_ASSERT(expr), runtime assertion, breaks into the debugger if expr is false.
+#ifndef GP_ASSERT
+    #define GP_ASSERT(expr, ...)
+#endif
+
 /// @section Warning suppression helpers.
 ///
 /// Use these to bracket third-party headers or intentional warning-generating code.
