@@ -6,4 +6,5 @@ include(gp-build-tool)
 
 gpStartModule(parser/json)
   gpAddDependency(PUBLIC core)
+  gpAddDependency(PRIVATE gp::thirdparty::rapidjson)
 gpEndModule()
