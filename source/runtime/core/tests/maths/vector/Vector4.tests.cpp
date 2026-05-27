@@ -4,7 +4,9 @@
 
 #include <gtest/gtest.h>
 
-// Include the header for the Vector4 class
+// Include the header for the Vector classes
+#include "maths/vector/Vector2.hpp"
+#include "maths/vector/Vector3.hpp"
 #include "maths/vector/Vector4.hpp"
 
 namespace gp::math::testing
@@ -86,58 +88,58 @@ TYPED_TEST(Vector4Test, ConversionConstructor)
     EXPECT_EQ(vec.w, static_cast<TypeParam>(floatVec.w));
 }
 
-// TYPED_TEST(Vector4Test, Vector3Constructor)
-// {
-//     Vector3<TypeParam> vec3(TypeParam{ 1.0 }, TypeParam{ 2.0 }, TypeParam{ 3.0 });
+TYPED_TEST(Vector4Test, Vector3Constructor)
+{
+    Vector3<TypeParam> vec3(TypeParam{ 1.0 }, TypeParam{ 2.0 }, TypeParam{ 3.0 });
 
-//     // Test with default W component
-//     Vector4<TypeParam> vecDefaultW(vec3);
-//     EXPECT_EQ(vecDefaultW.x, vec3.x);
-//     EXPECT_EQ(vecDefaultW.y, vec3.y);
-//     EXPECT_EQ(vecDefaultW.z, vec3.z);
-//     EXPECT_EQ(vecDefaultW.w, this->one);   // Default is 1
+    // Test with default W component
+    Vector4<TypeParam> vecDefaultW(vec3);
+    EXPECT_EQ(vecDefaultW.x, vec3.x);
+    EXPECT_EQ(vecDefaultW.y, vec3.y);
+    EXPECT_EQ(vecDefaultW.z, vec3.z);
+    EXPECT_EQ(vecDefaultW.w, this->one);   // Default is 1
 
-//     // Test with explicit W component (using a different type to test the template <U>)
-//     float customW = 5.5f;
-//     Vector4<TypeParam> vecCustomW(vec3, customW);
-//     EXPECT_EQ(vecCustomW.x, vec3.x);
-//     EXPECT_EQ(vecCustomW.y, vec3.y);
-//     EXPECT_EQ(vecCustomW.z, vec3.z);
-//     EXPECT_EQ(vecCustomW.w, static_cast<TypeParam>(customW));
-// }
+    // Test with explicit W component (using a different type to test the template <U>)
+    float customW = 5.5f;
+    Vector4<TypeParam> vecCustomW(vec3, customW);
+    EXPECT_EQ(vecCustomW.x, vec3.x);
+    EXPECT_EQ(vecCustomW.y, vec3.y);
+    EXPECT_EQ(vecCustomW.z, vec3.z);
+    EXPECT_EQ(vecCustomW.w, static_cast<TypeParam>(customW));
+}
 
-// TYPED_TEST(Vector4Test, SingleVector2Constructor)
-// {
-//     Vector2<TypeParam> vec2(TypeParam{ 1.5 }, TypeParam{ 2.5 });
+TYPED_TEST(Vector4Test, SingleVector2Constructor)
+{
+    Vector2<TypeParam> vec2(TypeParam{ 1.5 }, TypeParam{ 2.5 });
 
-//     // Test with default Z and W
-//     Vector4<TypeParam> vecDefault(vec2);
-//     EXPECT_EQ(vecDefault.x, vec2.x);
-//     EXPECT_EQ(vecDefault.y, vec2.y);
-//     EXPECT_EQ(vecDefault.z, this->zero);   // Default is 0
-//     EXPECT_EQ(vecDefault.w, this->one);    // Default is 1
+    // Test with default Z and W
+    Vector4<TypeParam> vecDefault(vec2);
+    EXPECT_EQ(vecDefault.x, vec2.x);
+    EXPECT_EQ(vecDefault.y, vec2.y);
+    EXPECT_EQ(vecDefault.z, this->zero);   // Default is 0
+    EXPECT_EQ(vecDefault.w, this->one);    // Default is 1
 
-//     // Test with explicit Z and W
-//     double customZ = 3.5;
-//     double customW = 4.5;
-//     Vector4<TypeParam> vecCustom(vec2, customZ, customW);
-//     EXPECT_EQ(vecCustom.x, vec2.x);
-//     EXPECT_EQ(vecCustom.y, vec2.y);
-//     EXPECT_EQ(vecCustom.z, static_cast<TypeParam>(customZ));
-//     EXPECT_EQ(vecCustom.w, static_cast<TypeParam>(customW));
-// }
+    // Test with explicit Z and W
+    double customZ = 3.5;
+    double customW = 4.5;
+    Vector4<TypeParam> vecCustom(vec2, customZ, customW);
+    EXPECT_EQ(vecCustom.x, vec2.x);
+    EXPECT_EQ(vecCustom.y, vec2.y);
+    EXPECT_EQ(vecCustom.z, static_cast<TypeParam>(customZ));
+    EXPECT_EQ(vecCustom.w, static_cast<TypeParam>(customW));
+}
 
-// TYPED_TEST(Vector4Test, DoubleVector2Constructor)
-// {
-//     Vector2<TypeParam> vecXY(TypeParam{ 1.2 }, TypeParam{ 3.4 });
-//     Vector2<TypeParam> vecZW(TypeParam{ 5.6 }, TypeParam{ 7.8 });
+TYPED_TEST(Vector4Test, DoubleVector2Constructor)
+{
+    Vector2<TypeParam> vecXY(TypeParam{ 1.2 }, TypeParam{ 3.4 });
+    Vector2<TypeParam> vecZW(TypeParam{ 5.6 }, TypeParam{ 7.8 });
 
-//     Vector4<TypeParam> vec(vecXY, vecZW);
+    Vector4<TypeParam> vec(vecXY, vecZW);
 
-//     EXPECT_EQ(vec.x, vecXY.x);
-//     EXPECT_EQ(vec.y, vecXY.y);
-//     EXPECT_EQ(vec.z, vecZW.x);
-//     EXPECT_EQ(vec.w, vecZW.y);
-// }
+    EXPECT_EQ(vec.x, vecXY.x);
+    EXPECT_EQ(vec.y, vecXY.y);
+    EXPECT_EQ(vec.z, vecZW.x);
+    EXPECT_EQ(vec.w, vecZW.y);
+}
 
 }   // namespace gp::math::testing
