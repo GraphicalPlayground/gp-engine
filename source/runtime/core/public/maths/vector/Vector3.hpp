@@ -14,7 +14,12 @@ namespace gp::math
 /// @tparam T The floating-point type for the vector components
 template <concepts::IsFloatingPoint T>
 struct Vector3
-{};
+{
+public:
+    T x;
+    T y;
+    T z;
+};
 
 }   // namespace gp::math
 
