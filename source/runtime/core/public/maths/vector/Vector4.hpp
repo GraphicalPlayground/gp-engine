@@ -79,7 +79,7 @@ public:
     /// @tparam U The floating-point type of the input vector and w component.
     /// @param[in] vec The input Vector3 to initialize the x, y, and z components of the Vector4.
     /// @param[in] inW The w component of the Vector4, defaulting to 1 if not provided.
-    template <concepts::IsFloatingPoint U>
+    template <concepts::IsFloatingPoint U = T>
     GP_NODISCARD explicit constexpr Vector4(const Vector3<T>& vec, const U inW = U{ 1 }) noexcept;
 
     /// @brief Constructor that initializes the vector from a Vector2 and two additional components.
@@ -88,7 +88,7 @@ public:
     /// @param[in] inZ The z component of the Vector4, defaulting to 0 if not provided.
     /// @param[in] inW The w component of the Vector4, defaulting to 1 if not provided.
     /// @param[in] inW The w component of the Vector4, defaulting to 1 if not provided.
-    template <concepts::IsFloatingPoint U>
+    template <concepts::IsFloatingPoint U = T>
     GP_NODISCARD explicit constexpr Vector4(const Vector2<T>& vec, const U inZ = U{ 0 }, const U inW = U{ 1 }) noexcept;
 
     /// @brief Constructor that initializes the vector from two Vector2 components.
