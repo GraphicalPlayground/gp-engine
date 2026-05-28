@@ -28,6 +28,8 @@ jobs:
 
       - name: Sync Documentation
         run: |
+          # remove old docs
+          rm -rf gp-docs/docs/gp-engine
           mkdir -p gp-docs/docs/gp-engine
           cd gp-engine
           mkdir -p 'docs/Programming With C++/GP Build Tool'
