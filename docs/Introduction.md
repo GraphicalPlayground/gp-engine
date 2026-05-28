@@ -12,6 +12,23 @@ This documentation is currently a work in progress. Some sections may be incompl
 We appreciate your patience and understanding as we continue to build out the content.
 :::
 
+## Donations
+
+If you find `gp-engine` helpful for your learning, academic research, or game development journey,
+please consider supporting the project. Maintaining a modern C++ graphics engine takes
+significant time and resources!
+
+You can sponsor the Graphical Playground project through the following links:
+
+- [**Buy Me A Coffee**](https://www.buymeacoffee.com/GraphicalPlayground)
+- [**GitHub Sponsors**](https://github.com/sponsors/GraphicalPlayground)
+- [**Direct Donation**](https://graphical-playground.com/donate)
+
+You can see the full list of sponsors and supporters on our
+[Sponsors Page](https://graphical-playground.com/sponsors).
+Your support helps us continue to develop high-quality educational resources and maintain the engine
+for the next generation of graphics engineers.
+
 ## Contact
 
 If you have any questions, suggestions, or want to share your projects built with `gp-engine`, we
