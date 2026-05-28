@@ -58,7 +58,8 @@ your project includes by default.
 1. Create a directory for your module at the top level of your project's Source folder.
    This directory should have the same name as your module.
 
-:::tip You can place modules in any subdirectory within your Source folder, at any number of levels
+:::tip
+You can place modules in any subdirectory within your Source folder, at any number of levels
 deep. This makes it possible to use subdirectories to group modules.
 :::
 
@@ -95,41 +96,47 @@ The following is an example of the recommended folder structure for a module:
         {
           name: 'private',
           type: 'folder',
+          icon: 'folder-private',
           children: [
-            { name: '[ModuleName]Module.cpp', type: 'file' }
+            { name: '[ModuleName]Module.cpp', type: 'file', icon: 'cpp' }
           ]
         },
         {
           name: 'internal',
           type: 'folder',
+          icon: 'folder-private',
           children: [
-            { name: '[ModuleName]Internal.hpp', type: 'file' }
+            { name: '[ModuleName]Internal.hpp', type: 'file', icon: 'hpp' }
           ]
         },
         {
           name: 'public',
           type: 'folder',
+          icon: 'folder-public',
           children: [
-            { name: '[ModuleName].hpp', type: 'file' },
-            { name: '[ModuleName]Build.hpp', type: 'file' }
+            { name: '[ModuleName].hpp', type: 'file', icon: 'hpp' },
+            { name: '[ModuleName]Build.hpp', type: 'file', icon: 'hpp' }
           ]
         },
         {
           name: 'docs',
           type: 'folder',
+          icon: 'folder-docs',
           children: []
         },
         {
           name: 'tests',
           type: 'folder',
+          icon: 'folder-test',
           children: []
         },
         {
           name: 'benchmarks',
           type: 'folder',
+          icon: 'folder-benchmark',
           children: []
         },
-        { name: 'CMakeLists.txt', type: 'file', highlight: true }
+        { name: 'CMakeLists.txt', type: 'file', highlight: true, icon: 'cmake'}
       ]
     }
   ]}
