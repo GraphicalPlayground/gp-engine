@@ -9,7 +9,7 @@
 #include "maths/vector/Vector3.hpp"
 #include "maths/vector/Vector4.hpp"
 
-namespace gp::math::testing
+namespace gp::math::tests
 {
 
 // Define a test fixture template
@@ -110,4 +110,4 @@ TYPED_TEST(Vector3Test, Vector4Constructor)
     EXPECT_EQ(vecDefaultW.z, vec4.z);
 }
 
-}   // namespace gp::math::testing
+}   // namespace gp::math::tests
