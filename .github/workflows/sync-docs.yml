@@ -1,4 +1,4 @@
-name: Sync Documentation to gp-docs
+name: Synchronize Documentation
 
 on:
   push:
