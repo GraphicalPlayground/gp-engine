@@ -79,7 +79,7 @@ public:
 
     /// @brief Copy constructor and copy assignment operator.
     GP_NODISCARD constexpr BasicStringView(const BasicStringView&) noexcept = default;
-    GP_NODISCARD constexpr BasicStringView& operator=(const BasicStringView&) noexcept = default;
+    constexpr BasicStringView& operator=(const BasicStringView&) noexcept = default;
 
 public:
     /// @brief Unchecked element access.
@@ -690,11 +690,11 @@ public:
             return npos;
         }
         pos = gp::math::min(pos, m_size - 1);
-        auto sub = std::ranges::subrange(begin(), begin() + pos + 1);
         if (sv.isEmpty())
         {
             return pos;
         }
+        auto sub = std::ranges::subrange(begin(), begin() + pos + 1);
         auto it = std::ranges::find_if_not(
             std::views::reverse(sub),
             [&sv](CharT c)
@@ -774,9 +774,11 @@ using U32StringView = container::BasicStringView<char32_t>;
 /// @param sv The BasicStringView to output.
 /// @return Reference to the output stream after writing the view's characters.
 template <gp::concepts::IsCharacter CharT>
-std::ostream& operator<<(std::ostream& os, const gp::container::BasicStringView<CharT>& sv)
+std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os, const gp::container::BasicStringView<CharT>& sv)
 {
-    return os << sv.data();
+    if (sv.data())
+        os.write(sv.data(), static_cast<std::streamsize>(sv.size()));
+    return os;
 }
 
 /// @brief std::formatter specialization for gp::BasicStringView.
