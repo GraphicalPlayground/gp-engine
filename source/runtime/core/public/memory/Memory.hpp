@@ -8,6 +8,7 @@
 #include "CoreMinimal.hpp"
 #include "platforms/base/PlatformMemory.hpp"
 #include <algorithm>
+#include <stdlib.h>
 
 namespace gp::memory
 {
