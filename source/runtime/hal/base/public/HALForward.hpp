@@ -9,7 +9,7 @@ namespace gp::hal
 
 /// @section Windowing and display
 
-class Window;
+class IWindow;
 class Display;
 class Monitor;
 

@@ -14,11 +14,11 @@ namespace gp::hal
 class Display;
 
 /// @brief Interface for platform-agnostic window management.
-class Window
+class IWindow
 {
 public:
     /// @brief Virtual destructor to ensure proper cleanup in derived classes.
-    virtual ~Window() = default;
+    virtual ~IWindow() = default;
 
 public:
     /// @brief Checks if the window is currently open and has not been closed by the user or the application.
