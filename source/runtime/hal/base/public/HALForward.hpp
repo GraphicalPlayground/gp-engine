@@ -7,6 +7,17 @@
 namespace gp::hal
 {
 
+/// @section Hardware information
+
+class IHardwareInfo;
+struct OSInfo;
+struct PowerStateInfo;
+struct MemoryInfo;
+struct DiskInfo;
+struct CPUInfo;
+struct GPUInfo;
+struct SIMDInfo;
+
 /// @section Windowing and display
 
 class IWindow;
