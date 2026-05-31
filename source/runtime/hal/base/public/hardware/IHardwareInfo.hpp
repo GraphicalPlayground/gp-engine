@@ -39,7 +39,7 @@ public:
 
     /// @brief Get detailed information about the operating system, including name, version, and architecture.
     /// @return A reference to an OSInfo struct containing the OS details.
-    GP_NODISCARD virtual OSInfo getOSInfo() const noexcept = 0;
+    GP_NODISCARD virtual const OSInfo& getOSInfo() const noexcept = 0;
 
     /// @brief Get detailed information about the system's memory, including total and available physical memory and
     /// page size.
@@ -59,8 +59,10 @@ public:
 
     /// @brief Get information about the current power state of the system, including power source, battery level, and
     /// low power mode status.
-    /// @return A PowerStateInfo struct containing the power state details.
-    GP_NODISCARD virtual PowerStateInfo getPowerState() const noexcept = 0;
+    /// @return An optional PowerStateInfo struct containing the power state details, or std::nullopt if the information
+    /// could not be queried.
+    /// @todo Replace `std::optional` with a custom Result type that can provide error details on failure.
+    GP_NODISCARD virtual std::optional<PowerStateInfo> getPowerState() const noexcept = 0;
 };
 
 }   // namespace gp::hal
