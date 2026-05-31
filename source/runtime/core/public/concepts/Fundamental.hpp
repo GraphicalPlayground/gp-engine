@@ -39,4 +39,36 @@ template <typename T>
 concept IsCharacter = std::is_same_v<T, char> || std::is_same_v<T, wchar_t> || std::is_same_v<T, char8_t> ||
                       std::is_same_v<T, char16_t> || std::is_same_v<T, char32_t>;
 
+/// @brief Concept to check if a type is a void type.
+template <typename T>
+concept IsVoid = std::is_void_v<T>;
+
+/// @brief Concept to check if a type is a null pointer type.
+template <typename T>
+concept IsNullPointer = std::is_null_pointer_v<T>;
+
+/// @brief Concept to check if a type is a function.
+template <typename T>
+concept IsFunction = std::is_function_v<T>;
+
+/// @brief Concept to check if a type is an object type.
+template <typename T>
+concept IsObject = std::is_object_v<T>;
+
+/// @brief Concept to check if a type is a scalar type.
+template <typename T>
+concept IsScalar = std::is_scalar_v<T>;
+
+/// @brief Concept to check if a type is a fundamental type.
+template <typename T>
+concept IsFundamental = std::is_fundamental_v<T>;
+
+/// @brief Concept to check if a type is a reference type.
+template <typename T>
+concept IsReference = std::is_reference_v<T>;
+
+/// @brief Concept to check if a type is an array type.
+template <typename T>
+concept IsArray = std::is_array_v<T>;
+
 }   // namespace gp::concepts

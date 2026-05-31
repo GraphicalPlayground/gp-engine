@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "concepts/Comparison.hpp"     // IWYU pragma: export
 #include "concepts/Construction.hpp"   // IWYU pragma: export
 #include "concepts/Container.hpp"      // IWYU pragma: export
 #include "concepts/Functional.hpp"     // IWYU pragma: export

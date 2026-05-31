@@ -30,4 +30,12 @@ concept IsCopyAssignable = std::assignable_from<T&, const T&>;
 template <typename T>
 concept IsMoveAssignable = std::assignable_from<T&, T>;
 
+/// @brief Concept to check if a type is constructible with specific arguments.
+template <typename T, typename... Args>
+concept IsConstructibleWith = std::constructible_from<T, Args...>;
+
+/// @brief Concept to check if a type is destructible.
+template <typename T>
+concept IsDestructible = std::destructible<T>;
+
 }   // namespace gp::concepts
