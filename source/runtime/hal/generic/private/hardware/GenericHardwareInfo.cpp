@@ -9,7 +9,7 @@ namespace gp::hal::generic
 
 GP_NODISCARD bool HardwareInfo::initialize() noexcept
 {
-    return true;
+    return m_initialized;
 }
 
 GP_NODISCARD const CPUInfo& HardwareInfo::getCPUInfo() const noexcept
@@ -32,7 +32,7 @@ GP_NODISCARD std::optional<MemoryInfo> HardwareInfo::getMemoryStatus() const noe
     return std::nullopt;
 }
 
-GP_NODISCARD std::optional<DiskInfo> HardwareInfo::getDiskStatus(const char* path) const noexcept
+GP_NODISCARD std::optional<DiskInfo> HardwareInfo::getDiskStatus(const char* /* path */) const noexcept
 {
     return std::nullopt;
 }
