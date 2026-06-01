@@ -1,0 +1,122 @@
+name: Feature request
+description: Propose a new feature or improvement for the Graphical Playground (GP) engine
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting, read through these:
+        - Write a descriptive title above (e.g. *"RHI: add multi-draw indirect support for Vulkan"*).
+        - One issue per feature. Multiple ideas? Open multiple issues.
+        - Search [open](https://github.com/GraphicalPlayground/gp-engine/issues) and [closed](https://github.com/GraphicalPlayground/gp-engine/issues?q=is%3Aissue+is%3Aclosed) issues. If a related request already exists, comment there rather than opening a duplicate.
+        - Requests without a clear use-case or rationale may be closed.
+
+  - type: dropdown
+    attributes:
+      label: Feature category
+      description: What area of the engine does this request primarily target?
+      multiple: false
+      options:
+        - Core (containers, memory, threading, math)
+        - HAL (hardware abstraction, platform layer)
+        - RHI (render hardware interface, GPU resources)
+        - Renderer (render graph, passes, materials, lighting)
+        - Shaders (HLSL/GLSL, shader compilation pipeline)
+        - Editor (tooling, asset pipeline, UI)
+        - Build / CMake (build system, packaging, CI)
+        - Developer experience (debugging, profiling, introspection)
+        - Documentation / samples
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Type of change
+      description: What kind of addition or modification best describes this request?
+      multiple: false
+      options:
+        - New system / subsystem (net-new module or major component)
+        - New API (public-facing interface addition within an existing module)
+        - Performance improvement (same behaviour, lower cost)
+        - Usability / ergonomics improvement (no behavioural change, better DX)
+        - Platform / backend support (new OS, GPU API, or hardware tier)
+        - Breaking change / redesign (existing API or behaviour must change)
+        - Other / unsure
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Problem statement
+      description: |
+        What problem does this solve? Start with the use-case, not the solution.
+        - What are you trying to do that you can't do today?
+        - Who runs into this (engine programmer, graphics engineer, tooling developer, end user)?
+        - For performance issues, include real numbers or profiler output.
+      placeholder: |
+        When rendering scenes with more than ~50k draw calls the CPU overhead of individual RHI submission commands becomes the bottleneck.
+        Currently there is no way to batch indirect draws at the RHI level, forcing callers to drop down to raw Vulkan/DX12, which breaks portability across backends.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Proposed solution
+      description: |
+        How would you solve it?
+        - Sketch the API if you have one in mind (C++ signatures, data structures, config).
+        - Reference existing patterns where applicable (e.g. "similar to how `RHICreateBuffer` is structured").
+        - For behaviour changes, describe what changes and what stays the same.
+      placeholder: |
+        Add an `RHIMultiDrawIndirect` command and a corresponding `FRHIDrawIndirectBuffer` resource type.
+        The Vulkan backend maps to `vkCmdDrawIndexedIndirectCount`, the DX12 backend to `ExecuteIndirect`.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Alternatives considered
+      description: |
+        What else did you consider, and why did those not work? Optional, but it speeds up review considerably.
+      placeholder: |
+        - Batching at the render-graph level: possible, but still generates per-object RHI commands under the hood.
+        - A software indirect layer in the Renderer module: avoids RHI changes but duplicates GPU-driver work and misses backend-specific optimisations.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Expected impact
+      description: |
+        What does the fix look like in practice? Numbers help when you have them.
+        - Frame time, CPU ms, memory budget.
+        - API or workflow changes that become possible.
+      placeholder: |
+        - Reduces per-frame CPU RHI overhead from ~3 ms to <0.5 ms on scenes with 50k+ draw calls.
+        - Enables GPU-driven rendering pipelines without bypassing the RHI abstraction layer.
+    validations:
+      required: false
+
+  - type: dropdown
+    attributes:
+      label: Are you willing to implement this?
+      description: Helps maintainers prioritise and plan the work.
+      options:
+        - "Yes: I can open a draft PR"
+        - "Partially: design, tests, or review only"
+        - "No: raising this for the team to evaluate"
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: |
+        Anything else that would help reviewers:
+        - Prior art in other engines (Unreal, Godot, O3DE, Filament, etc.)
+        - Relevant specs, papers, or GPU vendor docs.
+        - Prototype code or a draft branch.
+        - Related issues or PRs.
+    validations:
+      required: false

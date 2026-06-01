@@ -5,21 +5,18 @@ body:
   - type: markdown
     attributes:
       value: |
-        When reporting bugs, please follow the guidelines in this template. This helps identify the problem precisely and thus enables contributors to fix it faster.
-        - Write a descriptive issue title above.
-        - The golden rule is to **always open *one* issue for *one* bug**. If you notice several bugs and want to report them, make sure to create one new issue for each of them.
-        - Search [open](https://github.com/GraphicalPlayground/gp-engine/issues) and [closed](https://github.com/GraphicalPlayground/gp-engine/issues?q=is%3Aissue+is%3Aclosed) issues to ensure it has not already been reported. If you don't find a relevant match or if you're unsure, don't hesitate to **open a new issue**.
-        - Please always check if your issue is reproducible on the latest `main` commit — it may already have been fixed.
-        - If you are using a custom build, confirm whether the issue also reproduces on an official release build. If you have local modifications or third-party modules, verify the bug exists without them.
+        Follow the guidelines below. They help contributors reproduce and fix issues faster.
+        - Write a descriptive title above.
+        - One issue per bug. Found several? Open a separate issue for each.
+        - Search [open](https://github.com/GraphicalPlayground/gp-engine/issues) and [closed](https://github.com/GraphicalPlayground/gp-engine/issues?q=is%3Aissue+is%3Aclosed) issues first. If nothing matches, open a new one.
+        - Check whether the bug reproduces on the latest `main` — it may already be fixed.
+        - On a custom build, verify the bug also occurs on an official release without local modifications or third-party modules.
 
   - type: textarea
     attributes:
       label: Tested versions
       description: |
-        To properly fix a bug, we need to identify if it was recently introduced or has always been present.
-        - Specify the GP engine version and **Git commit hash** where the issue occurs. You can get the hash via `git rev-parse --short HEAD`.
-        - If possible, test on the previous release tag and note whether the bug is present there too. This helps identify **regressions**.
-        - List each version tested and whether the bug was reproducible or not.
+        Knowing when a bug was introduced matters. List the GP engine version and commit hash where it occurs (`git rev-parse --short HEAD`). If you can, test the previous release tag too and note whether the bug is there — that narrows down regressions quickly.
       placeholder: |
         - Reproducible in: v0.3.0 [a1b2c3d], main @ 2026-02-20 [e4f5g6h]
         - Not reproducible in: v0.2.1 [x9y8z7w]
@@ -73,8 +70,7 @@ body:
     attributes:
       label: Steps to reproduce
       description: |
-        Provide a minimal, ordered list of steps or a self-contained C++ snippet that reliably triggers the bug.
-        Reproducibility is a prerequisite for contributors to investigate and fix the issue.
+        List the exact steps or a self-contained C++ snippet that reliably triggers the bug. Without a reproduction, the issue is very hard to investigate.
       placeholder: |
         1. Configure with `cmake -B Build -DCMAKE_BUILD_TYPE=Debug`
         2. Build target `GPRuntimeCore`
@@ -87,8 +83,8 @@ body:
     attributes:
       label: Minimal reproduction case (MRC)
       description: |
-        - Provide the smallest possible C++ code or test case that demonstrates the bug, ideally as a self-contained Catch2 test.
-        - If the issue is build-system related, include the relevant `CMakeLists.txt` fragment and CMake output.
-        - If no isolated reproduction is possible, describe in detail which existing test or executable triggers it and write "N/A" here.
+        - The smallest C++ code or test case that triggers the bug, ideally as a self-contained Catch2 test.
+        - For build-system issues, include the relevant `CMakeLists.txt` fragment and CMake output.
+        - If no isolated reproduction is possible, name the existing test or executable that triggers it and write "N/A" here.
     validations:
       required: true
