@@ -15,7 +15,7 @@ gpStartThirdparty("vulkan" VERSION "1.4.350.0")
   gpThirdpartySource(
     URL    "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/vulkan-sdk-1.4.350.0.tar.gz"
     HASH   "SHA256=70270d10bf2c1e074a06ee37a50b75d332993d1b80a1d9526eeed2da6d82ed22"
-    TARGET "Vulkan-Headers::Vulkan-Headers"
+    TARGET "Vulkan-Headers"
   )
 
   gpThirdpartySetCMakeArgs(
