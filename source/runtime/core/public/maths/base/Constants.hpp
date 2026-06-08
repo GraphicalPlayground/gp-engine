@@ -7,15 +7,15 @@
 #include "concepts/Concepts.hpp"
 #include "concepts/Fundamental.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
-#include <cmath>
+#include <cmath>             // IWYU pragma: keep
 #include <limits>
 #include <numbers>
 
 namespace gp::math
 {
 
-/// @brief
-/// @tparam T
+/// @brief A collection of mathematical constants for a given floating-point type.
+/// @tparam T The floating-point type for the constants (e.g., float, double, long double).
 template <concepts::IsFloatingPoint T>
 struct constants final
 {
