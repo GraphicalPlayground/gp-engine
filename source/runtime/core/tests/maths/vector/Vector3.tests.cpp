@@ -279,6 +279,18 @@ TYPED_TEST(Vector3Test, ScalarAdditionOperator)
     EXPECT_NEAR(result.z, vec.z + bias, TypeParam{ 1e-6 });
 }
 
+TYPED_TEST(Vector3Test, ScalarAdditionOperatorCommutative)
+{
+    Vector3<TypeParam> vec(TypeParam{ 1.0 }, TypeParam{ 2.0 }, TypeParam{ 3.0 });
+    TypeParam bias = TypeParam{ 5.0 };
+
+    Vector3<TypeParam> result = bias + vec;
+
+    EXPECT_NEAR(result.x, vec.x + bias, TypeParam{ 1e-6 });
+    EXPECT_NEAR(result.y, vec.y + bias, TypeParam{ 1e-6 });
+    EXPECT_NEAR(result.z, vec.z + bias, TypeParam{ 1e-6 });
+}
+
 TYPED_TEST(Vector3Test, VectorSubtractionOperator)
 {
     Vector3<TypeParam> vecA(TypeParam{ 1.0 }, TypeParam{ 2.0 }, TypeParam{ 3.0 });
@@ -321,6 +333,18 @@ TYPED_TEST(Vector3Test, ScalarMultiplicationOperator)
     TypeParam scalar = TypeParam{ 5.0 };
 
     Vector3<TypeParam> result = vec * scalar;
+
+    EXPECT_NEAR(result.x, vec.x * scalar, TypeParam{ 1e-6 });
+    EXPECT_NEAR(result.y, vec.y * scalar, TypeParam{ 1e-6 });
+    EXPECT_NEAR(result.z, vec.z * scalar, TypeParam{ 1e-6 });
+}
+
+TYPED_TEST(Vector3Test, ScalarMultiplicationOperatorCommutative)
+{
+    Vector3<TypeParam> vec(TypeParam{ 1.0 }, TypeParam{ 2.0 }, TypeParam{ 3.0 });
+    TypeParam scalar = TypeParam{ 5.0 };
+
+    Vector3<TypeParam> result = scalar * vec;
 
     EXPECT_NEAR(result.x, vec.x * scalar, TypeParam{ 1e-6 });
     EXPECT_NEAR(result.y, vec.y * scalar, TypeParam{ 1e-6 });

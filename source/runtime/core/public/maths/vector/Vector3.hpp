@@ -816,5 +816,26 @@ GP_NODISCARD constexpr Vector3<T>
 
 }   // namespace gp::math
 
+/// @brief Component-wise addition of a scalar bias to a vector, with the scalar on the left-hand side of the operator.
+/// @param[in] bias The scalar bias to add to each component of the vector.
+/// @param[in] vec The vector to add the bias to.
+/// @return A vector containing the result of the component-wise addition.
+template <gp::concepts::IsFloatingPoint T, gp::concepts::IsArithmetic U>
+GP_NODISCARD constexpr gp::math::Vector3<T> operator+(const U bias, const gp::math::Vector3<T>& vec) noexcept
+{
+    return vec + bias;
+}
+
+/// @brief Component-wise multiplication of a vector by a scalar scale factor, with the scalar on the left-hand side of
+/// the operator.
+/// @param[in] scale The scalar scale factor to multiply each component of the vector by.
+/// @param[in] vec The vector to multiply by the scale factor.
+/// @return A vector containing the result of the component-wise multiplication.
+template <gp::concepts::IsFloatingPoint T, gp::concepts::IsArithmetic U>
+GP_NODISCARD constexpr gp::math::Vector3<T> operator*(const U scale, const gp::math::Vector3<T>& vec) noexcept
+{
+    return vec * scale;
+}
+
 // Include the implementation of the Vector3 template
 #include "maths/vector/Vector3.inl"
