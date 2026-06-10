@@ -647,6 +647,21 @@ public:
     {
         return Vector3<T>(math::max(a.x, b.x, c.x), math::max(a.y, b.y, c.y), math::max(a.z, b.z, c.z));
     }
+
+    /// @brief Clamp a vector between two other vectors.
+    /// @param[in] value The vector to clamp.
+    /// @param[in] minVec The minimum vector.
+    /// @param[in] maxVec The maximum vector.
+    /// @return The clamped vector.
+    GP_NODISCARD constexpr static inline Vector3<T>
+        clamp(const Vector3<T>& value, const Vector3<T>& minVec, const Vector3<T>& maxVec) noexcept
+    {
+        return Vector3<T>(
+            math::clamp(value.x, minVec.x, maxVec.x),
+            math::clamp(value.y, minVec.y, maxVec.y),
+            math::clamp(value.z, minVec.z, maxVec.z)
+        );
+    }
 };
 
 /// @brief Get the component-wise minimum of two vectors.
@@ -689,6 +704,18 @@ template <concepts::IsFloatingPoint T>
 GP_NODISCARD constexpr Vector3<T> max(const Vector3<T>& a, const Vector3<T>& b, const Vector3<T>& c) noexcept
 {
     return Vector3<T>::max(a, b, c);
+}
+
+/// @brief Clamp a vector between two other vectors.
+/// @param[in] value The vector to clamp.
+/// @param[in] minVec The minimum vector.
+/// @param[in] maxVec The maximum vector.
+/// @return The clamped vector.
+template <concepts::IsFloatingPoint T>
+GP_NODISCARD constexpr Vector3<T>
+    clamp(const Vector3<T>& value, const Vector3<T>& minVec, const Vector3<T>& maxVec) noexcept
+{
+    return Vector3<T>::clamp(value, minVec, maxVec);
 }
 
 }   // namespace gp::math
