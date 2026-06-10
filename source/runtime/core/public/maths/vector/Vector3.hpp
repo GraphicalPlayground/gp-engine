@@ -300,6 +300,102 @@ public:
         return this->component(index);
     }
 
+    /// @brief In-place component-wise addition of another vector to this vector.
+    /// @param[in] other The other vector to add to this vector.
+    /// @return A reference to this vector after the addition.
+    constexpr Vector3<T>& operator+=(const Vector3<T>& other) noexcept
+    {
+        x += other.x;
+        y += other.y;
+        z += other.z;
+        return *this;
+    }
+
+    /// @brief In-place component-wise addition of a scalar bias to this vector.
+    /// @tparam U The arithmetic type of the scalar bias.
+    /// @param[in] bias The scalar bias to add to each component of the vector.
+    /// @return A reference to this vector after the addition.
+    template <concepts::IsArithmetic U>
+    constexpr Vector3<T>& operator+=(const U bias) noexcept
+    {
+        x += static_cast<T>(bias);
+        y += static_cast<T>(bias);
+        z += static_cast<T>(bias);
+        return *this;
+    }
+
+    /// @brief In-place component-wise subtraction of another vector from this vector.
+    /// @param[in] other The other vector to subtract from this vector.
+    /// @return A reference to this vector after the subtraction.
+    constexpr Vector3<T>& operator-=(const Vector3<T>& other) noexcept
+    {
+        x -= other.x;
+        y -= other.y;
+        z -= other.z;
+        return *this;
+    }
+
+    /// @brief In-place component-wise subtraction of a scalar bias from this vector.
+    /// @tparam U The arithmetic type of the scalar bias.
+    /// @param[in] bias The scalar bias to subtract from each component of the vector.
+    /// @return A reference to this vector after the subtraction.
+    template <concepts::IsArithmetic U>
+    constexpr Vector3<T>& operator-=(const U bias) noexcept
+    {
+        x -= static_cast<T>(bias);
+        y -= static_cast<T>(bias);
+        z -= static_cast<T>(bias);
+        return *this;
+    }
+
+    /// @brief In-place component-wise multiplication of this vector with another vector.
+    /// @param[in] other The other vector to multiply with this vector.
+    /// @return A reference to this vector after the multiplication.
+    constexpr Vector3<T>& operator*=(const Vector3<T>& other) noexcept
+    {
+        x *= other.x;
+        y *= other.y;
+        z *= other.z;
+        return *this;
+    }
+
+    /// @brief In-place component-wise multiplication of this vector by a scalar scale factor.
+    /// @tparam U The arithmetic type of the scalar scale factor.
+    /// @param[in] scale The scalar scale factor to multiply each component of the vector by.
+    /// @return A reference to this vector after the multiplication.
+    template <concepts::IsArithmetic U>
+    constexpr Vector3<T>& operator*=(const U scale) noexcept
+    {
+        x *= static_cast<T>(scale);
+        y *= static_cast<T>(scale);
+        z *= static_cast<T>(scale);
+        return *this;
+    }
+
+    /// @brief In-place component-wise division of this vector by another vector.
+    /// @param[in] other The other vector to divide this vector by.
+    /// @return A reference to this vector after the division.
+    constexpr Vector3<T>& operator/=(const Vector3<T>& other) noexcept
+    {
+        x /= other.x;
+        y /= other.y;
+        z /= other.z;
+        return *this;
+    }
+
+    /// @brief In-place component-wise division of this vector by a scalar scale factor.
+    /// @tparam U The arithmetic type of the scalar scale factor.
+    /// @param[in] scale The scalar scale factor to divide each component of the vector by.
+    /// @return A reference to this vector after the division.
+    template <concepts::IsArithmetic U>
+    constexpr Vector3<T>& operator/=(const U scale) noexcept
+    {
+        x /= static_cast<T>(scale);
+        y /= static_cast<T>(scale);
+        z /= static_cast<T>(scale);
+        return *this;
+    }
+
 public:
     /// @brief Gets a reference to a component of the vector by index.
     /// @param[in] index The index of the component to access (0 for x, 1 for y, 2 for z).
