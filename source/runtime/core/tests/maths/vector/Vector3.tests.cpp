@@ -351,4 +351,31 @@ TYPED_TEST(Vector3Test, ScalarDivisionOperator)
     EXPECT_NEAR(result.z, vec.z / scalar, TypeParam{ 1e-6 });
 }
 
+TYPED_TEST(Vector3Test, CompoundAssignmentOperators)
+{
+    Vector3<TypeParam> vec(TypeParam{ 1.0 }, TypeParam{ 2.0 }, TypeParam{ 3.0 });
+    Vector3<TypeParam> other(TypeParam{ 4.0 }, TypeParam{ 5.0 }, TypeParam{ 6.0 });
+    TypeParam scalar = TypeParam{ 5.0 };
+
+    vec += other;
+    EXPECT_NEAR(vec.x, TypeParam{ 5.0 }, TypeParam{ 1e-6 });
+    EXPECT_NEAR(vec.y, TypeParam{ 7.0 }, TypeParam{ 1e-6 });
+    EXPECT_NEAR(vec.z, TypeParam{ 9.0 }, TypeParam{ 1e-6 });
+
+    vec -= other;
+    EXPECT_NEAR(vec.x, TypeParam{ 1.0 }, TypeParam{ 1e-6 });
+    EXPECT_NEAR(vec.y, TypeParam{ 2.0 }, TypeParam{ 1e-6 });
+    EXPECT_NEAR(vec.z, TypeParam{ 3.0 }, TypeParam{ 1e-6 });
+
+    vec *= scalar;
+    EXPECT_NEAR(vec.x, TypeParam{ 5.0 }, TypeParam{ 1e-6 });
+    EXPECT_NEAR(vec.y, TypeParam{ 10.0 }, TypeParam{ 1e-6 });
+    EXPECT_NEAR(vec.z, TypeParam{ 15.0 }, TypeParam{ 1e-6 });
+
+    vec /= scalar;
+    EXPECT_NEAR(vec.x, TypeParam{ 1.0 }, TypeParam{ 1e-6 });
+    EXPECT_NEAR(vec.y, TypeParam{ 2.0 }, TypeParam{ 1e-6 });
+    EXPECT_NEAR(vec.z, TypeParam{ 3.0 }, TypeParam{ 1e-6 });
+}
+
 }   // namespace gp::math::tests
