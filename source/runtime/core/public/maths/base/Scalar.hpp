@@ -7,6 +7,7 @@
 #include "concepts/Concepts.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "maths/base/Constants.hpp"
+#include <cmath>
 
 namespace gp::math
 {
@@ -228,6 +229,16 @@ GP_NODISCARD constexpr T nextPowerOfTwo(T value) noexcept
         value |= value >> i;
     }
     return value + 1;
+}
+
+/// @brief Returns the square root of a value.
+/// @tparam T Floating-point type.
+/// @param[in] value The value to compute the square root of.
+/// @return The square root of @p value.
+template <concepts::IsFloatingPoint T>
+GP_NODISCARD constexpr T sqrt(const T value) noexcept
+{
+    return std::sqrt(value);
 }
 
 }   // namespace gp::math
