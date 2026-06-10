@@ -6,4 +6,7 @@ include(gp-build-tool)
 
 gpStartModule(core)
   gpEnableTests()
+
+  gpAddCompileDefinition(PUBLIC "GP_USE_TRACY_PROFILER=$<IF:$<CONFIG:Shipping>,0,1>")
+  gpAddDependency(PUBLIC "$<BUILD_INTERFACE:$<$<NOT:$<CONFIG:Shipping>>:gp::thirdparty::tracy>>")
 gpEndModule()
