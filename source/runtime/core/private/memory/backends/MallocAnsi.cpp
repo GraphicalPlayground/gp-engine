@@ -5,6 +5,7 @@
 #include "memory/backends/MallocAnsi.hpp"
 #include "maths/base/Scalar.hpp"
 #include "memory/Memory.hpp"
+#include "profiling/Profiler.hpp"
 #if GP_PLATFORM_USE_ANSI_POSIX_MALLOC
     #include <malloc.h>
 #endif
@@ -41,6 +42,9 @@ GP_NODISCARD static void* allocate(USize size, UInt32 alignment)
         *reinterpret_cast<USize*>(static_cast<UInt8*>(ptr) - sizeof(void*) - sizeof(USize)) = size;
     }
 #endif
+
+    GP_MEM_ALLOC_N(ptr, size, "MallocAnsi");
+
     return ptr;
 }
 
@@ -58,6 +62,8 @@ GP_NODISCARD GP_MAYBE_UNUSED static USize getAllocationSize(void* ptr)
 
 static void deallocate(void* ptr)
 {
+    GP_MEM_FREE_N(ptr, "MallocAnsi");
+
 #if GP_PLATFORM_USE_ALIGNED_MALLOC
     _aligned_free(ptr);
 #elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC || GP_PLATFORM_USE_ANSI_MEMALIGN
@@ -75,6 +81,7 @@ GP_NODISCARD static void* reallocate(void* ptr, USize newSize, UInt32 alignment)
     void* newPtr = nullptr;
 
 #if GP_PLATFORM_USE_ALIGNED_MALLOC
+    GP_MEM_FREE_N(ptr, "MallocAnsi");
     if (ptr && newSize != 0)
     {
         newPtr = _aligned_realloc(ptr, newSize, alignment);
@@ -88,7 +95,9 @@ GP_NODISCARD static void* reallocate(void* ptr, USize newSize, UInt32 alignment)
         _aligned_free(ptr);
         newPtr = nullptr;
     }
+    GP_MEM_ALLOC_N(newPtr, newSize, "MallocAnsi");
 #elif GP_PLATFORM_USE_ANSI_POSIX_MALLOC
+    GP_MEM_FREE_N(ptr, "MallocAnsi");
     if (ptr && newSize != 0)
     {
         USize usableSize = malloc_usable_size(ptr);
@@ -121,8 +130,11 @@ GP_NODISCARD static void* reallocate(void* ptr, USize newSize, UInt32 alignment)
         ::free(ptr);
         newPtr = nullptr;
     }
+    GP_MEM_ALLOC_N(newPtr, newSize, "MallocAnsi");
 #elif GP_PLATFORM_USE_ANSI_MEMALIGN
+    GP_MEM_FREE_N(ptr, "MallocAnsi");
     newPtr = reallocalign(ptr, newSize, alignment);
+    GP_MEM_ALLOC_N(newPtr, newSize, "MallocAnsi");
 #else
     if (ptr && newSize != 0)
     {
