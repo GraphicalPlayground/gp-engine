@@ -172,7 +172,7 @@ public:
     /// @brief Component-wise dot product of this vector with another vector.
     /// @param[in] other The other vector to compute the dot product with.
     /// @return The dot product of this vector and the other vector.
-    GP_NODISCARD constexpr Vector3<T> operator|(const Vector3<T>& other) const noexcept
+    GP_NODISCARD constexpr T operator|(const Vector3<T>& other) const noexcept
     {
         return x * other.x + y * other.y + z * other.z;
     }
