@@ -30,9 +30,9 @@ CORE_DEPS=(
   "git"
   "pkg-config"
   "gdb"
-  "clang-format-18"
-  "clangd-18"
-  "clang-tidy-18"
+  "clang-format-22"
+  "clangd-22"
+  "clang-tidy-22"
   "ccache"
 )
 
