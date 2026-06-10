@@ -14,6 +14,6 @@ gpStartThirdparty("tracy" VERSION "0.13.2")
   )
 
   gpThirdpartySetCMakeArgs(
-    TRACY_ENABLE=OFF # Add an option to be able to toggle this option
+    TRACY_ENABLE=ON
   )
 gpEndThirdparty()
