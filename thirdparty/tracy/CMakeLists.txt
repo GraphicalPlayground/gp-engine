@@ -15,5 +15,6 @@ gpStartThirdparty("tracy" VERSION "0.13.2")
 
   gpThirdpartySetCMakeArgs(
     TRACY_ENABLE=ON
+    TRACY_STATIC=ON
   )
 gpEndThirdparty()
