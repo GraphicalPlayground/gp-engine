@@ -30,7 +30,17 @@ CORE_DEPS=(
   "git"
   "pkg-config"
   "gdb"
-  "clang"
+  "clang-format-18"
+  "clangd-18"
+  "clang-tidy-18"
+  "ccache"
+)
+
+TRACY_DEPS=(
+  "libcapstone-dev"
+  "libdbus-1-dev"
+  "libfreetype6-dev"
+  "libglfw3-dev"
 )
 
 VULKAN_DEPS=(
@@ -64,7 +74,7 @@ if awk "BEGIN {exit !($VER >= 22.04)}"; then
   )
 fi
 
-ALL_DEPS=("${CORE_DEPS[@]}" "${VULKAN_DEPS[@]}" "${SDL3_DEPS[@]}")
+ALL_DEPS=("${CORE_DEPS[@]}" "${VULKAN_DEPS[@]}" "${TRACY_DEPS[@]}" "${SDL3_DEPS[@]}")
 
 echo "Installing dependencies..."
 sudo apt-get install -y "${ALL_DEPS[@]}"
