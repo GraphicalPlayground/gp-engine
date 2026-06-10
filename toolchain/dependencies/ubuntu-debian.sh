@@ -34,6 +34,7 @@ CORE_DEPS=(
   "clangd-22"
   "clang-tidy-22"
   "ccache"
+  "libjemalloc-dev"
 )
 
 TRACY_DEPS=(
