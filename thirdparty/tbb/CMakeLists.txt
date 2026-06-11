@@ -24,5 +24,6 @@ gpStartThirdparty("tbb" VERSION "2023.0.0")
     TBB_STRICT=OFF
     TBBMALLOC_BUILD=ON
     TBB_BUILD=OFF
+    TBB_VERIFY_DEPENDENCY_SIGNATURE=OFF
   )
 gpEndThirdparty()

@@ -4,7 +4,7 @@
 
 include(gp-build-tool)
 
-gpStartThirdparty("openal" VERSION "1.25.2")
+gpStartThirdparty("openal" VERSION "1.25.3")
   gpThirdpartyRequiresPlatforms(Windows Linux macOS iOS Android)
 
   gpThirdpartySystem(
@@ -13,8 +13,8 @@ gpStartThirdparty("openal" VERSION "1.25.2")
   )
 
   gpThirdpartySource(
-    URL    "https://github.com/kcat/openal-soft/archive/refs/tags/1.25.2.tar.gz"
-    HASH   "SHA256=fb27e5839aa11f0e5b9d33756965291fad5d6909ab928ea1f796f4a1a6877894"
+    URL    "https://github.com/kcat/openal-soft/archive/dc98bfbe6064d851e32428db83b06732a448810b.tar.gz"
+    HASH   "SHA256=af1096b79f488724ca068a9d3632f05eb56897c6d3ce0984c946ece512ddb020"
     TARGET "OpenAL"
   )
 
@@ -23,5 +23,7 @@ gpStartThirdparty("openal" VERSION "1.25.2")
     ALSOFT_EXAMPLES=OFF
     ALSOFT_TESTS=OFF
     ALSOFT_INSTALL=OFF
+    ALSOFT_ENABLE_MODULES=OFF
+    CMAKE_CXX_SCAN_FOR_MODULES=OFF
   )
 gpEndThirdparty()
