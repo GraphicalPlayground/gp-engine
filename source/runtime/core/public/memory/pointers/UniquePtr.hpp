@@ -3,3 +3,14 @@
 // mailto:support AT graphical-playground DOT com
 
 #pragma once
+
+namespace gp
+{
+
+/// @brief
+/// @tparam T
+template <typename T>
+class UniquePtr
+{};
+
+}   // namespace gp
