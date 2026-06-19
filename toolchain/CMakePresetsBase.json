@@ -13,8 +13,8 @@
         "GPBT_LOG_VERBOSE_ENABLED": "ON",
         "GPBT_DUMP_TARGETS_PROPERTIES": "OFF"
       },
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "installDir": "${sourceDir}/install/${presetName}"
+      "binaryDir": "${sourceDir}/build",
+      "installDir": "${sourceDir}/install"
     },
     {
       "name": "release-base",
