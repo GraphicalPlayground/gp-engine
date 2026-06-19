@@ -1,0 +1,32 @@
+{
+  "recommendations": [
+    /* Remote Development */
+    "ms-vscode-remote.remote-containers",
+
+    /* C/C++ */
+    "llvm-vs-code-extensions.vscode-clangd",
+    "jeff-hykin.better-cpp-syntax",
+    "matepek.vscode-catch2-test-adapter",
+    "Gruntfuggly.bettercomment",
+    "ms-vscode.cmake-tools",
+    "cschlosser.doxdocgen",
+
+    /* Shaders */
+    "TimGJones.hlsltools",
+    "slevesque.shader",
+
+    /* Markdown */
+    "bierner.github-markdown-preview",
+    "yzhang.markdown-all-in-one",
+    "bierner.markdown-preview-github-styles",
+
+    /* Github */
+    "GitHub.vscode-pull-request-github",
+    "github.vscode-github-actions",
+    "me-dutour-mathieu.vscode-github-actions"
+  ],
+  "unwantedRecommendations": [
+    /* Conflicts with Clangd */
+    "ms-vscode.cpptools"
+  ]
+}

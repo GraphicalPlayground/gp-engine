@@ -81,8 +81,9 @@ OutputSDK/
 # ====================
 
 # Visual Studio Code
-.vscode/
+.vscode/*
 *.code-workspace
+!.vscode/extensions.json
 
 # CLion
 .idea/
