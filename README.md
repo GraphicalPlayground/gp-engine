@@ -71,28 +71,63 @@ your development environment meets the following requirements:
 
 ### Building the Engine
 
-The engine uses standard CMake build procedures. We recommend performing an out-of-source build
+The engine uses CMake Presets to simplify configuration and building across different platforms and
+environments. We recommend performing an out-of-source build, which the presets handle automatically
 to keep your project directory clean.
 
-**1. Generate build files:**
+**Important Prerequisites for Linux**: Our Linux presets specifically require the Clang compiler
+(`clang` and `clang++`) as well as `ccache` (compiler cache) to be installed on your system prior to
+building.
+
+**1. List available presets:**
+
+First, check the available configure presets for your specific platform (Linux, Windows, or macOS):
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --list-presets
 ```
 
-> (Note: You can pass `-DGP_USE_VULKAN=ON` or `-DGP_USE_OPENGL=ON` depending on the rendering
-backend you wish to target.). Read the [documentation](#documentation) for more details on
-configuring rendering backends.
+_Example output:_
 
-**2. Compile the project:**
+```text
+Available configure presets:
+
+  "linux-release"
+  "linux-debug"
+  "linux-profile"
+  "linux-development"
+```
+
+> (Note: You will see `windows-...` or `macos-...` prefixes depending on your operating system).
+
+For detailed information on what each configuration entails, please refer to the
+[Build Type documentation](https://docs.graphical-playground.com/docs/gp-engine/Programming%20With%20C++/GP%20Build%20Tool/Build%20Type).
+
+**2. Configure the project:**
+
+Select the appropriate preset for your environment and generate the build files. For example, to
+configure a release build on Linux:
 
 ```bash
-cmake --build build --config Release -j$(nproc)
+cmake --preset linux-development
+```
+
+> Note: You can still append flags like `-DGP_USE_VULKAN=ON` or `-DGP_USE_OPENGL=ON` to your preset
+  command depending on the rendering backend you wish to target. Read the [documentation](#documentation)
+  for more details on configuring rendering backends.
+
+**3. Compile the project:**
+
+Build the engine using the corresponding build preset. You can also append the `-j` flag to utilize
+multiple CPU cores and speed up the process:
+
+```bash
+cmake --build --preset linux-development -j$(nproc)
 ```
 
 Once the build successfully completes, the compiled binaries and sample experimentation projects
-will be located in the `binaries/bin/` directory. You can run one of the basic sample
-executables to verify that the rendering pipeline and windowing context have initialized correctly.
+will be located in the `binaries/bin/` directory. You can run one of the basic sample executables
+to verify that the rendering pipeline and windowing context have initialized correctly.
 
 ### Gallery
 
