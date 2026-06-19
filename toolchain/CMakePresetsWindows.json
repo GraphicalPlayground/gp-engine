@@ -25,14 +25,14 @@
       "description": "Debug configuration for Windows"
     },
     {
-      "name": "windows-asserted",
-      "inherits": ["windows-base", "asserted-base"],
-      "description": "Asserted release configuration for Windows"
+      "name": "windows-profile",
+      "inherits": ["windows-base", "profile-base"],
+      "description": "Profile configuration for Windows"
     },
     {
-      "name": "windows-sanitized",
-      "inherits": ["windows-base", "sanitized-base"],
-      "description": "Sanitized release configuration for Windows"
+      "name": "windows-development",
+      "inherits": ["windows-base", "development-base"],
+      "description": "Development configuration for Windows"
     }
   ],
   "buildPresets": [
@@ -61,18 +61,18 @@
       "description": "Debug build configuration for Windows"
     },
     {
-      "name": "windows-asserted",
+      "name": "windows-profile",
       "inherits": "windows-base-build",
-      "configurePreset": "windows-asserted",
-      "displayName": "Windows Asserted",
-      "description": "Asserted release build configuration for Windows"
+      "configurePreset": "windows-profile",
+      "displayName": "Windows Profile",
+      "description": "Profile build configuration for Windows"
     },
     {
-      "name": "windows-sanitized",
+      "name": "windows-development",
       "inherits": "windows-base-build",
-      "configurePreset": "windows-sanitized",
-      "displayName": "Windows Sanitized",
-      "description": "Sanitized release build configuration for Windows"
+      "configurePreset": "windows-development",
+      "displayName": "Windows Development",
+      "description": "Development build configuration for Windows"
     }
   ]
 }

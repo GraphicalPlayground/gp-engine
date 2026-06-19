@@ -8,7 +8,10 @@
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_VERBOSE_MAKEFILE": "ON",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "GPBT_EXPORT_DEPENDENCY_GRAPH": "ON",
+        "GPBT_LOG_VERBOSE_ENABLED": "ON",
+        "GPBT_DUMP_TARGETS_PROPERTIES": "OFF"
       },
       "binaryDir": "${sourceDir}/build/${presetName}",
       "installDir": "${sourceDir}/install/${presetName}"
@@ -20,8 +23,7 @@
       "description": "Release configuration based on the base preset",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
-      },
-      "binaryDir": "${sourceDir}/build/cmake"
+      }
     },
     {
       "name": "debug-base",
@@ -33,26 +35,22 @@
       }
     },
     {
-      "name": "asserted-base",
+      "name": "development-base",
       "inherits": "base",
       "hidden": true,
-      "description": "Asserted release configuration based on the base preset",
+      "description": "Development configuration based on the base preset",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "GP_USE_ASSERTIONS": "ON"
-      },
-      "binaryDir": "${sourceDir}/build/cmake"
+        "CMAKE_BUILD_TYPE": "Development"
+      }
     },
     {
-      "name": "sanitized-base",
+      "name": "profile-base",
       "inherits": "base",
       "hidden": true,
-      "description": "Sanitized release configuration based on the base preset",
+      "description": "Profile configuration based on the base preset",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "GP_USE_SANITIZER": "ON"
-      },
-      "binaryDir": "${sourceDir}/build/cmake"
+        "CMAKE_BUILD_TYPE": "Profile"
+      }
     }
   ]
 }

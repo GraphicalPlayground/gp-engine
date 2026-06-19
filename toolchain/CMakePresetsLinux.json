@@ -12,6 +12,13 @@
         "type": "equals",
         "lhs": "${hostSystemName}",
         "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "FETCHCONTENT_BASE_DIR": "${sourceDir}/.cache/fetchcontent"
       }
     },
     {
@@ -25,14 +32,14 @@
       "description": "Debug configuration for Linux"
     },
     {
-      "name": "linux-asserted",
-      "inherits": ["linux-base", "asserted-base"],
-      "description": "Asserted release configuration for Linux"
+      "name": "linux-profile",
+      "inherits": ["linux-base", "profile-base"],
+      "description": "Profile configuration for Linux"
     },
     {
-      "name": "linux-sanitized",
-      "inherits": ["linux-base", "sanitized-base"],
-      "description": "Sanitized release configuration for Linux"
+      "name": "linux-development",
+      "inherits": ["linux-base", "development-base"],
+      "description": "Development configuration for Linux"
     }
   ],
   "buildPresets": [
@@ -61,18 +68,18 @@
       "description": "Debug build configuration for Linux"
     },
     {
-      "name": "linux-asserted",
+      "name": "linux-profile",
       "inherits": "linux-base-build",
-      "configurePreset": "linux-asserted",
-      "displayName": "Linux Asserted",
-      "description": "Asserted release build configuration for Linux"
+      "configurePreset": "linux-profile",
+      "displayName": "Linux Profile",
+      "description": "Profile build configuration for Linux"
     },
     {
-      "name": "linux-sanitized",
+      "name": "linux-development",
       "inherits": "linux-base-build",
-      "configurePreset": "linux-sanitized",
-      "displayName": "Linux Sanitized",
-      "description": "Sanitized release build configuration for Linux"
+      "configurePreset": "linux-development",
+      "displayName": "Linux Development",
+      "description": "Development build configuration for Linux"
     }
   ]
 }
