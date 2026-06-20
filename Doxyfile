@@ -1,0 +1,20 @@
+PROJECT_NAME           = "GPlayd Engine"
+PROJECT_NUMBER         = "1.0.0"
+PROJECT_BRIEF          = "A C++23 deconstructionist graphics engine for learning and experimentation."
+OUTPUT_DIRECTORY       = docs/
+
+INPUT                  = source
+EXCLUDE_PATTERNS       = */tests/* */test/*
+RECURSIVE              = YES
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+
+HAVE_DOT               = YES
+UML_LOOK               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
