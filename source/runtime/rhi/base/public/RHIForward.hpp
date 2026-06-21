@@ -4,17 +4,10 @@
 
 #pragma once
 
-#include "CoreMinimal.hpp"
+#include "CoreMinimal.hpp"   // IWYU pragma: keep
 
 namespace gp::rhi
 {
-
-enum ShaderPlatform : UInt16;
-enum CubeFace : UInt32;
-enum PixelFormat : UInt8;
-enum class PixelFormatChannelFlags : UInt8;
-enum class BufferUsageFlags : UInt32;
-enum class TextureCreateFlags : UInt64;
 
 namespace command
 {
