@@ -51,6 +51,46 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Profile"
       }
+    },
+    {
+      "name": "asan-base",
+      "inherits": "base",
+      "hidden": true,
+      "description": "AddressSanitizer configuration based on the base preset",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GPBT_SANITIZER_ADDRESS": "ON"
+      }
+    },
+    {
+      "name": "ubsan-base",
+      "inherits": "base",
+      "hidden": true,
+      "description": "UndefinedBehaviorSanitizer configuration based on the base preset",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GPBT_SANITIZER_UNDEFINED_BEHAVIOR": "ON"
+      }
+    },
+    {
+      "name": "tsan-base",
+      "inherits": "base",
+      "hidden": true,
+      "description": "ThreadSanitizer configuration based on the base preset",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GPBT_SANITIZER_THREAD": "ON"
+      }
+    },
+    {
+      "name": "msan-base",
+      "inherits": "base",
+      "hidden": true,
+      "description": "MemorySanitizer configuration based on the base preset",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GPBT_SANITIZER_MEMORY": "ON"
+      }
     }
   ]
 }

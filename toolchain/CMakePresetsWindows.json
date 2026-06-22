@@ -33,6 +33,11 @@
       "name": "windows-development",
       "inherits": ["windows-base", "development-base"],
       "description": "Development configuration for Windows"
+    },
+    {
+      "name": "windows-asan",
+      "inherits": ["windows-base", "asan-base"],
+      "description": "AddressSanitizer configuration for Windows"
     }
   ],
   "buildPresets": [
@@ -73,6 +78,13 @@
       "configurePreset": "windows-development",
       "displayName": "Windows Development",
       "description": "Development build configuration for Windows"
+    },
+    {
+      "name": "windows-asan",
+      "inherits": "windows-base-build",
+      "configurePreset": "windows-asan",
+      "displayName": "Windows AddressSanitizer",
+      "description": "AddressSanitizer build configuration for Windows"
     }
   ]
 }

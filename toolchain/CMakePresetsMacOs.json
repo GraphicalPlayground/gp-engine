@@ -33,6 +33,21 @@
       "name": "macos-development",
       "inherits": ["macos-base", "development-base"],
       "description": "Development configuration for macOS"
+    },
+    {
+      "name": "macos-asan",
+      "inherits": ["macos-base", "asan-base"],
+      "description": "AddressSanitizer configuration for macOS"
+    },
+    {
+      "name": "macos-ubsan",
+      "inherits": ["macos-base", "ubsan-base"],
+      "description": "UndefinedBehaviorSanitizer configuration for macOS"
+    },
+    {
+      "name": "macos-tsan",
+      "inherits": ["macos-base", "tsan-base"],
+      "description": "ThreadSanitizer configuration for macOS"
     }
   ],
   "buildPresets": [
@@ -73,6 +88,27 @@
       "configurePreset": "macos-development",
       "displayName": "macOS Development",
       "description": "Development build configuration for macOS"
+    },
+    {
+      "name": "macos-asan",
+      "inherits": "macos-base-build",
+      "configurePreset": "macos-asan",
+      "displayName": "macOS AddressSanitizer",
+      "description": "AddressSanitizer build configuration for macOS"
+    },
+    {
+      "name": "macos-ubsan",
+      "inherits": "macos-base-build",
+      "configurePreset": "macos-ubsan",
+      "displayName": "macOS UndefinedBehaviorSanitizer",
+      "description": "UndefinedBehaviorSanitizer build configuration for macOS"
+    },
+    {
+      "name": "macos-tsan",
+      "inherits": "macos-base-build",
+      "configurePreset": "macos-tsan",
+      "displayName": "macOS ThreadSanitizer",
+      "description": "ThreadSanitizer build configuration for macOS"
     }
   ]
 }

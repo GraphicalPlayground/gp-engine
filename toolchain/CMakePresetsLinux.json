@@ -40,6 +40,26 @@
       "name": "linux-development",
       "inherits": ["linux-base", "development-base"],
       "description": "Development configuration for Linux"
+    },
+    {
+      "name": "linux-asan",
+      "inherits": ["linux-base", "asan-base"],
+      "description": "AddressSanitizer configuration for Linux"
+    },
+    {
+      "name": "linux-ubsan",
+      "inherits": ["linux-base", "ubsan-base"],
+      "description": "UndefinedBehaviorSanitizer configuration for Linux"
+    },
+    {
+      "name": "linux-tsan",
+      "inherits": ["linux-base", "tsan-base"],
+      "description": "ThreadSanitizer configuration for Linux"
+    },
+    {
+      "name": "linux-msan",
+      "inherits": ["linux-base", "msan-base"],
+      "description": "MemorySanitizer configuration for Linux"
     }
   ],
   "buildPresets": [
@@ -80,6 +100,34 @@
       "configurePreset": "linux-development",
       "displayName": "Linux Development",
       "description": "Development build configuration for Linux"
+    },
+    {
+      "name": "linux-asan",
+      "inherits": "linux-base-build",
+      "configurePreset": "linux-asan",
+      "displayName": "Linux AddressSanitizer",
+      "description": "AddressSanitizer build configuration for Linux"
+    },
+    {
+      "name": "linux-ubsan",
+      "inherits": "linux-base-build",
+      "configurePreset": "linux-ubsan",
+      "displayName": "Linux UndefinedBehaviorSanitizer",
+      "description": "UndefinedBehaviorSanitizer build configuration for Linux"
+    },
+    {
+      "name": "linux-tsan",
+      "inherits": "linux-base-build",
+      "configurePreset": "linux-tsan",
+      "displayName": "Linux ThreadSanitizer",
+      "description": "ThreadSanitizer build configuration for Linux"
+    },
+    {
+      "name": "linux-msan",
+      "inherits": "linux-base-build",
+      "configurePreset": "linux-msan",
+      "displayName": "Linux MemorySanitizer",
+      "description": "MemorySanitizer build configuration for Linux"
     }
   ]
 }
