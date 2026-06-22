@@ -88,5 +88,29 @@ echo "Installing dependencies..."
 sudo dnf install -y "${ALL_DEPS[@]}"
 
 echo "=========================================="
+echo "       Checking environment setup...      "
+echo "=========================================="
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source ${SCRIPT_DIR}/common.sh
+
+echo -e "\n--- Required Dependencies ---"
+check_command "ninja" "1.10" "false" || FAILURES=$((FAILURES+1))
+check_command "ld.lld" "" "false" || FAILURES=$((FAILURES+1))
+check_command "clang" "20" "false" || FAILURES=$((FAILURES+1))
+check_command "clang++" "20" "false" || FAILURES=$((FAILURES+1))
+check_command "ccache" "" "false" || FAILURES=$((FAILURES+1))
+
+echo -e "\n--- Libraries ---"
+check_cxx_lib "libc++(abi)" "clang++" "-stdlib=libc++" "false" || FAILURES=$((FAILURES+1))
+
+echo -e "\n--- Optional Dependencies ---"
+check_command "clang-format" "20" "true" || FAILURES=$((FAILURES+1))
+check_command "clangd" "20" "true" || FAILURES=$((FAILURES+1))
+check_command "clang-tidy" "20" "true" || FAILURES=$((FAILURES+1))
+check_command "doxygen" "" "true" || FAILURES=$((FAILURES+1))
+check_command "graphviz" "" "true" || FAILURES=$((FAILURES+1))
+
+echo "=========================================="
 echo "      Environment setup complete!         "
 echo "=========================================="
