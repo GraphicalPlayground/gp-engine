@@ -8,6 +8,8 @@
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
 <!-- gp:protected:start -->
 
+🌎 Read this in: [English](README.md) | [Español](translations/README.es.md) | [Français](translations/README.fr.md) | [简体中文](translations/README.zh-CN.md)
+
 **Table of content**  
 [Overview](#overview)  
 ┕ [Getting Started](#getting-started)  
