@@ -73,21 +73,27 @@
         "[yaml]": {
           "editor.tabSize": 2,
           "editor.insertSpaces": true
-        }
+        },
+        "testMate.cpp.test.executables": "{build,Build,BUILD,out,Out,OUT,binaries,Binaries}/**/*{test,Test,TEST}*"
       },
       "extensions": [
         "twxs.cmake",
-        "llvm-vs-code-extensions.vscode-clangd",
-        "jeff-hykin.better-cpp-syntax",
         "josetr.cmake-language-support-vscode",
         "cschlosser.doxdocgen",
-        "me-dutour-mathieu.vscode-github-actions",
-        "github.vscode-github-actions",
-        "bierner.github-markdown-preview",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "jeff-hykin.better-cpp-syntax",
+        "matepek.vscode-catch2-test-adapter",
+        "Gruntfuggly.bettercomment",
+        "ms-vscode.cmake-tools",
+        "cschlosser.doxdocgen",
         "TimGJones.hlsltools",
+        "slevesque.shader",
+        "bierner.github-markdown-preview",
         "yzhang.markdown-all-in-one",
         "bierner.markdown-preview-github-styles",
-        "slevesque.shader"
+        "GitHub.vscode-pull-request-github",
+        "github.vscode-github-actions",
+        "me-dutour-mathieu.vscode-github-actions"
       ]
     }
   },

@@ -1,5 +1,5 @@
-# Use the official Microsoft C++ DevContainer image (Ubuntu 22.04)
-FROM mcr.microsoft.com/devcontainers/cpp:1-ubuntu-22.04
+# Use the official Microsoft C++ DevContainer image (Ubuntu 24.04)
+FROM mcr.microsoft.com/devcontainers/cpp:1-ubuntu-24.04
 
 # Prevent interactive prompts during apt installations
 ENV DEBIAN_FRONTEND=noninteractive
@@ -7,10 +7,23 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Update system and install the dependencies
 RUN apt-get update && apt-get install -y \
     clang \
+    git \
+    cmake \
     llvm \
     ninja-build \
     pkg-config \
     ccache \
+    gdb \
+    clangd-22 \
+    clang-format-22 \
+    clang-tidy-22 \
+    lld \
+    libcxx-devel \
+    libcxxabi-devel \
+    libjemalloc-dev \
+    libcapstone-dev \
+    libfreetype6-dev \
+    libglfw3-dev \
     libasound2-dev \
     libpulse-dev \
     libaudio-dev \

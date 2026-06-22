@@ -26,6 +26,9 @@ sudo apt-get update
 CORE_DEPS=(
   "build-essential"
   "cmake"
+  "lld"
+  "libcxx-devel"
+  "libcxxabi-devel"
   "ninja-build"
   "git"
   "pkg-config"
