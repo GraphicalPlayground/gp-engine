@@ -28,6 +28,7 @@ jobs:
         with:
           path: gp-engine
           submodules: recursive
+          fetch-depth: 0
 
       - name: Checkout gp-docs
         uses: actions/checkout@v6
@@ -54,6 +55,24 @@ jobs:
             cp "$file" "$target_file"
           done
 
+      - name: Collect doc authors from this push
+        id: collect-authors
+        run: |
+          cd gp-engine
+          CO_AUTHORS=""
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+          ZERO_SHA="0000000000000000000000000000000000000000"
+          if [ "${{ github.event_name }}" = "push" ] && [ "$BEFORE" != "$ZERO_SHA" ]; then
+            CO_AUTHORS=$(git log --pretty=format:"%an <%ae>" "${BEFORE}..${AFTER}" -- '**/docs/**' \
+              | sort -u \
+              | sed 's/^/Co-authored-by: /')
+          fi
+          DELIMITER=$(openssl rand -hex 16)
+          echo "co_authors<<${DELIMITER}" >> "$GITHUB_OUTPUT"
+          echo "${CO_AUTHORS}" >> "$GITHUB_OUTPUT"
+          echo "${DELIMITER}" >> "$GITHUB_OUTPUT"
+
       - name: Get GitHub App User ID
         id: get-user-id
         run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
@@ -61,13 +80,19 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Commit and Push Changes to gp-docs
+        env:
+          CO_AUTHORS: ${{ steps.collect-authors.outputs.co_authors }}
         run: |
           cd gp-docs
           git config user.name "${{ steps.app-token.outputs.app-slug }}[bot]"
           git config user.email "${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com"
           git add .
           if ! git diff-index --quiet HEAD; then
-            git commit -m "sync(gp-engine): synchronize documentation from gp-engine"
+            if [ -n "$CO_AUTHORS" ]; then
+              git commit -m "sync(gp-engine): synchronize documentation from gp-engine" -m "$CO_AUTHORS"
+            else
+              git commit -m "sync(gp-engine): synchronize documentation from gp-engine"
+            fi
             git push -u origin main
             echo "Successfully pushed new docs to gp-docs!"
           else
