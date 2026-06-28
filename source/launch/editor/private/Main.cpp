@@ -2,10 +2,17 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
+#include "CoreMinimal.hpp"
+#include "Launch.hpp"
 #include <iostream>
 
-int main()
+namespace gp
 {
-    std::cout << "Hello, Editor!" << std::endl;
+
+int launch(GP_MAYBE_UNUSED int argc, GP_MAYBE_UNUSED char** argv)
+{
+    std::cout << "Launching editor..." << std::endl;
     return 0;
 }
+
+}   // namespace gp

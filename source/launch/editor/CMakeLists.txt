@@ -6,6 +6,7 @@ include(gp-build-tool)
 
 gpStartExecutable(editor)
   gpAddDependency(PUBLIC core)
+  gpAddDependency(PUBLIC launch)
   gpAddDependency(PUBLIC renderer)
   gpAddDependency(PUBLIC engine)
   gpAddDependency(PUBLIC application)
