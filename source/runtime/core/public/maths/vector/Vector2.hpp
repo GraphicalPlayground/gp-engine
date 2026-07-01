@@ -133,7 +133,7 @@ public:
     /// @brief Component-wise cross product of this vector with another vector.
     /// @param[in] other The other vector to compute the cross product with.
     /// @return The cross product of this vector and the other vector.
-    GP_NODISCARD constexpr Vector2<T> operator^(const Vector2<T>& other) const noexcept
+    GP_NODISCARD constexpr T operator^(const Vector2<T>& other) const noexcept
     {
         return x * other.y - y * other.x;
     }
@@ -368,7 +368,7 @@ public:
 
     /// @brief In-place post-increment operator, increments each component of the vector by 1.
     /// @return A copy of this vector before the increment.
-    constexpr Vector2<T> operator++(int) noexcept //TODO: check if really just (int)
+    constexpr Vector2<T> operator++(int) noexcept
     {
         Vector2<T> temp = *this;
         ++(*this);
@@ -386,7 +386,7 @@ public:
 
     /// @brief In-place post-decrement operator, decrements each component of the vector by 1.
     /// @return A copy of this vector before the decrement.
-    constexpr Vector2<T> operator--(int) noexcept //TODO: check if really just (int)
+    constexpr Vector2<T> operator--(int) noexcept
     {
         Vector2<T> temp = *this;
         --(*this);
@@ -576,11 +576,242 @@ public:
     {
         return x * x + y * y;
     }
+
+    /// @brief Normalize the vector in place if its length is greater than a given tolerance.
+    /// @param[in] tolerance The tolerance for the length check to avoid division by zero or very small numbers.
+    /// @return True if the vector was successfully normalized, false if the length was too small and the vector was not
+    /// modified.
+    constexpr bool normalize(const T tolerance = constants<T>::smallNumber) noexcept
+    {
+        const T squareSum = x * x + y * y;
+        if (squareSum > tolerance)
+        {
+            const T scale = math::inverseSqrt(squareSum);
+            x *= scale;
+            y *= scale;
+            return true;
+        }
+        return false;
+    }
+
+    /// @brief Get a normalized version of this vector without modifying the original vector unsafely, assuming the
+    /// length of the vector is greater than zero.
+    /// @return A normalized version of this vector if its length is greater than zero, or an undefined result if the
+    /// length is zero (caller must ensure the length is greater than zero).
+    GP_NODISCARD constexpr Vector2<T> getUnsafeNormal() const
+    {
+        const T scale = math::inverseSqrt(x * x + y * y);
+        return Vector2<T>(x * scale, y * scale);
+    }
+
+    /// @brief Get a normalized version of this vector, returning a zero vector if the length is less than or equal to a
+    /// given tolerance to avoid division by zero or very small numbers.
+    /// @param[in] tolerance The tolerance for the length check to determine if the vector is too small to normalize.
+    /// @return A normalized version of this vector if its length is greater than the tolerance, or a zero vector if the
+    /// length is less than or equal to the tolerance.
+    GP_NODISCARD constexpr Vector2<T> getSafeNormal(const T tolerance = constants<T>::smallNumber) const noexcept
+    {
+        const T squareSum = x * x + y * y;
+
+        if (squareSum == T{ 1 })
+        {
+            return *this;
+        }
+        else if (squareSum < tolerance)
+        {
+            return Vector2<T>::zero();
+        }
+
+        const T scale = math::inverseSqrt(squareSum);
+        return Vector2<T>(x * scale, y * scale);
+    }
+
+    /// @brief Get a vector containing the sign of each component of this vector.
+    /// @return A vector with the sign of each component of this vector, where each component is -1, 0, or 1 depending
+    /// on whether the original component is negative, zero, or positive, respectively.
+    GP_NODISCARD constexpr Vector2<T> getSignVector() const noexcept
+    {
+        return Vector2<T>(math::sign(x), math::sign(y));
+    }
+
+    /// @brief Get the component-wise reciprocal of this vector, where each component is replaced by its reciprocal.
+    /// @return A vector containing the reciprocal of each component of this vector, where each component is 1 divided
+    /// by the original component.
+    GP_NODISCARD constexpr Vector2<T> getReciprocal() const noexcept
+    {
+        return Vector2<T>(
+            x != T{ 0 } ? T{ 1 } / x : constants<T>::bigNumber,
+            y != T{ 0 } ? T{ 1 } / y : constants<T>::bigNumber
+        );
+    }
+
+    /// @brief Project this vector onto another vector.
+    /// @param[in] other The vector to project onto.
+    /// @return The projected vector.
+    GP_NODISCARD constexpr Vector2<T> projectOnTo(const Vector2<T>& other) const noexcept
+    {
+        return other * ((*this | other) / (other | other));
+    }
+
+    /// @brief Project this vector onto a normal vector.
+    /// @param[in] normal The normal vector to project onto.
+    /// @return The projected vector.
+    GP_NODISCARD constexpr Vector2<T> projectOnToNormal(const Vector2<T>& normal) const noexcept
+    {
+        return normal * (*this | normal);
+    }
+
+public:
+
+    /// @brief Component-wise cross product of two vectors.
+    /// @param[in] lhs The first vector to compute the cross product with.
+    /// @param[in] rhs The second vector to compute the cross product with.
+    /// @return The cross product of the two vectors.
+    GP_NODISCARD constexpr static T cross(const Vector2<T>& lhs, const Vector2<T>& rhs) noexcept
+    {
+        return lhs ^ rhs;
+    }
+
+    /// @brief Component-wise dot product of two vectors.
+    /// @param[in] lhs The first vector to compute the dot product with.
+    /// @param[in] rhs The second vector to compute the dot product with.
+    /// @return The dot product of the two vectors.
+    GP_NODISCARD constexpr static T dot(const Vector2<T>& lhs, const Vector2<T>& rhs) noexcept
+    {
+        return lhs | rhs;
+    }
+
+    /// @brief Get the component-wise minimum of two vectors.
+    /// @param[in] a The first vector to compare.
+    /// @param[in] b The second vector to compare.
+    /// @return A vector containing the minimum of each component between the two vectors.
+    GP_NODISCARD constexpr static inline Vector2<T> min(const Vector2<T>& a, const Vector2<T>& b) noexcept
+    {
+        return Vector2<T>(math::min(a.x, b.x), math::min(a.y, b.y));
+    }
+
+    /// @brief Get the component-wise maximum of two vectors.
+    /// @param[in] a The first vector to compare.
+    /// @param[in] b The second vector to compare.
+    /// @return A vector containing the maximum of each component between the two vectors.
+    GP_NODISCARD constexpr static inline Vector2<T> max(const Vector2<T>& a, const Vector2<T>& b) noexcept
+    {
+        return Vector2<T>(math::max(a.x, b.x), math::max(a.y, b.y));
+    }
+
+    /// @brief Get the component-wise minimum of three vectors.
+    /// @param[in] a The first vector to compare.
+    /// @param[in] b The second vector to compare.
+    /// @param[in] c The third vector to compare.
+    /// @return A vector containing the minimum of each component between the three vectors.
+    GP_NODISCARD constexpr static inline Vector2<T>
+        min(const Vector2<T>& a, const Vector2<T>& b, const Vector2<T>& c) noexcept
+    {
+        return Vector2<T>(math::min(a.x, b.x, c.x), math::min(a.y, b.y, c.y));
+    }
+
+    /// @brief Get the component-wise maximum of three vectors.
+    /// @param[in] a The first vector to compare.
+    /// @param[in] b The second vector to compare.
+    /// @param[in] c The third vector to compare.
+    /// @return A vector containing the maximum of each component between the three vectors.
+    GP_NODISCARD constexpr static inline Vector2<T>
+        max(const Vector2<T>& a, const Vector2<T>& b, const Vector2<T>& c) noexcept
+    {
+        return Vector2<T>(math::max(a.x, b.x, c.x), math::max(a.y, b.y, c.y));
+    }
+
+    /// @brief Clamp a vector between two other vectors.
+    /// @param[in] value The vector to clamp.
+    /// @param[in] minVec The minimum vector.
+    /// @param[in] maxVec The maximum vector.
+    /// @return The clamped vector.
+    GP_NODISCARD constexpr static inline Vector2<T>
+        clamp(const Vector2<T>& value, const Vector2<T>& minVec, const Vector2<T>& maxVec) noexcept
+    {
+        return Vector2<T>(
+            math::clamp(value.x, minVec.x, maxVec.x),
+            math::clamp(value.y, minVec.y, maxVec.y)
+        );
+    }
 };
+
+/// @brief Get the component-wise minimum of two vectors.
+/// @param[in] a The first vector to compare.
+/// @param[in] b The second vector to compare.
+/// @return A vector containing the minimum of each component between the two vectors.
+template <concepts::IsFloatingPoint T>
+GP_NODISCARD constexpr Vector2<T> min(const Vector2<T>& a, const Vector2<T>& b) noexcept
+{
+    return Vector2<T>::min(a, b);
+}
+
+/// @brief Get the component-wise maximum of two vectors.
+/// @param[in] a The first vector to compare.
+/// @param[in] b The second vector to compare.
+/// @return A vector containing the maximum of each component between the two vectors.
+template <concepts::IsFloatingPoint T>
+GP_NODISCARD constexpr Vector2<T> max(const Vector2<T>& a, const Vector2<T>& b) noexcept
+{
+    return Vector2<T>::max(a, b);
+}
+
+/// @brief Get the component-wise minimum of three vectors.
+/// @param[in] a The first vector to compare.
+/// @param[in] b The second vector to compare.
+/// @param[in] c The third vector to compare.
+/// @return A vector containing the minimum of each component between the three vectors.
+template <concepts::IsFloatingPoint T>
+GP_NODISCARD constexpr Vector2<T> min(const Vector2<T>& a, const Vector2<T>& b, const Vector2<T>& c) noexcept
+{
+    return Vector2<T>::min(a, b, c);
+}
+
+/// @brief Get the component-wise maximum of three vectors.
+/// @param[in] a The first vector to compare.
+/// @param[in] b The second vector to compare.
+/// @param[in] c The third vector to compare.
+/// @return A vector containing the maximum of each component between the three vectors.
+template <concepts::IsFloatingPoint T>
+GP_NODISCARD constexpr Vector2<T> max(const Vector2<T>& a, const Vector2<T>& b, const Vector2<T>& c) noexcept
+{
+    return Vector2<T>::max(a, b, c);
+}
+
+/// @brief Clamp a vector between two other vectors.
+/// @param[in] value The vector to clamp.
+/// @param[in] minVec The minimum vector.
+/// @param[in] maxVec The maximum vector.
+/// @return The clamped vector.
+template <concepts::IsFloatingPoint T>
+GP_NODISCARD constexpr Vector2<T>
+    clamp(const Vector2<T>& value, const Vector2<T>& minVec, const Vector2<T>& maxVec) noexcept
+{
+    return Vector2<T>::clamp(value, minVec, maxVec);
+}
 
 }   // namespace gp::math
 
-//add here operators + and *
+/// @brief Component-wise addition of a scalar bias to a vector, with the scalar on the left-hand side of the operator.
+/// @param[in] bias The scalar bias to add to each component of the vector.
+/// @param[in] vec The vector to add the bias to.
+/// @return A vector containing the result of the component-wise addition.
+template <gp::concepts::IsFloatingPoint T, gp::concepts::IsArithmetic U>
+GP_NODISCARD constexpr gp::math::Vector2<T> operator+(const U bias, const gp::math::Vector2<T>& vec) noexcept
+{
+    return vec + bias;
+}
+
+/// @brief Component-wise multiplication of a vector by a scalar scale factor, with the scalar on the left-hand side of
+/// the operator.
+/// @param[in] scale The scalar scale factor to multiply each component of the vector by.
+/// @param[in] vec The vector to multiply by the scale factor.
+/// @return A vector containing the result of the component-wise multiplication.
+template <gp::concepts::IsFloatingPoint T, gp::concepts::IsArithmetic U>
+GP_NODISCARD constexpr gp::math::Vector2<T> operator*(const U scale, const gp::math::Vector2<T>& vec) noexcept
+{
+    return vec * scale;
+}
 
 // Include the implementation of the Vector2 template
 #include "maths/vector/Vector2.inl"
