@@ -77,9 +77,9 @@ The engine uses CMake Presets to simplify configuration and building across diff
 environments. We recommend performing an out-of-source build, which the presets handle automatically
 to keep your project directory clean.
 
-**Important Prerequisites for Linux**: Our Linux presets specifically require the Clang compiler
+> **Important Prerequisites**: Our Linux presets specifically require the Clang compiler
 (`clang` and `clang++`) as well as `ccache` (compiler cache) to be installed on your system prior to
-building.
+building. For Windows, `clang-cl` is required, and for macOS, the default `clang` compiler is sufficient.
 
 **1. List available presets:**
 
@@ -133,35 +133,64 @@ to verify that the rendering pipeline and windowing context have initialized cor
 
 ### Gallery
 
-_wip..._
+_Screenshots and clips of `gp-engine` in action are coming soon. In the meantime, check the
+[Learning Paths](https://graphical-playground.com/discover) for a preview of what you'll be building._
 
 ## Architecture
 
-_wip..._
+`gp-engine` is organized as a set of independent, composable systems rather than a single monolithic
+runtime. Each system is designed to be studied and swapped out in isolation, in keeping with the
+project's Deconstructionist Pedagogy. The engine targets Windows, Linux, macOS, iOS, Android, and
+WASM, and is built under strict portability constraints: no RTTI, no exceptions, and correctness
+across both endianness and architecture (x86_64 and ARM64).
 
 ### Core Systems
 
-_wip..._
+The engine's foundation is a collection of hand-built, dependency-light core systems:
+
+- **Math Library**: A high-performance, SIMD-optimized math library for vectors, matrices, and
+  quaternions.
+- **Memory Management**: A custom memory allocator and pool system designed for low-latency
+  graphics workloads.
+- **Foundational Containers**: Lightweight, cache-friendly data structures for graphics programming.
+- **Cryptography & Hashing**: A set of cryptographic primitives and hashing functions for secure
+  resource management.
+- **Error & Diagnostics**: A robust error handling and logging system for debugging and profiling.
+- **Concepts & Type Traits**: A collection of C++ concepts and type traits to enforce compile-time
+  correctness and improve code clarity.
 
 ### Progressive Abstractions
 
-_wip..._
+Rather than exposing a single fixed API, `gp-engine` layers its abstractions so learners can enter at
+the level that matches their experience and descend further as they're ready:
+
+1. **Foundations**: core algorithms and data structures with no rendering API in sight.
+2. **Abstracted Rendering**: a simplified, engine-level API for getting pixels on screen quickly.
+3. **Native APIs**: direct access to OpenGL and Vulkan calls for learners who want to work as close
+to the hardware as possible.
+
+Each layer is documented so you can trace exactly how a call at the top eventually reaches the GPU.
 
 ### Rendering Pipelines (OpenGL / Vulkan / DirectX / ...)
 
-_wip..._
+`gp-engine` currently ships with DirectX and Vulkan rendering backends, selectable at configure time
+via CMake flags (see [Building the Engine](#building-the-engine)). OpenGL (Linux/macOS) and Metal
+(macOS) backends are planned to round out native support on every target platform. Each backend
+implements the same engine-facing abstraction, so sample projects and learning material remain
+portable across APIs.
 
 ## Usage & Experimentation
 
-_wip..._
+Once built, `gp-engine` is meant to be explored hands-on: run the sample projects, read through the
+corresponding source, then modify or reimplement pieces yourself.
 
 ### Sample Projects
 
-_wip..._
-
-### Shader Programming
-
-_wip..._
+The `samples/` directory is organized to mirror the Learning Paths, starting with minimal
+"hello triangle"-style projects and building up toward full rendering pipelines. Check the directory
+itself for the current list of runnable samples, and see the
+[Learning Paths](https://graphical-playground.com/discover) for the recommended order to work
+through them.
 
 ## Documentation
 
