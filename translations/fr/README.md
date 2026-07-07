@@ -6,9 +6,9 @@
 [![En savoir plus sur les Licences](https://github.com/GraphicalPlayground/.github/blob/main/assets/cta/cta-learn-licensing.svg)](https://graphical-playground.com/licensing)
 
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
-<!-- gp:protected:start -->
 
 🌎 Lire en : [English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
+<!-- gp:protected:start -->
 
 **Table des matières**  
 [Aperçu](#aperçu)  
