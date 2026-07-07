@@ -8,7 +8,7 @@
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
 <!-- gp:protected:start -->
 
-🌎 Leer en: [English](../README.md) | [Español](README.es.md) | [Français](README.fr.md) | [简体中文](README.zh-CN.md)
+🌎 Leer en: [English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
 
 **Tabla de contenido**  
 [Descripción](#descripción)  
@@ -180,7 +180,7 @@ Si descubres una vulnerabilidad de seguridad en `gp-engine`, por favor no la rep
 
 ### Licencia
 
-`gp-engine` es software de código abierto. Consulta el archivo [LICENSE.md](./LICENSE.md) en el directorio raíz para conocer los términos completos sobre modificación, distribución y uso en tus propios proyectos.
+`gp-engine` es software de código abierto. Consulta el archivo [LICENSE.md](../../LICENSE.md) en el directorio raíz para conocer los términos completos sobre modificación, distribución y uso en tus propios proyectos.
 
 ### Donaciones
 
@@ -193,7 +193,7 @@ Puedes patrocinar el proyecto Graphical Playground a través de los siguientes e
 - [**Donación Directa**](https://graphical-playground.com/donate)
 
 Puedes ver la lista completa de patrocinadores y colaboradores en nuestra
-[Página de Patrocinadores](https://graphical-playground.com/sponsors) o en [DONORS.md](./DONORS.md).
+[Página de Patrocinadores](https://graphical-playground.com/sponsors) o en [DONORS.md](../../DONORS.md).
 Tu apoyo nos ayuda a continuar desarrollando recursos educativos de alta calidad y mantener el motor para la próxima generación de ingenieros gráficos.
 
 ## Contacto

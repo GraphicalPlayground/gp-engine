@@ -1,6 +1,8 @@
 <!-- markdownlint-disable MD041 -->
 ![Graphical Playground - Contribution Guidelines](https://github.com/GraphicalPlayground/.github/blob/main/assets/banners/gplayd-contributing.svg)
 
+🌎 Read this in: [English](CONTRIBUTING.md) | [Español](translations/es/CONTRIBUTING.md) | [Français](translations/fr/CONTRIBUTING.md) | [简体中文](translations/zh-cn/CONTRIBUTING.md)
+
 **Table of content**  
 [Code of Conduct](#code-of-conduct)  
 [Overview](#overview)  
