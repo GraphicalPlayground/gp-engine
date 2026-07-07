@@ -17,8 +17,7 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
-        "FETCHCONTENT_BASE_DIR": "${sourceDir}/.cache/fetchcontent"
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
       }
     },
     {

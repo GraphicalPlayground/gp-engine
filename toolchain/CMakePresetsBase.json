@@ -11,7 +11,8 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "GPBT_EXPORT_DEPENDENCY_GRAPH": "ON",
         "GPBT_LOG_VERBOSE_ENABLED": "ON",
-        "GPBT_DUMP_TARGETS_PROPERTIES": "OFF"
+        "GPBT_DUMP_TARGETS_PROPERTIES": "OFF",
+        "FETCHCONTENT_BASE_DIR": "${sourceDir}/.cache/fetchcontent"
       },
       "binaryDir": "${sourceDir}/build",
       "installDir": "${sourceDir}/install"
