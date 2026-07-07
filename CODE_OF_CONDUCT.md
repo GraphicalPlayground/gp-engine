@@ -1,5 +1,7 @@
 ![Graphical Playground - Code Of Conduct](https://github.com/GraphicalPlayground/.github/blob/main/assets/banners/gplayd-code-of-conduct.svg)
 
+🌎 Read this in: [English](CODE_OF_CONDUCT.md) | [Español](translations/es/CODE_OF_CONDUCT.md) | [Français](translations/fr/CODE_OF_CONDUCT.md) | [简体中文](translations/zh-cn/CODE_OF_CONDUCT.md)
+
 ## Our Pledge
 
 We pledge to make our community welcoming, safe, and equitable for all.
