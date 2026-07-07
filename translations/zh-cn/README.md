@@ -10,8 +10,6 @@
 🌎 阅读语言：[English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
 <!-- gp:protected:start -->
 
-🌎 阅读语言：[English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
-
 **目录**  
 [概述](#概述)  
 ┕ [快速开始](#快速开始)  

@@ -10,8 +10,6 @@
 🌎 Lire en : [English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
 <!-- gp:protected:start -->
 
-🌎 Lire en : [English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
-
 **Table des matières**  
 [Aperçu](#aperçu)  
 ┕ [Premiers Pas](#premiers-pas)  
