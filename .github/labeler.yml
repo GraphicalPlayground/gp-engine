@@ -1,27 +1,99 @@
-"type: documentation":
+"documentation":
   - changed-files:
-    - any-glob-to-any-file: ['**/docs/**', 'README.md', 'CHANGELOG.md']
+    - any-glob-to-any-file: ['**/{docs,doc,documentation}/**', '/*.md']
 
-"type: ci-cd":
+"platform:android":
   - changed-files:
-    - any-glob-to-any-file: ['.github/workflows/**']
+    - any-glob-to-any-file: ['source/runtime/**/{android,unix}/**']
 
-"type: tests":
+"platform:ios":
   - changed-files:
-    - any-glob-to-any-file: ['**/tests/**']
+    - any-glob-to-any-file: ['source/runtime/**/{ios,apple,unix}/**']
 
-"domain: math":
+"platform:linuxbsd":
   - changed-files:
-    - any-glob-to-any-file: ['source/runtime/core/{public,private}/math/**']
+    - any-glob-to-any-file: ['source/runtime/**/{linux,unix}/**']
 
-"domain: memory":
+"platform:macos":
   - changed-files:
-    - any-glob-to-any-file: ['source/runtime/core/{public,private}/memory/**']
+    - any-glob-to-any-file: ['source/runtime/**/{macos,apple,unix}/**']
 
-"domain: rhi":
+"platform:ps5":
   - changed-files:
-    - any-glob-to-any-file: ['source/runtime/rhi/**']
+    - any-glob-to-any-file: ['source/runtime/**/ps5/**']
 
-"domain: shaders":
+"platform:switch":
   - changed-files:
-    - any-glob-to-any-file: ['source/shaders/**']
+    - any-glob-to-any-file: ['source/runtime/**/switch/**']
+
+"platform:uwp":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/**/uwp/**']
+
+"platform:visionos":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/**/{visionos,apple,unix}/**']
+
+"platform:web":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/**/web/**']
+
+"platform:windows":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/**/windows/**']
+
+"platform:xbox":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/**/xbox/**']
+
+"topic:animation":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/animation/**']
+
+"topic:audio":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/audio/**']
+
+"topic:buildsystem":
+  - changed-files:
+    - any-glob-to-any-file: ['**/CMakeLists.txt', '**/*.cmake', "toolchain/**", "CMakePresets.json"]
+
+"topic:core":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/core/**']
+
+"topic:maths":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/core/{public,private}/maths/**']
+
+"topic:network":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/network/**']
+
+"topic:platforms":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/core/{public,private}/platforms/**']
+
+"topic:plugin":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/plugin/**', 'source/plugins/**']
+
+"topic:rendering":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/{renderer,rhi}/**']
+
+"topic:shaders":
+  - changed-files:
+    - any-glob-to-any-file: ['source/runtime/shaders/**', 'source/shaders/**']
+
+"topic:tests":
+  - changed-files:
+    - any-glob-to-any-file: ['**/{tests,test}/**']
+
+"topic:editor":
+  - changed-files:
+    - any-glob-to-any-file: ['source/launch/editor/**']
+
+"topic:thirdparty":
+  - changed-files:
+    - any-glob-to-any-file: ['thirdparty/**']
