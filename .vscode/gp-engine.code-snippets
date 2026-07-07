@@ -1,0 +1,67 @@
+{
+  "GP HPP License Header": {
+    "scope": "cpp",
+    "prefix": "gpl",
+    "include": ["**/*.hpp", "**/*.hxx", "**/*.hh", "**/*.h", "**/*.inl", "**/*.inc"],
+    "body": [
+      "// Copyright (c) - Graphical Playground. All rights reserved.",
+      "// For more information, see https://graphical-playground/legal",
+      "// mailto:support AT graphical-playground DOT com",
+      "",
+      "#pragma once",
+      ""
+    ],
+    "description": "Standard C++ header file"
+  },
+  "GP CPP License Header": {
+    "scope": "cpp",
+    "include": ["**/*.cpp", "**/*.cxx", "**/*.cc", "**/*.c"],
+    "prefix": "gpl",
+    "body": [
+      "// Copyright (c) - Graphical Playground. All rights reserved.",
+      "// For more information, see https://graphical-playground/legal",
+      "// mailto:support AT graphical-playground DOT com",
+      ""
+    ],
+    "description": "Standard C++ source file"
+  },
+  "GP CMake License Header": {
+    "scope": "cmake",
+    "include": ["**/*.cmake", "**/CMakeLists.txt"],
+    "prefix": "gpl",
+    "body": [
+      "# Copyright (c) - Graphical Playground. All rights reserved.",
+      "# For more information, see https://graphical-playground/legal",
+      "# mailto:support AT graphical-playground DOT com",
+      "",
+      "include(gp-build-tool)",
+      ""
+    ],
+    "description": "Standard Cmake file"
+  },
+  "GP Shader License Header": {
+    "scope": "hlsl,glsl",
+    "include": ["**/*.hlsl", "**/*.hlsli"],
+    "prefix": "gpl",
+    "body": [
+      "// Copyright (c) - Graphical Playground. All rights reserved.",
+      "// For more information, see https://graphical-playground/legal",
+      "// mailto:support AT graphical-playground DOT com",
+      ""
+    ],
+    "description": "Standard HLSL file"
+  },
+  "GP Shell Script License Header": {
+    "scope": "shellscript",
+    "include": ["**/*.sh", "**/*.bash"],
+    "prefix": "gpl",
+    "body": [
+      "#!/bin/bash",
+      "# Copyright (c) - Graphical Playground. All rights reserved.",
+      "# For more information, see https://graphical-playground/legal",
+      "# mailto:support AT graphical-playground DOT com",
+      ""
+    ],
+    "description": "Standard Shell Script file"
+  }
+}
