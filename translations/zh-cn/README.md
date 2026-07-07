@@ -6,6 +6,8 @@
 [![了解许可证](https://github.com/GraphicalPlayground/.github/blob/main/assets/cta/cta-learn-licensing.svg)](https://graphical-playground.com/licensing)
 
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
+
+🌎 阅读语言：[English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
 <!-- gp:protected:start -->
 
 🌎 阅读语言：[English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)

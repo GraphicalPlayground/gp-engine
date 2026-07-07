@@ -6,6 +6,8 @@
 [![Conocer las Licencias](https://github.com/GraphicalPlayground/.github/blob/main/assets/cta/cta-learn-licensing.svg)](https://graphical-playground.com/licensing)
 
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
+
+🌎 Leer en: [English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
 <!-- gp:protected:start -->
 
 🌎 Leer en: [English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
@@ -211,5 +213,3 @@ Si tienes preguntas, sugerencias o quieres compartir tus proyectos construidos c
 
 ---
 © 2026 Graphical Playground. Construido para la próxima generación de ingenieros gráficos.
-
-![Graphical Playground](https://github.com/GraphicalPlayground/.github/blob/main/assets/misc/gplayd-footer.svg)
