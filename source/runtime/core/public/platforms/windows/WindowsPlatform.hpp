@@ -53,5 +53,14 @@
 
 #define GP_PLATFORM_CACHE_LINE_SIZE 64
 
+#if __has_feature(cxx_noexcept)
+    #define GP_OPERATOR_NEW_THROW_SPEC
+#else
+    #define GP_OPERATOR_NEW_THROW_SPEC throw (std::bad_alloc)
+#endif
+#define GP_OPERATOR_DELETE_THROW_SPEC noexcept
+#define GP_OPERATOR_NEW_NOTHROW_SPEC noexcept
+#define GP_OPERATOR_DELETE_NOTHROW_SPEC noexcept
+
 #define GP_DLLEXPORT __declspec(dllexport)
 #define GP_DLLIMPORT __declspec(dllimport)

@@ -502,6 +502,21 @@
     #endif
 #endif
 
+/// @section Operator new / delete throw specifications.
+
+#ifndef GP_OPERATOR_NEW_THROW_SPEC
+    #define GP_OPERATOR_NEW_THROW_SPEC
+#endif
+#ifndef GP_OPERATOR_DELETE_THROW_SPEC
+    #define GP_OPERATOR_DELETE_THROW_SPEC
+#endif
+#ifndef GP_OPERATOR_NEW_NOTHROW_SPEC
+    #define GP_OPERATOR_NEW_NOTHROW_SPEC throw()
+#endif
+#ifndef GP_OPERATOR_DELETE_NOTHROW_SPEC
+    #define GP_OPERATOR_DELETE_NOTHROW_SPEC throw()
+#endif
+
 /// @section Cache-line size.
 
 #ifndef GP_PLATFORM_CACHE_LINE_SIZE

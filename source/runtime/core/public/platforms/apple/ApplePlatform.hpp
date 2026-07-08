@@ -21,5 +21,14 @@
 
 #define GP_ABSTRACT abstract
 
+#if __has_feature(cxx_noexcept)
+    #define GP_OPERATOR_NEW_THROW_SPEC
+#else
+    #define GP_OPERATOR_NEW_THROW_SPEC throw (std::bad_alloc)
+#endif
+#define GP_OPERATOR_DELETE_THROW_SPEC noexcept
+#define GP_OPERATOR_NEW_NOTHROW_SPEC noexcept
+#define GP_OPERATOR_DELETE_NOTHROW_SPEC noexcept
+
 #define GP_DLLEXPORT __attribute__((visibility("default")))
 #define GP_DLLIMPORT __attribute__((visibility("default")))
