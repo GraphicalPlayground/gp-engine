@@ -5,7 +5,7 @@
 include(gp-build-tool)
 
 gpStartExecutable(editor)
-  gpSetGuiExecutable()
+  # gpSetGuiExecutable()
 
   gpAddDependency(PUBLIC core)
   gpAddDependency(PUBLIC launch)
