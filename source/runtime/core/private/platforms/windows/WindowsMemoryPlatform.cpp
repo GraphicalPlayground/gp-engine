@@ -7,7 +7,7 @@
 #include "memory/MemoryConstants.hpp"
 #include "platforms/base/PlatformMemory.hpp"
 #include "platforms/windows/WindowsPlatformMemory.hpp"
-#include <winbase.h>
+#include <Windows.h>
 
 namespace gp::platform::windows
 {
