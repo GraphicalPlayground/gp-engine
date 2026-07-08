@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.hpp"
 #include "memory/MemoryBase.hpp"
+#include "memory/SystemMallocForNew.hpp"
 
 namespace gp::memory
 {
@@ -13,7 +14,7 @@ namespace gp::memory
 /// @brief
 /// @details
 /// @see
-class GP_CORE_API Malloc
+class GP_CORE_API Malloc : public UseSystemMallocForNew
 {
 public:
     /// @brief
