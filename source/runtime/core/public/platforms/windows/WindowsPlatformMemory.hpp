@@ -19,6 +19,11 @@ private:
 
     /// @brief Deleted destructor prevent instantiation of the Memory class, as it is intended to be used.
     ~Memory() = delete;
+
+public:
+    /// @brief Get the platform-specific memory constants, such as page size, and other relevant parameters.
+    /// @return The platform-specific memory constants.
+    static GP_CORE_API memory::PlatformConstants getPlatformConstants();
 };
 
 }   // namespace gp::platform::windows

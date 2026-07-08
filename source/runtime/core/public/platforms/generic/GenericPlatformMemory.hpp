@@ -5,6 +5,8 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "memory/Backends/Malloc.hpp"
+#include "memory/MemoryConstants.hpp"
 #include <cstring>
 
 namespace gp::platform::generic
@@ -118,6 +120,14 @@ public:
     {
         return std::memcpy(destination, source, numBytes);
     }
+
+    /// @brief Get the default memory allocator for the platform.
+    /// @return A pointer to the default memory allocator for the platform.
+    static GP_CORE_API memory::Malloc* getDefaultAllocator();
+
+    /// @brief Get the platform-specific memory constants, such as page size, and other relevant parameters.
+    /// @return The platform-specific memory constants.
+    static GP_CORE_API memory::PlatformConstants getPlatformConstants();
 };
 
 }   // namespace gp::platform::generic
