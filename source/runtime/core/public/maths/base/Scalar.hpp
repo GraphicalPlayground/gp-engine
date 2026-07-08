@@ -7,6 +7,7 @@
 #include "concepts/Concepts.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "maths/base/Constants.hpp"
+#include <bit>
 #include <cmath>
 
 namespace gp::math
@@ -249,6 +250,65 @@ template <concepts::IsFloatingPoint T>
 GP_NODISCARD constexpr T inverseSqrt(const T value) noexcept
 {
     return static_cast<T>(1) / sqrt(value);
+}
+
+/// @brief Computes the base 2 logarithm for an unsigned integer value.
+/// @tparam T An unsigned integer type.
+/// @param[in] value The value to compute the logarithm for. Must be greater than 0.
+/// @return The base 2 logarithm of @p value, rounded down to the nearest integer.
+/// @note 0 if @p value is 0.
+template <concepts::IsUnsignedIntegral T>
+GP_NODISCARD constexpr inline T floorLog2(T value) noexcept
+{
+    if (value == 0)
+    {
+        return 0;
+    }
+    return static_cast<T>(std::bit_width(value) - 1);
+}
+
+/// @brief Returns the smallest N such that (1 << N) >= value.
+/// @tparam T An unsigned integer type.
+/// @param[in] value The value to compute the ceiling log2 for.
+/// @return The ceiling base 2 logarithm. Returns 0 if @p value is 0 or 1.
+template <concepts::IsUnsignedIntegral T>
+GP_NODISCARD constexpr inline T ceilLog2(T value) noexcept
+{
+    if (value <= 1)
+    {
+        return 0;
+    }
+    return static_cast<T>(std::bit_width(static_cast<T>(value - 1)));
+}
+
+/// @brief Counts the number of leading zeros in an unsigned integer value.
+/// @tparam T An unsigned integer type.
+/// @param[in] value The value to count leading zeros for.
+/// @return The number of leading zero bits in @p value. Returns the bit width of T if @p value is 0.
+template <concepts::IsUnsignedIntegral T>
+GP_NODISCARD constexpr inline T countLeadingZeros(T value) noexcept
+{
+    return static_cast<T>(std::countl_zero(value));
+}
+
+/// @brief Rounds the given number up to the next highest power of two.
+/// @tparam T An unsigned integer type.
+/// @param[in] value The value to round up.
+/// @return The next power of two. Returns 1 if @p value is 0.
+template <concepts::IsUnsignedIntegral T>
+GP_NODISCARD constexpr inline T roundUpToPowerOfTwo(T value) noexcept
+{
+    return std::bit_ceil(value);
+}
+
+/// @brief Rounds the given number down to the nearest power of two.
+/// @tparam T An unsigned integer type.
+/// @param[in] value The value to round down.
+/// @return The nearest power of two below the value. Returns 0 if @p value is 0.
+template <concepts::IsUnsignedIntegral T>
+GP_NODISCARD constexpr inline T roundDownToPowerOfTwo(T value) noexcept
+{
+    return std::bit_floor(value);
 }
 
 }   // namespace gp::math
