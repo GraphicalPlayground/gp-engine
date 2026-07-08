@@ -8,19 +8,24 @@
 namespace gp::memory
 {
 
+namespace detail
+{
+
 Malloc* g_malloc = nullptr;
+
+}   // namespace detail
 
 Malloc* getGlobalMalloc()
 {
-    if (GP_LIKELY(g_malloc != nullptr))
+    if (GP_LIKELY(detail::g_malloc != nullptr))
     {
-        return g_malloc;
+        return detail::g_malloc;
     }
 
     Malloc* newAllocator = gp::platform::Memory::getDefaultAllocator();
     GP_ASSERT(newAllocator != nullptr, "Failed to create a global memory allocator instance.");
-    g_malloc = newAllocator;
-    return g_malloc;
+    detail::g_malloc = newAllocator;
+    return detail::g_malloc;
 }
 
 }   // namespace gp::memory

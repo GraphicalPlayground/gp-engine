@@ -10,8 +10,13 @@
 namespace gp::memory
 {
 
+namespace detail
+{
+
 /// @brief Pointer to the global memory allocator instance.
 extern GP_CORE_API Malloc* g_malloc;
+
+}   // namespace detail
 
 /// @brief Retrieves the global memory allocator instance.
 /// @return A pointer to the global memory allocator instance.
