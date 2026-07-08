@@ -24,6 +24,12 @@ TEST(ConceptsTest, Fundamental)
     EXPECT_TRUE(IsIntegral<bool>);
     EXPECT_FALSE(IsIntegral<float>);
 
+    // Unsigned Integral
+    EXPECT_TRUE(IsUnsignedIntegral<unsigned int>);
+    EXPECT_TRUE(IsUnsignedIntegral<uint32_t>);
+    EXPECT_FALSE(IsUnsignedIntegral<int>);
+    EXPECT_FALSE(IsUnsignedIntegral<float>);
+
     // Arithmetic
     EXPECT_TRUE(IsArithmetic<int>);
     EXPECT_TRUE(IsArithmetic<float>);
