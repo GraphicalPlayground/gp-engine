@@ -22,6 +22,11 @@ concept IsFloatingPoint = std::is_floating_point_v<T>;
 template <typename T>
 concept IsIntegral = std::is_integral_v<T>;
 
+/// @brief Concept to check if a type is an unsigned integral type (unsigned int, unsigned long, etc.).
+/// @note Unsigned types are often used for sizes, counts, and bitmasks where negative values are invalid.
+template <typename T>
+concept IsUnsignedIntegral = IsIntegral<T> && std::is_unsigned_v<T>;
+
 /// @brief Concept to check if a type is an arithmetic type (Integral or Floating Point).
 template <typename T>
 concept IsArithmetic = std::is_arithmetic_v<T>;
