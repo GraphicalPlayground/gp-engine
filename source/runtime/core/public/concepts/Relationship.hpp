@@ -25,6 +25,10 @@ concept IsDerivedFrom = std::derived_from<Derived, Base>;
 template <typename From, typename To>
 concept IsConvertibleTo = std::convertible_to<From, To>;
 
+/// @brief Concept to check if type From is a pointer that can be implicitly converted to a pointer of type To.
+template <typename From, typename To>
+concept IsPointerConvertibleTo = std::convertible_to<From*, To*>;
+
 /// @brief Concept to check if two types are identical after decaying.
 /// @note Pedagogical Note: Decaying a type removes references and cv-qualifiers (const, volatile).
 /// This is extremely useful in template metaprogramming when we want to compare a type
