@@ -8,6 +8,7 @@
 #include "memory/GlobalMemory.hpp"             // IWYU pragma: keep
 #include "memory/MemoryBase.hpp"               // IWYU pragma: keep
 #include "platforms/base/PlatformMemory.hpp"   // IWYU pragma: keep
+#include <new>                                 // IWYU pragma: keep
 
 #if !GP_FORCE_ANSI_ALLOCATOR
 static_assert(
