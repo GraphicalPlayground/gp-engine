@@ -1,0 +1,299 @@
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    /* C++ and ClangD settings */
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.arguments": ["--compile-commands-dir=${workspaceFolder}/build"],
+
+    /* Material Icon Theme */
+    "material-icon-theme.files.associations": {
+      "LICENSE_HEADER": "license",
+      "DONORS.md": "github-sponsors",
+      "VERSION": "tree",
+      "CMakePresetsBase.json": "cmake",
+      "CMakePresetsLinux.json": "cmake",
+      "CMakePresetsWindows.json": "cmake",
+      "CMakePresetsMacOS.json": "cmake",
+      "Doxyfile": "settings"
+    },
+    "material-icon-theme.folders.associations": {
+      /* Shared Associations */
+      "private": "private",
+      "public": "public",
+      "docs": "docs",
+      "benchmarks": "benchmark",
+      "tests": "test",
+      "internal": "review",
+      "base": "base",
+      "generic": "shared",
+
+      /* Root Level Associations */
+      ".devcontainer": "container",
+      ".vscode": "vscode",
+      "build": "dist",
+      "binaries": "dist",
+      "toolchain": "contract",
+      "thirdparty": "lib",
+      "source": "src",
+      "examples": "examples",
+      "cmake": "config",
+
+      /* Source Level Associations */
+      "launch": "assembly",
+      "runtime": "job",
+      "plugins": "plugin",
+      "shaders": "shader",
+
+      /* Runtime Level Associations */
+      "core": "core",
+      "engine": "bicep",
+      "renderer": "element",
+      "assets": "resource",
+      "parser": "resolver",
+      "audio": "audio",
+      "physics": "simulations",
+      "input": "input",
+      "hal": "connection",
+      "rhi": "pipe",
+      "network": "cloudflare",
+
+      /* Platforms Associations */
+      "android": "android",
+      "ps5": "console",
+      "ps4": "console",
+      "xboxone": "console",
+      "xboxseries": "console",
+      "switch": "console",
+      "switch2": "console",
+      "macos": "macos",
+      "apple": "macos",
+      "visionos": "macos",
+      "tvos": "macos",
+      "ios": "macos",
+      "windows": "windows",
+      "linux": "linux",
+      "unix": "linux",
+
+      /* RHI Associations */
+      "d3d12": "windows",
+      "d3d11": "windows",
+      "d3d12x": "console",
+      "metal": "macos",
+      "vulkan": "shared",
+      "opengl": "shared",
+      "opengles": "shared",
+      "webgl": "public",
+      "webgpu": "public",
+      "nvn": "console",
+      "nvn2": "console",
+      "agc": "console",
+      "gnm": "console",
+      "gnmx": "console",
+      "null": "private",
+
+      /* Core Associations */
+      "containers": "container",
+      "memory": "bloc",
+      "arrays": "cloud-functions",
+      "details": "config",
+      "maps": "json",
+      "sets": "json",
+      "views": "atom",
+      "pointers": "molecule",
+      "transform": "animation",
+      "simd": "assembly",
+      "rotation": "ci",
+      "matrix": "app",
+      "primitives": "prisma",
+      "geometry": "prisma",
+      "targets": "target",
+      "traits": "rules",
+      "sync": "contract",
+      "hash": "secure",
+      "encryption": "secure",
+      "crypto": "secure",
+      "macros": "features",
+      "thread": "simulations",
+      "intrinsics": "command",
+      "file": "content",
+      "window": "television",
+      "descriptors": "interface",
+      "device": "vm",
+      "query": "mappings",
+      "renderpass": "pipe",
+      "raytracing": "claude",
+      "swapchain": "resolver",
+      "filesystem": "content",
+      "concurrency": "simulations",
+      "time": "temp",
+      "ownership": "contract",
+      "tracking": "link",
+      "allocators": "bloc",
+      "bindings": "attachment",
+      "state": "log",
+      "system": "vm",
+
+      /* Launch Level Associations */
+      "editor": "mock",
+      "standalone": "console",
+
+      /* Network Level Associations */
+      "http": "connection",
+      "https": "connection",
+      "udp": "connection",
+      "tcp": "connection",
+      "steam": "cloudflare",
+      "epic": "cloudflare",
+
+      /* Parser Level Associations */
+      "fbx": "container",
+      "obj": "container",
+      "gltf": "container",
+      "json": "json",
+      "xml": "json",
+      "yaml": "json",
+      "ini": "config",
+      "csv": "database",
+      "blend": "blender",
+
+      /* Physics Level Associations */
+      "jolt": "simulations",
+      "physx": "simulations",
+
+      /* Audio Level Associations */
+      "fmod": "audio",
+      "openal": "audio",
+      "xaudio2": "audio",
+
+      /* HAL Level Associations */
+      "sdl3": "components",
+
+      /* Core Level Associations */
+      "compilers": "tools",
+      "clang": "config",
+      "msvc": "config",
+      "appleclang": "config",
+      "gcc": "config",
+      "intel": "config",
+      "platforms": "client",
+
+      /* Languages Associations */
+      "es": "i18n",
+      "fr": "i18n",
+      "en": "i18n",
+      "ko": "i18n",
+      "ja": "i18n",
+      "de": "i18n",
+      "zh-cn": "i18n",
+
+      /* Thirdparties Associations */
+      "gp-build-tool": "project",
+      "tbb": "bloc",
+      "mimalloc": "bloc",
+      "rapidjson": "json",
+      "tracy": "benchmark"
+    },
+
+    /* Test Execution */
+    "testMate.cpp.test.executables": "{build,Build,BUILD,out,Out,OUT,binaries,Binaries}/**/*{test,Test,TEST}*",
+
+    /* DoxDocGen Configuration */
+    "doxdocgen.c.triggerSequence": "///",
+    "doxdocgen.c.firstLine": "",
+    "doxdocgen.c.lastLine": "",
+    "doxdocgen.c.commentPrefix": "/// ",
+    "doxdocgen.generic.briefTemplate": "@brief {text}",
+    "doxdocgen.generic.paramTemplate": "@param[in] {param} ",
+    "doxdocgen.generic.returnTemplate": "@return ",
+    "doxdocgen.generic.includeTypeAtReturn": false,
+    "doxdocgen.generic.boolReturnsTrueFalse": false,
+    "doxdocgen.generic.order": ["brief", "param", "return"],
+    "doxdocgen.generic.filteredKeywords": ["GP_FORCEINLINE", "GP_NODISCARD", "GP_INLINE", "constexpr", "noexcept"],
+
+    /* Language Settings */
+    "editor.insertSpaces": true,
+    "[c]": {
+      "editor.tabSize": 4,
+      "editor.rulers": [120],
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "[cpp]": {
+      "editor.tabSize": 4,
+      "editor.rulers": [120],
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "[cmake]": {
+      "editor.tabSize": 2,
+      "files.trimTrailingWhitespace": true
+    },
+    "[json]": {
+      "editor.tabSize": 2,
+      "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[jsonc]": {
+      "editor.tabSize": 2,
+      "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[jsonl]": {
+      "editor.tabSize": 2,
+      "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[markdown]": {
+      "editor.tabSize": 2,
+      "editor.rulers": [100],
+      "files.trimTrailingWhitespace": false
+    },
+    "[hlsl]": {
+      "editor.tabSize": 4,
+      "editor.rulers": [120],
+      "files.trimTrailingWhitespace": true
+    },
+    "[glsl]": {
+      "editor.tabSize": 4,
+      "editor.rulers": [120],
+      "files.trimTrailingWhitespace": true
+    },
+    "[yaml]": {
+      "editor.tabSize": 2
+    },
+    "[shellscript]": {
+      "editor.tabSize": 2
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      /* Remote Development */
+      "ms-vscode-remote.remote-containers",
+
+      /* C/C++ */
+      "llvm-vs-code-extensions.vscode-clangd",
+      "jeff-hykin.better-cpp-syntax",
+      "matepek.vscode-catch2-test-adapter",
+      "Gruntfuggly.bettercomment",
+      "ms-vscode.cmake-tools",
+      "cschlosser.doxdocgen",
+
+      /* Shaders */
+      "TimGJones.hlsltools",
+      "slevesque.shader",
+
+      /* Markdown */
+      "bierner.github-markdown-preview",
+      "yzhang.markdown-all-in-one",
+      "bierner.markdown-preview-github-styles",
+
+      /* Github */
+      "GitHub.vscode-pull-request-github",
+      "github.vscode-github-actions",
+      "me-dutour-mathieu.vscode-github-actions"
+    ],
+    "unwantedRecommendations": [
+      /* Conflicts with Clangd */
+      "ms-vscode.cpptools"
+    ]
+  }
+}

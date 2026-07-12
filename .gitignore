@@ -83,6 +83,7 @@ OutputSDK/
 # Visual Studio Code
 .vscode/*
 *.code-workspace
+!gp-engine.code-workspace
 !.vscode/extensions.json
 !.vscode/*.code-snippets
 
