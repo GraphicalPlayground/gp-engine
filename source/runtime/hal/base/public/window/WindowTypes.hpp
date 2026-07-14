@@ -19,7 +19,7 @@ public:
 
 public:
     /// @brief Default constructor initializes point to (0, 0).
-    GP_NODISCARD constexpr Point2D() noexcept
+    [[nodiscard]] constexpr Point2D() noexcept
         : x(0)
         , y(0)
     {}
@@ -27,7 +27,7 @@ public:
     /// @brief Constructs a point with the given coordinates.
     /// @param[in] inX X coordinate of the point.
     /// @param[in] inY Y coordinate of the point.
-    GP_NODISCARD constexpr Point2D(const Int32 inX, const Int32 inY) noexcept
+    [[nodiscard]] constexpr Point2D(const Int32 inX, const Int32 inY) noexcept
         : x(inX)
         , y(inY)
     {}
@@ -35,7 +35,7 @@ public:
     /// @brief Constructs a point from an array of 2 elements, where data[0] is x and data[1] is y.
     /// @param[in] arr Pointer to an array of 2 elements representing the point's coordinates.
     /// @warning The caller must ensure that `arr` points to at least 2 valid elements. No bounds checking is performed.
-    GP_NODISCARD constexpr explicit Point2D(const Int32* arr) noexcept
+    [[nodiscard]] constexpr explicit Point2D(const Int32* arr) noexcept
         : x(arr[0])
         , y(arr[1])
     {}
@@ -43,18 +43,18 @@ public:
     /// @brief Constructs a point from a reference to a C-style array of 2 elements, where arr[0] is x and arr[1] is y.
     /// @param[in] arr Reference to a C-style array of 2 elements representing the point's coordinates.
     /// @warning The caller must ensure that `arr` has at least 2 elements. No bounds checking is performed.
-    GP_NODISCARD constexpr explicit Point2D(const Int32 (&arr)[2]) noexcept
+    [[nodiscard]] constexpr explicit Point2D(const Int32 (&arr)[2]) noexcept
         : x(arr[0])
         , y(arr[1])
     {}
 
     /// @brief Copy constructor.
     /// @param[in] extent Point to copy from.
-    GP_NODISCARD constexpr Point2D(const Point2D& extent) noexcept = default;
+    [[nodiscard]] constexpr Point2D(const Point2D& extent) noexcept = default;
 
     /// @brief Move constructor.
     /// @param[in] extent Point to move from.
-    GP_NODISCARD constexpr Point2D(Point2D&& extent) noexcept = default;
+    [[nodiscard]] constexpr Point2D(Point2D&& extent) noexcept = default;
 
 public:
     /// @brief Copy assignment operator.
@@ -70,7 +70,7 @@ public:
     /// @brief Equality comparison operator.
     /// @param[in] other Point to compare with.
     /// @return true if both points have the same coordinates, false otherwise.
-    GP_NODISCARD constexpr bool operator==(const Point2D& other) const noexcept
+    [[nodiscard]] constexpr bool operator==(const Point2D& other) const noexcept
     {
         return x == other.x && y == other.y;
     }
@@ -78,14 +78,14 @@ public:
     /// @brief Inequality comparison operator.
     /// @param[in] other Point to compare with.
     /// @return true if the points have different coordinates, false if they are equal.
-    GP_NODISCARD constexpr bool operator!=(const Point2D& other) const noexcept
+    [[nodiscard]] constexpr bool operator!=(const Point2D& other) const noexcept
     {
         return !(*this == other);
     }
 
     /// @brief Unary negation operator, which negates both coordinates of the point.
     /// @return A new point with both coordinates negated.
-    GP_NODISCARD constexpr Point2D operator-() const noexcept
+    [[nodiscard]] constexpr Point2D operator-() const noexcept
     {
         return Point2D(-x, -y);
     }
@@ -93,7 +93,7 @@ public:
     /// @brief Addition operator, which adds the corresponding coordinates of two points.
     /// @param[in] other Point to add.
     /// @return A new point resulting from the coordinate-wise addition of the two points.
-    GP_NODISCARD constexpr Point2D operator+(const Point2D& other) const noexcept
+    [[nodiscard]] constexpr Point2D operator+(const Point2D& other) const noexcept
     {
         return Point2D(x + other.x, y + other.y);
     }
@@ -101,7 +101,7 @@ public:
     /// @brief Subtraction operator, which subtracts the corresponding coordinates of two points.
     /// @param[in] other Point to subtract.
     /// @return A new point resulting from the coordinate-wise subtraction of the two points.
-    GP_NODISCARD constexpr Point2D operator-(const Point2D& other) const noexcept
+    [[nodiscard]] constexpr Point2D operator-(const Point2D& other) const noexcept
     {
         return Point2D(x - other.x, y - other.y);
     }
@@ -117,7 +117,7 @@ public:
 
 public:
     /// @brief Default constructor initializes extent to (0, 0).
-    GP_NODISCARD constexpr Extent2D() noexcept
+    [[nodiscard]] constexpr Extent2D() noexcept
         : width(0)
         , height(0)
     {}
@@ -125,7 +125,7 @@ public:
     /// @brief Constructs an extent with the given dimensions.
     /// @param[in] inWidth Width of the extent.
     /// @param[in] inHeight Height of the extent.
-    GP_NODISCARD constexpr Extent2D(const UInt32 inWidth, const UInt32 inHeight) noexcept
+    [[nodiscard]] constexpr Extent2D(const UInt32 inWidth, const UInt32 inHeight) noexcept
         : width(inWidth)
         , height(inHeight)
     {}
@@ -133,7 +133,7 @@ public:
     /// @brief Constructs an extent from an array of 2 elements, where data[0] is width and data[1] is height.
     /// @param[in] arr Pointer to an array of 2 elements representing the extent's dimensions.
     /// @warning The caller must ensure that `arr` points to at least 2 valid elements. No bounds checking is performed.
-    GP_NODISCARD constexpr explicit Extent2D(const UInt32* arr) noexcept
+    [[nodiscard]] constexpr explicit Extent2D(const UInt32* arr) noexcept
         : width(arr[0])
         , height(arr[1])
     {}
@@ -142,18 +142,18 @@ public:
     ///        is height.
     /// @param[in] arr Reference to a C-style array of 2 elements representing the extent's dimensions.
     /// @warning The caller must ensure that `arr` has at least 2 elements. No bounds checking is performed.
-    GP_NODISCARD constexpr explicit Extent2D(const UInt32 (&arr)[2]) noexcept
+    [[nodiscard]] constexpr explicit Extent2D(const UInt32 (&arr)[2]) noexcept
         : width(arr[0])
         , height(arr[1])
     {}
 
     /// @brief Copy constructor.
     /// @param[in] extent Extent to copy from.
-    GP_NODISCARD constexpr Extent2D(const Extent2D& extent) noexcept = default;
+    [[nodiscard]] constexpr Extent2D(const Extent2D& extent) noexcept = default;
 
     /// @brief Move constructor.
     /// @param[in] extent Extent to move from.
-    GP_NODISCARD constexpr Extent2D(Extent2D&& extent) noexcept = default;
+    [[nodiscard]] constexpr Extent2D(Extent2D&& extent) noexcept = default;
 
 public:
     /// @brief Copy assignment operator.
@@ -169,7 +169,7 @@ public:
     /// @brief Equality operator.
     /// @param[in] other Source extent to compare with.
     /// @return True if this extent is equal to the other, false otherwise.
-    GP_NODISCARD constexpr bool operator==(const Extent2D& other) const noexcept
+    [[nodiscard]] constexpr bool operator==(const Extent2D& other) const noexcept
     {
         return width == other.width && height == other.height;
     }
@@ -177,7 +177,7 @@ public:
     /// @brief Inequality operator.
     /// @param[in] other Source extent to compare with.
     /// @return True if this extent is not equal to the other, false otherwise.
-    GP_NODISCARD constexpr bool operator!=(const Extent2D& other) const noexcept
+    [[nodiscard]] constexpr bool operator!=(const Extent2D& other) const noexcept
     {
         return !(*this == other);
     }

@@ -14,13 +14,13 @@ namespace gp::math
 {
 
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr Vector2<T>::Vector2(const Vector3<T>& vec) noexcept
+[[nodiscard]] constexpr Vector2<T>::Vector2(const Vector3<T>& vec) noexcept
     : x(vec.x)
     , y(vec.y)
 {}
 
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr Vector2<T>::Vector2(const Vector4<T>& vec) noexcept
+[[nodiscard]] constexpr Vector2<T>::Vector2(const Vector4<T>& vec) noexcept
     : x(vec.x)
     , y(vec.y)
 {}

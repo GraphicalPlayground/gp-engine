@@ -27,7 +27,7 @@ void dumpPlatformConstants()
     std::cout << "\tTotal Physical Memory (GB): " << constants.totalPhysicalMemoryGB << std::endl;
 }
 
-int launch(GP_MAYBE_UNUSED int argc, GP_MAYBE_UNUSED char** argv)
+int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
     std::cout << "Launching editor..." << std::endl;
     dumpPlatformConstants();

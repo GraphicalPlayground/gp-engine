@@ -15,7 +15,7 @@ namespace gp::math
 
 template <concepts::IsFloatingPoint T>
 template <concepts::IsFloatingPoint U>
-GP_NODISCARD constexpr Vector4<T>::Vector4(const Vector3<T>& vec, const U inW) noexcept
+[[nodiscard]] constexpr Vector4<T>::Vector4(const Vector3<T>& vec, const U inW) noexcept
     : x(vec.x)
     , y(vec.y)
     , z(vec.z)
@@ -24,7 +24,7 @@ GP_NODISCARD constexpr Vector4<T>::Vector4(const Vector3<T>& vec, const U inW) n
 
 template <concepts::IsFloatingPoint T>
 template <concepts::IsFloatingPoint U>
-GP_NODISCARD constexpr Vector4<T>::Vector4(const Vector2<T>& vec, const U inZ, const U inW) noexcept
+[[nodiscard]] constexpr Vector4<T>::Vector4(const Vector2<T>& vec, const U inZ, const U inW) noexcept
     : x(vec.x)
     , y(vec.y)
     , z(static_cast<T>(inZ))
@@ -32,7 +32,7 @@ GP_NODISCARD constexpr Vector4<T>::Vector4(const Vector2<T>& vec, const U inZ, c
 {}
 
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr Vector4<T>::Vector4(const Vector2<T>& vecXY, const Vector2<T>& vecZW) noexcept
+[[nodiscard]] constexpr Vector4<T>::Vector4(const Vector2<T>& vecXY, const Vector2<T>& vecZW) noexcept
     : x(vecXY.x)
     , y(vecXY.y)
     , z(vecZW.x)

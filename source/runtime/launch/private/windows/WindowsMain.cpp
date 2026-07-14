@@ -22,10 +22,10 @@ inline int launch(int argc, char* argv[])
 
 /// @brief GUI entry point for the application.
 int WINAPI WinMain(
-    GP_MAYBE_UNUSED HINSTANCE hInstance,
-    GP_MAYBE_UNUSED HINSTANCE hPrevInstance,
-    GP_MAYBE_UNUSED LPSTR lpCmdLine,
-    GP_MAYBE_UNUSED int nCmdShow
+    [[maybe_unused]] HINSTANCE hInstance,
+    [[maybe_unused]] HINSTANCE hPrevInstance,
+    [[maybe_unused]] LPSTR lpCmdLine,
+    [[maybe_unused]] int nCmdShow
 )
 {
     return gp::detail::launch(__argc, __argv);

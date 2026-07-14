@@ -277,58 +277,6 @@
 
 /// @section Standard C++ attributes (C++11–C++23).
 
-/// @brief [[nodiscard]], emit a warning when the return value is discarded.
-#if !defined(GP_NODISCARD) && defined(__has_cpp_attribute)
-    #if __has_cpp_attribute(nodiscard)
-        #define GP_NODISCARD [[nodiscard]]
-    #endif
-#endif
-#ifndef GP_NODISCARD
-    #define GP_NODISCARD
-#endif
-
-/// @brief [[nodiscard(msg)]], nodiscard with an explanatory message (C++20).
-#if !defined(GP_NODISCARD_MSG) && defined(__has_cpp_attribute)
-    #if __has_cpp_attribute(nodiscard) >= 201907L
-        #define GP_NODISCARD_MSG(msg) [[nodiscard(msg)]]
-    #endif
-#endif
-#ifndef GP_NODISCARD_MSG
-    #define GP_NODISCARD_MSG(msg) GP_NODISCARD
-#endif
-
-/// @brief [[maybe_unused]], suppress unused-variable/parameter warnings.
-#if !defined(GP_MAYBE_UNUSED) && defined(__has_cpp_attribute)
-    #if __has_cpp_attribute(maybe_unused)
-        #define GP_MAYBE_UNUSED [[maybe_unused]]
-    #endif
-#endif
-#ifndef GP_MAYBE_UNUSED
-    #define GP_MAYBE_UNUSED
-#endif
-
-/// @brief [[noreturn]], function never returns (abort, throw, infinite loop).
-#if !defined(GP_NORETURN) && defined(__has_cpp_attribute)
-    #if __has_cpp_attribute(noreturn)
-        #define GP_NORETURN [[noreturn]]
-    #endif
-#endif
-#ifndef GP_NORETURN
-    #define GP_NORETURN
-#endif
-
-/// @brief [[deprecated]] / [[deprecated(msg)]], mark a declaration as deprecated.
-#if !defined(GP_DEPRECATED) && defined(__has_cpp_attribute)
-    #if __has_cpp_attribute(deprecated)
-        #define GP_DEPRECATED            [[deprecated]]
-        #define GP_DEPRECATED_MSG(msg)   [[deprecated(msg)]]
-    #endif
-#endif
-#ifndef GP_DEPRECATED
-    #define GP_DEPRECATED
-    #define GP_DEPRECATED_MSG(msg)
-#endif
-
 /// @brief [[no_unique_address]], allow empty members to share storage (C++20).
 ///        MSVC requires [[msvc::no_unique_address]] for correct ABI behaviour.
 #if !defined(GP_NO_UNIQUE_ADDRESS) && defined(__has_cpp_attribute)
@@ -417,57 +365,7 @@
     #endif
 #endif
 
-/// @brief Specifies the alignment of a type or variable. Wraps alignas(n).
-///        alignas is standard since C++11 and available on all supported compilers.
-#ifndef GP_ALIGN
-    #define GP_ALIGN(n) alignas(n)
-#endif
-
-/// @section Branch-prediction hints.
-
-/// @brief Suggests to the compiler that expression x is likely to be true.
-///        In C++23 prefer [[likely]] on the if/else branch body directly.
-#ifndef GP_LIKELY
-    #if GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
-        #define GP_LIKELY(x)   __builtin_expect(!!(x), 1)
-    #else
-        #define GP_LIKELY(x)   (!!(x))
-    #endif
-#endif
-
-/// @brief Suggests to the compiler that expression x is unlikely to be true.
-#ifndef GP_UNLIKELY
-    #if GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
-        #define GP_UNLIKELY(x) __builtin_expect(!!(x), 0)
-    #else
-        #define GP_UNLIKELY(x) (!!(x))
-    #endif
-#endif
-
 /// @section Optimisation hints.
-
-/// @brief Informs the optimiser that expression x is assumed to be true.
-///        Uses C++23 [[assume(x)]] when supported; falls back to compiler intrinsics.
-///        WARNING: undefined behaviour if the assumption is false at runtime.
-#ifndef GP_ASSUME
-    #if defined(__cpp_assume)   // C++23 P1774R8
-        #define GP_ASSUME(x) [[assume(x)]]
-    #elif GP_COMPILER_CLANG
-        #define GP_ASSUME(x) __builtin_assume(x)
-    #elif GP_COMPILER_MSVC
-        #define GP_ASSUME(x) __assume(x)
-    #elif GP_COMPILER_GCC
-        // GCC 13+ supports __attribute__((assume(x))).
-        #if GP_COMPILER_VERSION_MAJOR >= 13
-            #define GP_ASSUME(x) __attribute__((assume(x)))
-        #else
-            // Pre-GCC 13: manufacture an unreachable path as a weaker hint.
-            #define GP_ASSUME(x) do { if (!(x)) __builtin_unreachable(); } while (0)
-        #endif
-    #else
-        #define GP_ASSUME(x) (void(0))
-    #endif
-#endif
 
 /// @brief Marks a code path as unreachable.
 ///        Triggers undefined behaviour if reached; allows the optimiser to eliminate

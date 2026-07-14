@@ -5,7 +5,7 @@
 #pragma once
 
 #include "concepts/Concepts.hpp"
-#include "concepts/Memory.hpp"
+#include "concepts/Memory.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 
 namespace gp
@@ -36,7 +36,7 @@ public:
     using ValueType = T;
 
 private:
-    GP_ALIGN(alignof(T)) Byte m_storage[sizeof(T)];
+    alignas(alignof(T)) Byte m_storage[sizeof(T)];
     bool m_hasValue = false;
 
 public:
@@ -192,7 +192,7 @@ public:
     /// @brief Checks if the optional contains a value.
     /// @param[in] other Optional to compare with.
     /// @return True if both optionals are empty or both contain equal values, false otherwise.
-    GP_NODISCARD bool operator==(const Optional& other) const noexcept requires std::equality_comparable<T>
+    [[nodiscard]] bool operator==(const Optional& other) const noexcept requires std::equality_comparable<T>
     {
         if (m_hasValue != other.m_hasValue)
         {
@@ -204,7 +204,7 @@ public:
     /// @brief Checks if the optional is empty.
     /// @param[in] NullOpt NullOpt tag.
     /// @return True if this optional is empty, false otherwise.
-    GP_NODISCARD bool operator==(detail::NullOptT) const noexcept
+    [[nodiscard]] bool operator==(detail::NullOptT) const noexcept
     {
         return !m_hasValue;
     }
@@ -212,7 +212,7 @@ public:
     /// @brief Checks if the optional is not empty.
     /// @param[in] NullOpt NullOpt tag.
     /// @return True if this optional has a value, false otherwise.
-    GP_NODISCARD bool operator!=(detail::NullOptT) const noexcept
+    [[nodiscard]] bool operator!=(detail::NullOptT) const noexcept
     {
         return m_hasValue;
     }
@@ -220,7 +220,7 @@ public:
     /// @brief Checks if the optional contains a value equal to @p inValue.
     /// @param[in] inValue Value to compare with.
     /// @return True if the optional has a value and it is equal to @p inValue, false otherwise.
-    GP_NODISCARD bool operator==(const T& inValue) const noexcept requires std::equality_comparable<T>
+    [[nodiscard]] bool operator==(const T& inValue) const noexcept requires std::equality_comparable<T>
     {
         return m_hasValue && value() == inValue;
     }
@@ -228,7 +228,7 @@ public:
     /// @brief Checks if the optional does not contain a value equal to @p value.
     /// @param[in] value Value to compare with.
     /// @return True if the optional is empty or its value differs from @p value, false otherwise.
-    GP_NODISCARD bool operator!=(const T& value) const noexcept requires std::equality_comparable<T>
+    [[nodiscard]] bool operator!=(const T& value) const noexcept requires std::equality_comparable<T>
     {
         return !(*this == value);
     }
@@ -236,49 +236,49 @@ public:
     /// @brief Checks if this optional is not equal to another optional.
     /// @param[in] other Optional to compare with.
     /// @return True if the optionals differ in value presence or contained value, false otherwise.
-    GP_NODISCARD bool operator!=(const Optional& other) const noexcept requires std::equality_comparable<T>
+    [[nodiscard]] bool operator!=(const Optional& other) const noexcept requires std::equality_comparable<T>
     {
         return !(*this == other);
     }
 
     /// @brief Dereferences the optional to access the contained value.
     /// @return Reference to the contained value.
-    GP_NODISCARD constexpr T& operator*() & noexcept
+    [[nodiscard]] constexpr T& operator*() & noexcept
     {
         return value();
     }
 
     /// @brief Dereferences the optional to access the contained value.
     /// @return Reference to the contained value.
-    GP_NODISCARD constexpr const T& operator*() const& noexcept
+    [[nodiscard]] constexpr const T& operator*() const& noexcept
     {
         return value();
     }
 
     /// @brief Dereferences the optional to access the contained value.
     /// @return Rvalue reference to the contained value.
-    GP_NODISCARD constexpr T&& operator*() && noexcept
+    [[nodiscard]] constexpr T&& operator*() && noexcept
     {
         return std::move(value());
     }
 
     /// @brief Accesses members of the contained value.
     /// @return Pointer to the contained value.
-    GP_NODISCARD constexpr T* operator->() noexcept
+    [[nodiscard]] constexpr T* operator->() noexcept
     {
         return &value();
     }
 
     /// @brief Accesses members of the contained value.
     /// @return Pointer to the contained value.
-    GP_NODISCARD constexpr const T* operator->() const noexcept
+    [[nodiscard]] constexpr const T* operator->() const noexcept
     {
         return &value();
     }
 
     /// @brief Explicitly converts to bool to check for value presence.
     /// @return True if the optional has a value, false otherwise.
-    GP_NODISCARD constexpr explicit operator bool() const noexcept
+    [[nodiscard]] constexpr explicit operator bool() const noexcept
     {
         return m_hasValue;
     }
@@ -286,14 +286,14 @@ public:
 public:
     /// @brief Checks if the optional contains a value.
     /// @return True if the optional has a value, false otherwise.
-    GP_NODISCARD constexpr bool hasValue() const noexcept
+    [[nodiscard]] constexpr bool hasValue() const noexcept
     {
         return m_hasValue;
     }
 
     /// @brief Accesses the contained value, asserting if there is none.
     /// @return Reference to the contained value.
-    GP_NODISCARD constexpr T& value() & noexcept
+    [[nodiscard]] constexpr T& value() & noexcept
     {
         GP_ASSERT(m_hasValue);
         return *reinterpret_cast<T*>(&m_storage);
@@ -301,7 +301,7 @@ public:
 
     /// @brief Accesses the contained value, asserting if there is none.
     /// @return Reference to the contained value.
-    GP_NODISCARD constexpr const T& value() const& noexcept
+    [[nodiscard]] constexpr const T& value() const& noexcept
     {
         GP_ASSERT(m_hasValue);
         return *reinterpret_cast<const T*>(&m_storage);
@@ -309,7 +309,7 @@ public:
 
     /// @brief Accesses the contained value, asserting if there is none.
     /// @return Rvalue reference to the contained value.
-    GP_NODISCARD constexpr T&& value() && noexcept
+    [[nodiscard]] constexpr T&& value() && noexcept
     {
         GP_ASSERT(m_hasValue);
         return std::move(*reinterpret_cast<T*>(&m_storage));
@@ -318,7 +318,7 @@ public:
     /// @brief Returns the contained value if present, otherwise returns @p defaultValue.
     /// @param[in] defaultValue Value to return if the optional is empty.
     /// @return The contained value or @p defaultValue.
-    GP_NODISCARD constexpr T valueOr(T&& defaultValue) const& noexcept
+    [[nodiscard]] constexpr T valueOr(T&& defaultValue) const& noexcept
     {
         return m_hasValue ? value() : std::move(defaultValue);
     }
@@ -326,7 +326,7 @@ public:
     /// @brief Returns the contained value if present, otherwise returns @p defaultValue.
     /// @param[in] defaultValue Value to return if the optional is empty.
     /// @return The contained value or @p defaultValue.
-    GP_NODISCARD constexpr T valueOr(T&& defaultValue) && noexcept
+    [[nodiscard]] constexpr T valueOr(T&& defaultValue) && noexcept
     {
         return m_hasValue ? std::move(value()) : std::move(defaultValue);
     }
@@ -386,7 +386,7 @@ public:
 /// @param args Arguments forwarded to T's constructor.
 /// @return Optional<T> with a live value.
 template <typename T, typename... Args>
-GP_NODISCARD constexpr Optional<T> makeOptional(Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...)))
+[[nodiscard]] constexpr Optional<T> makeOptional(Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...)))
 {
     return Optional<T>(std::forward<Args>(args)...);
 }

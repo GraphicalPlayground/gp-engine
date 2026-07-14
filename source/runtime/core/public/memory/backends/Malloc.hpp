@@ -25,39 +25,39 @@ public:
     /// @param[in] size
     /// @param[in] alignment
     /// @return
-    GP_NODISCARD virtual void* allocate(USize size, UInt32 alignment = kDefaultAlignment) = 0;
+    [[nodiscard]] virtual void* allocate(USize size, UInt32 alignment = kDefaultAlignment) = 0;
 
     /// @brief
     /// @param[in] size
     /// @param[in] alignment
     /// @return
-    GP_NODISCARD virtual void* tryAllocate(USize size, UInt32 alignment = kDefaultAlignment) noexcept;
+    [[nodiscard]] virtual void* tryAllocate(USize size, UInt32 alignment = kDefaultAlignment) noexcept;
 
     /// @brief
     /// @param[in] size
     /// @param[in] alignment
     /// @return
-    GP_NODISCARD virtual void* allocateZeroed(USize size, UInt32 alignment = kDefaultAlignment);
+    [[nodiscard]] virtual void* allocateZeroed(USize size, UInt32 alignment = kDefaultAlignment);
 
     /// @brief
     /// @param[in] size
     /// @param[in] alignment
     /// @return
-    GP_NODISCARD virtual void* tryAllocateZeroed(USize size, UInt32 alignment = kDefaultAlignment) noexcept;
+    [[nodiscard]] virtual void* tryAllocateZeroed(USize size, UInt32 alignment = kDefaultAlignment) noexcept;
 
     /// @brief
     /// @param[in] ptr
     /// @param[in] newSize
     /// @param[in] alignment
     /// @return
-    GP_NODISCARD virtual void* reallocate(void* ptr, USize newSize, UInt32 alignment = kDefaultAlignment) = 0;
+    [[nodiscard]] virtual void* reallocate(void* ptr, USize newSize, UInt32 alignment = kDefaultAlignment) = 0;
 
     /// @brief
     /// @param[in] ptr
     /// @param[in] newSize
     /// @param[in] alignment
     /// @return
-    GP_NODISCARD virtual void* tryReallocate(void* ptr, USize newSize, UInt32 alignment = kDefaultAlignment) noexcept;
+    [[nodiscard]] virtual void* tryReallocate(void* ptr, USize newSize, UInt32 alignment = kDefaultAlignment) noexcept;
 
     /// @brief
     /// @param[in] ptr

@@ -20,27 +20,27 @@ public:
     /// @param[in] size
     /// @param[in] alignment
     /// @return
-    GP_NODISCARD void* allocate(USize size, UInt32 alignment) override;
+    [[nodiscard]] void* allocate(USize size, UInt32 alignment) override;
 
     /// @brief
     /// @param[in] size
     /// @param[in] alignment
     /// @return
-    GP_NODISCARD void* tryAllocate(USize size, UInt32 alignment) noexcept override;
+    [[nodiscard]] void* tryAllocate(USize size, UInt32 alignment) noexcept override;
 
     /// @brief
     /// @param[in] ptr
     /// @param[in] newSize
     /// @param[in] alignment
     /// @return
-    GP_NODISCARD void* reallocate(void* ptr, USize newSize, UInt32 alignment) override;
+    [[nodiscard]] void* reallocate(void* ptr, USize newSize, UInt32 alignment) override;
 
     /// @brief
     /// @param[in] ptr
     /// @param[in] newSize
     /// @param[in] alignment
     /// @return
-    GP_NODISCARD void* tryReallocate(void* ptr, USize newSize, UInt32 alignment) noexcept override;
+    [[nodiscard]] void* tryReallocate(void* ptr, USize newSize, UInt32 alignment) noexcept override;
 
     /// @brief
     /// @param[in] ptr

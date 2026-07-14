@@ -16,7 +16,7 @@ memory::PlatformConstants Memory::getPlatformConstants()
 {
     static memory::PlatformConstants constants{};
 
-    if (constants.physicalMemoryBytes == 0ull)
+    if (constants.physicalMemoryBytes == 0ull) [[unlikely]]
     {
         MEMORYSTATUSEX memoryStatusEx{};
         platform::Memory::zeroMemory(&memoryStatusEx, sizeof(memoryStatusEx));

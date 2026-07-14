@@ -19,7 +19,7 @@ namespace gp::math
 /// @param[in] b Second value.
 /// @return The smaller of @p a and @p b.
 template <concepts::IsArithmetic T>
-GP_NODISCARD constexpr T min(const T a, const T b) noexcept
+[[nodiscard]] constexpr T min(const T a, const T b) noexcept
 {
     return a < b ? a : b;
 }
@@ -31,7 +31,7 @@ GP_NODISCARD constexpr T min(const T a, const T b) noexcept
 /// @param[in] c Third value.
 /// @return The smallest of @p a, @p b, and @p c.
 template <concepts::IsArithmetic T>
-GP_NODISCARD constexpr T min(const T a, const T b, const T c) noexcept
+[[nodiscard]] constexpr T min(const T a, const T b, const T c) noexcept
 {
     return min(min(a, b), c);
 }
@@ -42,7 +42,7 @@ GP_NODISCARD constexpr T min(const T a, const T b, const T c) noexcept
 /// @param[in] b Second value.
 /// @return The larger of @p a and @p b.
 template <concepts::IsArithmetic T>
-GP_NODISCARD constexpr T max(const T a, const T b) noexcept
+[[nodiscard]] constexpr T max(const T a, const T b) noexcept
 {
     return a > b ? a : b;
 }
@@ -54,7 +54,7 @@ GP_NODISCARD constexpr T max(const T a, const T b) noexcept
 /// @param[in] c Third value.
 /// @return The largest of @p a, @p b, and @p c.
 template <concepts::IsArithmetic T>
-GP_NODISCARD constexpr T max(const T a, const T b, const T c) noexcept
+[[nodiscard]] constexpr T max(const T a, const T b, const T c) noexcept
 {
     return max(max(a, b), c);
 }
@@ -66,7 +66,7 @@ GP_NODISCARD constexpr T max(const T a, const T b, const T c) noexcept
 /// @param[in] maxValue Upper bound of the clamping range.
 /// @return @p value clamped to [@p minValue, @p maxValue].
 template <concepts::IsArithmetic T>
-GP_NODISCARD constexpr T clamp(const T value, const T minValue, const T maxValue) noexcept
+[[nodiscard]] constexpr T clamp(const T value, const T minValue, const T maxValue) noexcept
 {
     return max(minValue, min(value, maxValue));
 }
@@ -76,7 +76,7 @@ GP_NODISCARD constexpr T clamp(const T value, const T minValue, const T maxValue
 /// @param[in] value The value to take the absolute value of.
 /// @return @p value if non-negative, otherwise -@p value.
 template <concepts::IsArithmetic T>
-requires concepts::IsSigned<T> GP_NODISCARD constexpr T abs(const T value) noexcept
+requires concepts::IsSigned<T> [[nodiscard]] constexpr T abs(const T value) noexcept
 {
     return value < static_cast<T>(0) ? -value : value;
 }
@@ -86,7 +86,7 @@ requires concepts::IsSigned<T> GP_NODISCARD constexpr T abs(const T value) noexc
 /// @param[in] value The value whose sign is determined.
 /// @return T(-1) if @p value < 0, T(0) if @p value == 0, T(1) if @p value > 0.
 template <concepts::IsArithmetic T>
-requires concepts::IsSigned<T> GP_NODISCARD constexpr T sign(const T value) noexcept
+requires concepts::IsSigned<T> [[nodiscard]] constexpr T sign(const T value) noexcept
 {
     if (value > static_cast<T>(0))
     {
@@ -108,7 +108,7 @@ requires concepts::IsSigned<T> GP_NODISCARD constexpr T sign(const T value) noex
 /// @param[in] tolerance Maximum absolute deviation from zero to be considered "nearly zero".
 /// @return @c true if |@p value| <= @p tolerance, @c false otherwise.
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr bool isNearlyZero(const T value, const T tolerance = constants<T>::smallNumber) noexcept
+[[nodiscard]] constexpr bool isNearlyZero(const T value, const T tolerance = constants<T>::smallNumber) noexcept
 {
     return abs(value) <= tolerance;
 }
@@ -120,7 +120,7 @@ GP_NODISCARD constexpr bool isNearlyZero(const T value, const T tolerance = cons
 /// @param[in] tolerance Maximum absolute difference to be considered equal.
 /// @return @c true if |@p a - @p b| <= @p tolerance, @c false otherwise.
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr bool isNearlyEqual(const T a, const T b, const T tolerance = constants<T>::smallNumber) noexcept
+[[nodiscard]] constexpr bool isNearlyEqual(const T a, const T b, const T tolerance = constants<T>::smallNumber) noexcept
 {
     return abs(a - b) <= tolerance;
 }
@@ -133,7 +133,7 @@ GP_NODISCARD constexpr bool isNearlyEqual(const T a, const T b, const T toleranc
 /// @param[in] t Interpolation factor, typically in [0, 1].
 /// @return (1 - @p t) * @p a + @p t * @p b, cast to @c T.
 template <concepts::IsArithmetic T, concepts::IsFloatingPoint U>
-GP_NODISCARD constexpr T lerp(const T a, const T b, const U t) noexcept
+[[nodiscard]] constexpr T lerp(const T a, const T b, const U t) noexcept
 {
     return static_cast<T>((static_cast<U>(1) - t) * a + t * b);
 }
@@ -146,7 +146,7 @@ GP_NODISCARD constexpr T lerp(const T a, const T b, const U t) noexcept
 /// @return Interpolation factor in [0, 1] such that lerp(@p a, @p b, result) == @p value,
 ///         or 0 if @p a and @p b are nearly equal.
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr T inverseLerp(const T a, const T b, const T value) noexcept
+[[nodiscard]] constexpr T inverseLerp(const T a, const T b, const T value) noexcept
 {
     if (isNearlyEqual(a, b))
     {
@@ -164,7 +164,7 @@ GP_NODISCARD constexpr T inverseLerp(const T a, const T b, const T value) noexce
 /// @param[in] value The value to remap.
 /// @return @p value mapped linearly into [@p outMin, @p outMax]; clamped if outside [@p inMin, @p inMax].
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr T remap(const T inMin, const T inMax, const T outMin, const T outMax, const T value) noexcept
+[[nodiscard]] constexpr T remap(const T inMin, const T inMax, const T outMin, const T outMax, const T value) noexcept
 {
     return lerp(outMin, outMax, inverseLerp(inMin, inMax, value));
 }
@@ -177,7 +177,7 @@ GP_NODISCARD constexpr T remap(const T inMin, const T inMax, const T outMin, con
 /// @return 0 if @p x <= @p edge0, 1 if @p x >= @p edge1, smoothly interpolated otherwise.
 /// @note Behavior is undefined (division by zero) when @p edge0 == @p edge1.
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr T smoothstep(const T edge0, const T edge1, const T x) noexcept
+[[nodiscard]] constexpr T smoothstep(const T edge0, const T edge1, const T x) noexcept
 {
     const T t = clamp((x - edge0) / (edge1 - edge0), static_cast<T>(0), static_cast<T>(1));
     return t * t * (static_cast<T>(3) - static_cast<T>(2) * t);
@@ -188,7 +188,7 @@ GP_NODISCARD constexpr T smoothstep(const T edge0, const T edge1, const T x) noe
 /// @param[in] degrees Angle in degrees.
 /// @return Equivalent angle in radians.
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr T degreesToRadians(const T degrees) noexcept
+[[nodiscard]] constexpr T degreesToRadians(const T degrees) noexcept
 {
     return degrees * constants<T>::degToRad;
 }
@@ -198,7 +198,7 @@ GP_NODISCARD constexpr T degreesToRadians(const T degrees) noexcept
 /// @param[in] radians Angle in radians.
 /// @return Equivalent angle in degrees.
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr T radiansToDegrees(const T radians) noexcept
+[[nodiscard]] constexpr T radiansToDegrees(const T radians) noexcept
 {
     return radians * constants<T>::radToDeg;
 }
@@ -208,7 +208,7 @@ GP_NODISCARD constexpr T radiansToDegrees(const T radians) noexcept
 /// @param[in] value The value to test.
 /// @return @c true if @p value is a strictly positive power of two, @c false otherwise.
 template <concepts::IsIntegral T>
-GP_NODISCARD constexpr bool isPowerOfTwo(const T value) noexcept
+[[nodiscard]] constexpr bool isPowerOfTwo(const T value) noexcept
 {
     return value > 0 && (value & (value - 1)) == 0;
 }
@@ -218,7 +218,7 @@ GP_NODISCARD constexpr bool isPowerOfTwo(const T value) noexcept
 /// @param[in] value The value to round up.
 /// @return Smallest power of two >= @p value, or 1 if @p value is 0.
 template <concepts::IsIntegral T>
-GP_NODISCARD constexpr T nextPowerOfTwo(T value) noexcept
+[[nodiscard]] constexpr T nextPowerOfTwo(T value) noexcept
 {
     if (value == 0)
     {
@@ -237,7 +237,7 @@ GP_NODISCARD constexpr T nextPowerOfTwo(T value) noexcept
 /// @param[in] value The value to compute the square root of.
 /// @return The square root of @p value.
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr T sqrt(const T value) noexcept
+[[nodiscard]] constexpr T sqrt(const T value) noexcept
 {
     return std::sqrt(value);
 }
@@ -247,7 +247,7 @@ GP_NODISCARD constexpr T sqrt(const T value) noexcept
 /// @param[in] value The value to compute the inverse square root of.
 /// @return The reciprocal of the square root of @p value.
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr T inverseSqrt(const T value) noexcept
+[[nodiscard]] constexpr T inverseSqrt(const T value) noexcept
 {
     return static_cast<T>(1) / sqrt(value);
 }
@@ -258,7 +258,7 @@ GP_NODISCARD constexpr T inverseSqrt(const T value) noexcept
 /// @return The base 2 logarithm of @p value, rounded down to the nearest integer.
 /// @note 0 if @p value is 0.
 template <concepts::IsUnsignedIntegral T>
-GP_NODISCARD constexpr inline T floorLog2(T value) noexcept
+[[nodiscard]] constexpr inline T floorLog2(T value) noexcept
 {
     if (value == 0)
     {
@@ -272,7 +272,7 @@ GP_NODISCARD constexpr inline T floorLog2(T value) noexcept
 /// @param[in] value The value to compute the ceiling log2 for.
 /// @return The ceiling base 2 logarithm. Returns 0 if @p value is 0 or 1.
 template <concepts::IsUnsignedIntegral T>
-GP_NODISCARD constexpr inline T ceilLog2(T value) noexcept
+[[nodiscard]] constexpr inline T ceilLog2(T value) noexcept
 {
     if (value <= 1)
     {
@@ -286,7 +286,7 @@ GP_NODISCARD constexpr inline T ceilLog2(T value) noexcept
 /// @param[in] value The value to count leading zeros for.
 /// @return The number of leading zero bits in @p value. Returns the bit width of T if @p value is 0.
 template <concepts::IsUnsignedIntegral T>
-GP_NODISCARD constexpr inline T countLeadingZeros(T value) noexcept
+[[nodiscard]] constexpr inline T countLeadingZeros(T value) noexcept
 {
     return static_cast<T>(std::countl_zero(value));
 }
@@ -296,7 +296,7 @@ GP_NODISCARD constexpr inline T countLeadingZeros(T value) noexcept
 /// @param[in] value The value to round up.
 /// @return The next power of two. Returns 1 if @p value is 0.
 template <concepts::IsUnsignedIntegral T>
-GP_NODISCARD constexpr inline T roundUpToPowerOfTwo(T value) noexcept
+[[nodiscard]] constexpr inline T roundUpToPowerOfTwo(T value) noexcept
 {
     return std::bit_ceil(value);
 }
@@ -306,7 +306,7 @@ GP_NODISCARD constexpr inline T roundUpToPowerOfTwo(T value) noexcept
 /// @param[in] value The value to round down.
 /// @return The nearest power of two below the value. Returns 0 if @p value is 0.
 template <concepts::IsUnsignedIntegral T>
-GP_NODISCARD constexpr inline T roundDownToPowerOfTwo(T value) noexcept
+[[nodiscard]] constexpr inline T roundDownToPowerOfTwo(T value) noexcept
 {
     return std::bit_floor(value);
 }

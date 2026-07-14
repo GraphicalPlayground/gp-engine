@@ -7,7 +7,7 @@
 namespace gp::hal::sdl3
 {
 
-GP_NODISCARD void* Window::getNativeHandle() const noexcept
+[[nodiscard]] void* Window::getNativeHandle() const noexcept
 {
     return static_cast<void*>(m_window);
 }

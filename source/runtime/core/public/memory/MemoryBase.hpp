@@ -19,7 +19,8 @@ static constexpr UInt32 kMinimumAlignment = 8;
 /// @param[in] alignment The alignment boundary. Must be a power of two.
 /// @return The aligned value.
 template <typename T>
-requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T align(T value, UInt64 alignment)
+requires concepts::IsIntegral<T> || concepts::IsPointer<T>
+[[nodiscard]] inline constexpr T align(T value, UInt64 alignment)
 {
     if constexpr (concepts::IsPointer<T>)
     {
@@ -37,7 +38,8 @@ requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T al
 /// @param[in] alignment The alignment boundary. Must be a power of two.
 /// @return The aligned value.
 template <typename T>
-requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T alignDown(T value, UInt64 alignment)
+requires concepts::IsIntegral<T> || concepts::IsPointer<T>
+[[nodiscard]] inline constexpr T alignDown(T value, UInt64 alignment)
 {
     if constexpr (concepts::IsPointer<T>)
     {
@@ -55,7 +57,8 @@ requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T al
 /// @param[in] alignment The alignment boundary. Must be a power of two.
 /// @return true if the value is aligned, false otherwise.
 template <typename T>
-requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr bool isAligned(T value, UInt64 alignment)
+requires concepts::IsIntegral<T> || concepts::IsPointer<T>
+[[nodiscard]] inline constexpr bool isAligned(T value, UInt64 alignment)
 {
     if constexpr (concepts::IsPointer<T>)
     {
@@ -74,7 +77,8 @@ requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr bool
 /// @param[in] alignment The alignment boundary.
 /// @return The aligned value.
 template <typename T>
-requires concepts::IsIntegral<T> || concepts::IsPointer<T> inline constexpr T alignArbitrary(T value, UInt64 alignment)
+requires concepts::IsIntegral<T> || concepts::IsPointer<T>
+[[nodiscard]] inline constexpr T alignArbitrary(T value, UInt64 alignment)
 {
     if constexpr (concepts::IsPointer<T>)
     {

@@ -20,6 +20,6 @@ extern GP_CORE_API Malloc* g_malloc;
 
 /// @brief Retrieves the global memory allocator instance.
 /// @return A pointer to the global memory allocator instance.
-GP_NODISCARD GP_CORE_API Malloc* getGlobalMalloc();
+[[nodiscard]] GP_CORE_API Malloc* getGlobalMalloc();
 
 }   // namespace gp::memory

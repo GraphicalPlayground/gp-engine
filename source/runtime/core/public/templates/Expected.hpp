@@ -69,7 +69,7 @@ public:
     /// @brief Checks equality of two Unexpected wrappers.
     /// @param[in] other Unexpected to compare with.
     /// @return True if both wrapped errors are equal, false otherwise.
-    GP_NODISCARD constexpr bool operator==(const Unexpected& other) const noexcept
+    [[nodiscard]] constexpr bool operator==(const Unexpected& other) const noexcept
         requires concepts::IsEqualityComparable<E>
     {
         return m_error == other.m_error;
@@ -78,7 +78,7 @@ public:
     /// @brief Checks inequality of two Unexpected wrappers.
     /// @param[in] other Unexpected to compare with.
     /// @return True if the wrapped errors differ, false otherwise.
-    GP_NODISCARD constexpr bool operator!=(const Unexpected& other) const noexcept
+    [[nodiscard]] constexpr bool operator!=(const Unexpected& other) const noexcept
         requires concepts::IsEqualityComparable<E>
     {
         return !(*this == other);
@@ -87,21 +87,21 @@ public:
 public:
     /// @brief Accesses the wrapped error (lvalue).
     /// @return Reference to the wrapped error.
-    GP_NODISCARD constexpr E& error() & noexcept
+    [[nodiscard]] constexpr E& error() & noexcept
     {
         return m_error;
     }
 
     /// @brief Accesses the wrapped error (const lvalue).
     /// @return Const reference to the wrapped error.
-    GP_NODISCARD constexpr const E& error() const& noexcept
+    [[nodiscard]] constexpr const E& error() const& noexcept
     {
         return m_error;
     }
 
     /// @brief Accesses the wrapped error (rvalue).
     /// @return Rvalue reference to the wrapped error.
-    GP_NODISCARD constexpr E&& error() && noexcept
+    [[nodiscard]] constexpr E&& error() && noexcept
     {
         return std::move(m_error);
     }
@@ -117,8 +117,8 @@ Unexpected(E) -> Unexpected<std::decay_t<E>>;
 /// @param[in] error Error value to wrap.
 /// @return Unexpected<decay_t<E>> holding the provided error.
 template <typename E>
-GP_NODISCARD constexpr Unexpected<std::decay_t<E>>
-    makeUnexpected(E&& error) noexcept(noexcept(Unexpected<std::decay_t<E>>(std::forward<E>(error))))
+[[nodiscard]] constexpr Unexpected<std::decay_t<E>> makeUnexpected(E&& error
+) noexcept(noexcept(Unexpected<std::decay_t<E>>(std::forward<E>(error))))
 {
     return Unexpected<std::decay_t<E>>(std::forward<E>(error));
 }
@@ -131,7 +131,7 @@ GP_NODISCARD constexpr Unexpected<std::decay_t<E>>
 /// inflate binary size, produce non-deterministic frame times on the throw path (stack
 /// unwinding), and make control flow hard to reason about at a glance. Expected<T, E> solves
 /// the same problem as a plain value: errors become first-class citizens in the type system,
-/// GP_NODISCARD forces the caller to acknowledge the result, and the generated machine code
+/// [[nodiscard]] forces the caller to acknowledge the result, and the generated machine code
 /// reduces to a flag check and a branch, no runtime magic, no hidden vtable dispatch.
 /// @note Railway-Oriented Programming: picture a railway with two parallel tracks, the
 /// "value track" (success) and the "error track" (failure). The four monadic operations let
@@ -162,7 +162,7 @@ private:
     static constexpr std::size_t kStorageSize = sizeof(T) > sizeof(E) ? sizeof(T) : sizeof(E);
     static constexpr std::size_t kStorageAlign = alignof(T) > alignof(E) ? alignof(T) : alignof(E);
 
-    GP_ALIGN(kStorageAlign) Byte m_storage[kStorageSize];
+    alignas(kStorageAlign) Byte m_storage[kStorageSize];
     bool m_hasValue = false;
 
 public:
@@ -240,8 +240,7 @@ public:
 
     /// @brief Move-constructs from another Expected.
     /// @param[in] other Expected to move from.
-    constexpr Expected(
-        Expected&& other
+    constexpr Expected(Expected&& other
     ) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
         : m_hasValue(other.m_hasValue)
     {
@@ -300,10 +299,8 @@ public:
     /// @brief Move-assigns from another Expected.
     /// @param[in] other Expected to move from.
     /// @return Reference to this Expected.
-    Expected& operator=(Expected&& other) noexcept(
-        std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E> &&
-        std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_assignable_v<E>
-    )
+    Expected& operator=(Expected&& other
+    ) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E> && std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_assignable_v<E>)
     {
         if (this == &other)
         {
@@ -398,7 +395,7 @@ public:
     /// the identity.
     /// @param[in] other Expected to compare with.
     /// @return True if both are on the same track with equal contents, false otherwise.
-    GP_NODISCARD bool operator==(const Expected& other) const noexcept
+    [[nodiscard]] bool operator==(const Expected& other) const noexcept
         requires concepts::IsEqualityComparable<T> && concepts::IsEqualityComparable<E>
     {
         if (m_hasValue != other.m_hasValue)
@@ -411,7 +408,7 @@ public:
     /// @brief Checks inequality between two Expected instances.
     /// @param[in] other Expected to compare with.
     /// @return True if the instances differ, false otherwise.
-    GP_NODISCARD bool operator!=(const Expected& other) const noexcept
+    [[nodiscard]] bool operator!=(const Expected& other) const noexcept
         requires concepts::IsEqualityComparable<T> && concepts::IsEqualityComparable<E>
     {
         return !(*this == other);
@@ -420,7 +417,7 @@ public:
     /// @brief Checks if this Expected holds a value equal to @p inValue.
     /// @param[in] inValue Value to compare against.
     /// @return True if in value state and the stored value equals @p inValue, false otherwise.
-    GP_NODISCARD bool operator==(const T& inValue) const noexcept requires concepts::IsEqualityComparable<T>
+    [[nodiscard]] bool operator==(const T& inValue) const noexcept requires concepts::IsEqualityComparable<T>
     {
         return m_hasValue && *valuePtr() == inValue;
     }
@@ -428,7 +425,7 @@ public:
     /// @brief Checks if this Expected holds the error contained in @p unexpected.
     /// @param[in] unexpected Unexpected to compare against.
     /// @return True if in error state and the stored error equals the wrapped error, false otherwise.
-    GP_NODISCARD bool operator==(const Unexpected<E>& unexpected) const noexcept
+    [[nodiscard]] bool operator==(const Unexpected<E>& unexpected) const noexcept
         requires concepts::IsEqualityComparable<E>
     {
         return !m_hasValue && *errorPtr() == unexpected.error();
@@ -436,42 +433,42 @@ public:
 
     /// @brief Dereferences to the contained value (lvalue).
     /// @return Reference to the contained value.
-    GP_NODISCARD constexpr T& operator*() & noexcept
+    [[nodiscard]] constexpr T& operator*() & noexcept
     {
         return value();
     }
 
     /// @brief Dereferences to the contained value (const lvalue).
     /// @return Const reference to the contained value.
-    GP_NODISCARD constexpr const T& operator*() const& noexcept
+    [[nodiscard]] constexpr const T& operator*() const& noexcept
     {
         return value();
     }
 
     /// @brief Dereferences to the contained value (rvalue).
     /// @return Rvalue reference to the contained value.
-    GP_NODISCARD constexpr T&& operator*() && noexcept
+    [[nodiscard]] constexpr T&& operator*() && noexcept
     {
         return std::move(value());
     }
 
     /// @brief Accesses members of the contained value.
     /// @return Pointer to the contained value.
-    GP_NODISCARD constexpr T* operator->() noexcept
+    [[nodiscard]] constexpr T* operator->() noexcept
     {
         return &value();
     }
 
     /// @brief Accesses members of the contained value (const).
     /// @return Const pointer to the contained value.
-    GP_NODISCARD constexpr const T* operator->() const noexcept
+    [[nodiscard]] constexpr const T* operator->() const noexcept
     {
         return &value();
     }
 
     /// @brief Converts to bool: true if in the success (value) state.
     /// @return True if holding a value, false if holding an error.
-    GP_NODISCARD constexpr explicit operator bool() const noexcept
+    [[nodiscard]] constexpr explicit operator bool() const noexcept
     {
         return m_hasValue;
     }
@@ -479,7 +476,7 @@ public:
 public:
     /// @brief Returns true if the Expected holds a value (success state).
     /// @return True if in value state, false otherwise.
-    GP_NODISCARD constexpr bool hasValue() const noexcept
+    [[nodiscard]] constexpr bool hasValue() const noexcept
     {
         return m_hasValue;
     }
@@ -488,7 +485,7 @@ public:
     /// @note We assert rather than throw to honour the engine's "no exceptions" contract.
     /// In a debug build GP_ASSERT catches misuse loudly; in release it is a zero-cost no-op.
     /// @return Reference to the contained value.
-    GP_NODISCARD constexpr T& value() & noexcept
+    [[nodiscard]] constexpr T& value() & noexcept
     {
         GP_ASSERT(m_hasValue);
         return *valuePtr();
@@ -496,7 +493,7 @@ public:
 
     /// @brief Accesses the contained value (const lvalue), asserting if in error state.
     /// @return Const reference to the contained value.
-    GP_NODISCARD constexpr const T& value() const& noexcept
+    [[nodiscard]] constexpr const T& value() const& noexcept
     {
         GP_ASSERT(m_hasValue);
         return *valuePtr();
@@ -504,7 +501,7 @@ public:
 
     /// @brief Accesses the contained value (rvalue), asserting if in error state.
     /// @return Rvalue reference to the contained value.
-    GP_NODISCARD constexpr T&& value() && noexcept
+    [[nodiscard]] constexpr T&& value() && noexcept
     {
         GP_ASSERT(m_hasValue);
         return std::move(*valuePtr());
@@ -512,7 +509,7 @@ public:
 
     /// @brief Accesses the contained error (lvalue), asserting if in value state.
     /// @return Reference to the contained error.
-    GP_NODISCARD constexpr E& error() & noexcept
+    [[nodiscard]] constexpr E& error() & noexcept
     {
         GP_ASSERT(!m_hasValue);
         return *errorPtr();
@@ -520,7 +517,7 @@ public:
 
     /// @brief Accesses the contained error (const lvalue), asserting if in value state.
     /// @return Const reference to the contained error.
-    GP_NODISCARD constexpr const E& error() const& noexcept
+    [[nodiscard]] constexpr const E& error() const& noexcept
     {
         GP_ASSERT(!m_hasValue);
         return *errorPtr();
@@ -528,7 +525,7 @@ public:
 
     /// @brief Accesses the contained error (rvalue), asserting if in value state.
     /// @return Rvalue reference to the contained error.
-    GP_NODISCARD constexpr E&& error() && noexcept
+    [[nodiscard]] constexpr E&& error() && noexcept
     {
         GP_ASSERT(!m_hasValue);
         return std::move(*errorPtr());
@@ -537,7 +534,7 @@ public:
     /// @brief Returns the contained value if in value state, otherwise returns @p defaultValue.
     /// @param[in] defaultValue Fallback value returned when in error state.
     /// @return The stored value or @p defaultValue.
-    GP_NODISCARD constexpr T valueOr(T&& defaultValue) const& noexcept
+    [[nodiscard]] constexpr T valueOr(T&& defaultValue) const& noexcept
     {
         return m_hasValue ? *valuePtr() : std::move(defaultValue);
     }
@@ -545,7 +542,7 @@ public:
     /// @brief Returns the contained value if in value state, otherwise returns @p defaultValue (rvalue overload).
     /// @param[in] defaultValue Fallback value returned when in error state.
     /// @return The stored value or @p defaultValue.
-    GP_NODISCARD constexpr T valueOr(T&& defaultValue) && noexcept
+    [[nodiscard]] constexpr T valueOr(T&& defaultValue) && noexcept
     {
         return m_hasValue ? std::move(*valuePtr()) : std::move(defaultValue);
     }
@@ -553,7 +550,7 @@ public:
     /// @brief Returns the contained error if in error state, otherwise returns @p defaultError.
     /// @param[in] defaultError Fallback error returned when in value state.
     /// @return The stored error or @p defaultError.
-    GP_NODISCARD constexpr E errorOr(E&& defaultError) const& noexcept
+    [[nodiscard]] constexpr E errorOr(E&& defaultError) const& noexcept
     {
         return !m_hasValue ? *errorPtr() : std::move(defaultError);
     }
@@ -561,7 +558,7 @@ public:
     /// @brief Returns the contained error if in error state, otherwise returns @p defaultError (rvalue overload).
     /// @param[in] defaultError Fallback error returned when in value state.
     /// @return The stored error or @p defaultError.
-    GP_NODISCARD constexpr E errorOr(E&& defaultError) && noexcept
+    [[nodiscard]] constexpr E errorOr(E&& defaultError) && noexcept
     {
         return !m_hasValue ? std::move(*errorPtr()) : std::move(defaultError);
     }
@@ -599,8 +596,7 @@ public:
     /// constructs from the temporary. Three moves, zero heap allocations. On same-track swaps
     /// we delegate to std::swap which is free to use optimised intrinsics for trivial types.
     /// @param[in] other Expected to swap with.
-    void swap(
-        Expected& other
+    void swap(Expected& other
     ) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
     {
         if (m_hasValue && other.m_hasValue)
@@ -644,7 +640,7 @@ public:
     /// @param[in] f Continuation invoked with the stored value.
     /// @return The result of @p f, or the existing error forwarded unchanged.
     template <typename F>
-    requires concepts::IsInvocable<F, T&> GP_NODISCARD auto andThen(F&& f) &
+    requires concepts::IsInvocable<F, T&> [[nodiscard]] auto andThen(F&& f) &
     {
         using ResultType = std::invoke_result_t<F, T&>;
         if (m_hasValue)
@@ -659,7 +655,7 @@ public:
     /// @param[in] f Continuation invoked with the stored value.
     /// @return The result of @p f, or the existing error forwarded unchanged.
     template <typename F>
-    requires concepts::IsInvocable<F, const T&> GP_NODISCARD auto andThen(F&& f) const&
+    requires concepts::IsInvocable<F, const T&> [[nodiscard]] auto andThen(F&& f) const&
     {
         using ResultType = std::invoke_result_t<F, const T&>;
         if (m_hasValue)
@@ -674,7 +670,7 @@ public:
     /// @param[in] f Continuation invoked with the stored value.
     /// @return The result of @p f, or the existing error forwarded unchanged.
     template <typename F>
-    requires concepts::IsInvocable<F, T&&> GP_NODISCARD auto andThen(F&& f) &&
+    requires concepts::IsInvocable<F, T&&> [[nodiscard]] auto andThen(F&& f) &&
     {
         using ResultType = std::invoke_result_t<F, T&&>;
         if (m_hasValue)
@@ -696,7 +692,7 @@ public:
     /// @param[in] f Recovery function invoked with the stored error.
     /// @return The result of @p f, or the existing value forwarded unchanged.
     template <typename F>
-    requires concepts::IsInvocable<F, E&> GP_NODISCARD auto orElse(F&& f) &
+    requires concepts::IsInvocable<F, E&> [[nodiscard]] auto orElse(F&& f) &
     {
         using ResultType = std::invoke_result_t<F, E&>;
         if (!m_hasValue)
@@ -711,7 +707,7 @@ public:
     /// @param[in] f Recovery function invoked with the stored error.
     /// @return The result of @p f, or the existing value forwarded unchanged.
     template <typename F>
-    requires concepts::IsInvocable<F, const E&> GP_NODISCARD auto orElse(F&& f) const&
+    requires concepts::IsInvocable<F, const E&> [[nodiscard]] auto orElse(F&& f) const&
     {
         using ResultType = std::invoke_result_t<F, const E&>;
         if (!m_hasValue)
@@ -726,7 +722,7 @@ public:
     /// @param[in] f Recovery function invoked with the stored error.
     /// @return The result of @p f, or the existing value forwarded unchanged.
     template <typename F>
-    requires concepts::IsInvocable<F, E&&> GP_NODISCARD auto orElse(F&& f) &&
+    requires concepts::IsInvocable<F, E&&> [[nodiscard]] auto orElse(F&& f) &&
     {
         using ResultType = std::invoke_result_t<F, E&&>;
         if (!m_hasValue)
@@ -748,7 +744,7 @@ public:
     /// @param[in] f Transformation applied to the stored value.
     /// @return Expected<U, E> holding the transformed value, or the existing error.
     template <typename F>
-    requires concepts::IsInvocable<F, T&> GP_NODISCARD auto transform(F&& f) &
+    requires concepts::IsInvocable<F, T&> [[nodiscard]] auto transform(F&& f) &
     {
         using U = std::invoke_result_t<F, T&>;
         using ResultType = Expected<U, E>;
@@ -764,7 +760,7 @@ public:
     /// @param[in] f Transformation applied to the stored value.
     /// @return Expected<U, E> holding the transformed value, or the existing error.
     template <typename F>
-    requires concepts::IsInvocable<F, const T&> GP_NODISCARD auto transform(F&& f) const&
+    requires concepts::IsInvocable<F, const T&> [[nodiscard]] auto transform(F&& f) const&
     {
         using U = std::invoke_result_t<F, const T&>;
         using ResultType = Expected<U, E>;
@@ -780,7 +776,7 @@ public:
     /// @param[in] f Transformation applied to the stored value.
     /// @return Expected<U, E> holding the transformed value, or the existing error.
     template <typename F>
-    requires concepts::IsInvocable<F, T&&> GP_NODISCARD auto transform(F&& f) &&
+    requires concepts::IsInvocable<F, T&&> [[nodiscard]] auto transform(F&& f) &&
     {
         using U = std::invoke_result_t<F, T&&>;
         using ResultType = Expected<U, E>;
@@ -803,7 +799,7 @@ public:
     /// @param[in] f Transformation applied to the stored error.
     /// @return Expected<T, G> holding the transformed error, or the existing value.
     template <typename F>
-    requires concepts::IsInvocable<F, E&> GP_NODISCARD auto transformError(F&& f) &
+    requires concepts::IsInvocable<F, E&> [[nodiscard]] auto transformError(F&& f) &
     {
         using G = std::invoke_result_t<F, E&>;
         using ResultType = Expected<T, G>;
@@ -819,7 +815,7 @@ public:
     /// @param[in] f Transformation applied to the stored error.
     /// @return Expected<T, G> holding the transformed error, or the existing value.
     template <typename F>
-    requires concepts::IsInvocable<F, const E&> GP_NODISCARD auto transformError(F&& f) const&
+    requires concepts::IsInvocable<F, const E&> [[nodiscard]] auto transformError(F&& f) const&
     {
         using G = std::invoke_result_t<F, const E&>;
         using ResultType = Expected<T, G>;
@@ -835,7 +831,7 @@ public:
     /// @param[in] f Transformation applied to the stored error.
     /// @return Expected<T, G> holding the transformed error, or the existing value.
     template <typename F>
-    requires concepts::IsInvocable<F, E&&> GP_NODISCARD auto transformError(F&& f) &&
+    requires concepts::IsInvocable<F, E&&> [[nodiscard]] auto transformError(F&& f) &&
     {
         using G = std::invoke_result_t<F, E&&>;
         using ResultType = Expected<T, G>;
@@ -847,22 +843,22 @@ public:
     }
 
 private:
-    GP_NODISCARD T* valuePtr() noexcept
+    [[nodiscard]] T* valuePtr() noexcept
     {
         return reinterpret_cast<T*>(&m_storage);
     }
 
-    GP_NODISCARD const T* valuePtr() const noexcept
+    [[nodiscard]] const T* valuePtr() const noexcept
     {
         return reinterpret_cast<const T*>(&m_storage);
     }
 
-    GP_NODISCARD E* errorPtr() noexcept
+    [[nodiscard]] E* errorPtr() noexcept
     {
         return reinterpret_cast<E*>(&m_storage);
     }
 
-    GP_NODISCARD const E* errorPtr() const noexcept
+    [[nodiscard]] const E* errorPtr() const noexcept
     {
         return reinterpret_cast<const E*>(&m_storage);
     }
@@ -903,7 +899,7 @@ private:
 /// @return Expected<T, E> in the success state.
 template <typename T, typename E, typename... Args>
 requires concepts::IsConstructibleWith<T, Args...>
-GP_NODISCARD constexpr Expected<T, E> makeExpected(Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...)))
+[[nodiscard]] constexpr Expected<T, E> makeExpected(Args&&... args) noexcept(noexcept(T(std::forward<Args>(args)...)))
 {
     return Expected<T, E>(T(std::forward<Args>(args)...));
 }

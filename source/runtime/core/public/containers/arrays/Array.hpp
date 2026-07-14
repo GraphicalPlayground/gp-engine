@@ -45,19 +45,19 @@ public:
 
 private:
     // clang-format off
-    GP_ALIGN(Alignment) ValueType m_data[N > 0 ? N : 1]{};   // Ensure at least one element for zero-sized arrays
+    alignas(Alignment) ValueType m_data[N > 0 ? N : 1]{};   // Ensure at least one element for zero-sized arrays
     // clang-format on
 
 public:
     /// @brief Default constructor initializes all elements to their default value.
-    GP_NODISCARD constexpr Array() noexcept = default;
+    [[nodiscard]] constexpr Array() noexcept = default;
 
     /// @brief Copy constructor and copy assignment operator.
-    GP_NODISCARD constexpr Array(const Array&) noexcept = default;
+    [[nodiscard]] constexpr Array(const Array&) noexcept = default;
     constexpr Array& operator=(const Array&) noexcept = default;
 
     /// @brief Move constructor and move assignment operator.
-    GP_NODISCARD constexpr Array(Array&&) noexcept = default;
+    [[nodiscard]] constexpr Array(Array&&) noexcept = default;
     constexpr Array& operator=(Array&&) noexcept = default;
 
     /// @brief Constructs an Array with the specified initializer list.
@@ -84,7 +84,7 @@ public:
     /// indices results in undefined behavior.
     /// @param[in] index The index of the element to access.
     /// @return A reference to the element at the specified index.
-    GP_NODISCARD constexpr Reference operator[](SizeType index) noexcept
+    [[nodiscard]] constexpr Reference operator[](SizeType index) noexcept
     {
         GP_ASSERT(index < N, "Array index out of bounds");
         return m_data[index];
@@ -95,7 +95,7 @@ public:
     /// indices results in undefined behavior.
     /// @param[in] index The index of the element to access.
     /// @return A const reference to the element at the specified index.
-    GP_NODISCARD constexpr ConstReference operator[](SizeType index) const noexcept
+    [[nodiscard]] constexpr ConstReference operator[](SizeType index) const noexcept
     {
         GP_ASSERT(index < N, "Array index out of bounds");
         return m_data[index];
@@ -113,7 +113,7 @@ public:
     /// indices results in undefined behavior.
     /// @param[in] index The index of the element to access.
     /// @return A reference to the element at the specified index.
-    GP_NODISCARD constexpr Reference at(SizeType index) noexcept
+    [[nodiscard]] constexpr Reference at(SizeType index) noexcept
     {
         GP_ASSERT(index < N, "Array index out of bounds");
         return m_data[index];
@@ -124,7 +124,7 @@ public:
     /// indices results in undefined behavior.
     /// @param[in] index The index of the element to access.
     /// @return A const reference to the element at the specified index.
-    GP_NODISCARD constexpr ConstReference at(SizeType index) const noexcept
+    [[nodiscard]] constexpr ConstReference at(SizeType index) const noexcept
     {
         GP_ASSERT(index < N, "Array index out of bounds");
         return m_data[index];
@@ -134,7 +134,7 @@ public:
     /// @warning Boundary checks are performed in debug builds, but not in release builds. Accessing the first element
     ///          of an empty array results in undefined behavior.
     /// @return A reference to the first element in the array.
-    GP_NODISCARD constexpr Reference front() noexcept
+    [[nodiscard]] constexpr Reference front() noexcept
     {
         GP_ASSERT(N > 0, "Array is empty");
         return m_data[0];
@@ -144,7 +144,7 @@ public:
     /// @warning Boundary checks are performed in debug builds, but not in release builds. Accessing the first element
     ///          of an empty array results in undefined behavior.
     /// @return A const reference to the first element in the array.
-    GP_NODISCARD constexpr ConstReference front() const noexcept
+    [[nodiscard]] constexpr ConstReference front() const noexcept
     {
         GP_ASSERT(N > 0, "Array is empty");
         return m_data[0];
@@ -154,7 +154,7 @@ public:
     /// @warning Boundary checks are performed in debug builds, but not in release builds. Accessing the last element of
     ///          an empty array results in undefined behavior.
     /// @return A reference to the last element in the array.
-    GP_NODISCARD constexpr Reference back() noexcept
+    [[nodiscard]] constexpr Reference back() noexcept
     {
         GP_ASSERT(N > 0, "Array is empty");
         return m_data[N - 1];
@@ -164,7 +164,7 @@ public:
     /// @warning Boundary checks are performed in debug builds, but not in release builds. Accessing the last element of
     ///          an empty array results in undefined behavior.
     /// @return A const reference to the last element in the array.
-    GP_NODISCARD constexpr ConstReference back() const noexcept
+    [[nodiscard]] constexpr ConstReference back() const noexcept
     {
         GP_ASSERT(N > 0, "Array is empty");
         return m_data[N - 1];
@@ -172,35 +172,35 @@ public:
 
     /// @brief Returns a pointer to the underlying array.
     /// @return A pointer to the underlying array, or `nullptr` if the array is empty.
-    GP_NODISCARD constexpr Pointer data() noexcept
+    [[nodiscard]] constexpr Pointer data() noexcept
     {
         return N > 0 ? m_data : nullptr;
     }
 
     /// @brief Returns a pointer to the underlying array.
     /// @return A pointer to the underlying array, or `nullptr` if the array is empty.
-    GP_NODISCARD constexpr ConstPointer data() const noexcept
+    [[nodiscard]] constexpr ConstPointer data() const noexcept
     {
         return N > 0 ? m_data : nullptr;
     }
 
     /// @brief Returns the number of elements in the array.
     /// @return The number of elements in the array.
-    GP_NODISCARD constexpr SizeType size() const noexcept
+    [[nodiscard]] constexpr SizeType size() const noexcept
     {
         return N;
     }
 
     /// @brief Returns the maximum number of elements that the array can hold.
     /// @return The maximum number of elements that the array can hold.
-    GP_NODISCARD constexpr SizeType capacity() const noexcept
+    [[nodiscard]] constexpr SizeType capacity() const noexcept
     {
         return N;
     }
 
     /// @brief Checks if the array is empty.
     /// @return True if the array is empty, false otherwise.
-    GP_NODISCARD constexpr bool isEmpty() const noexcept
+    [[nodiscard]] constexpr bool isEmpty() const noexcept
     {
         return N == 0;
     }
@@ -220,84 +220,84 @@ public:
 
     /// @brief Returns an iterator to the beginning of the array.
     /// @return An iterator to the beginning of the array.
-    GP_NODISCARD constexpr Iterator begin() noexcept
+    [[nodiscard]] constexpr Iterator begin() noexcept
     {
         return data();
     }
 
     /// @brief Returns a const iterator to the beginning of the array.
     /// @return A const iterator to the beginning of the array.
-    GP_NODISCARD constexpr ConstIterator begin() const noexcept
+    [[nodiscard]] constexpr ConstIterator begin() const noexcept
     {
         return data();
     }
 
     /// @brief Returns an iterator to the end of the array.
     /// @return An iterator to the end of the array.
-    GP_NODISCARD constexpr Iterator end() noexcept
+    [[nodiscard]] constexpr Iterator end() noexcept
     {
         return data() + N;
     }
 
     /// @brief Returns a const iterator to the end of the array.
     /// @return A const iterator to the end of the array.
-    GP_NODISCARD constexpr ConstIterator end() const noexcept
+    [[nodiscard]] constexpr ConstIterator end() const noexcept
     {
         return data() + N;
     }
 
     /// @brief Returns a reverse iterator to the beginning of the array.
     /// @return A reverse iterator to the beginning of the array.
-    GP_NODISCARD constexpr ReverseIterator rbegin() noexcept
+    [[nodiscard]] constexpr ReverseIterator rbegin() noexcept
     {
         return ReverseIterator(end());
     }
 
     /// @brief Returns a const reverse iterator to the beginning of the array.
     /// @return A const reverse iterator to the beginning of the array.
-    GP_NODISCARD constexpr ConstReverseIterator rbegin() const noexcept
+    [[nodiscard]] constexpr ConstReverseIterator rbegin() const noexcept
     {
         return ConstReverseIterator(end());
     }
 
     /// @brief Returns a reverse iterator to the end of the array.
     /// @return A reverse iterator to the end of the array.
-    GP_NODISCARD constexpr ReverseIterator rend() noexcept
+    [[nodiscard]] constexpr ReverseIterator rend() noexcept
     {
         return ReverseIterator(begin());
     }
 
     /// @brief Returns a const reverse iterator to the end of the array.
     /// @return A const reverse iterator to the end of the array.
-    GP_NODISCARD constexpr ConstReverseIterator rend() const noexcept
+    [[nodiscard]] constexpr ConstReverseIterator rend() const noexcept
     {
         return ConstReverseIterator(begin());
     }
 
     /// @brief Returns a const iterator to the beginning of the array.
     /// @return A const iterator to the beginning of the array.
-    GP_NODISCARD constexpr ConstIterator cbegin() const noexcept
+    [[nodiscard]] constexpr ConstIterator cbegin() const noexcept
     {
         return data();
     }
 
     /// @brief Returns a const iterator to the end of the array.
     /// @return A const iterator to the end of the array.
-    GP_NODISCARD constexpr ConstIterator cend() const noexcept
+    [[nodiscard]] constexpr ConstIterator cend() const noexcept
     {
         return data() + N;
     }
 
     /// @brief Returns a const reverse iterator to the beginning of the array.
     /// @return A const reverse iterator to the beginning of the array.
-    GP_NODISCARD constexpr ConstReverseIterator crbegin() const noexcept
+    [[nodiscard]] constexpr ConstReverseIterator crbegin() const noexcept
     {
         return ConstReverseIterator(end());
     }
 
     /// @brief Returns a const reverse iterator to the end of the array.
     /// @return A const reverse iterator to the end of the array.
-    GP_NODISCARD constexpr ConstReverseIterator crend() const noexcept
+    [[nodiscard]] constexpr ConstReverseIterator crend() const noexcept
     {
         return ConstReverseIterator(begin());
     }
@@ -306,7 +306,7 @@ public:
     /// @param[in] value The value to search for.
     /// @return An iterator to the first occurrence of the specified value in the array, or `end()` if the value is not
     ///         found.
-    GP_NODISCARD constexpr Iterator find(const T& value) noexcept
+    [[nodiscard]] constexpr Iterator find(const T& value) noexcept
     {
         return std::ranges::find(m_data, value);
     }
@@ -315,7 +315,7 @@ public:
     /// @param[in] value The value to search for.
     /// @return An iterator to the first occurrence of the specified value in the array, or `end()` if the value is not
     ///         found.
-    GP_NODISCARD constexpr ConstIterator find(const T& value) const noexcept
+    [[nodiscard]] constexpr ConstIterator find(const T& value) const noexcept
     {
         return std::ranges::find(m_data, value);
     }
@@ -323,7 +323,7 @@ public:
     /// @brief Checks if the array contains the specified value.
     /// @param[in] value The value to search for.
     /// @return True if the array contains the specified value, false otherwise.
-    GP_NODISCARD constexpr bool contains(const T& value) const noexcept
+    [[nodiscard]] constexpr bool contains(const T& value) const noexcept
     {
         return find(value) != end();
     }
@@ -331,7 +331,7 @@ public:
     /// @brief Counts the number of occurrences of a value in the array.
     /// @param[in] value The value to count.
     /// @return The number of occurrences of the specified value in the array.
-    GP_NODISCARD constexpr SizeType count(const T& value) const noexcept
+    [[nodiscard]] constexpr SizeType count(const T& value) const noexcept
     {
         return static_cast<SizeType>(std::ranges::count(m_data, value));
     }
@@ -339,7 +339,7 @@ public:
     /// @brief Finds the first index of the specified value in the array.
     /// @param[in] value The value to search for.
     /// @return The first index of the specified value in the array, or `npos` if the value is not found.
-    GP_NODISCARD constexpr SizeType indexOf(const T& value) const noexcept
+    [[nodiscard]] constexpr SizeType indexOf(const T& value) const noexcept
     {
         auto it = std::ranges::find(m_data, value);
         return it != end() ? static_cast<SizeType>(it - begin()) : npos;
@@ -348,7 +348,7 @@ public:
     /// @brief Finds the last index of the specified value in the array.
     /// @param[in] value The value to search for.
     /// @return The last index of the specified value in the array, or `npos` if the value is not found.
-    GP_NODISCARD constexpr SizeType lastIndexOf(const T& value) const noexcept
+    [[nodiscard]] constexpr SizeType lastIndexOf(const T& value) const noexcept
     {
         auto it = std::ranges::find(std::views::reverse(m_data), value);
         return it != std::views::reverse(m_data).end() ? static_cast<SizeType>(it.base() - begin() - 1) : npos;
@@ -358,7 +358,7 @@ public:
     /// @param[in] value The value to compare against.
     /// @return The first index of an element that does not match the specified value, or `npos` if no such element is
     ///         found.
-    GP_NODISCARD constexpr SizeType indexNotOf(const T& value) const noexcept
+    [[nodiscard]] constexpr SizeType indexNotOf(const T& value) const noexcept
     {
         auto it = std::ranges::find_if_not(
             m_data,
@@ -374,7 +374,7 @@ public:
     /// @param[in] value The value to compare against.
     /// @return The last index of an element that does not match the specified value, or `npos` if no such element is
     ///         found.
-    GP_NODISCARD constexpr SizeType lastIndexNotOf(const T& value) const noexcept
+    [[nodiscard]] constexpr SizeType lastIndexNotOf(const T& value) const noexcept
     {
         auto it = std::ranges::find_if_not(
             std::views::reverse(m_data),

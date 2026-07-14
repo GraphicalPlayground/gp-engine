@@ -51,11 +51,11 @@ private:
 
 public:
     /// @brief Default constructs an empty string view.
-    GP_NODISCARD constexpr BasicStringView() noexcept = default;
+    [[nodiscard]] constexpr BasicStringView() noexcept = default;
 
     /// @brief Constructs a view from a null-terminated C string.
     /// @param[in] str Pointer to a null-terminated character array, or nullptr.
-    GP_NODISCARD constexpr BasicStringView(const CharT* str) noexcept
+    [[nodiscard]] constexpr BasicStringView(const CharT* str) noexcept
         : m_data(str)
         , m_size(str ? TraitsType::length(str) : 0)
     {}
@@ -63,7 +63,7 @@ public:
     /// @brief Constructs a view from a pointer and explicit length.
     /// @param[in] str Pointer to the character array.
     /// @param[in] count Number of characters in the view.
-    GP_NODISCARD constexpr BasicStringView(const CharT* str, SizeType count) noexcept
+    [[nodiscard]] constexpr BasicStringView(const CharT* str, SizeType count) noexcept
         : m_data(str)
         , m_size(count)
     {}
@@ -72,20 +72,20 @@ public:
     /// @tparam Allocator The string's allocator type.
     /// @param[in] str The string to view.
     // template <typename Allocator = gp::memory::PolymorphicAllocator<CharT>>
-    // GP_NODISCARD constexpr explicit BasicStringView(const gp::BasicString<CharT, Traits, Allocator>& str) noexcept
+    // [[nodiscard]] constexpr explicit BasicStringView(const gp::BasicString<CharT, Traits, Allocator>& str) noexcept
     //     : m_data(str.data())
     //     , m_size(str.size())
     // {}
 
     /// @brief Copy constructor and copy assignment operator.
-    GP_NODISCARD constexpr BasicStringView(const BasicStringView&) noexcept = default;
+    [[nodiscard]] constexpr BasicStringView(const BasicStringView&) noexcept = default;
     constexpr BasicStringView& operator=(const BasicStringView&) noexcept = default;
 
 public:
     /// @brief Unchecked element access.
     /// @param[in] pos Index of the character.
     /// @return Reference to the character at pos.
-    GP_NODISCARD constexpr ConstReference operator[](SizeType pos) const noexcept
+    [[nodiscard]] constexpr ConstReference operator[](SizeType pos) const noexcept
     {
         return m_data[pos];
     }
@@ -93,7 +93,7 @@ public:
     /// @brief Equality comparison.
     /// @param[in] other The view to compare against.
     /// @return True if the views are equal, false otherwise.
-    GP_NODISCARD constexpr bool operator==(const BasicStringView& other) const noexcept
+    [[nodiscard]] constexpr bool operator==(const BasicStringView& other) const noexcept
     {
         return m_size == other.m_size && TraitsType::compare(m_data, other.m_data, m_size) == 0;
     }
@@ -101,7 +101,7 @@ public:
     /// @brief Inequality comparison.
     /// @param[in] other The view to compare against.
     /// @return True if the views are not equal, false otherwise.
-    GP_NODISCARD constexpr bool operator!=(const BasicStringView& other) const noexcept
+    [[nodiscard]] constexpr bool operator!=(const BasicStringView& other) const noexcept
     {
         return !(*this == other);
     }
@@ -109,7 +109,7 @@ public:
     /// @brief Three-way comparison.
     /// @param[in] other The view to compare against.
     /// @return Strong ordering indicating the relative order of the views.
-    GP_NODISCARD constexpr auto operator<=>(const BasicStringView& other) const noexcept
+    [[nodiscard]] constexpr auto operator<=>(const BasicStringView& other) const noexcept
     {
         const SizeType len = m_size < other.m_size ? m_size : other.m_size;
         int cmp = TraitsType::compare(m_data, other.m_data, len);
@@ -123,35 +123,35 @@ public:
 public:
     /// @brief Returns a pointer to the underlying character array.
     /// @return Pointer to the first character in the view, or nullptr if empty.
-    GP_NODISCARD constexpr ConstPointer data() const noexcept
+    [[nodiscard]] constexpr ConstPointer data() const noexcept
     {
         return m_data;
     }
 
     /// @brief Returns the number of characters in the view.
     /// @return The length of the view (not counting any null terminator).
-    GP_NODISCARD constexpr SizeType size() const noexcept
+    [[nodiscard]] constexpr SizeType size() const noexcept
     {
         return m_size;
     }
 
     /// @brief Returns the number of characters in the view (alias for size).
     /// @return The length of the view (not counting any null terminator).
-    GP_NODISCARD constexpr SizeType length() const noexcept
+    [[nodiscard]] constexpr SizeType length() const noexcept
     {
         return m_size;
     }
 
     /// @brief Returns the maximum number of characters the view can refer to.
     /// @return The maximum size of the view, typically limited by SizeType.
-    GP_NODISCARD constexpr SizeType maxSize() const noexcept
+    [[nodiscard]] constexpr SizeType maxSize() const noexcept
     {
         return npos / sizeof(CharT);
     }
 
     /// @brief Checks if the view is empty.
     /// @return True if the view is empty, false otherwise.
-    GP_NODISCARD constexpr bool isEmpty() const noexcept
+    [[nodiscard]] constexpr bool isEmpty() const noexcept
     {
         return m_size == 0;
     }
@@ -159,7 +159,7 @@ public:
     /// @brief Bounds-checked element access.
     /// @param[in] pos Index of the character.
     /// @return Reference to the character at pos.
-    GP_NODISCARD constexpr ConstReference at(SizeType pos) const
+    [[nodiscard]] constexpr ConstReference at(SizeType pos) const
     {
         GP_ASSERT(pos < m_size);
         return m_data[pos];
@@ -167,70 +167,70 @@ public:
 
     /// @brief Returns a reference to the first character.
     /// @return Reference to the first character in the view.
-    GP_NODISCARD constexpr ConstReference front() const noexcept
+    [[nodiscard]] constexpr ConstReference front() const noexcept
     {
         return m_data[0];
     }
 
     /// @brief Returns a reference to the last character.
     /// @return Reference to the last character in the view.
-    GP_NODISCARD constexpr ConstReference back() const noexcept
+    [[nodiscard]] constexpr ConstReference back() const noexcept
     {
         return m_data[m_size - 1];
     }
 
     /// @brief Returns an iterator to the first character.
     /// @return Iterator pointing to the first character in the view.
-    GP_NODISCARD constexpr Iterator begin() const noexcept
+    [[nodiscard]] constexpr Iterator begin() const noexcept
     {
         return m_data;
     }
 
     /// @brief Returns an iterator to one past the last character.
     /// @return Iterator pointing to one past the last character in the view.
-    GP_NODISCARD constexpr Iterator end() const noexcept
+    [[nodiscard]] constexpr Iterator end() const noexcept
     {
         return m_data + m_size;
     }
 
     /// @brief Returns a const iterator to the first character.
     /// @return Const iterator pointing to the first character in the view.
-    GP_NODISCARD constexpr ConstIterator cbegin() const noexcept
+    [[nodiscard]] constexpr ConstIterator cbegin() const noexcept
     {
         return m_data;
     }
 
     /// @brief Returns a const iterator to one past the last character.
     /// @return Const iterator pointing to one past the last character in the view.
-    GP_NODISCARD constexpr ConstIterator cend() const noexcept
+    [[nodiscard]] constexpr ConstIterator cend() const noexcept
     {
         return m_data + m_size;
     }
 
     /// @brief Returns a reverse iterator to the last character.
     /// @return Reverse iterator pointing to the last character in the view.
-    GP_NODISCARD constexpr ReverseIterator rbegin() const noexcept
+    [[nodiscard]] constexpr ReverseIterator rbegin() const noexcept
     {
         return ReverseIterator(end());
     }
 
     /// @brief Returns a reverse iterator to one before the first character.
     /// @return Reverse iterator pointing to one before the first character in the view.
-    GP_NODISCARD constexpr ReverseIterator rend() const noexcept
+    [[nodiscard]] constexpr ReverseIterator rend() const noexcept
     {
         return ReverseIterator(begin());
     }
 
     /// @brief Returns a const reverse iterator to the last character.
     /// @return Const reverse iterator pointing to the last character in the view.
-    GP_NODISCARD constexpr ConstReverseIterator crbegin() const noexcept
+    [[nodiscard]] constexpr ConstReverseIterator crbegin() const noexcept
     {
         return ConstReverseIterator(cend());
     }
 
     /// @brief Returns a const reverse iterator to one before the first character.
     /// @return Const reverse iterator pointing to one before the first character in the view.
-    GP_NODISCARD constexpr ConstReverseIterator crend() const noexcept
+    [[nodiscard]] constexpr ConstReverseIterator crend() const noexcept
     {
         return ConstReverseIterator(cbegin());
     }
@@ -281,7 +281,7 @@ public:
     /// @param[in] pos Starting position.
     /// @param[in] count Number of characters (clamped to remaining length).
     /// @return A new view over the requested range.
-    GP_NODISCARD constexpr BasicStringView substr(SizeType pos = 0, SizeType count = npos) const
+    [[nodiscard]] constexpr BasicStringView substr(SizeType pos = 0, SizeType count = npos) const
     {
         GP_ASSERT(pos <= m_size);
         return BasicStringView(m_data + pos, gp::math::min(count, m_size - pos));
@@ -290,7 +290,7 @@ public:
     /// @brief Compares this view with another.
     /// @param[in] other The view to compare against.
     /// @return Negative if less, zero if equal, positive if greater.
-    GP_NODISCARD constexpr int compare(BasicStringView other) const noexcept
+    [[nodiscard]] constexpr int compare(BasicStringView other) const noexcept
     {
         const SizeType len = gp::math::min(m_size, other.m_size);
         int result = TraitsType::compare(m_data, other.m_data, len);
@@ -314,7 +314,7 @@ public:
     /// @param[in] count Number of characters in the substring (clamped to remaining).
     /// @param[in] other The view to compare against.
     /// @return Negative if less, zero if equal, positive if greater.
-    GP_NODISCARD constexpr int compare(SizeType pos, SizeType count, BasicStringView other) const
+    [[nodiscard]] constexpr int compare(SizeType pos, SizeType count, BasicStringView other) const
     {
         return substr(pos, count).compare(other);
     }
@@ -326,7 +326,7 @@ public:
     /// @param[in] pos2 Starting position of the substring in the other view.
     /// @param[in] count2 Number of characters in the substring of the other view (clamped to remaining).
     /// @return Negative if less, zero if equal, positive if greater.
-    GP_NODISCARD constexpr int
+    [[nodiscard]] constexpr int
         compare(SizeType pos1, SizeType count1, BasicStringView other, SizeType pos2, SizeType count2) const
     {
         return substr(pos1, count1).compare(other.substr(pos2, count2));
@@ -335,7 +335,7 @@ public:
     /// @brief Compares this view with a null-terminated C string.
     /// @param[in] str The C string to compare against.
     /// @return Negative if less, zero if equal, positive if greater.
-    GP_NODISCARD constexpr int compare(const CharT* str) const
+    [[nodiscard]] constexpr int compare(const CharT* str) const
     {
         return compare(BasicStringView(str));
     }
@@ -345,7 +345,7 @@ public:
     /// @param[in] count Number of characters in the substring (clamped to remaining).
     /// @param[in] str The C string to compare against.
     /// @return Negative if less, zero if equal, positive if greater.
-    GP_NODISCARD constexpr int compare(SizeType pos, SizeType count, const CharT* str) const
+    [[nodiscard]] constexpr int compare(SizeType pos, SizeType count, const CharT* str) const
     {
         return substr(pos, count).compare(BasicStringView(str));
     }
@@ -353,7 +353,7 @@ public:
     /// @brief Checks if the view starts with the given prefix.
     /// @param[in] prefix The prefix to check for.
     /// @return True if the view starts with prefix, false otherwise.
-    GP_NODISCARD constexpr bool startsWith(BasicStringView prefix) const noexcept
+    [[nodiscard]] constexpr bool startsWith(BasicStringView prefix) const noexcept
     {
         return std::ranges::starts_with(*this, prefix);
     }
@@ -361,7 +361,7 @@ public:
     /// @brief Checks if the view starts with the given character.
     /// @param[in] ch The character to check for.
     /// @return True if the view starts with ch, false otherwise.
-    GP_NODISCARD constexpr bool startsWith(CharT ch) const noexcept
+    [[nodiscard]] constexpr bool startsWith(CharT ch) const noexcept
     {
         return !isEmpty() && TraitsType::eq(front(), ch);
     }
@@ -369,7 +369,7 @@ public:
     /// @brief Checks if the view starts with the given C string.
     /// @param[in] str The C string to check for.
     /// @return True if the view starts with str, false otherwise.
-    GP_NODISCARD constexpr bool startsWith(const CharT* str) const
+    [[nodiscard]] constexpr bool startsWith(const CharT* str) const
     {
         return startsWith(BasicStringView(str));
     }
@@ -377,7 +377,7 @@ public:
     /// @brief Checks if the view ends with the given suffix.
     /// @param[in] suffix The suffix to check for.
     /// @return True if the view ends with suffix, false otherwise.
-    GP_NODISCARD constexpr bool endsWith(BasicStringView suffix) const noexcept
+    [[nodiscard]] constexpr bool endsWith(BasicStringView suffix) const noexcept
     {
         return std::ranges::ends_with(*this, suffix);
     }
@@ -385,7 +385,7 @@ public:
     /// @brief Checks if the view ends with the given character.
     /// @param[in] ch The character to check for.
     /// @return True if the view ends with ch, false otherwise.
-    GP_NODISCARD constexpr bool endsWith(CharT ch) const noexcept
+    [[nodiscard]] constexpr bool endsWith(CharT ch) const noexcept
     {
         return !isEmpty() && TraitsType::eq(back(), ch);
     }
@@ -393,7 +393,7 @@ public:
     /// @brief Checks if the view ends with the given C string.
     /// @param[in] str The C string to check for.
     /// @return True if the view ends with str, false otherwise.
-    GP_NODISCARD constexpr bool endsWith(const CharT* str) const
+    [[nodiscard]] constexpr bool endsWith(const CharT* str) const
     {
         return endsWith(BasicStringView(str));
     }
@@ -401,7 +401,7 @@ public:
     /// @brief Checks if the view contains the given substring.
     /// @param[in] sv The substring to check for.
     /// @return True if the view contains sv, false otherwise.
-    GP_NODISCARD constexpr bool contains(BasicStringView sv) const noexcept
+    [[nodiscard]] constexpr bool contains(BasicStringView sv) const noexcept
     {
         return std::ranges::contains_subrange(*this, sv);
     }
@@ -409,7 +409,7 @@ public:
     /// @brief Checks if the view contains the given character.
     /// @param[in] ch The character to check for.
     /// @return True if the view contains ch, false otherwise.
-    GP_NODISCARD constexpr bool contains(CharT ch) const noexcept
+    [[nodiscard]] constexpr bool contains(CharT ch) const noexcept
     {
         return std::ranges::contains(*this, ch);
     }
@@ -417,7 +417,7 @@ public:
     /// @brief Checks if the view contains the given C string.
     /// @param[in] str The C string to check for.
     /// @return True if the view contains str, false otherwise.
-    GP_NODISCARD constexpr bool contains(const CharT* str) const
+    [[nodiscard]] constexpr bool contains(const CharT* str) const
     {
         return contains(BasicStringView(str));
     }
@@ -426,7 +426,7 @@ public:
     /// @param[in] sv The substring to search for.
     /// @param[in] pos Position to start searching from.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType find(BasicStringView sv, SizeType pos = 0) const noexcept
+    [[nodiscard]] constexpr SizeType find(BasicStringView sv, SizeType pos = 0) const noexcept
     {
         if (pos > m_size)
         {
@@ -444,7 +444,7 @@ public:
     /// @param[in] ch The character to search for.
     /// @param[in] pos Position to start searching from.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType find(CharT ch, SizeType pos = 0) const noexcept
+    [[nodiscard]] constexpr SizeType find(CharT ch, SizeType pos = 0) const noexcept
     {
         if (pos >= m_size)
         {
@@ -458,7 +458,7 @@ public:
     /// @param[in] str The C string to search for.
     /// @param[in] pos Position to start searching from.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType find(const CharT* str, SizeType pos = 0) const
+    [[nodiscard]] constexpr SizeType find(const CharT* str, SizeType pos = 0) const
     {
         return find(BasicStringView(str), pos);
     }
@@ -468,7 +468,7 @@ public:
     /// @param[in] pos Position to start searching from.
     /// @param[in] count Number of characters in the buffer.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType find(const CharT* str, SizeType pos, SizeType count) const
+    [[nodiscard]] constexpr SizeType find(const CharT* str, SizeType pos, SizeType count) const
     {
         return find(BasicStringView(str, count), pos);
     }
@@ -477,7 +477,7 @@ public:
     /// @param[in] sv The substring to search for.
     /// @param[in] pos Position to start searching backward from.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType rfind(BasicStringView sv, SizeType pos = npos) const noexcept
+    [[nodiscard]] constexpr SizeType rfind(BasicStringView sv, SizeType pos = npos) const noexcept
     {
         if (sv.isEmpty())
         {
@@ -497,7 +497,7 @@ public:
     /// @param[in] ch The character to search for.
     /// @param[in] pos Position to start searching backward from.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType rfind(CharT ch, SizeType pos = npos) const noexcept
+    [[nodiscard]] constexpr SizeType rfind(CharT ch, SizeType pos = npos) const noexcept
     {
         if (m_size == 0)
         {
@@ -513,7 +513,7 @@ public:
     /// @param[in] str The C string to search for.
     /// @param[in] pos Position to start searching backward from.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType rfind(const CharT* str, SizeType pos = npos) const
+    [[nodiscard]] constexpr SizeType rfind(const CharT* str, SizeType pos = npos) const
     {
         return rfind(BasicStringView(str), pos);
     }
@@ -523,7 +523,7 @@ public:
     /// @param[in] pos Position to start searching backward from.
     /// @param[in] count Number of characters in the buffer.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType rfind(const CharT* str, SizeType pos, SizeType count) const
+    [[nodiscard]] constexpr SizeType rfind(const CharT* str, SizeType pos, SizeType count) const
     {
         return rfind(BasicStringView(str, count), pos);
     }
@@ -532,7 +532,7 @@ public:
     /// @param[in] sv The set of characters to match against.
     /// @param[in] pos Position to start searching from.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findFirstOf(BasicStringView sv, SizeType pos = 0) const noexcept
+    [[nodiscard]] constexpr SizeType findFirstOf(BasicStringView sv, SizeType pos = 0) const noexcept
     {
         if (pos >= m_size || sv.isEmpty())
         {
@@ -546,7 +546,7 @@ public:
     /// @param[in] ch The character to match.
     /// @param[in] pos Position to start searching from.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findFirstOf(CharT ch, SizeType pos = 0) const noexcept
+    [[nodiscard]] constexpr SizeType findFirstOf(CharT ch, SizeType pos = 0) const noexcept
     {
         return find(ch, pos);
     }
@@ -555,7 +555,7 @@ public:
     /// @param[in] str The C string containing characters to match.
     /// @param[in] pos Position to start searching from.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findFirstOf(const CharT* str, SizeType pos = 0) const
+    [[nodiscard]] constexpr SizeType findFirstOf(const CharT* str, SizeType pos = 0) const
     {
         return findFirstOf(BasicStringView(str), pos);
     }
@@ -565,7 +565,7 @@ public:
     /// @param[in] pos Position to start searching from.
     /// @param[in] count Number of characters in the buffer.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findFirstOf(const CharT* str, SizeType pos, SizeType count) const
+    [[nodiscard]] constexpr SizeType findFirstOf(const CharT* str, SizeType pos, SizeType count) const
     {
         return findFirstOf(BasicStringView(str, count), pos);
     }
@@ -574,7 +574,7 @@ public:
     /// @param[in] sv The set of characters to match against.
     /// @param[in] pos Position to start searching backward from.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findLastOf(BasicStringView sv, SizeType pos = npos) const noexcept
+    [[nodiscard]] constexpr SizeType findLastOf(BasicStringView sv, SizeType pos = npos) const noexcept
     {
         if (m_size == 0 || sv.isEmpty())
         {
@@ -590,7 +590,7 @@ public:
     /// @param[in] ch The character to match.
     /// @param[in] pos Position to start searching backward from.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findLastOf(CharT ch, SizeType pos = npos) const noexcept
+    [[nodiscard]] constexpr SizeType findLastOf(CharT ch, SizeType pos = npos) const noexcept
     {
         return rfind(ch, pos);
     }
@@ -599,7 +599,7 @@ public:
     /// @param[in] str The C string containing characters to match.
     /// @param[in] pos Position to start searching backward from.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findLastOf(const CharT* str, SizeType pos = npos) const
+    [[nodiscard]] constexpr SizeType findLastOf(const CharT* str, SizeType pos = npos) const
     {
         return findLastOf(BasicStringView(str), pos);
     }
@@ -609,7 +609,7 @@ public:
     /// @param[in] pos Position to start searching backward from.
     /// @param[in] count Number of characters in the buffer.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findLastOf(const CharT* str, SizeType pos, SizeType count) const
+    [[nodiscard]] constexpr SizeType findLastOf(const CharT* str, SizeType pos, SizeType count) const
     {
         return findLastOf(BasicStringView(str, count), pos);
     }
@@ -618,7 +618,7 @@ public:
     /// @param[in] sv The set of characters to not match against.
     /// @param[in] pos Position to start searching from.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findFirstNotOf(BasicStringView sv, SizeType pos = 0) const noexcept
+    [[nodiscard]] constexpr SizeType findFirstNotOf(BasicStringView sv, SizeType pos = 0) const noexcept
     {
         if (pos >= m_size)
         {
@@ -643,7 +643,7 @@ public:
     /// @param[in] ch The character to not match.
     /// @param[in] pos Position to start searching from.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findFirstNotOf(CharT ch, SizeType pos = 0) const noexcept
+    [[nodiscard]] constexpr SizeType findFirstNotOf(CharT ch, SizeType pos = 0) const noexcept
     {
         if (pos >= m_size)
         {
@@ -664,7 +664,7 @@ public:
     /// @param[in] str The C string containing characters to not match.
     /// @param[in] pos Position to start searching from.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findFirstNotOf(const CharT* str, SizeType pos = 0) const
+    [[nodiscard]] constexpr SizeType findFirstNotOf(const CharT* str, SizeType pos = 0) const
     {
         return findFirstNotOf(BasicStringView(str), pos);
     }
@@ -674,7 +674,7 @@ public:
     /// @param[in] pos Position to start searching from.
     /// @param[in] count Number of characters in the buffer.
     /// @return Index of the first occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findFirstNotOf(const CharT* str, SizeType pos, SizeType count) const
+    [[nodiscard]] constexpr SizeType findFirstNotOf(const CharT* str, SizeType pos, SizeType count) const
     {
         return findFirstNotOf(BasicStringView(str, count), pos);
     }
@@ -683,7 +683,7 @@ public:
     /// @param[in] sv The set of characters to not match against.
     /// @param[in] pos Position to start searching backward from.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findLastNotOf(BasicStringView sv, SizeType pos = npos) const noexcept
+    [[nodiscard]] constexpr SizeType findLastNotOf(BasicStringView sv, SizeType pos = npos) const noexcept
     {
         if (m_size == 0)
         {
@@ -709,7 +709,7 @@ public:
     /// @param[in] ch The character to not match.
     /// @param[in] pos Position to start searching backward from.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findLastNotOf(CharT ch, SizeType pos = npos) const noexcept
+    [[nodiscard]] constexpr SizeType findLastNotOf(CharT ch, SizeType pos = npos) const noexcept
     {
         if (m_size == 0)
         {
@@ -731,7 +731,7 @@ public:
     /// @param[in] str The C string containing characters to not match.
     /// @param[in] pos Position to start searching backward from.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findLastNotOf(const CharT* str, SizeType pos = npos) const
+    [[nodiscard]] constexpr SizeType findLastNotOf(const CharT* str, SizeType pos = npos) const
     {
         return findLastNotOf(BasicStringView(str), pos);
     }
@@ -741,7 +741,7 @@ public:
     /// @param[in] pos Position to start searching backward from.
     /// @param[in] count Number of characters in the buffer.
     /// @return Index of the last occurrence, or npos if not found.
-    GP_NODISCARD constexpr SizeType findLastNotOf(const CharT* str, SizeType pos, SizeType count) const
+    [[nodiscard]] constexpr SizeType findLastNotOf(const CharT* str, SizeType pos, SizeType count) const
     {
         return findLastNotOf(BasicStringView(str, count), pos);
     }

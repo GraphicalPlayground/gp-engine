@@ -17,7 +17,7 @@ Malloc* g_malloc = nullptr;
 
 Malloc* getGlobalMalloc()
 {
-    if (GP_LIKELY(detail::g_malloc != nullptr))
+    if (detail::g_malloc != nullptr) [[likely]]
     {
         return detail::g_malloc;
     }

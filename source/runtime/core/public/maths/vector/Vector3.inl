@@ -15,14 +15,14 @@ namespace gp::math
 
 template <concepts::IsFloatingPoint T>
 template <concepts::IsFloatingPoint U>
-GP_NODISCARD constexpr Vector3<T>::Vector3(const Vector2<T>& vec, const U inZ) noexcept
+[[nodiscard]] constexpr Vector3<T>::Vector3(const Vector2<T>& vec, const U inZ) noexcept
     : x(vec.x)
     , y(vec.y)
     , z(static_cast<T>(inZ))
 {}
 
 template <concepts::IsFloatingPoint T>
-GP_NODISCARD constexpr Vector3<T>::Vector3(const Vector4<T>& vec) noexcept
+[[nodiscard]] constexpr Vector3<T>::Vector3(const Vector4<T>& vec) noexcept
     : x(vec.x)
     , y(vec.y)
     , z(vec.z)

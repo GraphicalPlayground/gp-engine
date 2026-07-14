@@ -22,7 +22,7 @@ public:
     ///        interface, but the caller must know the expected type and semantics of the handle for the specific
     ///        platform. This may return nullptr if no native handle is available.
     /// @return A pointer to the underlying native window handle or object, or nullptr if no native handle is available.
-    GP_NODISCARD virtual void* getNativeHandle() const noexcept override;
+    [[nodiscard]] virtual void* getNativeHandle() const noexcept override;
 };
 
 }   // namespace gp::hal::sdl3

@@ -23,145 +23,145 @@ public:
 public:
     /// @brief Checks if the window is currently open and has not been closed by the user or the application.
     /// @return True if the window is open, false if it has been closed.
-    GP_NODISCARD virtual bool isOpen() const noexcept = 0;
+    [[nodiscard]] virtual bool isOpen() const noexcept = 0;
 
     /// @brief Checks if the window is currently valid and can be interacted with.
     /// @return True if the window is valid, false if it is in an invalid state (e.g., failed to initialize).
-    GP_NODISCARD virtual bool isValid() const noexcept = 0;
+    [[nodiscard]] virtual bool isValid() const noexcept = 0;
 
     /// @brief Checks if the window is currently active (focused and receiving input).
     /// @return True if the window is active, false otherwise.
-    GP_NODISCARD virtual bool isActive() const noexcept = 0;
+    [[nodiscard]] virtual bool isActive() const noexcept = 0;
 
     /// @brief Checks if the window is currently focused (has input focus).
     /// @return True if the window is focused, false otherwise.
-    GP_NODISCARD virtual bool isFocused() const noexcept = 0;
+    [[nodiscard]] virtual bool isFocused() const noexcept = 0;
 
     /// @brief Checks if the window is currently minimized (iconified).
     /// @return True if the window is minimized, false otherwise.
-    GP_NODISCARD virtual bool isMinimized() const noexcept = 0;
+    [[nodiscard]] virtual bool isMinimized() const noexcept = 0;
 
     /// @brief Checks if the window is currently maximized.
     /// @return True if the window is maximized, false otherwise.
-    GP_NODISCARD virtual bool isMaximized() const noexcept = 0;
+    [[nodiscard]] virtual bool isMaximized() const noexcept = 0;
 
     /// @brief Checks if the window is resizable by the user.
     /// @return True if the window is resizable, false otherwise.
-    GP_NODISCARD virtual bool isResizable() const noexcept = 0;
+    [[nodiscard]] virtual bool isResizable() const noexcept = 0;
 
     /// @brief Checks if the window is currently in fullscreen mode.
     /// @return True if the window is in fullscreen mode, false otherwise.
-    GP_NODISCARD virtual bool isFullscreen() const noexcept = 0;
+    [[nodiscard]] virtual bool isFullscreen() const noexcept = 0;
 
     /// @brief Checks if the window is currently in borderless mode.
     /// @return True if the window is in borderless mode, false otherwise.
-    GP_NODISCARD virtual bool isBorderless() const noexcept = 0;
+    [[nodiscard]] virtual bool isBorderless() const noexcept = 0;
 
     /// @brief Checks if the window is transparent (allows underlying windows to show through).
     /// @return True if the window is transparent, false otherwise.
-    GP_NODISCARD virtual bool isTransparent() const noexcept = 0;
+    [[nodiscard]] virtual bool isTransparent() const noexcept = 0;
 
     /// @brief Checks if the window is set to always be on top of other windows.
     /// @return True if the window is always on top, false otherwise.
-    GP_NODISCARD virtual bool isAlwaysOnTop() const noexcept = 0;
+    [[nodiscard]] virtual bool isAlwaysOnTop() const noexcept = 0;
 
     /// @brief Checks if the window is currently hovered by the mouse cursor.
     /// @return True if the window is hovered, false otherwise.
-    GP_NODISCARD virtual bool isHovered() const noexcept = 0;
+    [[nodiscard]] virtual bool isHovered() const noexcept = 0;
 
     /// @brief Checks if the window is currently visible to the user (not minimized or hidden).
     /// @return True if the window is visible, false otherwise.
-    GP_NODISCARD virtual bool isVisible() const noexcept = 0;
+    [[nodiscard]] virtual bool isVisible() const noexcept = 0;
 
     /// @brief Checks if the window is currently hidden from the user (minimized or explicitly hidden).
     /// @return True if the window is hidden, false otherwise.
-    GP_NODISCARD virtual bool isHidden() const noexcept = 0;
+    [[nodiscard]] virtual bool isHidden() const noexcept = 0;
 
     /// @brief Checks if the window has vertical synchronization (VSync) enabled for buffer swapping.
     /// @return True if VSync is enabled, false otherwise.
-    GP_NODISCARD virtual bool isVSyncEnabled() const noexcept = 0;
+    [[nodiscard]] virtual bool isVSyncEnabled() const noexcept = 0;
 
     /// @brief Checks if the window is using a high-DPI backbuffer for rendering on supported displays.
     /// @return True if high-DPI mode is enabled, false otherwise.
-    GP_NODISCARD virtual bool isHighDPI() const noexcept = 0;
+    [[nodiscard]] virtual bool isHighDPI() const noexcept = 0;
 
     /// @brief Checks if the window has input focus grabbed.
     /// @return True if the window has input focus grabbed, false otherwise.
-    GP_NODISCARD virtual bool isInputGrabbed() const noexcept = 0;
+    [[nodiscard]] virtual bool isInputGrabbed() const noexcept = 0;
 
     /// @brief Checks if the window has mouse input grabbed.
     /// @return True if the window has mouse input grabbed, false otherwise.
-    GP_NODISCARD virtual bool isMouseGrabbed() const noexcept = 0;
+    [[nodiscard]] virtual bool isMouseGrabbed() const noexcept = 0;
 
     /// @brief Checks if the window has keyboard input grabbed.
     /// @return True if the window has keyboard input grabbed, false otherwise.
-    GP_NODISCARD virtual bool isKeyboardGrabbed() const noexcept = 0;
+    [[nodiscard]] virtual bool isKeyboardGrabbed() const noexcept = 0;
 
     /// @brief Checks if the system cursor is currently visible when over the window.
     /// @return True if the cursor is visible, false otherwise.
-    GP_NODISCARD virtual bool isCursorVisible() const noexcept = 0;
+    [[nodiscard]] virtual bool isCursorVisible() const noexcept = 0;
 
     /// @brief Checks if the system cursor is currently hidden when over the window.
     /// @return True if the cursor is hidden, false otherwise.
-    GP_NODISCARD virtual bool isCursorHidden() const noexcept = 0;
+    [[nodiscard]] virtual bool isCursorHidden() const noexcept = 0;
 
     /// @brief Checks if the system cursor is currently confined to the window's client area.
     /// @return True if the cursor is confined, false otherwise.
-    GP_NODISCARD virtual bool isCursorConfined() const noexcept = 0;
+    [[nodiscard]] virtual bool isCursorConfined() const noexcept = 0;
 
     /// @brief Checks if the window is currently occluded (completely covered by other windows or off-screen).
     /// @return True if the window is occluded, false otherwise.
-    GP_NODISCARD virtual bool isOccluded() const noexcept = 0;
+    [[nodiscard]] virtual bool isOccluded() const noexcept = 0;
 
     /// @brief Get the current position of the window's top-left corner in screen coordinates.
     /// @return The current position of the window's top-left corner in screen coordinates.
     /// @see getFullPosition() for the position of the entire window including non-client areas.
-    GP_NODISCARD virtual Point2D getPosition() const noexcept = 0;
+    [[nodiscard]] virtual Point2D getPosition() const noexcept = 0;
 
     /// @brief Get the current position of the entire window including non-client areas in screen coordinates.
     /// @return The current position of the entire window including non-client areas in screen coordinates.
     /// @see getPosition() for the position of the client area (drawable region).
-    GP_NODISCARD virtual Point2D getFullPosition() const noexcept = 0;
+    [[nodiscard]] virtual Point2D getFullPosition() const noexcept = 0;
 
     /// @brief Get the current size of the window's client area (drawable region) in pixels.
     /// @return The current size of the window's client area (drawable region) in pixels.
     /// @see getFullSize() for the total window size including non-client areas.
-    GP_NODISCARD virtual Extent2D getSize() const noexcept = 0;
+    [[nodiscard]] virtual Extent2D getSize() const noexcept = 0;
 
     /// @brief Get the current size of the entire window including non-client areas in pixels.
     /// @return The current size of the entire window including non-client areas in pixels.
     /// @see getSize() for the size of the client area (drawable region).
-    GP_NODISCARD virtual Extent2D getFullSize() const noexcept = 0;
+    [[nodiscard]] virtual Extent2D getFullSize() const noexcept = 0;
 
     /// @brief Get the current size of the framebuffer or backbuffer used for rendering, which may differ from the
     ///        window's client area size on high-DPI displays.
     /// @return The current size of the framebuffer or backbuffer used for rendering.
     /// @see getSize() for the size of the client area (drawable region).
-    GP_NODISCARD virtual Extent2D getFramebufferSize() const noexcept = 0;
+    [[nodiscard]] virtual Extent2D getFramebufferSize() const noexcept = 0;
 
     /// @brief Get the minimum size constraints of the window's client area (drawable region) in pixels.
     /// @return The minimum size constraints of the window's client area (drawable region) in pixels.
     /// @see getMaximumSize() for the maximum size constraints of the window.
-    GP_NODISCARD virtual Extent2D getMinimumSize() const noexcept = 0;
+    [[nodiscard]] virtual Extent2D getMinimumSize() const noexcept = 0;
 
     /// @brief Get the maximum size constraints of the window's client area (drawable region) in pixels.
     /// @return The maximum size constraints of the window's client area (drawable region) in pixels.
     /// @see getMinimumSize() for the minimum size constraints of the window.
-    GP_NODISCARD virtual Extent2D getMaximumSize() const noexcept = 0;
+    [[nodiscard]] virtual Extent2D getMaximumSize() const noexcept = 0;
 
     /// @brief Gets a pointer to the underlying native window handle or object. The actual type and meaning of this
     ///        handle is platform-specific. It may be used for advanced operations that are not covered by this
     ///        interface, but the caller must know the expected type and semantics of the handle for the specific
     ///        platform. This may return nullptr if no native handle is available.
     /// @return A pointer to the underlying native window handle or object, or nullptr if no native handle is available.
-    GP_NODISCARD virtual void* getNativeHandle() const noexcept = 0;
+    [[nodiscard]] virtual void* getNativeHandle() const noexcept = 0;
 
     /// @brief Gets a pointer to the Display that the window is currently associated with. This may return nullptr if
     ///        the window is not currently associated with any display. The returned Display pointer should not be owned
     ///        or deleted by the caller,
     /// @return A pointer to the Display that the window is currently associated with, or nullptr if the window is not
     ///         associated with any display.
-    GP_NODISCARD virtual const Display* getCurrentDisplay() const noexcept = 0;
+    [[nodiscard]] virtual const Display* getCurrentDisplay() const noexcept = 0;
 
     /// @brief Sets the position of the window's top-left corner in screen coordinates.
     /// @param[in] position The new position of the window's top-left corner in screen coordinates.

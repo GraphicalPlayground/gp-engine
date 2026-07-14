@@ -101,9 +101,9 @@ requires(!concepts::IsPointer<T>) inline void zeroMemory(T& source)
 /// @param[in] ptr The pointer to the memory block to check.
 /// @param[in] numBytes The number of bytes to check in the memory block.
 /// @return `true` if all bytes in the specified memory block are zero, otherwise `false`.
-inline bool isMemoryZeroed(const void* ptr, USize numBytes)
+[[nodiscard]] inline bool isMemoryZeroed(const void* ptr, USize numBytes)
 {
-    if (GP_UNLIKELY(ptr == nullptr || numBytes == 0))
+    if (ptr == nullptr || numBytes == 0) [[unlikely]]
     {
         return true;
     }

@@ -12,7 +12,7 @@ namespace gp::platform::generic
 memory::Malloc* Memory::getDefaultAllocator()
 {
     static memory::Malloc* instance = nullptr;
-    if (instance != nullptr)
+    if (instance != nullptr) [[likely]]
     {
         return instance;
     }

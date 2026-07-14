@@ -15,7 +15,7 @@ namespace gp::math::convert
 /// @param[in] bytes The number of bytes to convert.
 /// @return The equivalent number of gigabytes, rounded up.
 template <concepts::IsUnsignedIntegral T>
-GP_NODISCARD constexpr T bytesToGigabytes(UInt64 bytes)
+[[nodiscard]] constexpr T bytesToGigabytes(UInt64 bytes) noexcept
 {
     constexpr UInt64 bytesPerGigabyte = 1024ull * 1024ull * 1024ull;
     return static_cast<T>((bytes + bytesPerGigabyte - 1ull) / bytesPerGigabyte);

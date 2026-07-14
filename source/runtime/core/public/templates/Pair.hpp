@@ -31,7 +31,7 @@ public:
 
 public:
     /// @brief Default constructor, value-initializes both elements.
-    GP_NODISCARD constexpr Pair() requires(concepts::IsDefaultConstructible<T1> && concepts::IsDefaultConstructible<T2>)
+    [[nodiscard]] constexpr Pair() requires(concepts::IsDefaultConstructible<T1> && concepts::IsDefaultConstructible<T2>)
         : first()
         , second()
     {}
@@ -39,7 +39,7 @@ public:
     /// @brief Constructs a pair from two values.
     /// @param inFirst First element.
     /// @param inSecond Second element.
-    GP_NODISCARD constexpr Pair(const T1& inFirst, const T2& inSecond) noexcept(
+    [[nodiscard]] constexpr Pair(const T1& inFirst, const T2& inSecond) noexcept(
         noexcept(T1(inFirst)) && noexcept(T2(inSecond))
     )
         : first(inFirst)
@@ -49,7 +49,7 @@ public:
     /// @brief Constructs a pair from two values using move semantics.
     /// @param inFirst First element (moved).
     /// @param inSecond Second element (moved).
-    GP_NODISCARD constexpr Pair(T1&& inFirst, T2&& inSecond) noexcept(
+    [[nodiscard]] constexpr Pair(T1&& inFirst, T2&& inSecond) noexcept(
         noexcept(T1(std::move(inFirst))) && noexcept(T2(std::move(inSecond)))
     )
         : first(std::move(inFirst))
@@ -63,7 +63,7 @@ public:
     /// @param inSecond Second element, perfectly forwarded to construct T2.
     template <typename U, typename V>
     requires concepts::IsConstructibleWith<T1, U&&> && concepts::IsConstructibleWith<T2, V&&>
-    GP_NODISCARD constexpr Pair(U&& inFirst, V&& inSecond) noexcept(
+    [[nodiscard]] constexpr Pair(U&& inFirst, V&& inSecond) noexcept(
         noexcept(T1(std::forward<U>(inFirst))) && noexcept(T2(std::forward<V>(inSecond)))
     )
         : first(std::forward<U>(inFirst))
@@ -71,10 +71,10 @@ public:
     {}
 
     /// @brief Default copy constructor.
-    GP_NODISCARD constexpr Pair(const Pair&) = default;
+    [[nodiscard]] constexpr Pair(const Pair&) = default;
 
     /// @brief Default move constructor.
-    GP_NODISCARD constexpr Pair(Pair&&) = default;
+    [[nodiscard]] constexpr Pair(Pair&&) = default;
 
 public:
     /// @brief Default copy assignment operator.
@@ -88,7 +88,7 @@ public:
     /// @brief Equality comparison operator, compares both elements for equality.
     /// @param other Pair to compare against.
     /// @return true if both elements are equal.
-    GP_NODISCARD constexpr bool operator==(const Pair& other) const noexcept
+    [[nodiscard]] constexpr bool operator==(const Pair& other) const noexcept
         requires concepts::IsEqualityComparable<T1> && concepts::IsEqualityComparable<T2>
     {
         return first == other.first && second == other.second;
@@ -97,7 +97,7 @@ public:
     /// @brief Inequality comparison operator, negates the result of operator==.
     /// @param other Pair to compare against.
     /// @return true if any element differs.
-    GP_NODISCARD constexpr bool operator!=(const Pair& other) const noexcept
+    [[nodiscard]] constexpr bool operator!=(const Pair& other) const noexcept
         requires concepts::IsEqualityComparable<T1> && concepts::IsEqualityComparable<T2>
     {
         return !(*this == other);
@@ -107,7 +107,7 @@ public:
     /// @param other Pair to compare against.
     /// @return Comparison result based on the first differing element, or the common comparison category equal if
     ///         both elements are equal.
-    GP_NODISCARD constexpr auto operator<=>(const Pair& other) const noexcept
+    [[nodiscard]] constexpr auto operator<=>(const Pair& other) const noexcept
         requires concepts::IsThreeWayComparable<T1> && concepts::IsThreeWayComparable<T2>
     {
         using Category = std::common_comparison_category_t<
@@ -144,7 +144,7 @@ Pair(A, B) -> Pair<A, B>;
 /// @param b Second value, perfectly forwarded to construct the second element of the pair.
 /// @return A Pair containing the provided values.
 template <typename T1, typename T2>
-GP_NODISCARD constexpr Pair<std::decay_t<T1>, std::decay_t<T2>> makePair(T1&& a, T2&& b) noexcept(
+[[nodiscard]] constexpr Pair<std::decay_t<T1>, std::decay_t<T2>> makePair(T1&& a, T2&& b) noexcept(
     noexcept(Pair<std::decay_t<T1>, std::decay_t<T2>>(std::forward<T1>(a), std::forward<T2>(b)))
 )
 {
