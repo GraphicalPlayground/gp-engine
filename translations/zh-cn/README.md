@@ -190,6 +190,8 @@ Graphical Playground 围绕解构主义教学法构建，我们希望你拆解�
 
 - [**Buy Me A Coffee**](https://www.buymeacoffee.com/GraphicalPlayground)
 - [**GitHub Sponsors**](https://github.com/sponsors/GraphicalPlayground)
+- [**Open Collective**](https://opencollective.com/graphical-playground)
+- [**Thanks Dev**](https://thanks.dev/u/gh/GraphicalPlayground)
 - [**直接捐赠**](https://graphical-playground.com/donate)
 
 你可以在我们的[赞助者页面](https://graphical-playground.com/sponsors)或 [DONORS.md](../../DONORS.md) 中查看完整的赞助者和支持者名单。
@@ -204,6 +206,8 @@ Graphical Playground 围绕解构主义教学法构建，我们希望你拆解�
   - [support@graphical-playground.com](mailto:support@graphical-playground.com)
   - [security@graphical-playground.com](mailto:security@graphical-playground.com)
   - [contact@graphical-playground.com](mailto:contact@graphical-playground.com)
+  - [legal@graphical-playground.com](mailto:legal@graphical-playground.com)
+  - [sponsor@graphical-playground.com](mailto:sponsor@graphical-playground.com)
 - **社交媒体**：
   - [LinkedIn](https://www.linkedin.com/company/graphical-playground)
   - [Discord](https://discord.graphical-playground.com)
