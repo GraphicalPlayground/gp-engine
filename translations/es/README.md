@@ -190,6 +190,8 @@ Puedes patrocinar el proyecto Graphical Playground a través de los siguientes e
 
 - [**Buy Me A Coffee**](https://www.buymeacoffee.com/GraphicalPlayground)
 - [**GitHub Sponsors**](https://github.com/sponsors/GraphicalPlayground)
+- [**Open Collective**](https://opencollective.com/graphical-playground)
+- [**Thanks Dev**](https://thanks.dev/u/gh/GraphicalPlayground)
 - [**Donación Directa**](https://graphical-playground.com/donate)
 
 Puedes ver la lista completa de patrocinadores y colaboradores en nuestra
@@ -205,6 +207,8 @@ Si tienes preguntas, sugerencias o quieres compartir tus proyectos construidos c
   - [support@graphical-playground.com](mailto:support@graphical-playground.com)
   - [security@graphical-playground.com](mailto:security@graphical-playground.com)
   - [contact@graphical-playground.com](mailto:contact@graphical-playground.com)
+  - [legal@graphical-playground.com](mailto:legal@graphical-playground.com)
+  - [sponsor@graphical-playground.com](mailto:sponsor@graphical-playground.com)
 - **Redes Sociales**:
   - [LinkedIn](https://www.linkedin.com/company/graphical-playground)
   - [Discord](https://discord.graphical-playground.com)
