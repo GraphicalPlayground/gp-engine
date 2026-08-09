@@ -3,3 +3,5 @@
 // mailto:support AT graphical-playground DOT com
 
 #pragma once
+
+#error "PS5Platform.hpp is not yet implemented. Please implement the PS5 platform support in this file."

@@ -3,3 +3,5 @@
 // mailto:support AT graphical-playground DOT com
 
 #pragma once
+
+#error "SwitchPlatform.hpp is not yet implemented. Please implement the Switch platform support in this file."

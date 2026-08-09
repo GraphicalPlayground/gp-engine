@@ -3,3 +3,5 @@
 // mailto:support AT graphical-playground DOT com
 
 #pragma once
+
+#error "XboxSeriesPlatform.hpp is not yet implemented. Please implement the Xbox Series platform support in this file."
