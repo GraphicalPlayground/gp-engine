@@ -16,10 +16,39 @@
       "CMakePresetsLinux.json": "cmake",
       "CMakePresetsWindows.json": "cmake",
       "CMakePresetsMacOS.json": "cmake",
-      "Doxyfile": "settings"
+      "Doxyfile": "settings",
+      "*.test.cpp": "test-ts",
+      "*.tests.cpp": "test-ts",
+      "*.benchmark.cpp": "test-jsx",
+      "*.benchmarks.cpp": "test-jsx"
     },
+    "material-icon-theme.folders.customClones": [
+      {
+        "base": "private",
+        "folderNames": ["internal", "internals", "details", "detail", "impl", "implementation", "implementations"],
+        "name": "internal",
+        "color": "orange"
+      },
+      {
+        "base": "console",
+        "folderNames": ["nintendo", "switch", "switch2", "nvn"],
+        "name": "nintendo",
+        "color": "#E60012"
+      },
+      {
+        "base": "console",
+        "folderNames": ["xbox", "xboxone", "xboxseries", "d3d12x"],
+        "name": "xbox",
+        "color": "#0E7A0D"
+      },
+      {
+        "base": "console",
+        "folderNames": ["sony", "ps4", "ps5", "agc", "gnm", "gnmx"],
+        "name": "sony",
+        "color": "#0070CC"
+      }
+    ],
     "material-icon-theme.folders.associations": {
-      /* Shared Associations */
       "private": "private",
       "public": "public",
       "docs": "docs",
@@ -28,8 +57,6 @@
       "internal": "review",
       "base": "base",
       "generic": "shared",
-
-      /* Root Level Associations */
       ".devcontainer": "container",
       ".vscode": "vscode",
       "build": "dist",
@@ -39,14 +66,10 @@
       "source": "src",
       "examples": "examples",
       "cmake": "config",
-
-      /* Source Level Associations */
       "launch": "assembly",
       "runtime": "job",
       "plugins": "plugin",
       "shaders": "shader",
-
-      /* Runtime Level Associations */
       "core": "core",
       "engine": "bicep",
       "renderer": "element",
@@ -58,15 +81,11 @@
       "hal": "connection",
       "rhi": "pipe",
       "network": "cloudflare",
-
-      /* Platforms Associations */
+      "arrays": "queue",
+      "maps": "mappings",
+      "sets": "toc",
+      "views": "review",
       "android": "android",
-      "ps5": "console",
-      "ps4": "console",
-      "xboxone": "console",
-      "xboxseries": "console",
-      "switch": "console",
-      "switch2": "console",
       "macos": "macos",
       "apple": "macos",
       "visionos": "macos",
@@ -75,79 +94,31 @@
       "windows": "windows",
       "linux": "linux",
       "unix": "linux",
-
-      /* RHI Associations */
+      "geometry": "webpack",
+      "primitives": "delta",
+      "matrix": "app",
+      "rotation": "generator",
+      "simd": "core",
+      "transform": "directive",
       "d3d12": "windows",
       "d3d11": "windows",
-      "d3d12x": "console",
       "metal": "macos",
       "vulkan": "shared",
       "opengl": "shared",
       "opengles": "shared",
       "webgl": "public",
       "webgpu": "public",
-      "nvn": "console",
-      "nvn2": "console",
-      "agc": "console",
-      "gnm": "console",
-      "gnmx": "console",
-      "null": "private",
-
-      /* Core Associations */
-      "containers": "container",
-      "memory": "bloc",
-      "arrays": "cloud-functions",
-      "details": "config",
-      "maps": "json",
-      "sets": "json",
-      "views": "atom",
-      "pointers": "molecule",
-      "transform": "animation",
-      "simd": "assembly",
-      "rotation": "ci",
-      "matrix": "app",
-      "primitives": "prisma",
-      "geometry": "prisma",
-      "targets": "target",
-      "traits": "rules",
-      "sync": "contract",
-      "hash": "secure",
-      "encryption": "secure",
-      "crypto": "secure",
-      "macros": "features",
-      "thread": "simulations",
-      "intrinsics": "command",
-      "file": "content",
-      "window": "television",
-      "descriptors": "interface",
-      "device": "vm",
-      "query": "mappings",
-      "renderpass": "pipe",
-      "raytracing": "claude",
-      "swapchain": "resolver",
-      "filesystem": "content",
-      "concurrency": "simulations",
-      "time": "temp",
-      "ownership": "contract",
-      "tracking": "link",
-      "allocators": "bloc",
-      "bindings": "attachment",
-      "state": "log",
-      "system": "vm",
-
-      /* Launch Level Associations */
+      "null": "trash",
+      "memory": "migrations",
+      "pointers": "cue",
       "editor": "mock",
       "standalone": "console",
-
-      /* Network Level Associations */
       "http": "connection",
       "https": "connection",
       "udp": "connection",
       "tcp": "connection",
       "steam": "cloudflare",
       "epic": "cloudflare",
-
-      /* Parser Level Associations */
       "fbx": "container",
       "obj": "container",
       "gltf": "container",
@@ -157,29 +128,19 @@
       "ini": "config",
       "csv": "database",
       "blend": "blender",
-
-      /* Physics Level Associations */
       "jolt": "simulations",
       "physx": "simulations",
-
-      /* Audio Level Associations */
       "fmod": "audio",
       "openal": "audio",
       "xaudio2": "audio",
-
-      /* HAL Level Associations */
       "sdl3": "components",
-
-      /* Core Level Associations */
       "compilers": "tools",
-      "clang": "config",
-      "msvc": "config",
-      "appleclang": "config",
-      "gcc": "config",
-      "intel": "config",
+      "clang": "assembly",
+      "msvc": "assembly",
+      "appleclang": "assembly",
+      "gcc": "assembly",
+      "intel": "assembly",
       "platforms": "client",
-
-      /* Languages Associations */
       "es": "i18n",
       "fr": "i18n",
       "en": "i18n",
@@ -187,13 +148,12 @@
       "ja": "i18n",
       "de": "i18n",
       "zh-cn": "i18n",
-
-      /* Thirdparties Associations */
-      "gp-build-tool": "project",
-      "tbb": "bloc",
-      "mimalloc": "bloc",
+      "traits": "rules",
+      "mimalloc": "migrations",
       "rapidjson": "json",
-      "tracy": "benchmark"
+      "tbb": "migrations",
+      "tracy": "benchmark",
+      "gp-build-tool": "tools"
     },
 
     /* Test Execution */
