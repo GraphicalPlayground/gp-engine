@@ -11,15 +11,18 @@
 #if !GP_SKIP_PLATFORM_DETECTION
     #if defined(_WIN32) || defined(_WIN64)
         #define GP_PLATFORM_WINDOWS GP_TRUE
+        #define GP_PLATFORM_NAME "Windows"
     #elif defined(__APPLE__) && defined(__MACH__)
         #include <TargetConditionals.h>
         #if TARGET_OS_MAC
             #define GP_PLATFORM_MACOS GP_TRUE
+            #define GP_PLATFORM_NAME "Darwin"
         #else
             #error "Unsupported Apple platform"
         #endif
     #elif defined(__linux__) && !defined(__ANDROID__)
         #define GP_PLATFORM_LINUX GP_TRUE
+        #define GP_PLATFORM_NAME "Linux"
     #else
         #error "Unsupported platform"
     #endif
