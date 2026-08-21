@@ -8,7 +8,7 @@
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
 
 🌎 阅读语言：[English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
-<!-- gp:protected:start -->
+<!-- gp-source-of-truth:custom:start -->
 
 **目录**  
 [概述](#概述)  
@@ -165,7 +165,7 @@ Graphical Playground 围绕解构主义教学法构建，我们希望你拆解�
 
 - [**探索学习路径**](https://graphical-playground.com/discover)
 
-<!-- gp:protected:end -->
+<!-- gp-source-of-truth:custom:end -->
 ## 贡献
 
 我们欢迎所有人的贡献！无论你是在修复 bug、实现新功能还是改进我们的文档，你的帮助都备受感激。请查阅我们完整的 [CONTRIBUTING.md](./CONTRIBUTING.md) 指南，了解我们的标准和 pull request 审查流程的详细信息。

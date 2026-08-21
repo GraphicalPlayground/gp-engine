@@ -8,7 +8,7 @@
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
 
 🌎 Leer en: [English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
-<!-- gp:protected:start -->
+<!-- gp-source-of-truth:custom:start -->
 
 **Tabla de contenido**  
 [Descripción](#descripción)  
@@ -165,7 +165,7 @@ Graphical Playground está construido alrededor de una Pedagogía Deconstructivi
 
 - [**Explorar las Rutas de Aprendizaje**](https://graphical-playground.com/discover)
 
-<!-- gp:protected:end -->
+<!-- gp-source-of-truth:custom:end -->
 ## Contribuir
 
 ¡Damos la bienvenida a las contribuciones de todos! Ya sea que estés corrigiendo un error, implementando nuevas funcionalidades o mejorando nuestra documentación, tu ayuda es apreciada. Consulta nuestra guía completa [CONTRIBUTING.md](./CONTRIBUTING.md) para información detallada sobre nuestros estándares y el proceso de revisión de pull requests.

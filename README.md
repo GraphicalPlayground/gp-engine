@@ -8,7 +8,7 @@
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
 
 🌎 Read this in: [English](README.md) | [Español](translations/es/README.md) | [Français](translations/fr/README.md) | [简体中文](translations/zh-cn/README.md)
-<!-- gp:protected:start -->
+<!-- gp-source-of-truth:custom:start -->
 
 **Table of content**  
 [Overview](#overview)  
@@ -220,7 +220,7 @@ paths that take you from foundational graphics programming concepts to advanced 
 
 - [**Explore the Learning Paths**](https://graphical-playground.com/discover)
 
-<!-- gp:protected:end -->
+<!-- gp-source-of-truth:custom:end -->
 ## Contributing
 
 We welcome contributions from everybody! Whether you are fixing a bug, implementing a new features,
