@@ -1,6 +1,6 @@
 ![Graphical Playground - 行为准则](https://github.com/GraphicalPlayground/.github/blob/main/assets/banners/gplayd-code-of-conduct.svg)
 
-🌎 阅读语言：[English](../../CODE_OF_CONDUCT.md) | [Español](../es/CODE_OF_CONDUCT.md) | [Français](../fr/CODE_OF_CONDUCT.md) | [简体中文](../zh-cn/CODE_OF_CONDUCT.md)
+🌎 阅读语言： [English](../../CODE_OF_CONDUCT.md) | [Español](../es/CODE_OF_CONDUCT.md) | [Français](../fr/CODE_OF_CONDUCT.md) | [简体中文](../zh-cn/CODE_OF_CONDUCT.md)
 
 ## 我们的承诺
 

@@ -7,9 +7,9 @@
 
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
 
-🌎 阅读语言：[English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
-<!-- gp-source-of-truth:custom:start -->
+🌎 阅读语言： [English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
 
+<!-- gp-source-of-truth:custom:start -->
 **目录**  
 [概述](#概述)  
 ┕ [快速开始](#快速开始)  
@@ -164,8 +164,8 @@ _建设中..._
 Graphical Playground 围绕解构主义教学法构建，我们希望你拆解引擎并了解其工作原理。为了指导你的学习，我们精心设计了结构化学习路径，带你从图形编程基础概念一路深入到高级引擎架构。
 
 - [**探索学习路径**](https://graphical-playground.com/discover)
-
 <!-- gp-source-of-truth:custom:end -->
+
 ## 贡献
 
 我们欢迎所有人的贡献！无论你是在修复 bug、实现新功能还是改进我们的文档，你的帮助都备受感激。请查阅我们完整的 [CONTRIBUTING.md](./CONTRIBUTING.md) 指南，了解我们的标准和 pull request 审查流程的详细信息。
@@ -203,14 +203,24 @@ Graphical Playground 围绕解构主义教学法构建，我们希望你拆解�
 
 - **GitHub Discussions**：[加入讨论](https://github.com/orgs/GraphicalPlayground/discussions)
 - **电子邮件**：
-  - [support@graphical-playground.com](mailto:support@graphical-playground.com)
-  - [security@graphical-playground.com](mailto:security@graphical-playground.com)
-  - [contact@graphical-playground.com](mailto:contact@graphical-playground.com)
-  - [legal@graphical-playground.com](mailto:legal@graphical-playground.com)
-  - [sponsor@graphical-playground.com](mailto:sponsor@graphical-playground.com)
+  - Support: <mailto:support@graphical-playground.com>
+  - Contact: <mailto:contact@graphical-playground.com>
+  - Security: <mailto:security@graphical-playground.com>
+  - Marketing: <mailto:marketing@graphical-playground.com>
+  - Legal: <mailto:legal@graphical-playground.com>
+  - Sponsor: <mailto:sponsor@graphical-playground.com>
+  - Press: <mailto:press@graphical-playground.com>
+  - Billing: <mailto:billing@graphical-playground.com>
+  - Partnerships: <mailto:partnerships@graphical-playground.com>
+  - Feedback: <mailto:feedback@graphical-playground.com>
+  - Accessibility: <mailto:accessibility@graphical-playground.com>
+  - Abuse: <mailto:abuse@graphical-playground.com>
+  - Careers: <mailto:careers@graphical-playground.com>
+  - Privacy: <mailto:privacy@graphical-playground.com>
 - **社交媒体**：
-  - [LinkedIn](https://www.linkedin.com/company/graphical-playground)
-  - [Discord](https://discord.graphical-playground.com)
+  - [**Discord**](https://discord.graphical-playground.com)
+  - [**GitHub**](https://github.com/GraphicalPlayground)
+  - [**LinkedIn**](https://linkedin.com/company/graphical-playground)
 
 ---
 © 2026 Graphical Playground. 为下一代图形工程师而生。

@@ -1,5 +1,7 @@
 ![Graphical Playground - Directrices de Seguridad](https://github.com/GraphicalPlayground/.github/blob/main/assets/banners/gplayd-security.svg)
 
+🌎 Leer en: [English](../../SECURITY.md) | [Español](../es/SECURITY.md) | [Français](../fr/SECURITY.md) | [简体中文](../zh-cn/SECURITY.md)
+
 Nuestro Enfoque de Seguridad
 
 El Equipo de Seguridad de la Información de **Graphical Playground** trabaja continuamente para
@@ -10,7 +12,7 @@ que desean ayudarnos a reforzar aún más nuestra seguridad.
 
 Si crees haber encontrado una vulnerabilidad en uno de nuestros sitios o productos, repórtala
 enviando un correo a <mailto:security@graphical-playground.com>, o visitando
-[graphical-playground.com/security](https://graphical-playground.com/security).
+[graphical-playground.com/legal/security-policy](https://graphical-playground.com/legal/security-policy).
 Una vez enviado tu informe, nuestro equipo trabajará contigo para validar y resolver los hallazgos
 según corresponda.
 
