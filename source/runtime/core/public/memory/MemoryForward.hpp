@@ -21,7 +21,7 @@ namespace gp
 
 /// @section Pointers forward declarations
 
-template <typename T>
+template <typename T, typename Deleter>
 class UniquePtr;
 
 template <typename T>
