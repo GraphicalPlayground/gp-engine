@@ -8,8 +8,8 @@
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
 
 🌎 Lire en : [English](../../README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [简体中文](../zh-cn/README.md)
-<!-- gp-source-of-truth:custom:start -->
 
+<!-- gp-source-of-truth:custom:start -->
 **Table des matières**  
 [Aperçu](#aperçu)  
 ┕ [Premiers Pas](#premiers-pas)  
@@ -164,8 +164,8 @@ Notre documentation détaillée de l'API C++ décrit les classes principales, le
 Graphical Playground est construit autour d'une Pédagogie Déconstructiviste : nous voulons que vous démontiez le moteur et compreniez comment il fonctionne. Pour guider vos études, nous avons élaboré des parcours d'apprentissage structurés qui vous emmènent des concepts fondamentaux de la programmation graphique jusqu'aux architectures de moteurs avancées.
 
 - [**Explorer les Parcours d'Apprentissage**](https://graphical-playground.com/discover)
-
 <!-- gp-source-of-truth:custom:end -->
+
 ## Contribuer
 
 Nous accueillons les contributions de tous ! Que vous corrigiez un bug, implémentiez de nouvelles fonctionnalités ou amélioriez notre documentation, votre aide est appréciée. Consultez notre guide complet [CONTRIBUTING.md](./CONTRIBUTING.md) pour des informations détaillées sur nos standards et le processus de revue des pull requests.
@@ -192,7 +192,7 @@ Vous pouvez parrainer le projet Graphical Playground via les liens suivants :
 - [**GitHub Sponsors**](https://github.com/sponsors/GraphicalPlayground)
 - [**Open Collective**](https://opencollective.com/graphical-playground)
 - [**Thanks Dev**](https://thanks.dev/u/gh/GraphicalPlayground)
-- [**Don Direct**](https://graphical-playground.com/donate)
+- [**Don direct**](https://graphical-playground.com/donate)
 
 Vous pouvez consulter la liste complète des sponsors et supporters sur notre
 [Page des Sponsors](https://graphical-playground.com/sponsors) ou dans [DONORS.md](../../DONORS.md).
@@ -204,14 +204,24 @@ Si vous avez des questions, des suggestions ou souhaitez partager vos projets r�
 
 - **GitHub Discussions** : [Rejoindre la Conversation](https://github.com/orgs/GraphicalPlayground/discussions)
 - **E-mail** :
-  - [support@graphical-playground.com](mailto:support@graphical-playground.com)
-  - [security@graphical-playground.com](mailto:security@graphical-playground.com)
-  - [contact@graphical-playground.com](mailto:contact@graphical-playground.com)
-  - [legal@graphical-playground.com](mailto:legal@graphical-playground.com)
-  - [sponsor@graphical-playground.com](mailto:sponsor@graphical-playground.com)
+  - Support: <mailto:support@graphical-playground.com>
+  - Contact: <mailto:contact@graphical-playground.com>
+  - Security: <mailto:security@graphical-playground.com>
+  - Marketing: <mailto:marketing@graphical-playground.com>
+  - Legal: <mailto:legal@graphical-playground.com>
+  - Sponsor: <mailto:sponsor@graphical-playground.com>
+  - Press: <mailto:press@graphical-playground.com>
+  - Billing: <mailto:billing@graphical-playground.com>
+  - Partnerships: <mailto:partnerships@graphical-playground.com>
+  - Feedback: <mailto:feedback@graphical-playground.com>
+  - Accessibility: <mailto:accessibility@graphical-playground.com>
+  - Abuse: <mailto:abuse@graphical-playground.com>
+  - Careers: <mailto:careers@graphical-playground.com>
+  - Privacy: <mailto:privacy@graphical-playground.com>
 - **Réseaux Sociaux** :
-  - [LinkedIn](https://www.linkedin.com/company/graphical-playground)
-  - [Discord](https://discord.graphical-playground.com)
+  - [**Discord**](https://discord.graphical-playground.com)
+  - [**GitHub**](https://github.com/GraphicalPlayground)
+  - [**LinkedIn**](https://linkedin.com/company/graphical-playground)
 
 ---
 © 2026 Graphical Playground. Conçu pour la prochaine génération d'ingénieurs graphiques.

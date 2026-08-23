@@ -9,5 +9,5 @@ authors:
     affiliation: "Graphical Playground"
 type: "software"
 repository-code: "https://github.com/GraphicalPlayground/gp-engine"
-url: "https://graphical-playground.com"
-license: "Apache-2.0"
+url: https://graphical-playground.com
+license: Apache 2.0

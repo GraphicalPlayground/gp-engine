@@ -1,4 +1,4 @@
-![Graphical Playground - Donors](.github/assets/donors.svg)
+![Graphical Playground - Donors](https://github.com/GraphicalPlayground/.github/blob/main/assets/misc/gplayd-banner.svg)
 
 # Donors to the Graphical Playground project
 

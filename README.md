@@ -8,8 +8,8 @@
 # [@GraphicalPlayground](https://github.com/GraphicalPlayground)/gp-engine
 
 🌎 Read this in: [English](README.md) | [Español](translations/es/README.md) | [Français](translations/fr/README.md) | [简体中文](translations/zh-cn/README.md)
-<!-- gp-source-of-truth:custom:start -->
 
+<!-- gp-source-of-truth:custom:start -->
 **Table of content**  
 [Overview](#overview)  
 ┕ [Getting Started](#getting-started)  
@@ -219,8 +219,8 @@ apart and learn how it works. To help guide your studies, we have curated struct
 paths that take you from foundational graphics programming concepts to advanced engine architecture.
 
 - [**Explore the Learning Paths**](https://graphical-playground.com/discover)
-
 <!-- gp-source-of-truth:custom:end -->
+
 ## Contributing
 
 We welcome contributions from everybody! Whether you are fixing a bug, implementing a new features,
@@ -258,7 +258,7 @@ You can sponsor the Graphical Playground project through the following links:
 - [**GitHub Sponsors**](https://github.com/sponsors/GraphicalPlayground)
 - [**Open Collective**](https://opencollective.com/graphical-playground)
 - [**Thanks Dev**](https://thanks.dev/u/gh/GraphicalPlayground)
-- [**Direct Donation**](https://graphical-playground.com/donate)
+- [**Direct donation**](https://graphical-playground.com/donate)
 
 You can see the full list of sponsors and supporters on our
 [Sponsors Page](https://graphical-playground.com/sponsors) or in [DONORS.md](./DONORS.md).
@@ -272,14 +272,24 @@ would love to hear from you! You can reach out to us through the following chann
 
 - **GitHub Discussions**: [Join the Conversation](https://github.com/orgs/GraphicalPlayground/discussions)
 - **Email**:
-  - [support@graphical-playground.com](mailto:support@graphical-playground.com)
-  - [security@graphical-playground.com](mailto:security@graphical-playground.com)
-  - [contact@graphical-playground.com](mailto:contact@graphical-playground.com)
-  - [legal@graphical-playground.com](mailto:legal@graphical-playground.com)
-  - [sponsor@graphical-playground.com](mailto:sponsor@graphical-playground.com)
+  - Support: <mailto:support@graphical-playground.com>
+  - Contact: <mailto:contact@graphical-playground.com>
+  - Security: <mailto:security@graphical-playground.com>
+  - Marketing: <mailto:marketing@graphical-playground.com>
+  - Legal: <mailto:legal@graphical-playground.com>
+  - Sponsor: <mailto:sponsor@graphical-playground.com>
+  - Press: <mailto:press@graphical-playground.com>
+  - Billing: <mailto:billing@graphical-playground.com>
+  - Partnerships: <mailto:partnerships@graphical-playground.com>
+  - Feedback: <mailto:feedback@graphical-playground.com>
+  - Accessibility: <mailto:accessibility@graphical-playground.com>
+  - Abuse: <mailto:abuse@graphical-playground.com>
+  - Careers: <mailto:careers@graphical-playground.com>
+  - Privacy: <mailto:privacy@graphical-playground.com>
 - **Social Media**:
-  - [LinkedIn](https://www.linkedin.com/company/graphical-playground)
-  - [Discord](https://discord.graphical-playground.com)
+  - [**Discord**](https://discord.graphical-playground.com)
+  - [**GitHub**](https://github.com/GraphicalPlayground)
+  - [**LinkedIn**](https://linkedin.com/company/graphical-playground)
 
 ---
 © 2026 Graphical Playground. Built for the next generation of graphics engineers.
