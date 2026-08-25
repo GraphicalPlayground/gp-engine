@@ -155,6 +155,11 @@ choco install llvm cmake ninja -y
 
 </details>
 
+> [!TIP]
+> You may need to enable Win32 Long Paths in Windows 10/11 to avoid issues with long file paths
+> during the build process. See [Microsoft's documentation](https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation)
+> for instructions.
+
 #### 1. Cloning the Repository
 
 When you clone the repository, you should initialize submodules:
