@@ -439,7 +439,7 @@ public:
     /// @return True if all components of this vector are equal to the corresponding components of the other vector
     /// within the tolerance, false otherwise.
     [[nodiscard]] constexpr bool
-        equals(const Vector3<T>& other, const T tolerance = constants<T>::kindaSmallNumber) const noexcept
+        equals(const Vector3<T>& other, const T tolerance = Constants<T>::kindaSmallNumber) const noexcept
     {
         return math::abs(x - other.x) <= tolerance && math::abs(y - other.y) <= tolerance &&
                math::abs(z - other.z) <= tolerance;
@@ -448,7 +448,7 @@ public:
     /// @brief Checks if all components of this vector are equal within a given tolerance.
     /// @param[in] tolerance The tolerance for the comparison.
     /// @return True if all components of this vector are equal within the tolerance, false otherwise.
-    [[nodiscard]] constexpr bool isAllComponentsEqual(const T tolerance = constants<T>::kindaSmallNumber) const noexcept
+    [[nodiscard]] constexpr bool isAllComponentsEqual(const T tolerance = Constants<T>::kindaSmallNumber) const noexcept
     {
         return math::abs(x - y) <= tolerance && math::abs(x - z) <= tolerance && math::abs(y - z) <= tolerance;
     }
@@ -456,7 +456,7 @@ public:
     /// @brief Checks if the vector is nearly zero within a given tolerance.
     /// @param[in] tolerance The tolerance for the comparison.
     /// @return True if all components of the vector are nearly zero within the tolerance, false otherwise.
-    [[nodiscard]] constexpr bool isNearlyZero(const T tolerance = constants<T>::kindaSmallNumber) const noexcept
+    [[nodiscard]] constexpr bool isNearlyZero(const T tolerance = Constants<T>::kindaSmallNumber) const noexcept
     {
         return math::abs(x) <= tolerance && math::abs(y) <= tolerance && math::abs(z) <= tolerance;
     }
@@ -471,7 +471,7 @@ public:
     /// @brief Checks if the vector is a unit vector within a given tolerance.
     /// @param[in] tolerance The tolerance for the comparison.
     /// @return True if the vector is a unit vector within the tolerance, false otherwise.
-    [[nodiscard]] constexpr bool isUnit(const T tolerance = constants<T>::kindaSmallNumber) const noexcept
+    [[nodiscard]] constexpr bool isUnit(const T tolerance = Constants<T>::kindaSmallNumber) const noexcept
     {
         return math::abs(T{ 1 } - lengthSquared()) <= tolerance;
     }
@@ -479,7 +479,7 @@ public:
     /// @brief Checks if the vector is normalized within a given tolerance.
     /// @param[in] tolerance The tolerance for the comparison.
     /// @return True if the vector is normalized within the tolerance, false otherwise.
-    [[nodiscard]] constexpr bool isNormalized(const T tolerance = tresholds<T>::vectorNormalized) const noexcept
+    [[nodiscard]] constexpr bool isNormalized(const T tolerance = Tresholds<T>::vectorNormalized) const noexcept
     {
         return isUnit(tolerance);
     }
@@ -487,7 +487,7 @@ public:
     /// @brief Checks if all components of the vector are uniform within a given tolerance.
     /// @param[in] tolerance The tolerance for the comparison.
     /// @return True if all components of the vector are uniform within the tolerance, false otherwise.
-    [[nodiscard]] constexpr bool isUniform(const T tolerance = constants<T>::kindaSmallNumber) const noexcept
+    [[nodiscard]] constexpr bool isUniform(const T tolerance = Constants<T>::kindaSmallNumber) const noexcept
     {
         return isAllComponentsEqual(tolerance);
     }
@@ -587,7 +587,7 @@ public:
     /// @param[in] tolerance The tolerance for the length check to avoid division by zero or very small numbers.
     /// @return True if the vector was successfully normalized, false if the length was too small and the vector was not
     /// modified.
-    constexpr bool normalize(const T tolerance = constants<T>::smallNumber) noexcept
+    constexpr bool normalize(const T tolerance = Constants<T>::smallNumber) noexcept
     {
         const T squareSum = x * x + y * y + z * z;
         if (squareSum > tolerance)
@@ -616,7 +616,7 @@ public:
     /// @param[in] tolerance The tolerance for the length check to determine if the vector is too small to normalize.
     /// @return A normalized version of this vector if its length is greater than the tolerance, or a zero vector if the
     /// length is less than or equal to the tolerance.
-    [[nodiscard]] constexpr Vector3<T> getSafeNormal(const T tolerance = constants<T>::smallNumber) const noexcept
+    [[nodiscard]] constexpr Vector3<T> getSafeNormal(const T tolerance = Constants<T>::smallNumber) const noexcept
     {
         const T squareSum = x * x + y * y + z * z;
 
@@ -655,9 +655,9 @@ public:
     [[nodiscard]] constexpr Vector3<T> getReciprocal() const noexcept
     {
         return Vector3<T>(
-            x != T{ 0 } ? T{ 1 } / x : constants<T>::bigNumber,
-            y != T{ 0 } ? T{ 1 } / y : constants<T>::bigNumber,
-            z != T{ 0 } ? T{ 1 } / z : constants<T>::bigNumber
+            x != T{ 0 } ? T{ 1 } / x : Constants<T>::bigNumber,
+            y != T{ 0 } ? T{ 1 } / y : Constants<T>::bigNumber,
+            z != T{ 0 } ? T{ 1 } / z : Constants<T>::bigNumber
         );
     }
 

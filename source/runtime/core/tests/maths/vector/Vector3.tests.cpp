@@ -648,9 +648,9 @@ TYPED_TEST(Vector3Test, GetReciprocalMethod)
 
     Vector3<TypeParam> vecZero = Vector3<TypeParam>::zero();
     Vector3<TypeParam> recZero = vecZero.getReciprocal();
-    EXPECT_EQ(recZero.x, constants<TypeParam>::bigNumber);
-    EXPECT_EQ(recZero.y, constants<TypeParam>::bigNumber);
-    EXPECT_EQ(recZero.z, constants<TypeParam>::bigNumber);
+    EXPECT_EQ(recZero.x, Constants<TypeParam>::bigNumber);
+    EXPECT_EQ(recZero.y, Constants<TypeParam>::bigNumber);
+    EXPECT_EQ(recZero.z, Constants<TypeParam>::bigNumber);
 }
 
 TYPED_TEST(Vector3Test, ProjectOnToMethod)

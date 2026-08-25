@@ -108,7 +108,7 @@ requires concepts::IsSigned<T> [[nodiscard]] constexpr T sign(const T value) noe
 /// @param[in] tolerance Maximum absolute deviation from zero to be considered "nearly zero".
 /// @return @c true if |@p value| <= @p tolerance, @c false otherwise.
 template <concepts::IsFloatingPoint T>
-[[nodiscard]] constexpr bool isNearlyZero(const T value, const T tolerance = constants<T>::smallNumber) noexcept
+[[nodiscard]] constexpr bool isNearlyZero(const T value, const T tolerance = Constants<T>::smallNumber) noexcept
 {
     return abs(value) <= tolerance;
 }
@@ -120,7 +120,7 @@ template <concepts::IsFloatingPoint T>
 /// @param[in] tolerance Maximum absolute difference to be considered equal.
 /// @return @c true if |@p a - @p b| <= @p tolerance, @c false otherwise.
 template <concepts::IsFloatingPoint T>
-[[nodiscard]] constexpr bool isNearlyEqual(const T a, const T b, const T tolerance = constants<T>::smallNumber) noexcept
+[[nodiscard]] constexpr bool isNearlyEqual(const T a, const T b, const T tolerance = Constants<T>::smallNumber) noexcept
 {
     return abs(a - b) <= tolerance;
 }
@@ -190,7 +190,7 @@ template <concepts::IsFloatingPoint T>
 template <concepts::IsFloatingPoint T>
 [[nodiscard]] constexpr T degreesToRadians(const T degrees) noexcept
 {
-    return degrees * constants<T>::degToRad;
+    return degrees * Constants<T>::degToRad;
 }
 
 /// @brief Converts an angle from radians to degrees.
@@ -200,7 +200,7 @@ template <concepts::IsFloatingPoint T>
 template <concepts::IsFloatingPoint T>
 [[nodiscard]] constexpr T radiansToDegrees(const T radians) noexcept
 {
-    return radians * constants<T>::radToDeg;
+    return radians * Constants<T>::radToDeg;
 }
 
 /// @brief Checks whether an integral value is a power of two.

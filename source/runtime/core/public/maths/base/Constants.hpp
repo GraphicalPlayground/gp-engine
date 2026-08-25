@@ -17,7 +17,7 @@ namespace gp::math
 /// @brief A collection of mathematical constants for a given floating-point type.
 /// @tparam T The floating-point type for the constants (e.g., float, double, long double).
 template <concepts::IsFloatingPoint T>
-struct constants final
+struct Constants final
 {
     // Pi-related
     static constexpr T pi = std::numbers::pi_v<T>;

@@ -13,7 +13,7 @@ namespace gp::math
 /// @brief A struct containing threshold values for various mathematical operations.
 /// @tparam T The floating-point type for the threshold values.
 template <concepts::IsFloatingPoint T>
-struct tresholds final
+struct Tresholds final
 {
     static constexpr T pointOnPlane = static_cast<T>(0.10);
     static constexpr T pointOnSide = static_cast<T>(0.20);
