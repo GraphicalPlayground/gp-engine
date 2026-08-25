@@ -1,6 +1,19 @@
 {
   "folders": [
-    { "path": "." }
+    { "path": ".", "name": "Engine Root" },
+    { "path": "./source/shaders", "name": "Shaders" },
+    { "path": "./source/runtime/core", "name": "Runtime / Core" },
+    { "path": "./source/runtime/rhi", "name": "Runtime / RHI" },
+    { "path": "./source/runtime/hal", "name": "Runtime / HAL" },
+    { "path": "./source/runtime/engine", "name": "Runtime / Engine" },
+    { "path": "./source/runtime/renderer", "name": "Runtime / Renderer" },
+    { "path": "./source/runtime/application", "name": "Runtime / Application" },
+    { "path": "./source/runtime/parser", "name": "Runtime / Parsers" },
+    { "path": "./source/runtime/audio", "name": "Runtime / Audio" },
+    { "path": "./source/runtime/network", "name": "Runtime / Network" },
+    { "path": "./source/runtime/physics", "name": "Runtime / Physics" },
+    { "path": "./source/launch/editor", "name": "Launch / Editor" },
+    { "path": "./source/launch/standalone", "name": "Launch / Standalone" },
   ],
   "settings": {
     /* C++ and ClangD settings */
