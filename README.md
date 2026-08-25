@@ -77,9 +77,14 @@ The engine uses CMake Presets to simplify configuration and building across diff
 environments. We recommend performing an out-of-source build, which the presets handle automatically
 to keep your project directory clean.
 
-> **Important Prerequisites**: Our Linux presets specifically require the Clang compiler
-(`clang` and `clang++`) as well as `ccache` (compiler cache) to be installed on your system prior to
-building. For Windows, `clang-cl` is required, and for macOS, the default `clang` compiler is sufficient.
+> [!IMPORTANT]
+> Our Linux presets specifically require the Clang compiler
+> (`clang` and `clang++`) as well as `ccache` (compiler cache) to be installed on your system prior to
+> building. For Windows, `clang-cl` is required, and for macOS, the default `clang` compiler is sufficient.
+
+> [!TIP]
+> For more detailed information, please check the [Building the Engine](./CONTRIBUTING.md#building-the-engine)
+> section in the [CONTRIBUTING.md](./CONTRIBUTING.md) file.
 
 **1. List available presets:**
 
@@ -191,6 +196,12 @@ The `samples/` directory is organized to mirror the Learning Paths, starting wit
 itself for the current list of runnable samples, and see the
 [Learning Paths](https://graphical-playground.com/discover) for the recommended order to work
 through them.
+
+### Shader Programming
+
+The engine includes a shader compiler and runtime that supports HLSL. You can write your own shaders
+in the `source/shaders/` directory and compile them into SPIR-V or DXIL for use in your sample
+projects.
 
 ## Documentation
 
