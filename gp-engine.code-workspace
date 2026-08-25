@@ -157,6 +157,15 @@
       "gp-build-tool": "tools"
     },
 
+    /* File Associations */
+    "files.associations": {
+      ".clangd": "yaml",
+      ".clang-format": "yaml",
+      "Doxyfile": "ini",
+      ".mailmap": "git-mailmap",
+      "VERSION": "plaintext"
+    },
+
     /* Test Execution */
     "testMate.cpp.test.executables": "{build,Build,BUILD,out,Out,OUT,binaries,Binaries}/**/*{test,Test,TEST}*",
 
