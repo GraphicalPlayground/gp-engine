@@ -20,7 +20,8 @@
       "*.test.cpp": "test-ts",
       "*.tests.cpp": "test-ts",
       "*.benchmark.cpp": "test-jsx",
-      "*.benchmarks.cpp": "test-jsx"
+      "*.benchmarks.cpp": "test-jsx",
+      "_category_.json": "tree"
     },
     "material-icon-theme.folders.customClones": [
       {
