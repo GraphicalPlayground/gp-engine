@@ -129,6 +129,32 @@ submodule ([GraphicalPlayground/gp-build-tool](https://github.com/GraphicalPlayg
 <details>
 <summary id="windows"><h3>Windows</h3></summary>
 
+#### 0. Prerequisites
+
+Before you can build the engine on Windows, ensure you have the following installed:
+
+- [Visual Studio 2022](https://visualstudio.microsoft.com) (v17.6+) with the following workloads:
+  - **Desktop development with C++**
+  - **Game development with C++**
+- [Chocolatey](https://chocolatey.org) (Optional but recommended for package management)
+- [LLVM](https://llvm.org) (v22+) installed via Chocolatey or manually.
+  - Ensure `clang-cl`, `clangd`, `clang-format` are in your PATH.
+- [Ninja](https://ninja-build.org) (v1.11+) installed via Chocolatey or manually.
+- [CMake](https://cmake.org) (v3.28+) installed via Chocolatey or manually.
+- [Git](https://git-scm.com) (v2.40+) installed via Chocolatey or manually.
+
+<details>
+<summary id="chocolatey"><h5>Installing with Chocolatey</h5></summary>
+
+1. Install Chocolatey by following the instructions on [Chocolatey's website](https://chocolatey.org/install).
+2. Open an **elevated PowerShell** (Run as Administrator) and execute:
+
+```powershell
+choco install llvm cmake ninja -y
+```
+
+</details>
+
 #### 1. Cloning the Repository
 
 When you clone the repository, you should initialize submodules:
