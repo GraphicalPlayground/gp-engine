@@ -15,7 +15,7 @@ namespace gp::container
 /// @tparam InValueType
 /// @tparam InAllowDuplicateKeys
 /// @details
-template <typename InValueType, bool InAllowDuplicateKeys = false>
+template <typename InValueType, bool InAllowDuplicateKeys /* = false */>
 struct DefaultKeyFunctions : public BaseKeyFunctions<InValueType, InValueType, InAllowDuplicateKeys>
 {
 public:
