@@ -98,14 +98,6 @@ public:
         return m_size == other.m_size && TraitsType::compare(m_data, other.m_data, m_size) == 0;
     }
 
-    /// @brief Inequality comparison.
-    /// @param[in] other The view to compare against.
-    /// @return True if the views are not equal, false otherwise.
-    [[nodiscard]] constexpr bool operator!=(const BasicStringView& other) const noexcept
-    {
-        return !(*this == other);
-    }
-
     /// @brief Three-way comparison.
     /// @param[in] other The view to compare against.
     /// @return Strong ordering indicating the relative order of the views.
