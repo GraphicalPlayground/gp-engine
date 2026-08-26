@@ -167,7 +167,12 @@
       "rapidjson": "json",
       "tbb": "migrations",
       "tracy": "benchmark",
-      "gp-build-tool": "tools"
+      "gp-build-tool": "tools",
+      "strings": "zed",
+      "bindings": "attachment",
+      "state": "tasks",
+      "system": "desktop",
+      "raytracing": "claude"
     },
 
     /* File Associations */
