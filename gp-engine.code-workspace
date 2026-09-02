@@ -1,25 +1,68 @@
 {
   "folders": [
-    { "path": ".", "name": "Engine Root" },
-    { "path": "./source/shaders", "name": "Shaders" },
-    { "path": "./source/runtime/core", "name": "Runtime / Core" },
-    { "path": "./source/runtime/rhi", "name": "Runtime / RHI" },
-    { "path": "./source/runtime/hal", "name": "Runtime / HAL" },
-    { "path": "./source/runtime/engine", "name": "Runtime / Engine" },
-    { "path": "./source/runtime/renderer", "name": "Runtime / Renderer" },
-    { "path": "./source/runtime/application", "name": "Runtime / Application" },
-    { "path": "./source/runtime/parser", "name": "Runtime / Parsers" },
-    { "path": "./source/runtime/audio", "name": "Runtime / Audio" },
-    { "path": "./source/runtime/network", "name": "Runtime / Network" },
-    { "path": "./source/runtime/physics", "name": "Runtime / Physics" },
-    { "path": "./source/launch/editor", "name": "Launch / Editor" },
-    { "path": "./source/launch/standalone", "name": "Launch / Standalone" },
+    {
+      "path": ".",
+      "name": "Engine Root"
+    },
+    {
+      "path": "./source/shaders",
+      "name": "Shaders"
+    },
+    {
+      "path": "./source/runtime/core",
+      "name": "Runtime / Core"
+    },
+    {
+      "path": "./source/runtime/rhi",
+      "name": "Runtime / RHI"
+    },
+    {
+      "path": "./source/runtime/hal",
+      "name": "Runtime / HAL"
+    },
+    {
+      "path": "./source/runtime/engine",
+      "name": "Runtime / Engine"
+    },
+    {
+      "path": "./source/runtime/renderer",
+      "name": "Runtime / Renderer"
+    },
+    {
+      "path": "./source/runtime/application",
+      "name": "Runtime / Application"
+    },
+    {
+      "path": "./source/runtime/parser",
+      "name": "Runtime / Parsers"
+    },
+    {
+      "path": "./source/runtime/audio",
+      "name": "Runtime / Audio"
+    },
+    {
+      "path": "./source/runtime/network",
+      "name": "Runtime / Network"
+    },
+    {
+      "path": "./source/runtime/physics",
+      "name": "Runtime / Physics"
+    },
+    {
+      "path": "./source/launch/editor",
+      "name": "Launch / Editor"
+    },
+    {
+      "path": "./source/launch/standalone",
+      "name": "Launch / Standalone"
+    },
   ],
   "settings": {
     /* C++ and ClangD settings */
     "C_Cpp.intelliSenseEngine": "disabled",
-    "clangd.arguments": ["--compile-commands-dir=${workspaceFolder}/build"],
-
+    "clangd.arguments": [
+      "--compile-commands-dir=${workspaceFolder}/build"
+    ],
     /* Material Icon Theme */
     "material-icon-theme.files.associations": {
       "LICENSE_HEADER": "license",
@@ -39,25 +82,50 @@
     "material-icon-theme.folders.customClones": [
       {
         "base": "private",
-        "folderNames": ["internal", "internals", "details", "detail", "impl", "implementation", "implementations"],
+        "folderNames": [
+          "internal",
+          "internals",
+          "details",
+          "detail",
+          "impl",
+          "implementation",
+          "implementations"
+        ],
         "name": "internal",
         "color": "orange"
       },
       {
         "base": "console",
-        "folderNames": ["nintendo", "switch", "switch2", "nvn"],
+        "folderNames": [
+          "nintendo",
+          "switch",
+          "switch2",
+          "nvn"
+        ],
         "name": "nintendo",
         "color": "#E60012"
       },
       {
         "base": "console",
-        "folderNames": ["xbox", "xboxone", "xboxseries", "d3d12x"],
+        "folderNames": [
+          "xbox",
+          "xboxone",
+          "xboxseries",
+          "d3d12x"
+        ],
         "name": "xbox",
         "color": "#0E7A0D"
       },
       {
         "base": "console",
-        "folderNames": ["sony", "ps4", "ps5", "agc", "gnm", "gnmx"],
+        "folderNames": [
+          "sony",
+          "ps4",
+          "ps5",
+          "agc",
+          "gnm",
+          "gnmx"
+        ],
         "name": "sony",
         "color": "#0070CC"
       }
@@ -174,7 +242,6 @@
       "system": "desktop",
       "raytracing": "claude"
     },
-
     /* File Associations */
     "files.associations": {
       ".clangd": "yaml",
@@ -183,10 +250,8 @@
       ".mailmap": "git-mailmap",
       "VERSION": "plaintext"
     },
-
     /* Test Execution */
     "testMate.cpp.test.executables": "{build,Build,BUILD,out,Out,OUT,binaries,Binaries}/**/*{test,Test,TEST}*",
-
     /* DoxDocGen Configuration */
     "doxdocgen.c.triggerSequence": "///",
     "doxdocgen.c.firstLine": "",
@@ -197,20 +262,33 @@
     "doxdocgen.generic.returnTemplate": "@return ",
     "doxdocgen.generic.includeTypeAtReturn": false,
     "doxdocgen.generic.boolReturnsTrueFalse": false,
-    "doxdocgen.generic.order": ["brief", "param", "return"],
-    "doxdocgen.generic.filteredKeywords": ["GP_FORCEINLINE", "GP_NODISCARD", "GP_INLINE", "constexpr", "noexcept"],
-
+    "doxdocgen.generic.order": [
+      "brief",
+      "param",
+      "return"
+    ],
+    "doxdocgen.generic.filteredKeywords": [
+      "GP_FORCEINLINE",
+      "GP_NODISCARD",
+      "GP_INLINE",
+      "constexpr",
+      "noexcept"
+    ],
     /* Language Settings */
     "editor.insertSpaces": true,
     "[c]": {
       "editor.tabSize": 4,
-      "editor.rulers": [120],
+      "editor.rulers": [
+        120
+      ],
       "editor.formatOnSave": true,
       "editor.defaultFormatter": "xaver.clang-format"
     },
     "[cpp]": {
       "editor.tabSize": 4,
-      "editor.rulers": [120],
+      "editor.rulers": [
+        120
+      ],
       "editor.formatOnSave": true,
       "editor.defaultFormatter": "xaver.clang-format"
     },
@@ -232,17 +310,23 @@
     },
     "[markdown]": {
       "editor.tabSize": 2,
-      "editor.rulers": [100],
+      "editor.rulers": [
+        100
+      ],
       "files.trimTrailingWhitespace": false
     },
     "[hlsl]": {
       "editor.tabSize": 4,
-      "editor.rulers": [120],
+      "editor.rulers": [
+        120
+      ],
       "files.trimTrailingWhitespace": true
     },
     "[glsl]": {
       "editor.tabSize": 4,
-      "editor.rulers": [120],
+      "editor.rulers": [
+        120
+      ],
       "files.trimTrailingWhitespace": true
     },
     "[yaml]": {
@@ -256,7 +340,6 @@
     "recommendations": [
       /* Remote Development */
       "ms-vscode-remote.remote-containers",
-
       /* C/C++ */
       "llvm-vs-code-extensions.vscode-clangd",
       "jeff-hykin.better-cpp-syntax",
@@ -264,16 +347,13 @@
       "Gruntfuggly.bettercomment",
       "ms-vscode.cmake-tools",
       "cschlosser.doxdocgen",
-
       /* Shaders */
       "TimGJones.hlsltools",
       "slevesque.shader",
-
       /* Markdown */
       "bierner.github-markdown-preview",
       "yzhang.markdown-all-in-one",
       "bierner.markdown-preview-github-styles",
-
       /* Github */
       "GitHub.vscode-pull-request-github",
       "github.vscode-github-actions",
@@ -282,6 +362,171 @@
     "unwantedRecommendations": [
       /* Conflicts with Clangd */
       "ms-vscode.cpptools"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "inputs": [
+      {
+        "id": "x64Path",
+        "type": "promptString",
+        "description": "Enter the path to the x64 Visual Studio tools",
+        "default": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat",
+      },
+      {
+        "id": "winPreset",
+        "type": "pickString",
+        "description": "Which Windows preset do you want to build?",
+        "options": [
+          "windows-release",
+          "windows-debug",
+          "windows-profile",
+          "windows-development",
+          "windows-asan"
+        ],
+        "default": "windows-development"
+      },
+      {
+        "id": "linuxPreset",
+        "type": "pickString",
+        "description": "Which Linux preset do you want to build?",
+        "options": [
+          "linux-release",
+          "linux-debug",
+          "linux-profile",
+          "linux-development",
+          "linux-asan",
+          "linux-ubsan",
+          "linux-tsan",
+          "linux-msan"
+        ],
+        "default": "linux-development"
+      },
+      {
+        "id": "macPreset",
+        "type": "pickString",
+        "description": "Which macOS preset do you want to build?",
+        "options": [
+          "macos-release",
+          "macos-debug",
+          "macos-profile",
+          "macos-development",
+          "macos-asan",
+          "macos-ubsan",
+          "macos-tsan"
+        ],
+        "default": "macos-development"
+      }
+    ],
+    "tasks": [
+      {
+        "label": "CMake: Configure",
+        "type": "shell",
+        "windows": {
+          "command": "cmake --preset windows-development",
+          "options": {
+            "shell": {
+              "executable": "cmd.exe",
+              "args": [
+                "/c",
+                "call \"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat\" &&"
+              ]
+            }
+          }
+        },
+        "linux": {
+          "command": "cmake --preset linux-development"
+        },
+        "osx": {
+          "command": "cmake --preset macos-development"
+        },
+        "detail": "Generates the CMake project using the default preset"
+      },
+      {
+        "label": "CMake: Build",
+        "type": "shell",
+        "dependsOn": "CMake: Configure",
+        "windows": {
+          "command": "cmake --build --preset windows-development",
+          "options": {
+            "shell": {
+              "executable": "cmd.exe",
+              "args": [
+                "/c",
+                "call \"${input:x64Path}\" &&"
+              ]
+            }
+          }
+        },
+        "linux": {
+          "command": "cmake --build --preset linux-development"
+        },
+        "osx": {
+          "command": "cmake --build --preset macos-development"
+        },
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": [
+          "$msCompile"
+        ],
+        "detail": "Builds the CMake project using the default preset"
+      },
+      {
+        "label": "CMake: Build (Interactive)",
+        "type": "shell",
+        "windows": {
+          "command": "cmake --build --preset ${input:winPreset}",
+          "options": {
+            "shell": {
+              "executable": "cmd.exe",
+              "args": [
+                "/c",
+                "call \"${input:x64Path}\" &&"
+              ]
+            }
+          }
+        },
+        "linux": {
+          "command": "cmake --build --preset ${input:linuxPreset}"
+        },
+        "osx": {
+          "command": "cmake --build --preset ${input:macPreset}"
+        },
+        "group": "build",
+        "problemMatcher": [
+          "$msCompile"
+        ],
+        "detail": "Builds the CMake project using the platform-specific preset"
+      },
+      {
+        "label": "CMake: Configure (Interactive)",
+        "type": "shell",
+        "windows": {
+          "command": "cmake --preset ${input:winPreset}",
+          "options": {
+            "shell": {
+              "executable": "cmd.exe",
+              "args": [
+                "/c",
+                "call \"${input:x64Path}\" &&"
+              ]
+            }
+          }
+        },
+        "linux": {
+          "command": "cmake --preset ${input:linuxPreset}"
+        },
+        "osx": {
+          "command": "cmake --preset ${input:macPreset}"
+        },
+        "group": "build",
+        "problemMatcher": [
+          "$msCompile"
+        ],
+        "detail": "Builds the CMake project using the platform-specific preset"
+      }
     ]
   }
 }
