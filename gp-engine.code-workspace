@@ -315,6 +315,13 @@
       ],
       "files.trimTrailingWhitespace": false
     },
+    "[mdx]": {
+      "editor.tabSize": 2,
+      "editor.rulers": [
+        100
+      ],
+      "files.trimTrailingWhitespace": false
+    },
     "[hlsl]": {
       "editor.tabSize": 4,
       "editor.rulers": [
@@ -334,7 +341,20 @@
     },
     "[shellscript]": {
       "editor.tabSize": 2
-    }
+    },
+    /* Git Settings */
+    "git.addAICoAuthor": "off",
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "files.eol": "\n",
+    /* Editor Settings */
+    "editor.quickSuggestionsDelay": 0,
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": false
+    },
+    "chat.titleBar.openInAgentsWindow.enabled": false
   },
   "extensions": {
     "recommendations": [
