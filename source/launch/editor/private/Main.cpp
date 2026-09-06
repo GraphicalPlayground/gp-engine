@@ -2,10 +2,11 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "CoreMinimal.hpp"
+#include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "Launch.hpp"
 #include "memory/GlobalMemory.hpp"
 #include "platforms/base/PlatformMemory.hpp"
+#include <cstdlib>
 #include <iostream>
 
 namespace gp
@@ -30,6 +31,7 @@ void dumpPlatformConstants()
 int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
     std::cout << "Launching editor..." << std::endl;
+    std::cout << "Is Tracy enabled? " << (TRACY_ENABLE ? "Yes" : "No") << std::endl;
     dumpPlatformConstants();
 
     // Try allocating something with getGlobalAllocator
@@ -66,6 +68,10 @@ int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     allocator->deallocate(ptr);
 
     std::cout << "Memory released." << std::endl;
+
+    // Wait for user input before exiting, allows us to actually attach the profiler if needed
+    std::cout << "Press Enter to exit..." << std::endl;
+    std::cin.get();
 
     return valid ? 0 : 1;
 }
