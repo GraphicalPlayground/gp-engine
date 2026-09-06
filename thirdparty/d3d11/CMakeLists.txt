@@ -4,8 +4,10 @@
 
 include(gp-build-tool)
 
-gpStartModule(rhi/d3d11)
-  gpAddDependency(PUBLIC core)
-  gpAddDependency(PUBLIC rhi/base)
-  gpAddDependency(PRIVATE gp::thirdparty::d3d11)
-gpEndModule()
+gpStartThirdparty("d3d11" VERSION "sdk")
+  gpThirdpartyRequiresPlatforms(Windows)
+  gpThirdpartySystem(
+    WINDOWS_SDK
+    LIBS d3d11 dxgi dxguid d3dcompiler
+  )
+gpEndThirdparty()
