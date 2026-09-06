@@ -4,12 +4,12 @@
 
 include(gp-build-tool)
 
-gpStartThirdparty("tracy" VERSION "0.13.2")
+gpStartThirdparty("tracy" VERSION "0.14.1")
   gpThirdpartyRequiresPlatforms(Windows Linux macOS iOS Android)
 
   gpThirdpartySource(
-    URL    "https://github.com/wolfpld/tracy/archive/9588912aa9721e49abbb2106f59c98ecc7e5c17d.tar.gz"
-    HASH   "SHA256=3378ace46deace1b99098c708eed57c94e48d102f23811497d542ac612639fcc"
+    URL    "https://github.com/wolfpld/tracy/archive/refs/tags/v0.14.1.tar.gz"
+    HASH   "SHA256=bf4af567e9c7524d07f3caa745fad02fb33bd5694f11910750382d1efbb251c1"
     TARGET "Tracy::TracyClient"
   )
 
