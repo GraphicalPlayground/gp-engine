@@ -1,0 +1,41 @@
+#include <winver.h>
+
+1 ICON "gp-editor.ico"
+
+1 VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+// Set to VS_FF_DEBUG for a debug build, or 0x0L for release
+FILEFLAGS       0x0L
+FILEOS          VOS_NT_WINDOWS32 // Target OS
+FILETYPE        VFT_APP          // VFT_APP for .exe, VFT_DLL for .dll
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        // "040904E4" means U.S. English (0409) and Windows Multilingual character set (04E4)
+        BLOCK "040904E4" 
+        BEGIN
+            // --- Standard Fields ---
+            VALUE "CompanyName",      "Graphical Playground Inc."
+            VALUE "FileDescription",  "Graphical Playground Editor"
+            VALUE "FileVersion",      "1.0.0.0"
+            VALUE "InternalName",     "gp-editor.exe"
+            VALUE "LegalCopyright",   "Copyright (C) 2026 Graphical Playground Inc."
+            VALUE "OriginalFilename", "gp-editor.exe"
+            VALUE "ProductName",      "GPlayd Editor"
+            VALUE "ProductVersion",   "1.0.0.0"
+            
+            // --- Custom Metadata Fields ---
+            VALUE "Author",           "Graphical Playground Team"
+            VALUE "SupportEmail",     "support@graphical-playground.com"
+            VALUE "BuildBranch",      "main-release-v1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        // This matches the "040904E4" string block above (0x409 = English, 1252 = 0x4E4)
+        VALUE "Translation", 0x409, 1252
+    END
+END

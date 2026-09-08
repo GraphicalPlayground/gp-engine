@@ -7,6 +7,8 @@ include(gp-build-tool)
 gpStartExecutable(editor)
   # gpSetGuiExecutable()
 
+  gpAddResourceFile(resources/gp-editor.rc)
+
   gpAddDependency(PUBLIC core)
   gpAddDependency(PUBLIC launch)
   gpAddDependency(PUBLIC renderer)
