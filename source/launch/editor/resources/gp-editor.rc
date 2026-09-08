@@ -1,41 +1,127 @@
-#include <winver.h>
+// Copyright (c) - Graphical Playground. All rights reserved.
+// For more information, see https://graphical-playground.com/legal
+// mailto:support AT graphical-playground DOT com
 
-1 ICON "gp-editor.ico"
+#include <windows.h>
+#include <commctrl.h>
 
-1 VERSIONINFO
-FILEVERSION     1,0,0,0
-PRODUCTVERSION  1,0,0,0
-FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
-// Set to VS_FF_DEBUG for a debug build, or 0x0L for release
-FILEFLAGS       0x0L
-FILEOS          VOS_NT_WINDOWS32 // Target OS
-FILETYPE        VFT_APP          // VFT_APP for .exe, VFT_DLL for .dll
-FILESUBTYPE     VFT2_UNKNOWN
+// --- RESOURCE ID DEFINITIONS ---
+
+#define IDI_MAIN_ICON           101
+#define IDI_ASSET_FILE          102
+#define IDC_CURSOR_DEFAULT      201
+#define IDC_CURSOR_CROSSHAIR    202
+#define IDC_CURSOR_WAIT         203
+#define IDB_SPLASH_SCREEN       301
+#define IDR_ENGINE_MANIFEST     1
+#define IDR_BOOT_CONFIG         401
+#define IDR_FALLBACK_SHADER     402
+#define IDS_FATAL_ERROR_MEM     501
+#define IDS_FATAL_ERROR_GPU     502
+#define IDD_CRASH_REPORTER      601
+
+// -----------------------------------------------------------------------------
+// ICONS (OS-Level Visuals)
+// -----------------------------------------------------------------------------
+
+// The main executable icon (Windows Explorer, Taskbar)
+IDI_MAIN_ICON           ICON                    "icons\\gp-editor.ico"
+// Icon for custom engine file associations (e.g., .gp-level, .gp-pak)
+IDI_ASSET_FILE          ICON                    "icons\\gp-assets.ico"
+
+// -----------------------------------------------------------------------------
+// HARDWARE CURSORS
+// -----------------------------------------------------------------------------
+// AAA engines use OS hardware cursors for UI to avoid software-rendering input lag.
+// IDC_CURSOR_DEFAULT      CURSOR                  "cursors\\pointer.cur"
+// IDC_CURSOR_CROSSHAIR    CURSOR                  "cursors\\crosshair.cur"
+// IDC_CURSOR_WAIT         CURSOR                  "cursors\\loading.ani"
+
+// -----------------------------------------------------------------------------
+// BITMAPS (Pre-Boot Visuals)
+// -----------------------------------------------------------------------------
+// Shown instantly by the OS while the engine allocates memory and boots APIs.
+// IDB_SPLASH_SCREEN       BITMAP                  "splash\\startup-splash.bmp"
+
+// -----------------------------------------------------------------------------
+// MANIFEST
+// -----------------------------------------------------------------------------
+// ID 1, Type 24 (RT_MANIFEST). Crucial for DPI awareness, UAC, and long paths.
+IDR_ENGINE_MANIFEST     24                      "manifest\\gp-editor.manifest"
+
+// -----------------------------------------------------------------------------
+// CUSTOM RAW DATA (RCDATA)
+// -----------------------------------------------------------------------------
+// Encrypted keys, boot configs, or fallback shaders embedded directly in the .exe 
+// so the engine can boot even if the external VFS / PAK files are corrupted.
+// IDR_BOOT_CONFIG         RCDATA                  "config\\boot-config.ini"
+// IDR_FALLBACK_SHADER     RCDATA                  "shaders\\pink-error.spv"
+
+// -----------------------------------------------------------------------------
+// STRING TABLES (Pre-Boot Localization)
+// -----------------------------------------------------------------------------
+// Used for OS-level message boxes if the engine crashes before the 
+// internal localization system finishes loading.
+STRINGTABLE
+BEGIN
+    IDS_FATAL_ERROR_MEM   "Fatal Error: Insufficient System Memory to initialize the engine."
+    IDS_FATAL_ERROR_GPU   "Fatal Error: No Vulkan/DirectX 12 compatible GPU detected."
+END
+
+// -----------------------------------------------------------------------------
+// DIALOGS (Crash Reporter / Safe Mode)
+// -----------------------------------------------------------------------------
+// A native Win32 dialog used for the Crash Reporter. Native dialogs are used 
+// because if the engine crashes, the rendering pipeline is dead.
+// IDD_CRASH_REPORTER DIALOGEX 0, 0, 300, 150
+// STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+// CAPTION "Engine Crash Reporter"
+// FONT 8, "MS Shell Dlg", 400, 0, 0x1
+// BEGIN
+//     ICON            IDI_MAIN_ICON, IDC_STATIC, 14, 14, 21, 20
+//     LTEXT           "The engine has encountered a fatal error and must close.", IDC_STATIC, 45, 14, 240, 18
+//     LTEXT           "Would you like to send a memory dump to the developers?", IDC_STATIC, 45, 35, 240, 10
+//     PUSHBUTTON      "Send Report", IDOK, 180, 125, 50, 14
+//     PUSHBUTTON      "Cancel", IDCANCEL, 235, 125, 50, 14
+//     EDITTEXT        1001, 45, 55, 240, 60, ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL
+// END
+
+// -----------------------------------------------------------------------------
+// VERSION INFORMATION (METADATA)
+// -----------------------------------------------------------------------------
+// Essential for digital signatures, anti-cheat, Windows Task Manager, and crash dumps.
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,45,8902       // Engine Build Version
+ PRODUCTVERSION 1,0,0,0        // Game Release Version
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L                // VS_FF_DEBUG
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L               // VOS_NT_WINDOWS32
+ FILETYPE 0x1L                 // VFT_APP (Application)
+ FILESUBTYPE 0x0L
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        // "040904E4" means U.S. English (0409) and Windows Multilingual character set (04E4)
-        BLOCK "040904E4" 
+        // 040904b0 = U.S. English, Unicode
+        BLOCK "040904b0"
         BEGIN
-            // --- Standard Fields ---
-            VALUE "CompanyName",      "Graphical Playground Inc."
-            VALUE "FileDescription",  "Graphical Playground Editor"
-            VALUE "FileVersion",      "1.0.0.0"
-            VALUE "InternalName",     "gp-editor.exe"
-            VALUE "LegalCopyright",   "Copyright (C) 2026 Graphical Playground Inc."
-            VALUE "OriginalFilename", "gp-editor.exe"
-            VALUE "ProductName",      "GPlayd Editor"
-            VALUE "ProductVersion",   "1.0.0.0"
-            
-            // --- Custom Metadata Fields ---
-            VALUE "Author",           "Graphical Playground Team"
-            VALUE "SupportEmail",     "support@graphical-playground.com"
-            VALUE "BuildBranch",      "main-release-v1"
+            VALUE "CompanyName",      "Graphical Playground\0"
+            VALUE "FileDescription",  "Graphical Playground Editor\0"
+            VALUE "FileVersion",      "1.0.45.8902\0"
+            VALUE "InternalName",     "gp-editor-win64-shipping\0"
+            VALUE "LegalCopyright",   "Copyright (C) 2026 Graphical Playground. All rights reserved.\0"
+            VALUE "LegalTrademarks",  "Graphical Playground Trademark(TM)\0"
+            VALUE "OriginalFilename", "gp-editor.exe\0"
+            VALUE "ProductName",      "GPlayd Editor\0"
+            VALUE "ProductVersion",   "1.0.0.0\0"
+            VALUE "SpecialBuild",     "Compiled from main branch\0"
         END
     END
     BLOCK "VarFileInfo"
     BEGIN
-        // This matches the "040904E4" string block above (0x409 = English, 1252 = 0x4E4)
-        VALUE "Translation", 0x409, 1252
+        VALUE "Translation", 0x409, 1200
     END
 END

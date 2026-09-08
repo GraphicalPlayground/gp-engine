@@ -9,6 +9,10 @@ gpStartExecutable(editor)
 
   gpAddResourceFile(resources/gp-editor.rc)
 
+  if(WIN32)
+    gpAddLinkOption(PRIVATE "/MANIFEST:NO")
+  endif()
+
   gpAddDependency(PUBLIC core)
   gpAddDependency(PUBLIC launch)
   gpAddDependency(PUBLIC renderer)
