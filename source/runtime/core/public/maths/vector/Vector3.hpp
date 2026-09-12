@@ -376,7 +376,7 @@ public:
     /// @param[in] other The other vector to divide this vector by.
     /// @return A reference to this vector after the division.
     constexpr Vector3<T>& operator/=(const Vector3<T>& other) noexcept
-    {
+    {        
         x /= other.x;
         y /= other.y;
         z /= other.z;
@@ -390,9 +390,11 @@ public:
     template <concepts::IsArithmetic U>
     constexpr Vector3<T>& operator/=(const U scale) noexcept
     {
-        x /= static_cast<T>(scale);
-        y /= static_cast<T>(scale);
-        z /= static_cast<T>(scale);
+        GP_ASSERT(scale != T(0), "Division by zero");
+        T invScale = static_cast<T>(1) / static_cast<T>(scale);
+        x *= invScale;
+        y *= invScale;
+        z *= invScale;
         return *this;
     }
 
@@ -624,7 +626,7 @@ public:
         {
             return *this;
         }
-        else if (squareSum < tolerance)
+        else if (squareSum <= tolerance)
         {
             return Vector3<T>::zero();
         }
