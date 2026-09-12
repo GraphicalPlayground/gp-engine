@@ -11,6 +11,18 @@ namespace gp::platform::windows
 {
 
 struct SharedLibrary final : public gp::platform::generic::SharedLibrary
-{};
+{
+public:
+    /// @brief Get the Export object
+    /// @param[in] handle
+    /// @param[in] procName
+    /// @return
+    [[nodiscard]] static GP_CORE_API void* getExport(void* handle, gp::StringView procName) noexcept;
+
+    /// @brief
+    /// @param[in] handle
+    /// @return
+    static GP_CORE_API void freeHandle(void* handle) noexcept;
+};
 
 }   // namespace gp::platform::windows
