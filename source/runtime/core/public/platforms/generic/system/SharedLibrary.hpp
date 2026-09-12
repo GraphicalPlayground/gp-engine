@@ -32,17 +32,17 @@ public:
 
     /// @brief
     /// @param[in] directory
-    static inline void addDirectory([[maybe_unused]] gp::StringView directory) noexcept
+    GP_FORCEINLINE_HINT static void addDirectory([[maybe_unused]] gp::StringView directory) noexcept
     {}
 
     /// @brief
     /// @param[in] directory
-    static inline void pushDirectory([[maybe_unused]] gp::StringView directory) noexcept
+    GP_FORCEINLINE_HINT static void pushDirectory([[maybe_unused]] gp::StringView directory) noexcept
     {}
 
     /// @brief
     /// @param[in] directory
-    static inline void popDirectory([[maybe_unused]] gp::StringView directory) noexcept
+    GP_FORCEINLINE_HINT static void popDirectory([[maybe_unused]] gp::StringView directory) noexcept
     {}
 };
 
