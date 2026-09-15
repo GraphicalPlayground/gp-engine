@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "containers/arrays/Vector.hpp"
+#include "containers/ContainerForward.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "platforms/generic/system/SharedLibrary.hpp"
 
@@ -12,6 +14,16 @@ namespace gp::platform::windows
 
 struct SharedLibrary final : public gp::platform::generic::SharedLibrary
 {
+private:
+    /// @brief Since Windows can only have one directory at a time, this stack is used to reset the previous directory.
+    // static gp::Vector<gp::String> s_searchPathsStack;
+
+    /// @brief All the directories we want to load shared libraries from.
+    // static gp::Vector<gp::String> s_searchPaths;
+
+    /// @brief A cache of the shared libraries found in each directory in @p s_searchPaths.
+    // static gp::Map<gp::Name, gp::Vector<gp::String>> s_searchPathsCache;
+
 public:
     /// @brief Get the Export object
     /// @param[in] handle
