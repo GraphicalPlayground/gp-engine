@@ -240,7 +240,8 @@
       "bindings": "attachment",
       "state": "tasks",
       "system": "desktop",
-      "raytracing": "claude"
+      "raytracing": "claude",
+      "allocators": "bloc"
     },
     /* File Associations */
     "files.associations": {
