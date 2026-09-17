@@ -17,10 +17,10 @@ template <concepts::IsFloatingPoint T>
 struct alignas(sizeof(T) * 4) Vector4
 {
 public:
-    T x;    //<! The x component of the vector
-    T y;    //<! The y component of the vector
-    T z;    //<! The z component of the vector
-    T w;    //<! The w component of the vector
+    T x;   //<! The x component of the vector
+    T y;   //<! The y component of the vector
+    T z;   //<! The z component of the vector
+    T w;   //<! The w component of the vector
 
 public:
     /// @brief Returns a zero vector.
@@ -83,14 +83,14 @@ public:
     /// @return A vector pointing to the negative W-axis.
     [[nodiscard]] static inline constexpr Vector4<T> negativeW()
     {
-        return { T{  }, T{ 0 }, T{ 0 }, T{ -1 } };
+        return { T{}, T{ 0 }, T{ 0 }, T{ -1 } };
     }
 
     /// @brief Returns a vector pointing to the positive W-axis.
     /// @return A vector pointing to the positive W-axis.
     [[nodiscard]] static inline constexpr Vector4<T> positiveW()
     {
-        return { T{  }, T{ 0 }, T{ 0 }, T{ 1 } };
+        return { T{}, T{ 0 }, T{ 0 }, T{ 1 } };
     }
 
     /// @brief Returns a unit vector along the x-axis.
@@ -121,7 +121,7 @@ public:
         return { T{ 0 }, T{ 0 }, T{ 0 }, T{ 1 } };
     }
 
-    public:
+public:
     /// @brief Default constructor initializes to (0, 0, 0, 0).
     [[nodiscard]] constexpr Vector4() noexcept
         : x(T{ 0 })
@@ -198,9 +198,245 @@ public:
         , z(vec.z)
         , w(inW)
     {}
+
+public:
+    /// @brief Component-wise cross product of this vector with another vector.
+    /// @param[in] other The other vector to compute the cross product with.
+    /// @return The cross product of this vector and the other vector.
+    [[nodiscard]] constexpr Vector4<T> operator^(const Vector4<T>& other) const noexcept
+    {
+        return Vector4<T>(y * other.z - z * other.y, z * other.x - x * other.z, x * other.y - y * other.x, w * other.w);
+    }
+
+    /// @brief Component-wise dot product of this vector with another vector.
+    /// @param[in] other The other vector to compute the dot product with.
+    /// @return The dot product of this vector and the other vector.
+    [[nodiscard]] constexpr T operator|(const Vector4<T>& other) const noexcept
+    {
+        return x * other.x + y * other.y + z * other.z + w * other.w;
+    }
+
+    /// @brief Negation operator, returns a vector with all components negated.
+    /// @return A vector with all components negated.
+    [[nodiscard]] constexpr Vector4<T> operator-() const noexcept
+    {
+        return Vector4<T>(-x, -y, -z, -w);
+    }
+
+    /// @brief Unary plus operator, returns the vector itself.
+    /// @return The vector itself.
+    [[nodiscard]] constexpr Vector4<T> operator+() const noexcept
+    {
+        return *this;
+    }
+
+    /// @brief Component-wise addition of this vector with another vector.
+    /// @param[in] other The other vector to add to this vector.
+    /// @return The component-wise sum of this vector and the other vector.
+    [[nodiscard]] constexpr Vector4<T> operator+(const Vector4<T>& other) const noexcept
+    {
+        return Vector4<T>(x + other.x, y + other.y, z + other.z, w + other.w);
+    }
+
+    /// @brief Component-wise addition of a scalar bias to this vector.
+    /// @param[in] bias The scalar bias to add to each component of the vector.
+    /// @return The component-wise sum of this vector and the scalar bias.
+    [[nodiscard]] constexpr Vector4<T> operator+(const T bias) const noexcept
+    {
+        return Vector4<T>(x + bias, y + bias, z + bias, w + bias);
+    }
+
+    /// @brief Component-wise subtraction of another vector from this vector.
+    /// @param[in] other The other vector to subtract from this vector.
+    /// @return The component-wise difference of this vector and the other vector.
+    [[nodiscard]] constexpr Vector4<T> operator-(const Vector4<T>& other) const noexcept
+    {
+        return Vector4<T>(x - other.x, y - other.y, z - other.z, w - other.w);
+    }
+
+    /// @brief Component-wise subtraction of a scalar bias from this vector.
+    /// @param[in] bias The scalar bias to subtract from each component of the vector.
+    /// @return The component-wise difference of this vector and the scalar bias.
+    [[nodiscard]] constexpr Vector4<T> operator-(const T bias) const noexcept
+    {
+        return Vector4<T>(x - bias, y - bias, z - bias, w - bias);
+    }
+
+    /// @brief Component-wise multiplication of this vector with another vector.
+    /// @param[in] other The other vector to multiply with this vector.
+    /// @return The component-wise product of this vector and the other vector.
+    [[nodiscard]] constexpr Vector4<T> operator*(const Vector4<T>& other) const noexcept
+    {
+        return Vector4<T>(x * other.x, y * other.y, z * other.z, w * other.w);
+    }
+
+    /// @brief Component-wise division of this vector by another vector.
+    /// @param[in] other The other vector to divide this vector by.
+    /// @return The component-wise quotient of this vector and the other vector.
+    [[nodiscard]] constexpr Vector4<T> operator/(const Vector4<T>& other) const noexcept
+    {
+        return Vector4<T>(x / other.x, y / other.y, z / other.z, w / other.w);
+    }
+
+    /// @brief Component-wise division of this vector by a scalar scale factor.
+    /// @param[in] scale The scalar scale factor to divide each component of the vector by.
+    /// @return The component-wise quotient of this vector and the scalar scale factor.
+    /// @details
+    /// This operator computes the inverse of the scalar scale factor and multiplies it with each component
+    /// of the vector for improved performance, especially when the scalar is a constant or can be optimized by the
+    /// compiler.
+    [[nodiscard]] constexpr Vector4<T> operator/(const T scale) const noexcept
+    {
+        GP_ASSERT(scale != T{ 0 }, "Division by zero");
+        T invScale = static_cast<T>(1) / static_cast<T>(scale);
+        return Vector4<T>(x * invScale, y * invScale, z * invScale, w * invScale);
+    }
+
+    /// @brief Component-wise equality comparison of this vector with another vector.
+    /// @param[in] other The other vector to compare with this vector.
+    /// @return True if all components of this vector are equal to the corresponding components of the other vector,
+    /// false otherwise.
+    [[nodiscard]] constexpr bool operator==(const Vector4<T>& other) const noexcept
+    {
+        return x == other.x && y == other.y && z == other.z && w == other.w;
+    }
+
+    /// @brief Component-wise inequality comparison of this vector with another vector.
+    /// @param[in] other The other vector to compare with this vector.
+    /// @return True if any component of this vector is not equal to the corresponding component of the other vector,
+    /// false otherwise.
+    [[nodiscard]] constexpr bool operator!=(const Vector4<T>& other) const noexcept
+    {
+        return !(*this == other);
+    }
+
+    /// @brief Subscript operator for non-const access to vector components by index.
+    /// @param[in] index The index of the component to access (0 for x, 1 for y, 2 for z, 3 for w).
+    /// @return A reference to the component at the specified index.
+    /// @note The behavior is undefined if the index is out of range (not 0, 1, 2, or 3).
+    [[nodiscard]] constexpr T& operator[](const Int32 index) noexcept
+    {
+        GP_ASSERT(index >= 0 && index < 4, "Index out of range");
+        return *(&x + index);
+    }
+
+    /// @brief Subscript operator for const access to vector components by index.
+    /// @param[in] index The index of the component to access (0 for x, 1 for y, 2 for z, 3 for w).
+    /// @return A const reference to the component at the specified index.
+    /// @note The behavior is undefined if the index is out of range (not 0, 1, 2, or 3).
+    [[nodiscard]] constexpr const T& operator[](const Int32 index) const noexcept
+    {
+        GP_ASSERT(index >= 0 && index < 4, "Index out of range");
+        return *(&x + index);
+    }
+
+    /// @brief In-place component-wise addition of another vector to this vector.
+    /// @param[in] other The other vector to add to this vector.
+    /// @return A reference to this vector after the addition.
+    constexpr Vector4<T>& operator+=(const Vector4<T>& other) noexcept
+    {
+        x += other.x;
+        y += other.y;
+        z += other.z;
+        w += other.w;
+        return *this;
+    }
+
+    /// @brief In-place component-wise addition of a scalar bias to this vector.
+    /// @tparam U The arithmetic type of the scalar bias.
+    /// @param[in] bias The scalar bias to add to each component of the vector.
+    /// @return A reference to this vector after the addition.
+    template <concepts::IsArithmetic U>
+    constexpr Vector4<T>& operator+=(const U bias) noexcept
+    {
+        x += static_cast<T>(bias);
+        y += static_cast<T>(bias);
+        z += static_cast<T>(bias);
+        w += static_cast<T>(bias);
+        return *this;
+    }
+
+    /// @brief In-place component-wise subtraction of another vector from this vector.
+    /// @param[in] other The other vector to subtract from this vector.
+    /// @return A reference to this vector after the subtraction.
+    constexpr Vector4<T>& operator-=(const Vector4<T>& other) noexcept
+    {
+        x -= other.x;
+        y -= other.y;
+        z -= other.z;
+        w -= other.w;
+        return *this;
+    }
+
+    /// @brief In-place component-wise subtraction of a scalar bias from this vector.
+    /// @tparam U The arithmetic type of the scalar bias.
+    /// @param[in] bias The scalar bias to subtract from each component of the vector.
+    /// @return A reference to this vector after the subtraction.
+    template <concepts::IsArithmetic U>
+    constexpr Vector4<T>& operator-=(const U bias) noexcept
+    {
+        x -= static_cast<T>(bias);
+        y -= static_cast<T>(bias);
+        z -= static_cast<T>(bias);
+        w -= static_cast<T>(bias);
+        return *this;
+    }
+
+    /// @brief In-place component-wise multiplication of this vector with another vector.
+    /// @param[in] other The other vector to multiply with this vector.
+    /// @return A reference to this vector after the multiplication.
+    constexpr Vector4<T>& operator*=(const Vector4<T>& other) noexcept
+    {
+        x *= other.x;
+        y *= other.y;
+        z *= other.z;
+        w *= other.w;
+        return *this;
+    }
+
+    /// @brief In-place component-wise multiplication of this vector by a scalar scale factor.
+    /// @tparam U The arithmetic type of the scalar scale factor.
+    /// @param[in] scale The scalar scale factor to multiply each component of the vector by.
+    /// @return A reference to this vector after the multiplication.
+    template <concepts::IsArithmetic U>
+    constexpr Vector4<T>& operator*=(const U scale) noexcept
+    {
+        x *= static_cast<T>(scale);
+        y *= static_cast<T>(scale);
+        z *= static_cast<T>(scale);
+        w *= static_cast<T>(scale);
+        return *this;
+    }
+
+    /// @brief In-place component-wise division of this vector by another vector.
+    /// @param[in] other The other vector to divide this vector by.
+    /// @return A reference to this vector after the division.
+    constexpr Vector4<T>& operator/=(const Vector4<T>& other) noexcept
+    {
+        x /= other.x;
+        y /= other.y;
+        z /= other.z;
+        w /= other.w;
+        return *this;
+    }
+
+    /// @brief In-place component-wise division of this vector by a scalar scale factor.
+    /// @tparam U The arithmetic type of the scalar scale factor.
+    /// @param[in] scale The scalar scale factor to divide each component of the vector by.
+    /// @return A reference to this vector after the division.
+    template <concepts::IsArithmetic U>
+    constexpr Vector4<T>& operator/=(const U scale) noexcept
+    {
+        GP_ASSERT(scale != T{ 0 }, "Division by zero");
+        T invScale = static_cast<T>(1) / static_cast<T>(scale);
+        x *= invScale;
+        y *= invScale;
+        z *= invScale;
+        w *= invScale;
+        return *this;
+    }
 };
 
 }   // namespace gp::math
 
-// Include the implementation of the Vector4 template
 #include "maths/vector/Vector4.inl"
