@@ -352,8 +352,10 @@ public:
     template <concepts::IsArithmetic U>
     constexpr Vector2<T>& operator/=(const U scale) noexcept
     {
-        x /= static_cast<T>(scale);
-        y /= static_cast<T>(scale);
+        GP_ASSERT(scale != T{ 0 }, "Division by zero");
+        T invScale = static_cast<T>(1) / static_cast<T>(scale);
+        x *= invScale;
+        y *= invScale;
         return *this;
     }
 
