@@ -6,6 +6,9 @@
 
 #include "concepts/Concepts.hpp"
 #include "CoreMinimal.hpp"
+#include "maths/base/Constants.hpp"
+#include "maths/base/Scalar.hpp"
+#include "maths/base/Tresholds.hpp"
 #include "maths/MathForward.hpp"
 
 namespace gp::math
@@ -434,6 +437,290 @@ public:
         z *= invScale;
         w *= invScale;
         return *this;
+    }
+
+public:
+    /// @brief Gets a reference to a component of the vector by index.
+    /// @param[in] index The index of the component to access (0 for x, 1 for y, 2 for z, 3 for w).
+    /// @return A reference to the component at the specified index.
+    /// @note The behavior is undefined if the index is out of range (not 0, 1, 2, or 3).
+    [[nodiscard]] constexpr T& component(const Int32 index) noexcept
+    {
+        GP_ASSERT(index >= 0 && index < 4, "Index out of range");
+        return *(&x + index);
+    }
+
+    /// @brief Gets a const reference to a component of the vector by index.
+    /// @param[in] index The index of the component to access (0 for x, 1 for y, 2 for z, 3 for w).
+    /// @return A const reference to the component at the specified index.
+    /// @note The behavior is undefined if the index is out of range (not 0, 1, 2, or 3).
+    [[nodiscard]] constexpr const T& component(const Int32 index) const noexcept
+    {
+        GP_ASSERT(index >= 0 && index < 4, "Index out of range");
+        return *(&x + index);
+    }
+
+    /// @brief Component-wise cross product of this vector with another vector.
+    /// @param[in] other The other vector to compute the cross product with.
+    /// @return The cross product of this vector and the other vector.
+    [[nodiscard]] constexpr Vector4<T> cross(const Vector4<T>& other) const noexcept
+    {
+        return *this ^ other;
+    }
+
+    /// @brief Component-wise dot product of this vector with another vector.
+    /// @param[in] other The other vector to compute the dot product with.
+    /// @return The dot product of this vector and the other vector.
+    [[nodiscard]] constexpr T dot(const Vector4<T>& other) const noexcept
+    {
+        return *this | other;
+    }
+
+    /// @brief Checks if this vector is equal to another vector within a specified tolerance.
+    /// @param[in] other The other vector to compare with this vector.
+    /// @param[in] tolerance The tolerance value for the comparison.
+    /// @return True if the absolute difference between each corresponding component of the two vectors is less than or
+    /// equal to the specified tolerance, false otherwise.
+    [[nodiscard]] constexpr bool
+        equals(const Vector4<T>& other, const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    {
+        return math::abs(x - other.x) <= tolerance && math::abs(y - other.y) <= tolerance &&
+               math::abs(z - other.z) <= tolerance && math::abs(w - other.w) <= tolerance;
+    }
+
+    /// @brief Checks if all components of this vector are equal within a specified tolerance.
+    /// @param[in] tolerance The tolerance value for the comparison.
+    /// @return True if the absolute difference between each pair of components of the vector is less than or equal to
+    /// the specified tolerance, false otherwise.
+    [[nodiscard]] constexpr bool
+        isAllComponentsEqual(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    {
+        return math::abs(x - y) <= tolerance && math::abs(x - z) <= tolerance && math::abs(x - w) <= tolerance &&
+               math::abs(y - z) <= tolerance && math::abs(y - w) <= tolerance && math::abs(z - w) <= tolerance;
+    }
+
+    /// @brief Checks if the vector is nearly zero within a given tolerance.
+    /// @param[in] tolerance The tolerance for the comparison.
+    /// @return True if all components of the vector are nearly zero within the tolerance, false otherwise.
+    [[nodiscard]] constexpr bool isNearlyZero(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    {
+        return math::abs(x) <= tolerance && math::abs(y) <= tolerance && math::abs(z) <= tolerance &&
+               math::abs(w) <= tolerance;
+    }
+
+    /// @brief Checks if the vector is exactly zero.
+    /// @return True if all components of the vector are exactly zero, false otherwise.
+    [[nodiscard]] constexpr bool isZero() const noexcept
+    {
+        return x == T{ 0 } && y == T{ 0 } && z == T{ 0 } && w == T{ 0 };
+    }
+
+    /// @brief Checks if the vector is a unit vector within a given tolerance.
+    /// @param[in] tolerance The tolerance for the comparison.
+    /// @return True if the vector is a unit vector within the tolerance, false otherwise.
+    [[nodiscard]] constexpr bool isUnit(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    {
+        return math::abs(T{ 1 } - lengthSquared()) <= tolerance;
+    }
+
+    /// @brief Checks if the vector is normalized within a given tolerance.
+    /// @param[in] tolerance The tolerance for the comparison.
+    /// @return True if the vector is normalized within the tolerance, false otherwise.
+    [[nodiscard]] constexpr bool isNormalized(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    {
+        return isUnit(tolerance);
+    }
+
+    /// @brief Checks if all components of the vector are uniform within a given tolerance.
+    /// @param[in] tolerance The tolerance for the comparison.
+    /// @return True if all components of the vector are uniform within the tolerance, false otherwise.
+    [[nodiscard]] constexpr bool isUniform(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    {
+        return isAllComponentsEqual(tolerance);
+    }
+
+    /// @brief Get the maximum component value of the vector.
+    /// @return The maximum component value among x, y, z, and w.
+    [[nodiscard]] constexpr T getMax() const noexcept
+    {
+        return math::max(x, math::max(y, math::max(z, w)));
+    }
+
+    /// @brief Get the minimum component value of the vector.
+    /// @return The minimum component value among x, y, z, and w.
+    [[nodiscard]] constexpr T getMin() const noexcept
+    {
+        return math::min(x, math::min(y, math::min(z, w)));
+    }
+
+    /// @brief Get the maximum absolute component value of the vector.
+    /// @return The maximum absolute component value among x, y, z, and w.
+    [[nodiscard]] constexpr T getAbsMax() const noexcept
+    {
+        return math::max(math::abs(x), math::max(math::abs(y), math::max(math::abs(z), math::abs(w))));
+    }
+
+    /// @brief Get the minimum absolute component value of the vector.
+    /// @return The minimum absolute component value among x, y, z, and w.
+    [[nodiscard]] constexpr T getAbsMin() const noexcept
+    {
+        return math::min(math::abs(x), math::min(math::abs(y), math::min(math::abs(z), math::abs(w))));
+    }
+
+    /// @brief Get the component-wise minimum of this vector and another vector.
+    /// @param[in] other The other vector to compare with this vector.
+    /// @return A vector containing the minimum of each component between this vector and the other vector.
+    [[nodiscard]] constexpr Vector4<T> getComponentWiseMin(const Vector4<T>& other) const noexcept
+    {
+        return Vector4<T>(math::min(x, other.x), math::min(y, other.y), math::min(z, other.z), math::min(w, other.w));
+    }
+
+    /// @brief Get the component-wise maximum of this vector and another vector.
+    /// @param[in] other The other vector to compare with this vector.
+    /// @return A vector containing the maximum of each component between this vector and the other vector.
+    [[nodiscard]] constexpr Vector4<T> getComponentWiseMax(const Vector4<T>& other) const noexcept
+    {
+        return Vector4<T>(math::max(x, other.x), math::max(y, other.y), math::max(z, other.z), math::max(w, other.w));
+    }
+
+    /// @brief Get the component-wise minimum of the absolute values of this vector and another vector.
+    /// @param[in] other The other vector to compare with this vector.
+    /// @return A vector containing the minimum of the absolute values of each component between this vector and the
+    /// other vector.
+    [[nodiscard]] constexpr Vector4<T> getComponentWiseAbsMin(const Vector4<T>& other) const noexcept
+    {
+        return Vector4<T>(
+            math::min(math::abs(x), math::abs(other.x)),
+            math::min(math::abs(y), math::abs(other.y)),
+            math::min(math::abs(z), math::abs(other.z)),
+            math::min(math::abs(w), math::abs(other.w))
+        );
+    }
+
+    /// @brief Get the component-wise maximum of the absolute values of this vector and another vector.
+    /// @param[in] other The other vector to compare with this vector.
+    /// @return A vector containing the maximum of the absolute values of each component between this vector and the
+    /// other vector.
+    [[nodiscard]] constexpr Vector4<T> getComponentWiseAbsMax(const Vector4<T>& other) const noexcept
+    {
+        return Vector4<T>(
+            math::max(math::abs(x), math::abs(other.x)),
+            math::max(math::abs(y), math::abs(other.y)),
+            math::max(math::abs(z), math::abs(other.z)),
+            math::max(math::abs(w), math::abs(other.w))
+        );
+    }
+
+    /// @brief Get a vector containing the absolute values of each component of this vector.
+    /// @return A vector with the absolute values of each component of this vector.
+    [[nodiscard]] constexpr Vector4<T> getAbs() const noexcept
+    {
+        return Vector4<T>(math::abs(x), math::abs(y), math::abs(z), math::abs(w));
+    }
+
+    /// @brief Get the length of the vector.
+    /// @return The length of the vector.
+    [[nodiscard]] constexpr T length() const noexcept
+    {
+        return math::sqrt(lengthSquared());
+    }
+
+    /// @brief Get the squared length of the vector.
+    /// @return The squared length of the vector.
+    [[nodiscard]] constexpr T lengthSquared() const noexcept
+    {
+        return x * x + y * y + z * z + w * w;
+    }
+
+    /// @brief Normalize the vector in place if its length is greater than a given tolerance.
+    /// @param[in] tolerance The tolerance for the length check to avoid division by zero or very small numbers.
+    /// @return True if the vector was successfully normalized, false if the length was too small and the vector was not
+    /// modified.
+    constexpr bool normalize(const T tolerance = std::numeric_limits<T>::epsilon()) noexcept
+    {
+        const T lenSq = lengthSquared();
+        if (lenSq > tolerance * tolerance)
+        {
+            const T invLen = static_cast<T>(1) / math::sqrt(lenSq);
+            x *= invLen;
+            y *= invLen;
+            z *= invLen;
+            w *= invLen;
+            return true;
+        }
+        return false;
+    }
+
+    /// @brief Get a normalized version of this vector without modifying the original vector unsafely, assuming the
+    /// length of the vector is greater than zero.
+    /// @return A normalized version of this vector if its length is greater than zero, or an undefined result if the
+    /// length is zero (caller must ensure the length is greater than zero).
+    [[nodiscard]] constexpr Vector4<T> getNormalizedUnsafe() const noexcept
+    {
+        const T lenSq = lengthSquared();
+        GP_ASSERT(lenSq > T{ 0 }, "Cannot normalize a vector with zero length");
+        const T invLen = static_cast<T>(1) / math::sqrt(lenSq);
+        return Vector4<T>(x * invLen, y * invLen, z * invLen, w * invLen);
+    }
+
+    /// @brief Get a normalized version of this vector, returning a zero vector if the length is less than or equal to a
+    /// given tolerance to avoid division by zero or very small numbers.
+    /// @param[in] tolerance The tolerance for the length check to determine if the vector is too small to normalize.
+    /// @return A normalized version of this vector if its length is greater than the tolerance, or a zero vector if the
+    /// length is less than or equal to the tolerance.
+    [[nodiscard]] constexpr Vector4<T>
+        getNormalizedSafe(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    {
+        const T lenSq = lengthSquared();
+        if (lenSq > tolerance * tolerance)
+        {
+            const T invLen = static_cast<T>(1) / math::sqrt(lenSq);
+            return Vector4<T>(x * invLen, y * invLen, z * invLen, w * invLen);
+        }
+        return Vector4<T>::zero();
+    }
+
+    /// @brief Get a vector containing the sign of each component of this vector.
+    /// @return A vector with the sign of each component of this vector, where each component is -1, 0, or 1 depending
+    /// on whether the original component is negative, zero, or positive, respectively.
+    [[nodiscard]] constexpr Vector4<T> getSign() const noexcept
+    {
+        return Vector4<T>(math::sign(x), math::sign(y), math::sign(z), math::sign(w));
+    }
+
+    /// @brief Get the projection of this vector onto the xy-plane by dividing the x and y components by the z component
+    /// @return A vector containing the projected x and y components, with the z component set to 1.
+    [[nodiscard]] constexpr Vector4<T> getProjectedToXY() const noexcept
+    {
+        GP_ASSERT(z != T{ 0 }, "Cannot project to XY plane when z component is zero");
+        return Vector4<T>(x / z, y / z, T{ 1 }, w);
+    }
+
+    /// @brief Get the component-wise reciprocal of this vector, where each component is replaced by its reciprocal.
+    /// @return A vector containing the reciprocal of each component of this vector, where each component is 1 divided
+    /// by the original component.
+    [[nodiscard]] constexpr Vector4<T> getReciprocal() const noexcept
+    {
+        GP_ASSERT(x != T{ 0 } && y != T{ 0 } && z != T{ 0 } && w != T{ 0 }, "Cannot compute reciprocal of zero component");
+        return Vector4<T>(T{ 1 } / x, T{ 1 } / y, T{ 1 } / z, T{ 1 } / w);
+    }
+
+    /// @brief Project this vector onto a normal vector.
+    /// @param[in] normal The normal vector to project onto.
+    /// @return The projected vector.
+    [[nodiscard]] constexpr Vector4<T> projectOnToNormal(const Vector4<T>& normal) const noexcept
+    {
+        GP_ASSERT(normal.isNormalized(), "Normal vector must be normalized for projection");
+        return normal * (this->dot(normal));
+    }
+
+    /// @brief Mirror this vector by another vector.
+    /// @param[in] normal The vector to mirror by.
+    /// @return The mirrored vector.
+    [[nodiscard]] constexpr Vector4<T> mirrorBy(const Vector4<T>& normal) const noexcept
+    {
+        GP_ASSERT(normal.isNormalized(), "Normal vector must be normalized for mirroring");
+        return *this - normal * (T{ 2 } * this->dot(normal));
     }
 };
 
