@@ -376,7 +376,7 @@ public:
     /// @param[in] other The other vector to divide this vector by.
     /// @return A reference to this vector after the division.
     constexpr Vector3<T>& operator/=(const Vector3<T>& other) noexcept
-    {        
+    {
         x /= other.x;
         y /= other.y;
         z /= other.z;
