@@ -390,7 +390,7 @@ public:
     template <concepts::IsArithmetic U>
     constexpr Vector3<T>& operator/=(const U scale) noexcept
     {
-        GP_ASSERT(scale != T(0), "Division by zero");
+        GP_ASSERT(scale != T{ 0 }, "Division by zero");
         T invScale = static_cast<T>(1) / static_cast<T>(scale);
         x *= invScale;
         y *= invScale;
