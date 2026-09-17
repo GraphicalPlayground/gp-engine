@@ -378,7 +378,9 @@
       /* Github */
       "GitHub.vscode-pull-request-github",
       "github.vscode-github-actions",
-      "me-dutour-mathieu.vscode-github-actions"
+      "me-dutour-mathieu.vscode-github-actions",
+      /* Other */
+      "FanaticPythoner.better-todo-tree"
     ],
     "unwantedRecommendations": [
       /* Conflicts with Clangd */
