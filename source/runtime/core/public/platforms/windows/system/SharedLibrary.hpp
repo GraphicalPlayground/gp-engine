@@ -25,6 +25,11 @@ private:
     // static gp::Map<gp::Name, gp::Vector<gp::String>> s_searchPathsCache;
 
 public:
+    /// @brief Get the Handle object
+    /// @param[in] filename
+    /// @return
+    [[nodiscard]] static GP_CORE_API void* getHandle(gp::StringView filename) noexcept;
+
     /// @brief Get the Export object
     /// @param[in] handle
     /// @param[in] procName
@@ -35,6 +40,18 @@ public:
     /// @param[in] handle
     /// @return
     static GP_CORE_API void freeHandle(void* handle) noexcept;
+
+    /// @brief
+    /// @param[in] directory
+    static void addDirectory(gp::StringView directory) noexcept;
+
+    /// @brief
+    /// @param[in] directory
+    static void pushDirectory(gp::StringView directory) noexcept;
+
+    /// @brief
+    /// @param[in] directory
+    static void popDirectory(gp::StringView directory) noexcept;
 };
 
 }   // namespace gp::platform::windows
