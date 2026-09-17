@@ -538,10 +538,7 @@ public:
     /// other vector.
     [[nodiscard]] constexpr Vector2<T> getComponentAbsMin(const Vector2<T>& other) const noexcept
     {
-        return Vector2<T>(
-            math::min(math::abs(x), math::abs(other.x)),
-            math::min(math::abs(y), math::abs(other.y))
-        );
+        return Vector2<T>(math::min(math::abs(x), math::abs(other.x)), math::min(math::abs(y), math::abs(other.y)));
     }
 
     /// @brief Get the component-wise maximum of the absolute values of this vector and another vector.
@@ -550,10 +547,7 @@ public:
     /// other vector.
     [[nodiscard]] constexpr Vector2<T> getComponentAbsMax(const Vector2<T>& other) const noexcept
     {
-        return Vector2<T>(
-            math::max(math::abs(x), math::abs(other.x)),
-            math::max(math::abs(y), math::abs(other.y))
-        );
+        return Vector2<T>(math::max(math::abs(x), math::abs(other.x)), math::max(math::abs(y), math::abs(other.y)));
     }
 
     /// @brief Get a vector containing the absolute values of each component of this vector.
@@ -640,8 +634,7 @@ public:
     [[nodiscard]] constexpr Vector2<T> getReciprocal() const noexcept
     {
         return Vector2<T>(
-            x != T{ 0 } ? T{ 1 } / x : Constants<T>::bigNumber,
-            y != T{ 0 } ? T{ 1 } / y : Constants<T>::bigNumber
+            x != T{ 0 } ? T{ 1 } / x : Constants<T>::bigNumber, y != T{ 0 } ? T{ 1 } / y : Constants<T>::bigNumber
         );
     }
 
@@ -662,7 +655,6 @@ public:
     }
 
 public:
-
     /// @brief Component-wise cross product of two vectors.
     /// @param[in] lhs The first vector to compute the cross product with.
     /// @param[in] rhs The second vector to compute the cross product with.
@@ -729,10 +721,7 @@ public:
     [[nodiscard]] constexpr static inline Vector2<T>
         clamp(const Vector2<T>& value, const Vector2<T>& minVec, const Vector2<T>& maxVec) noexcept
     {
-        return Vector2<T>(
-            math::clamp(value.x, minVec.x, maxVec.x),
-            math::clamp(value.y, minVec.y, maxVec.y)
-        );
+        return Vector2<T>(math::clamp(value.x, minVec.x, maxVec.x), math::clamp(value.y, minVec.y, maxVec.y));
     }
 };
 
