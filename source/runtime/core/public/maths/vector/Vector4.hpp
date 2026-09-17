@@ -5,6 +5,7 @@
 #pragma once
 
 #include "concepts/Concepts.hpp"
+#include "concepts/Fundamental.hpp"
 #include "CoreMinimal.hpp"
 #include "maths/base/Constants.hpp"
 #include "maths/base/Scalar.hpp"
@@ -183,24 +184,23 @@ public:
     /// @param[in] inZ The z component of the Vector4, defaulting to 0 if not provided.
     /// @param[in] inW The w component of the Vector4, defaulting to 0 if not provided.
     template <concepts::IsFloatingPoint U = T>
-    [[nodiscard]] explicit constexpr Vector4(const Vector2<T>& vec, const U inZ = U{ 0 }, const U inW = U{ 0 }) noexcept
-        : x(vec.x)
-        , y(vec.y)
-        , z(inZ)
-        , w(inW)
-    {}
+    [[nodiscard]] explicit constexpr Vector4(
+        const Vector2<T>& vec, const U inZ = U{ 0 }, const U inW = U{ 0 }
+    ) noexcept;
 
     /// @brief Constructor that initializes the vector from a Vector3 and one additional component.
     /// @tparam U The floating-point type of the input vector and additional component.
     /// @param[in] vec The input Vector3 to initialize the x, y, and z components of the Vector4.
     /// @param[in] inW The w component of the Vector4, defaulting to 0 if not provided.
     template <concepts::IsFloatingPoint U = T>
-    [[nodiscard]] explicit constexpr Vector4(const Vector3<T>& vec, const U inW = U{ 0 }) noexcept
-        : x(vec.x)
-        , y(vec.y)
-        , z(vec.z)
-        , w(inW)
-    {}
+    [[nodiscard]] explicit constexpr Vector4(const Vector3<T>& vec, const U inW = U{ 0 }) noexcept;
+
+    /// @brief Constructor that initializes the vector from two Vector2.
+    /// @tparam U The floating-point type of the input vectors.
+    /// @param[in] vecXY The Vector2 to initialize the x and y components of the Vector4.
+    /// @param[in] vecZW The Vector2 to initialize the z and w components of the Vector4.
+    template <concepts::IsFloatingPoint U = T>
+    [[nodiscard]] explicit constexpr Vector4(const Vector2<T>& vecXY, const Vector2<T>& vecZW) noexcept;
 
 public:
     /// @brief Component-wise cross product of this vector with another vector.
@@ -482,7 +482,7 @@ public:
     /// @return True if the absolute difference between each corresponding component of the two vectors is less than or
     /// equal to the specified tolerance, false otherwise.
     [[nodiscard]] constexpr bool
-        equals(const Vector4<T>& other, const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+        equals(const Vector4<T>& other, const T tolerance = Constants<T>::kindaSmallNumber) const noexcept
     {
         return math::abs(x - other.x) <= tolerance && math::abs(y - other.y) <= tolerance &&
                math::abs(z - other.z) <= tolerance && math::abs(w - other.w) <= tolerance;
@@ -492,8 +492,7 @@ public:
     /// @param[in] tolerance The tolerance value for the comparison.
     /// @return True if the absolute difference between each pair of components of the vector is less than or equal to
     /// the specified tolerance, false otherwise.
-    [[nodiscard]] constexpr bool
-        isAllComponentsEqual(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    [[nodiscard]] constexpr bool isAllComponentsEqual(const T tolerance = Constants<T>::kindaSmallNumber) const noexcept
     {
         return math::abs(x - y) <= tolerance && math::abs(x - z) <= tolerance && math::abs(x - w) <= tolerance &&
                math::abs(y - z) <= tolerance && math::abs(y - w) <= tolerance && math::abs(z - w) <= tolerance;
@@ -502,7 +501,7 @@ public:
     /// @brief Checks if the vector is nearly zero within a given tolerance.
     /// @param[in] tolerance The tolerance for the comparison.
     /// @return True if all components of the vector are nearly zero within the tolerance, false otherwise.
-    [[nodiscard]] constexpr bool isNearlyZero(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    [[nodiscard]] constexpr bool isNearlyZero(const T tolerance = Constants<T>::kindaSmallNumber) const noexcept
     {
         return math::abs(x) <= tolerance && math::abs(y) <= tolerance && math::abs(z) <= tolerance &&
                math::abs(w) <= tolerance;
@@ -518,7 +517,7 @@ public:
     /// @brief Checks if the vector is a unit vector within a given tolerance.
     /// @param[in] tolerance The tolerance for the comparison.
     /// @return True if the vector is a unit vector within the tolerance, false otherwise.
-    [[nodiscard]] constexpr bool isUnit(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    [[nodiscard]] constexpr bool isUnit(const T tolerance = Constants<T>::kindaSmallNumber) const noexcept
     {
         return math::abs(T{ 1 } - lengthSquared()) <= tolerance;
     }
@@ -526,7 +525,7 @@ public:
     /// @brief Checks if the vector is normalized within a given tolerance.
     /// @param[in] tolerance The tolerance for the comparison.
     /// @return True if the vector is normalized within the tolerance, false otherwise.
-    [[nodiscard]] constexpr bool isNormalized(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    [[nodiscard]] constexpr bool isNormalized(const T tolerance = Tresholds<T>::vectorNormalized) const noexcept
     {
         return isUnit(tolerance);
     }
@@ -534,7 +533,7 @@ public:
     /// @brief Checks if all components of the vector are uniform within a given tolerance.
     /// @param[in] tolerance The tolerance for the comparison.
     /// @return True if all components of the vector are uniform within the tolerance, false otherwise.
-    [[nodiscard]] constexpr bool isUniform(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    [[nodiscard]] constexpr bool isUniform(const T tolerance = Constants<T>::kindaSmallNumber) const noexcept
     {
         return isAllComponentsEqual(tolerance);
     }
@@ -636,7 +635,7 @@ public:
     /// @param[in] tolerance The tolerance for the length check to avoid division by zero or very small numbers.
     /// @return True if the vector was successfully normalized, false if the length was too small and the vector was not
     /// modified.
-    constexpr bool normalize(const T tolerance = std::numeric_limits<T>::epsilon()) noexcept
+    constexpr bool normalize(const T tolerance = Constants<T>::smallNumber) noexcept
     {
         const T lenSq = lengthSquared();
         if (lenSq > tolerance * tolerance)
@@ -668,8 +667,7 @@ public:
     /// @param[in] tolerance The tolerance for the length check to determine if the vector is too small to normalize.
     /// @return A normalized version of this vector if its length is greater than the tolerance, or a zero vector if the
     /// length is less than or equal to the tolerance.
-    [[nodiscard]] constexpr Vector4<T>
-        getNormalizedSafe(const T tolerance = std::numeric_limits<T>::epsilon()) const noexcept
+    [[nodiscard]] constexpr Vector4<T> getSafeNormal(const T tolerance = Constants<T>::smallNumber) const noexcept
     {
         const T lenSq = lengthSquared();
         if (lenSq > tolerance * tolerance)
@@ -724,8 +722,137 @@ public:
         GP_ASSERT(normal.isNormalized(), "Normal vector must be normalized for mirroring");
         return *this - normal * (T{ 2 } * this->dot(normal));
     }
+
+public:
+    /// @brief Component-wise cross product of two vectors.
+    /// @param[in] lhs The first vector to compute the cross product with.
+    /// @param[in] rhs The second vector to compute the cross product with.
+    /// @return The cross product of the two vectors.
+    [[nodiscard]] static constexpr Vector4<T> cross(const Vector4<T>& lhs, const Vector4<T>& rhs) noexcept
+    {
+        return lhs ^ rhs;
+    }
+
+    /// @brief Component-wise dot product of two vectors.
+    /// @param[in] lhs The first vector to compute the dot product with.
+    /// @param[in] rhs The second vector to compute the dot product with.
+    /// @return The dot product of the two vectors.
+    [[nodiscard]] static constexpr T dot(const Vector4<T>& lhs, const Vector4<T>& rhs) noexcept
+    {
+        return lhs | rhs;
+    }
+
+    /// @brief Get the component-wise minimum of two vectors.
+    /// @param[in] a The first vector to compare.
+    /// @param[in] b The second vector to compare.
+    /// @return A vector containing the minimum of each component between the two vectors.
+    [[nodiscard]] static constexpr Vector4<T> getComponentWiseMin(const Vector4<T>& a, const Vector4<T>& b) noexcept
+    {
+        return a.getComponentWiseMin(b);
+    }
+
+    /// @brief Get the component-wise maximum of two vectors.
+    /// @param[in] a The first vector to compare.
+    /// @param[in] b The second vector to compare.
+    /// @return A vector containing the maximum of each component between the two vectors.
+    [[nodiscard]] static constexpr Vector4<T> getComponentWiseMax(const Vector4<T>& a, const Vector4<T>& b) noexcept
+    {
+        return a.getComponentWiseMax(b);
+    }
+
+    /// @brief Clamp a vector between two other vectors.
+    /// @param[in] value The vector to clamp.
+    /// @param[in] minVec The minimum vector.
+    /// @param[in] maxVec The maximum vector.
+    /// @return The clamped vector.
+    [[nodiscard]] static constexpr Vector4<T>
+        clamp(const Vector4<T>& value, const Vector4<T>& minVec, const Vector4<T>& maxVec) noexcept
+    {
+        return Vector4<T>(
+            math::clamp(value.x, minVec.x, maxVec.x),
+            math::clamp(value.y, minVec.y, maxVec.y),
+            math::clamp(value.z, minVec.z, maxVec.z),
+            math::clamp(value.w, minVec.w, maxVec.w)
+        );
+    }
 };
+
+/// @brief Get the component-wise minimum of two vectors.
+/// @param[in] a The first vector to compare.
+/// @param[in] b The second vector to compare.
+/// @return A vector containing the minimum of each component between the two vectors.
+template <concepts::IsFloatingPoint T>
+[[nodiscard]] constexpr Vector4<T> min(const Vector4<T>& a, const Vector4<T>& b) noexcept
+{
+    return Vector4<T>::getComponentWiseMin(a, b);
+}
+
+/// @brief Get the component-wise maximum of two vectors.
+/// @param[in] a The first vector to compare.
+/// @param[in] b The second vector to compare.
+/// @return A vector containing the maximum of each component between the two vectors.
+template <concepts::IsFloatingPoint T>
+[[nodiscard]] constexpr Vector4<T> max(const Vector4<T>& a, const Vector4<T>& b) noexcept
+{
+    return Vector4<T>::getComponentWiseMax(a, b);
+}
+
+/// @brief Get the component-wise minimum of three vectors.
+/// @param[in] a The first vector to compare.
+/// @param[in] b The second vector to compare.
+/// @param[in] c The third vector to compare.
+/// @return A vector containing the minimum of each component between the three vectors.
+template <concepts::IsFloatingPoint T>
+[[nodiscard]] constexpr Vector4<T> min(const Vector4<T>& a, const Vector4<T>& b, const Vector4<T>& c) noexcept
+{
+    return min(min(a, b), c);
+}
+
+/// @brief Get the component-wise maximum of three vectors.
+/// @param[in] a The first vector to compare.
+/// @param[in] b The second vector to compare.
+/// @param[in] c The third vector to compare.
+/// @return A vector containing the maximum of each component between the three vectors.
+template <concepts::IsFloatingPoint T>
+[[nodiscard]] constexpr Vector4<T> max(const Vector4<T>& a, const Vector4<T>& b, const Vector4<T>& c) noexcept
+{
+    return max(max(a, b), c);
+}
+
+/// @brief Clamp a vector between two other vectors.
+/// @param[in] value The vector to clamp.
+/// @param[in] minVec The minimum vector.
+/// @param[in] maxVec The maximum vector.
+/// @return The clamped vector.
+template <concepts::IsFloatingPoint T>
+[[nodiscard]] constexpr Vector4<T>
+    clamp(const Vector4<T>& value, const Vector4<T>& minVec, const Vector4<T>& maxVec) noexcept
+{
+    return Vector4<T>::clamp(value, minVec, maxVec);
+}
 
 }   // namespace gp::math
 
+/// @brief Component-wise addition of a scalar bias to a vector, with the scalar on the left-hand side of the operator.
+/// @param[in] bias The scalar bias to add to each component of the vector.
+/// @param[in] vec The vector to add the bias to.
+/// @return A vector containing the result of the component-wise addition.
+template <gp::concepts::IsFloatingPoint T, gp::concepts::IsArithmetic U>
+[[nodiscard]] constexpr gp::math::Vector4<T> operator+(const U bias, const gp::math::Vector4<T>& vec) noexcept
+{
+    return vec + bias;
+}
+
+/// @brief Component-wise multiplication of a vector by a scalar scale factor, with the scalar on the left-hand side of
+/// the operator.
+/// @param[in] scale The scalar scale factor to multiply each component of the vector by.
+/// @param[in] vec The vector to multiply by the scale factor.
+/// @return A vector containing the result of the component-wise multiplication.
+template <gp::concepts::IsFloatingPoint T, gp::concepts::IsArithmetic U>
+[[nodiscard]] constexpr gp::math::Vector4<T> operator*(const U scale, const gp::math::Vector4<T>& vec) noexcept
+{
+    return vec * scale;
+}
+
+// Include the implementation of the Vector4 template
 #include "maths/vector/Vector4.inl"
