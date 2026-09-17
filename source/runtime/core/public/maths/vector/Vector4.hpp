@@ -701,7 +701,9 @@ public:
     /// by the original component.
     [[nodiscard]] constexpr Vector4<T> getReciprocal() const noexcept
     {
-        GP_ASSERT(x != T{ 0 } && y != T{ 0 } && z != T{ 0 } && w != T{ 0 }, "Cannot compute reciprocal of zero component");
+        GP_ASSERT(
+            x != T{ 0 } && y != T{ 0 } && z != T{ 0 } && w != T{ 0 }, "Cannot compute reciprocal of zero component"
+        );
         return Vector4<T>(T{ 1 } / x, T{ 1 } / y, T{ 1 } / z, T{ 1 } / w);
     }
 
