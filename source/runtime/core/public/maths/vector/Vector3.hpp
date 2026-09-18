@@ -149,8 +149,8 @@ public:
         , z(static_cast<T>(vec.z))
     {}
 
-    /// @brief Constructor that initializes the vector from a Vector2 and two additional components.
-    /// @tparam U The floating-point type of the input vector and additional components.
+    /// @brief Constructor that initializes the vector from a Vector2 and one additional component.
+    /// @tparam U The floating-point type of the input vector and additional component.
     /// @param[in] vec The input Vector2 to initialize the x and y components of the Vector3.
     /// @param[in] inZ The z component of the Vector3, defaulting to 0 if not provided.
     template <concepts::IsFloatingPoint U = T>
