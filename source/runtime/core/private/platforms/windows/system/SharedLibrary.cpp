@@ -4,8 +4,6 @@
 
 #include "platforms/windows/system/SharedLibrary.hpp"
 #include <Windows.h>
-#include <minwindef.h>
-#include <winbase.h>
 
 namespace gp::platform::windows
 {
@@ -49,7 +47,7 @@ void* SharedLibrary::getHandle(gp::StringView filename) noexcept
     DWORD previousErrorMode = 0;
     const BOOL havePreviousErrorMode = ::SetThreadErrorMode(errorMode, &previousErrorMode);
 
-    void* handle = nullptr; // TODO: Add logic to load the library with search paths.
+    void* handle = nullptr;   // TODO: Add logic to load the library with search paths.
 
     if (havePreviousErrorMode)
     {
