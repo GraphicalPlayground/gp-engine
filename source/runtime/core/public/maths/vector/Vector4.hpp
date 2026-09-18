@@ -18,7 +18,7 @@ namespace gp::math
 /// @brief A 4D vector template.
 /// @tparam T The floating-point type for the vector components.
 template <concepts::IsFloatingPoint T>
-struct alignas(sizeof(T) * 4) Vector4
+struct Vector4
 {
 public:
     T x;   //<! The x component of the vector
@@ -318,8 +318,7 @@ public:
     /// @note The behavior is undefined if the index is out of range (not 0, 1, 2, or 3).
     [[nodiscard]] constexpr T& operator[](const Int32 index) noexcept
     {
-        GP_ASSERT(index >= 0 && index < 4, "Index out of range");
-        return *(&x + index);
+        return this->component(index);
     }
 
     /// @brief Subscript operator for const access to vector components by index.
@@ -328,8 +327,7 @@ public:
     /// @note The behavior is undefined if the index is out of range (not 0, 1, 2, or 3).
     [[nodiscard]] constexpr const T& operator[](const Int32 index) const noexcept
     {
-        GP_ASSERT(index >= 0 && index < 4, "Index out of range");
-        return *(&x + index);
+        return this->component(index);
     }
 
     /// @brief In-place component-wise addition of another vector to this vector.
