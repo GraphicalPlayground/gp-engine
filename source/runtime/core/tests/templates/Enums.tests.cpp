@@ -147,7 +147,7 @@ TEST(EnumUtilsFunctionsTest, SetFlags)
     auto flags = TestBitwiseFlags::FlagA;
     auto result = enums::setFlags(flags, TestBitwiseFlags::FlagB);
 
-    EXPECT_EQ(result, (TestBitwiseFlags::FlagA | TestBitwiseFlags::FlagB));
+    EXPECT_EQ(result, TestBitwiseFlags::FlagA | TestBitwiseFlags::FlagB);
     EXPECT_TRUE(enums::hasAllFlags(result, TestBitwiseFlags::FlagA | TestBitwiseFlags::FlagB));
 }
 
@@ -169,7 +169,7 @@ TEST(EnumUtilsFunctionsTest, ToggleFlags)
 
     // Toggle on
     flags = enums::toggleFlags(flags, TestBitwiseFlags::FlagB);
-    EXPECT_EQ(flags, (TestBitwiseFlags::FlagA | TestBitwiseFlags::FlagB));
+    EXPECT_EQ(flags, TestBitwiseFlags::FlagA | TestBitwiseFlags::FlagB);
 
     // Toggle off
     flags = enums::toggleFlags(flags, TestBitwiseFlags::FlagA);
