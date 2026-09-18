@@ -199,7 +199,6 @@ public:
     /// @tparam U The floating-point type of the input vectors.
     /// @param[in] vecXY The Vector2 to initialize the x and y components of the Vector4.
     /// @param[in] vecZW The Vector2 to initialize the z and w components of the Vector4.
-    template <concepts::IsFloatingPoint U = T>
     [[nodiscard]] explicit constexpr Vector4(const Vector2<T>& vecXY, const Vector2<T>& vecZW) noexcept;
 
 public:
