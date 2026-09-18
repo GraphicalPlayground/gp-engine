@@ -6,6 +6,9 @@
 
 #include "concepts/Concepts.hpp"
 #include "CoreMinimal.hpp"
+#include "memory/GlobalMemory.hpp"
+#include "memory/MemoryBase.hpp"
+#include "platforms/base/Platform.hpp"
 #include "platforms/base/PlatformMemory.hpp"
 #include <algorithm>
 #include <cstdlib>
@@ -202,6 +205,22 @@ GP_ALLOCATION_FUNCTION(1) inline void* systemAllocate(USize size)
 inline void systemDeallocate(void* ptr)
 {
     ::free(ptr);
+}
+
+/// @brief Get the actual size of an allocation, which may be larger than the requested size.
+/// @param[in] requestedSize The requested size of the memory block, in bytes.
+/// @param[in] alignment The alignment requirement for the allocated memory block, in bytes.
+/// @return The actual size of the allocated memory block, in bytes.
+/// @details For some allocators this will return the actual size that should be requested to eliminate
+/// internal fragmentation. The return value will always be >= requestedSize. This can be used to grow
+/// and shrink containers to optimal sizes.
+GP_FORCEINLINE gp::USize getActualAllocationSize(gp::USize requestedSize, gp::UInt32 alignment = kDefaultAlignment)
+{
+    if (!gp::memory::getInlineMalloc()) [[unlikely]]
+    {
+        return requestedSize;
+    }
+    return gp::memory::getInlineMalloc()->getActualAllocationSize(requestedSize, alignment);
 }
 
 }   // namespace gp::memory
