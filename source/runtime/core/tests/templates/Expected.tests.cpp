@@ -424,9 +424,12 @@ TEST(ExpectedMonadicTest, AndThen)
     LifecycleTracker::reset();
     Expected<LifecycleTracker, int> exLT(LifecycleTracker{ 42 });
     LifecycleTracker::reset();
-    auto res = std::move(exLT).andThen([](LifecycleTracker lt) -> Expected<int, int> {
+    auto res = std::move(exLT).andThen(
+        [](LifecycleTracker lt) -> Expected<int, int>
+    {
         return lt.value;
-    });
+    }
+    );
     EXPECT_EQ(res.value(), 42);
     EXPECT_EQ(LifecycleTracker::moves, 1);
 
@@ -434,9 +437,12 @@ TEST(ExpectedMonadicTest, AndThen)
     LifecycleTracker::reset();
     Expected<int, LifecycleTracker> errLT(makeUnexpected(LifecycleTracker{ 404 }));
     LifecycleTracker::reset();
-    auto resErr = std::move(errLT).andThen([](int x) -> Expected<int, LifecycleTracker> {
+    auto resErr = std::move(errLT).andThen(
+        [](int x) -> Expected<int, LifecycleTracker>
+    {
         return x;
-    });
+    }
+    );
     EXPECT_FALSE(resErr.hasValue());
     EXPECT_EQ(resErr.error().value, 404);
     // 1 move from storage to Unexpected temp, 1 move from Unexpected temp to new Expected storage
@@ -468,9 +474,12 @@ TEST(ExpectedMonadicTest, OrElse)
     LifecycleTracker::reset();
     Expected<int, LifecycleTracker> errLT(makeUnexpected(LifecycleTracker{ 404 }));
     LifecycleTracker::reset();
-    auto res = std::move(errLT).orElse([](LifecycleTracker lt) -> Expected<int, std::string> {
+    auto res = std::move(errLT).orElse(
+        [](LifecycleTracker lt) -> Expected<int, std::string>
+    {
         return lt.value;
-    });
+    }
+    );
     EXPECT_EQ(res.value(), 404);
     EXPECT_EQ(LifecycleTracker::moves, 1);
 
@@ -478,9 +487,12 @@ TEST(ExpectedMonadicTest, OrElse)
     LifecycleTracker::reset();
     Expected<LifecycleTracker, int> exLT(LifecycleTracker{ 42 });
     LifecycleTracker::reset();
-    auto resEx = std::move(exLT).orElse([](int e) -> Expected<LifecycleTracker, int> {
+    auto resEx = std::move(exLT).orElse(
+        [](int e) -> Expected<LifecycleTracker, int>
+    {
         return makeUnexpected(e);
-    });
+    }
+    );
     EXPECT_TRUE(resEx.hasValue());
     EXPECT_EQ(resEx.value().value, 42);
     EXPECT_EQ(LifecycleTracker::moves, 1);
@@ -504,7 +516,8 @@ TEST(ExpectedMonadicTest, Transform)
     LifecycleTracker::reset();
     Expected<LifecycleTracker, int> exLT(LifecycleTracker{ 42 });
     LifecycleTracker::reset();
-    auto res = std::move(exLT).transform([](LifecycleTracker lt) {
+    auto res = std::move(exLT).transform([](LifecycleTracker lt)
+    {
         return lt.value;
     });
     EXPECT_EQ(res.value(), 42);
@@ -514,7 +527,8 @@ TEST(ExpectedMonadicTest, Transform)
     LifecycleTracker::reset();
     Expected<int, LifecycleTracker> errLT(makeUnexpected(LifecycleTracker{ 404 }));
     LifecycleTracker::reset();
-    auto resErr = std::move(errLT).transform([](int x) {
+    auto resErr = std::move(errLT).transform([](int x)
+    {
         return x;
     });
     EXPECT_FALSE(resErr.hasValue());
@@ -540,7 +554,8 @@ TEST(ExpectedMonadicTest, TransformError)
     LifecycleTracker::reset();
     Expected<int, LifecycleTracker> errLT(makeUnexpected(LifecycleTracker{ 404 }));
     LifecycleTracker::reset();
-    auto res = std::move(errLT).transformError([](LifecycleTracker lt) {
+    auto res = std::move(errLT).transformError([](LifecycleTracker lt)
+    {
         return lt.value;
     });
     EXPECT_FALSE(res.hasValue());
@@ -551,7 +566,8 @@ TEST(ExpectedMonadicTest, TransformError)
     LifecycleTracker::reset();
     Expected<LifecycleTracker, int> exLT(LifecycleTracker{ 42 });
     LifecycleTracker::reset();
-    auto resEx = std::move(exLT).transformError([](int e) {
+    auto resEx = std::move(exLT).transformError([](int e)
+    {
         return e;
     });
     EXPECT_TRUE(resEx.hasValue());
