@@ -66,19 +66,19 @@
 /// @section GPU Zones
 
 #if GP_TRACY_HAS_GPU
-#define GP_GPU_SCOPE(name) TracyGpuZone(name)
-#define GP_GPU_SCOPE_C(name, color) TracyGpuZoneC(name, color)
-#define GP_GPU_SCOPE_CTX(ctx, name) TracyGpuZoneTransient(ctx, ___gpuZone, name, true)
-#define GP_GPU_SCOPE_CTX_C(ctx, name, color) TracyGpuZoneTransient(ctx, ___gpuZone, name, true)
-#define GP_GPU_MARKER(ctx, color, name) (void)(ctx)
-#define GP_GPU_COLLECT() TracyGpuCollect
+    #define GP_GPU_SCOPE(name) TracyGpuZone(name)
+    #define GP_GPU_SCOPE_C(name, color) TracyGpuZoneC(name, color)
+    #define GP_GPU_SCOPE_CTX(ctx, name) TracyGpuZoneTransient(ctx, ___gpuZone, name, true)
+    #define GP_GPU_SCOPE_CTX_C(ctx, name, color) TracyGpuZoneTransient(ctx, ___gpuZone, name, true)
+    #define GP_GPU_MARKER(ctx, color, name) (void)(ctx)
+    #define GP_GPU_COLLECT() TracyGpuCollect
 #else
-#define GP_GPU_SCOPE(name)
-#define GP_GPU_SCOPE_C(name, color)
-#define GP_GPU_SCOPE_CTX(ctx, name)
-#define GP_GPU_SCOPE_CTX_C(ctx, name, color)
-#define GP_GPU_MARKER(ctx, color, name)
-#define GP_GPU_COLLECT()
+    #define GP_GPU_SCOPE(name)
+    #define GP_GPU_SCOPE_C(name, color)
+    #define GP_GPU_SCOPE_CTX(ctx, name)
+    #define GP_GPU_SCOPE_CTX_C(ctx, name, color)
+    #define GP_GPU_MARKER(ctx, color, name)
+    #define GP_GPU_COLLECT()
 #endif
 
 /// @section Locks / Mutexes
