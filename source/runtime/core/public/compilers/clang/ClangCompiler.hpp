@@ -23,7 +23,11 @@
 
 /// @brief Suppresses debug-info generation for a function in debug builds.
 ///        Useful for thin wrappers that would otherwise pollute stepping in the debugger.
-#define GP_NODEBUG [[clang::nodebug]]
+#if defined(_MSC_VER)
+    #define GP_NODEBUG __declspec(noinline)
+#else
+    #define GP_NODEBUG [[clang::nodebug]]
+#endif
 
 /// @section Allocation attributes.
 
