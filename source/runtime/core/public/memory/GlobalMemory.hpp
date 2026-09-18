@@ -16,8 +16,10 @@ namespace detail
 /// @brief Pointer to the global memory allocator instance.
 extern GP_CORE_API Malloc* g_malloc;
 
+#if !GP_IS_MONOLITHIC
 /// @brief Pointer to the local shadow memory allocator instance, used to bypass DLL Import overhead.
 extern Malloc* g_localShadowMalloc;
+#endif
 
 }   // namespace detail
 
@@ -36,7 +38,11 @@ extern Malloc* g_localShadowMalloc;
 /// @return A pointer to the memory allocator, bypassing DLL Import overhead.
 [[nodiscard]] GP_FORCEINLINE_HINT Malloc* getInlineMalloc()
 {
+#if !GP_IS_MONOLITHIC
     return detail::g_localShadowMalloc;
+#else
+    return detail::g_malloc;
+#endif
 }
 
 }   // namespace gp::memory
