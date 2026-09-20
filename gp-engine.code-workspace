@@ -77,7 +77,8 @@
       "*.tests.cpp": "test-ts",
       "*.benchmark.cpp": "test-jsx",
       "*.benchmarks.cpp": "test-jsx",
-      "_category_.json": "tree"
+      "_category_.json": "tree",
+      "REFERENCES.md": "citation"
     },
     "material-icon-theme.folders.customClones": [
       {
