@@ -197,7 +197,10 @@
       "zstd": "archive",
       ".sanitizers": "review",
       "window": "desktop",
-      "hardware": "core"
+      "hardware": "core",
+      "targets": "target",
+      "linkers": "contract",
+      "frameworks": "lib"
     },
     /* File Associations */
     "files.associations": {
