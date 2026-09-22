@@ -242,7 +242,8 @@
       "state": "tasks",
       "system": "desktop",
       "raytracing": "claude",
-      "allocators": "bloc"
+      "allocators": "bloc",
+      "zstd": "archive"
     },
     /* File Associations */
     "files.associations": {
