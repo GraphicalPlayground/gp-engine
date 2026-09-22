@@ -81,6 +81,7 @@
       "REFERENCES.md": "citation",
       "*.supp": "tune",
       "sanitizer.ignorelist": "lintstaged",
+      "*.natvis": "subtitles"
     },
     "material-icon-theme.folders.customClones": [
       {
@@ -256,7 +257,8 @@
       ".mailmap": "git-mailmap",
       "VERSION": "plaintext",
       "*.supp": "ignore",
-      "sanitizer.ignorelist": "ignore"
+      "sanitizer.ignorelist": "ignore",
+      "*.natvis": "xml"
     },
     /* Test Execution */
     "testMate.cpp.test.executables": "{build,Build,BUILD,out,Out,OUT,binaries,Binaries}/**/*{test,Test,TEST}*",
@@ -345,6 +347,12 @@
       "files.trimTrailingWhitespace": true
     },
     "[yaml]": {
+      "editor.tabSize": 2
+    },
+    "[xml]": {
+      "editor.tabSize": 2
+    },
+    "[xaml]": {
       "editor.tabSize": 2
     },
     "[shellscript]": {
