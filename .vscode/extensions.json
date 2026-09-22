@@ -9,6 +9,7 @@
     "matepek.vscode-catch2-test-adapter",
     "Gruntfuggly.bettercomment",
     "ms-vscode.cmake-tools",
+    "KylinIdeTeam.cmake-intellisence",
     "cschlosser.doxdocgen",
 
     /* Shaders */
