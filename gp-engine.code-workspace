@@ -78,7 +78,9 @@
       "*.benchmark.cpp": "test-jsx",
       "*.benchmarks.cpp": "test-jsx",
       "_category_.json": "tree",
-      "REFERENCES.md": "citation"
+      "REFERENCES.md": "citation",
+      "*.supp": "tune",
+      "sanitizer.ignorelist": "lintstaged",
     },
     "material-icon-theme.folders.customClones": [
       {
@@ -243,7 +245,8 @@
       "system": "desktop",
       "raytracing": "claude",
       "allocators": "bloc",
-      "zstd": "archive"
+      "zstd": "archive",
+      ".sanitizers": "review"
     },
     /* File Associations */
     "files.associations": {
@@ -251,7 +254,9 @@
       ".clang-format": "yaml",
       "Doxyfile": "ini",
       ".mailmap": "git-mailmap",
-      "VERSION": "plaintext"
+      "VERSION": "plaintext",
+      "*.supp": "ignore",
+      "sanitizer.ignorelist": "ignore"
     },
     /* Test Execution */
     "testMate.cpp.test.executables": "{build,Build,BUILD,out,Out,OUT,binaries,Binaries}/**/*{test,Test,TEST}*",
