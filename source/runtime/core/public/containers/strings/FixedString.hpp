@@ -6,6 +6,7 @@
 
 #include "concepts/Concepts.hpp"
 #include "containers/ContainerForward.hpp"
+#include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
 #include "platforms/base/Platform.hpp"
 #include <limits>
@@ -23,7 +24,7 @@ template <concepts::IsCharacter CharT, gp::USize N>
 class BasicFixedString
 {
 public:
-    using SmallSizeType = std::conditional_t < N<0xFF, gp::UInt8, gp::UInt16>;
+    using SmallSizeType = std::conditional_t<N <= 0xFF, gp::UInt8, gp::UInt16>;
     static_assert(N < std::numeric_limits<gp::UInt16>::max(), "BasicFixedString: N must be less than 65535.");
 
     using ValueType = CharT;
@@ -41,6 +42,24 @@ public:
 private:
     ValueType m_data[N + 1]{};
     SizeType m_size{ 0u };
+
+public:
+    /// @brief Default constructor. Initializes an empty fixed string.
+    constexpr BasicFixedString() noexcept = default;
+
+    /// @brief Constructs a fixed string from a string view.
+    /// @param[in] view The string view to construct from.
+    constexpr BasicFixedString(BasicStringView<CharT> view) noexcept
+    {
+        assign(view);
+    }
+
+    /// @brief Constructs a fixed string from a null-terminated string.
+    /// @param[in] str The null-terminated string to construct from.
+    constexpr BasicFixedString(const CharT* str) noexcept
+    {
+        assign(BasicStringView<CharT>(str));
+    }
 
 public:
     /// @brief Gets a reference to the character at the specified position.
@@ -114,6 +133,24 @@ public:
     [[nodiscard]] constexpr operator BasicStringView<CharT>() const noexcept
     {
         return BasicStringView<CharT>(m_data, m_size);
+    }
+
+    /// @brief Appends a string view to this fixed string.
+    /// @param[in] view The string view to append.
+    /// @return A reference to this fixed string.
+    constexpr BasicFixedString& operator+=(BasicStringView<CharT> view) noexcept
+    {
+        append(view);
+        return *this;
+    }
+
+    /// @brief Appends a character to this fixed string.
+    /// @param[in] ch The character to append.
+    /// @return A reference to this fixed string.
+    BasicFixedString& operator+=(CharT ch) noexcept
+    {
+        pushBack(ch);
+        return *this;
     }
 
 public:
@@ -216,6 +253,27 @@ public:
         return m_data;
     }
 
+    /// @brief Converts this fixed string to a string view.
+    /// @return A string view representing the contents of this fixed string.
+    [[nodiscard]] constexpr BasicStringView<CharT> view() const noexcept
+    {
+        return BasicStringView<CharT>(m_data, m_size);
+    }
+
+    /// @brief Gets a const pointer to the underlying null-terminated character array.
+    /// @return A const pointer to the underlying null-terminated character array.
+    [[nodiscard]] constexpr ConstPointer cString() const noexcept
+    {
+        return m_data;
+    }
+
+    /// @brief Gets a pointer to the underlying null-terminated character array.
+    /// @return A pointer to the underlying null-terminated character array.
+    [[nodiscard]] constexpr Pointer cString() noexcept
+    {
+        return m_data;
+    }
+
     /// @brief Gets a const iterator to the beginning of the string.
     /// @return A const iterator to the beginning of the string.
     [[nodiscard]] constexpr ConstIterator begin() const noexcept
@@ -298,6 +356,60 @@ public:
     [[nodiscard]] constexpr ConstReverseIterator crend() const noexcept
     {
         return ConstReverseIterator(begin());
+    }
+
+    /// @brief Clears the string, setting its size to zero and null-terminating it.
+    /// @note This does not deallocate any memory, as the string is stack-allocated and has a fixed capacity.
+    constexpr void clear() noexcept
+    {
+        m_size = 0u;
+        m_data[0] = CharT{ 0 };
+    }
+
+    /// @brief Assigns the contents of a string view to this fixed string.
+    /// @param[in] view The string view to assign from.
+    constexpr void assign(BasicStringView<CharT> view) noexcept
+    {
+        GP_ASSERT(view.size() <= N && "FixedString capacity exceeded");
+        m_size = static_cast<SizeType>(view.size());
+
+        if (m_size > 0)
+        {
+            std::copy_n(view.data(), m_size, m_data);
+        }
+        m_data[m_size] = CharT{ 0 };
+    }
+
+    /// @brief Appends the contents of a string view to this fixed string.
+    /// @param[in] view The string view to append.
+    constexpr void append(BasicStringView<CharT> view) noexcept
+    {
+        GP_ASSERT(m_size + view.size() <= N && "FixedString capacity exceeded");
+
+        if (!view.isEmpty())
+        {
+            std::copy_n(view.data(), view.size(), m_data + m_size);
+            m_size += static_cast<SizeType>(view.size());
+            m_data[m_size] = CharT{ 0 };
+        }
+    }
+
+    /// @brief Appends a character to this fixed string.
+    /// @param[in] ch The character to append.
+    constexpr void pushBack(CharT ch) noexcept
+    {
+        GP_ASSERT(m_size < N && "FixedString capacity exceeded");
+        m_data[m_size++] = ch;
+        m_data[m_size] = CharT{ 0 };
+    }
+
+    /// @brief Removes the last character from this fixed string.
+    /// @note This does not deallocate any memory, as the string is stack-allocated and has a fixed capacity.
+    constexpr void popBack() noexcept
+    {
+        GP_ASSERT(m_size > 0 && "Cannot pop from an empty string");
+        --m_size;
+        m_data[m_size] = CharT{ 0 };
     }
 };
 
