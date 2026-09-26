@@ -31,7 +31,8 @@ public:
 
 public:
     /// @brief Default constructor, value-initializes both elements.
-    [[nodiscard]] constexpr Pair() requires(concepts::IsDefaultConstructible<T1> && concepts::IsDefaultConstructible<T2>)
+    [[nodiscard]] constexpr Pair()
+        requires(concepts::IsDefaultConstructible<T1> && concepts::IsDefaultConstructible<T2>)
         : first()
         , second()
     {}

@@ -124,10 +124,10 @@ extension will automatically build a ready-to-use C++23/Clang 22 environment.
 <!-- markdownlint-disable MD001 MD024 MD033 -->
 
 The build process is orchestrated by our custom `gp-build-tool`, which is integrated as a Git
-submodule ([GraphicalPlayground/gp-build-tool](https://github.com/GraphicalPlayground/gp-build-tool)).
+submodule ([GraphicalPlayground/gp-build-tool][gpbt]).
 
 <details>
-<summary id="windows"><h3>Windows</h3></summary>
+<summary id="windows"><h3><img src="https://thesvg.org/icons/windows/default.svg" height="16" alt="Windows"/> Windows</h3></summary>
 
 #### 0. Prerequisites
 
@@ -229,7 +229,7 @@ the [GP Build Tool Configuration Guide][gpbt-config-guide].
 </details>
 
 <details>
-<summary id="linux"><h3>Linux</h3></summary>
+<summary id="linux"><h3><img src="https://thesvg.org/icons/linux/default.svg" height="16" alt="Linux"/> Linux</h3></summary>
 
 #### 1. Cloning the Repository
 
@@ -302,7 +302,7 @@ the [GP Build Tool Configuration Guide][gpbt-config-guide].
 </details>
 
 <details>
-<summary id="macos"><h3>MacOS</h3></summary>
+<summary id="macos"><h3><img src="https://thesvg.org/icons/apple/default.svg" height="16" alt="Apple"/> MacOS</h3></summary>
 
 #### 1. Cloning the Repository
 
@@ -477,7 +477,56 @@ _wip..._
 
 ### Directory Structure
 
-_wip..._
+As a pedagogical engine meant to help you learn AAA game engine design, the `gp-engine` repository
+is organized to clearly reflect a modern, scalable engine architecture. Our directory layout
+separates core engine code, platform-specific layers, tools, and build configurations to keep the
+learning curve manageable while exposing you to industry-standard project organization.
+
+Below is an overview of the main directories and their roles:
+
+**Principal Directories:**
+
+- `/source/`: The heart of the engine. This is where all C++ source code, headers, and core
+  logic live.
+  - `/runtime/`: Contains the core engine systems used at runtime (e.g., `/core/`, `/rhi/`,
+    `/renderer/`, `/physics/`, `/audio/`). Exploring this directory gives you a deep dive into how
+    an engine ticks frame-by-frame.
+  - `/launch/`: Contains the entry points for the engine applications. It is split into targets
+    like `/editor/` (the authoring tool) and `/standalone/` (the packaged game executable). This
+    demonstrates how engines separate their development tools from the final shipped product.
+  - `/shaders/`: Houses all HLSL/GLSL shader code. We separate `/public/`
+    (shared interfaces/includes) from `/private/` (actual shader implementations) to teach proper
+    shader resource management and encapsulation.
+  - `/plugins/`: An ecosystem for extensible engine modules. We use this to demonstrate how to build
+    a modular architecture where features can be loaded or unloaded without modifying the core
+    `/runtime/`.
+- `/examples/`: Practical, stripped-down examples and sample projects. These are designed to isolate
+  specific engine features (like a rendering pass or an input system) so you can study them without
+  being overwhelmed by the entire engine context.
+- `/cmake/`: Contains the [`gp-build-tool`][gpbt] git submodule, orchestrating our robust build
+  process. This exposes you to advanced, modular CMake practices used in large-scale C++ projects.
+- `/toolchain/`: Scripts and configuration files for setting up the development environment
+  across platforms (Windows, Linux, MacOS). This includes CMake presets to guarantee a unified
+  build experience.
+- `/thirdparty/`: Contains CMake scripts and licenses for external dependencies (e.g., SDL3,
+  Vulkan headers). The actual source code is fetched automatically by the GPBT, teaching you modern
+  dependency management that avoids repository bloat.
+- `/docs/`: High-level guides, architectural overviews, and tutorials. Scattered `docs/` folders
+  throughout the repository dive into specific modules. All these are aggregated into our
+  [documentation website](https://docs.graphical-playground.com/docs/gp-engine/Introduction).
+- `/.devcontainer/`: Configuration for a Docker-based Devcontainer. It provides a standardized,
+  pre-configured development environment, ensuring every contributor has the same toolchain
+  instantly.
+- `/.github/`: GitHub Actions workflows for our CI/CD pipeline, PR templates, and issue tracking.
+- `/translations/`: Multilingual support for our documentation, making the pedagogical resources
+  accessible to a broader global audience.
+- `/.vscode/`: Recommended workspace settings, tasks, and extensions for Visual Studio Code to
+  enforce coding styles and streamline debugging.
+
+> [!TIP]
+> You can read the article ["Engine Architecture and Directory Layout: A Principal Engineer's Guide"](https://docs.graphical-playground.com/blog/engine-architecture-layout)
+> for a deeper dive into the reasoning behind our directory structure and how it reflects modern AAA
+> engine design principles.
 
 ## Development Workflow
 
@@ -485,11 +534,59 @@ _wip..._
 
 ### Branching Strategy
 
-_wip..._
+Our repository follows a structured branching model to ensure stability and smooth collaboration.
+
+**Main Branches:**
+
+- `main`: This is the current stable development branch.
+- `dev`: This is the current experimental branch where active integration happens.
+
+**Release Branches:**
+
+- `release-<version>`: We use specific branches for major releases (e.g., `release-1.0.0`),
+  isolating them for final polishing and bug fixes.
+
+**Working Branches:**
+
+- **Personal Prefixes:** Everyone works on their own branches, which must be prefixed with the
+  author's initials. For example:
+  - `ms/...` (Mallory Scotton)
+  - `hc/...` (Hugo Cathelain)
+  - `nf/...` (Nathan Fievet)
+- **One Feature Per Branch:** Keep your work focused. Each branch should encompass a single feature
+  or fix.
+- **Automated Workflows:** Before a pull request can be merged, all CI/CD workflows (formatting,
+  build, tags, etc.) must pass successfully.
+- **Cleanup:** Once merged, working branches are deleted automatically.
 
 ### Commit Message Guidelines
 
-_wip..._
+We follow a structured convention for commit messages to ensure a clear and well-documented project
+history.
+
+**General Rules:**
+
+- **Prefer using lower case** for the commit message subject.
+- **Use a prefix** to indicate the type of commit (e.g., `add`, `update`, `chore`, `fix`, `hotfix`,
+  `bug`, `docs`, etc.).
+- **Sub-categories (Optional):** You can add a specific sub-category or scope in parentheses to
+  provide more context. For example: `chore(format): ...`.
+- **Be Explicit:** The commit message should explicitly state what the commit is actually
+  implementing.
+- **Small, Atomic Commits:** Prefer doing multiple focused commits instead of one giant one.
+- **Co-authors:** If someone helps you with a commit or code, think about adding them as a
+  co-author if it's relevant (e.g., `Co-authored-by: Name <email@example.com>` at the end of the
+  commit message body).
+
+**Classic Commit Guidelines:**
+
+- Separate the subject line from the body with a blank line.
+- Limit the subject line to 50-72 characters.
+- Do not end the subject line with a period.
+- Use the imperative mood in the subject line (e.g., `add core rendering module`, not `added` or
+  `adds`).
+- Wrap the body text at 72 characters.
+- Use the body to explain _what_ you did and _why_, rather than _how_ you did it.
 
 ### Pull Request Process
 
@@ -578,7 +675,9 @@ You can sponsor the Graphical Playground project through the following links:
 
 - [**Buy Me A Coffee**](https://www.buymeacoffee.com/GraphicalPlayground)
 - [**GitHub Sponsors**](https://github.com/sponsors/GraphicalPlayground)
-- [**Direct Donation**](https://graphical-playground.com/donate)
+- [**Open Collective**](https://opencollective.com/graphical-playground)
+- [**Thanks Dev**](https://thanks.dev/u/gh/GraphicalPlayground)
+- [**Direct donation**](https://graphical-playground.com/donate)
 
 ---
 
@@ -588,3 +687,5 @@ _Thank you for being a part of the Graphical Playground. We can't wait to see wh
 © 2026 Graphical Playground. Built for the next generation of graphics engineers.
 
 ![Graphical Playground](https://github.com/GraphicalPlayground/.github/blob/main/assets/misc/gplayd-footer.svg)
+
+[gpbt]: https://github.com/GraphicalPlayground/gp-build-tool

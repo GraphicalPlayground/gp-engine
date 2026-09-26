@@ -3,59 +3,7 @@
     {
       "path": ".",
       "name": "Engine Root"
-    },
-    {
-      "path": "./source/shaders",
-      "name": "Shaders"
-    },
-    {
-      "path": "./source/runtime/core",
-      "name": "Runtime / Core"
-    },
-    {
-      "path": "./source/runtime/rhi",
-      "name": "Runtime / RHI"
-    },
-    {
-      "path": "./source/runtime/hal",
-      "name": "Runtime / HAL"
-    },
-    {
-      "path": "./source/runtime/engine",
-      "name": "Runtime / Engine"
-    },
-    {
-      "path": "./source/runtime/renderer",
-      "name": "Runtime / Renderer"
-    },
-    {
-      "path": "./source/runtime/application",
-      "name": "Runtime / Application"
-    },
-    {
-      "path": "./source/runtime/parser",
-      "name": "Runtime / Parsers"
-    },
-    {
-      "path": "./source/runtime/audio",
-      "name": "Runtime / Audio"
-    },
-    {
-      "path": "./source/runtime/network",
-      "name": "Runtime / Network"
-    },
-    {
-      "path": "./source/runtime/physics",
-      "name": "Runtime / Physics"
-    },
-    {
-      "path": "./source/launch/editor",
-      "name": "Launch / Editor"
-    },
-    {
-      "path": "./source/launch/standalone",
-      "name": "Launch / Standalone"
-    },
+    }
   ],
   "settings": {
     /* C++ and ClangD settings */
@@ -77,7 +25,11 @@
       "*.tests.cpp": "test-ts",
       "*.benchmark.cpp": "test-jsx",
       "*.benchmarks.cpp": "test-jsx",
-      "_category_.json": "tree"
+      "_category_.json": "tree",
+      "REFERENCES.md": "citation",
+      "*.supp": "tune",
+      "sanitizer.ignorelist": "lintstaged",
+      "*.natvis": "subtitles"
     },
     "material-icon-theme.folders.customClones": [
       {
@@ -240,7 +192,15 @@
       "bindings": "attachment",
       "state": "tasks",
       "system": "desktop",
-      "raytracing": "claude"
+      "raytracing": "claude",
+      "allocators": "bloc",
+      "zstd": "archive",
+      ".sanitizers": "review",
+      "window": "desktop",
+      "hardware": "core",
+      "targets": "target",
+      "linkers": "contract",
+      "frameworks": "lib"
     },
     /* File Associations */
     "files.associations": {
@@ -248,7 +208,10 @@
       ".clang-format": "yaml",
       "Doxyfile": "ini",
       ".mailmap": "git-mailmap",
-      "VERSION": "plaintext"
+      "VERSION": "plaintext",
+      "*.supp": "ignore",
+      "sanitizer.ignorelist": "ignore",
+      "*.natvis": "xml"
     },
     /* Test Execution */
     "testMate.cpp.test.executables": "{build,Build,BUILD,out,Out,OUT,binaries,Binaries}/**/*{test,Test,TEST}*",
@@ -339,6 +302,12 @@
     "[yaml]": {
       "editor.tabSize": 2
     },
+    "[xml]": {
+      "editor.tabSize": 2
+    },
+    "[xaml]": {
+      "editor.tabSize": 2
+    },
     "[shellscript]": {
       "editor.tabSize": 2
     },
@@ -366,6 +335,7 @@
       "matepek.vscode-catch2-test-adapter",
       "Gruntfuggly.bettercomment",
       "ms-vscode.cmake-tools",
+      "KylinIdeTeam.cmake-intellisence",
       "cschlosser.doxdocgen",
       /* Shaders */
       "TimGJones.hlsltools",
@@ -377,7 +347,9 @@
       /* Github */
       "GitHub.vscode-pull-request-github",
       "github.vscode-github-actions",
-      "me-dutour-mathieu.vscode-github-actions"
+      "me-dutour-mathieu.vscode-github-actions",
+      /* Other */
+      "FanaticPythoner.better-todo-tree"
     ],
     "unwantedRecommendations": [
       /* Conflicts with Clangd */

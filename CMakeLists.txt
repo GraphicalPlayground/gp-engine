@@ -9,6 +9,7 @@ project(GraphicalPlayground
   VERSION 0.1.0
   LANGUAGES CXX C
   DESCRIPTION "Graphical Playground Engine, learning and prototyping platform for graphics programming."
+  HOMEPAGE_URL "https://graphical-playground.com"
 )
 
 # Add an option to allow users to skip the forced update (e.g., if they are developing the build tool locally)
@@ -39,6 +40,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gp-build-tool/s
 include(gp-build-tool)
 
 # Apply the default policies and configurations for Graphical Playground targets.
+# This sets all the necessary CMAKE_CXX flags (C++23, Standard required, etc.)
+# This also configures the default binary output directories for all targets.
+# It enforces PIC for all targets, set the default testing framework to GoogleTest and the LIBCXX for all linux targets.
 gpApplyGraphicalPlaygroundDefaultPolicy()
 
 # Start the GPBT build tool and auto-scan the source directory for targets to build.
