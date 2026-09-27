@@ -54,6 +54,59 @@ public:
         GP_ASSERT(index >= 0 && index < 4, "Index out of range");
         col[index] = value;
     }
+
+    // operation override compariason
+public:
+    /// @brief Compares two 4x4 matrices for equality using SIMD instructions.
+    /// @param[in] A The first matrix.
+    /// @param[in] B The second matrix.
+    /// @return True if the matrices are equal, false otherwise.
+    /// @note there is ZERO tolerance for this comparison. if you want to compare with tolerance, use the equals function
+    friend bool operator==(const Matrix4x4& A, const Matrix4x4& B)
+    {
+        for (int i = 0; i < 4; i++)
+            if (!_mm_move_test_pi32(B.col[i], A.col[i])) return false;
+        return true;
+    }
+
+    /// @brief Compares two 4x4 matrices for inequality using SIMD instructions.
+    /// @param[in] A The first matrix.
+    /// @param[in] B The second matrix.
+    /// @return True if the matrices are not equal, false otherwise.
+    friend bool operator!=(const Matrix4x4& A, const Matrix4x4& B)
+    {
+        return !(A == B);
+    }
+
+    /// @brief Compares two 4x4 matrices for equality within a specified tolerance using SIMD instructions.
+    /// @param[in] A The first matrix.
+    /// @param[in] B The second matrix.
+    /// @param[in] tolerance The tolerance for the comparison.
+    /// @return True if the matrices are equal within the specified tolerance, false otherwise.
+    friend bool equals(const Matrix4x4& A, const Matrix4x4& B, const T tolerance = Constants<T>::kindaSmallNumber)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            __m128 diff = _mm_sub_ps(A.col[i], B.col[i]);
+            __m128 absDiff = _mm_andnot_ps(_mm_set1_ps(-0.0f), diff); // absolute value
+            __m128 cmp = _mm_cmple_ps(absDiff, _mm_set1_ps(tolerance));
+            if (_mm_movemask_ps(cmp) != 0xF) return false; // if any component is greater than tolerance
+        }
+        return true;
+    }
+
+    /// @brief Compares two 4x4 matrices for inequality within a specified tolerance using SIMD instructions.
+    /// @param[in] A The first matrix.
+    /// @param[in] B The second matrix.
+    /// @param[in] tolerance The tolerance for the comparison.
+    /// @return True if the matrices are not equal within the specified tolerance, false otherwise.
+    friend bool notEquals(const Matrix4x4& A, const Matrix4x4& B, const T tolerance = Constants<T>::kindaSmallNumber)
+    {
+        return !equals(A, B, tolerance);
+    }
+
+};
+
 }   // namespace gp::math
 
 
