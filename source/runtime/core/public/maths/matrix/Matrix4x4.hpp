@@ -22,6 +22,38 @@ private:
     __m128 col[4];   // col[0..3], each holding 4 floats (one column)
 
 
+//setter and getter for col
+public:
+    
+    /// @brief Gets a reference to a column of the matrix by index.
+    /// @param[in] index The index of the column to access (0 to 3).
+    /// @return A reference to the column at the specified index.
+    /// @note The behavior is undefined if the index is out of range
+    [[nodiscard]] constexpr __m128& getCol(const Int32 index) noexcept
+    {
+        GP_ASSERT(index >= 0 && index < 4, "Index out of range");
+        return col[index];
+    }
+
+    /// @brief Gets a const reference to a column of the matrix by index.
+    /// @param[in] index The index of the column to access (0 to 3  ).
+    /// @return A const reference to the column at the specified index.
+    /// @note The behavior is undefined if the index is out of range
+    [[nodiscard]] constexpr const __m128& getCol(const Int32 index) const noexcept
+    {
+        GP_ASSERT(index >= 0 && index < 4, "Index out of range");
+        return col[index];
+    }
+
+    /// @brief Sets a column of the matrix by index.
+    /// @param[in] index The index of the column to set (0 to 3).
+    /// @param[in] value The value to set the column to.
+    /// @note The behavior is undefined if the index is out of range
+    constexpr void setCol(const Int32 index, const __m128& value) noexcept
+    {
+        GP_ASSERT(index >= 0 && index < 4, "Index out of range");
+        col[index] = value;
+    }
 }   // namespace gp::math
 
 
