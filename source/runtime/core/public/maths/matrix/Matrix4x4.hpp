@@ -22,9 +22,7 @@ private:
     __m128 col[4];   // col[0..3], each holding 4 floats (one column)
 
 
-//setter and getter for col
-public:
-    
+public:    
     /// @brief Gets a reference to a column of the matrix by index.
     /// @param[in] index The index of the column to access (0 to 3).
     /// @return A reference to the column at the specified index.
@@ -55,7 +53,137 @@ public:
         col[index] = value;
     }
 
-    // operation override compariason
+
+public:
+    /// @brief Adds two 4x4 matrices using SIMD instructions.
+    /// @param[in] A The first matrix.
+    /// @param[in] B The second matrix.
+    /// @return The sum of the two matrices.
+    friend Matrix4x4 operator+(const Matrix4x4& A, const Matrix4x4& B)
+    {
+        Matrix4x4 result;
+
+        for (int i = 0; i < 4; i++)
+            result.col[i] = _mm_add_ps(A.col[i], B.col[i]);
+        return result;
+    }
+
+    /// @brief Adds a scalar to a 4x4 matrix using SIMD instructions.
+    /// @param[in] A The matrix.
+    /// @param[in] scalar The scalar value to add.
+    /// @return The sum of the matrix and the scalar.
+    friend Matrix4x4 operator+(const Matrix4x4& A, const T scalar)
+    {
+        Matrix4x4 result;
+        __m128 scalarVec = _mm_set1_ps(scalar);
+        for (int i = 0; i < 4; i++)
+            result.col[i] = _mm_add_ps(A.col[i], scalarVec);
+        return result;
+    }
+
+    friend Matrix4x4 operator+=(const Matrix4x4& A, const Matrix4x4& B)
+    {
+        return A + B;
+    }
+
+    friend Matrix4x4 operator+=(const Matrix4x4& A, const T scalar)
+    {
+        return A + scalar;
+    }
+
+    /// @brief Subtracts two 4x4 matrices using SIMD instructions.
+    /// @param[in] A The first matrix.
+    /// @param[in] B The second matrix.
+    /// @return The difference of the two matrices.
+    friend Matrix4x4 operator-(const Matrix4x4& A, const Matrix4x4& B)
+    {
+        Matrix4x4 result;
+
+        for (int i = 0; i < 4; i++)
+            result.col[i] = _mm_sub_ps(A.col[i], B.col[i]);
+        return result;
+    }
+
+    /// @brief Subtracts a scalar from a 4x4 matrix using SIMD instructions.
+    /// @param[in] A The matrix.
+    /// @param[in] scalar The scalar value to subtract.
+    /// @return The difference of the matrix and the scalar.
+    friend Matrix4x4 operator-(const Matrix4x4& A, const T scalar)
+    {
+        Matrix4x4 result;
+        __m128 scalarVec = _mm_set1_ps(scalar);
+        for (int i = 0; i < 4; i++)
+            result.col[i] = _mm_sub_ps(A.col[i], scalarVec);
+        return result;
+    }
+
+    friend Matrix4x4 operator-=(const Matrix4x4& A, const Matrix4x4& B)
+    {
+        return A - B;
+    }
+
+    friend Matrix4x4 operator-=(const Matrix4x4& A, const T scalar)
+    {
+        return A - scalar;
+    }
+
+    /// @brief Multiplies two 4x4 matrices using SIMD instructions.
+    /// @param[in] A The first matrix.
+    /// @param[in] B The second matrix.
+    /// @return The product of the two matrices.
+    friend Matrix4x4 operator*(const Matrix4x4& A, const Matrix4x4& B)
+    {
+        Matrix4x4 result;
+        for (int i = 0; i < 4; i++)
+        {
+            __m128 b0 = _mm_set1_ps(B.col[i][0]);
+            __m128 b1 = _mm_set1_ps(B.col[i][1]);
+            __m128 b2 = _mm_set1_ps(B.col[i][2]);
+            __m128 b3 = _mm_set1_ps(B.col[i][3]);
+
+            __m128 acc = _mm_mul_ps(A.col[0], b0);
+            acc = _mm_add_ps(acc, _mm_mul_ps(A.col[1], b1));
+            acc = _mm_add_ps(acc, _mm_mul_ps(A.col[2], b2));
+            acc = _mm_add_ps(acc, _mm_mul_ps(A.col[3], b3));
+
+            result.col[i] = acc;
+        }
+        return result;
+    }
+    
+    /// @brief Multiplies a 4x4 matrix by a scalar using SIMD instructions.
+    /// @param[in] A The matrix.
+    /// @param[in] scalar The scalar value to multiply by.
+    /// @return The product of the matrix and the scalar.
+    friend Matrix4x4 operator*(const Matrix4x4& A, const T scalar)
+    {
+        Matrix4x4 result;
+        __m128 scalarVec = _mm_set1_ps(scalar);
+        for (int i = 0; i < 4; i++)
+            result.col[i] = _mm_mul_ps(A.col[i], scalarVec);
+        return result;
+    }
+
+
+    /// @brief Multiplies a 4x4 matrix by another 4x4 matrix using SIMD instructions.
+    /// @param[in] A The first matrix.
+    /// @param[in] B The second matrix.
+    /// @return The product of the two matrices.
+    friend Matrix4x4 operator*=(const Matrix4x4& A, const Matrix4x4& B)
+    {
+        return A * B;
+    }
+
+    /// @brief Multiplies a 4x4 matrix by a scalar using SIMD instructions.
+    /// @param[in] A The matrix.
+    /// @param[in] scalar The scalar value to multiply by.
+    /// @return The product of the matrix and the scalar.
+    friend Matrix4x4 operator*=(const Matrix4x4& A, const T scalar)
+    {
+        return A * scalar;
+    }
+
+
 public:
     /// @brief Compares two 4x4 matrices for equality using SIMD instructions.
     /// @param[in] A The first matrix.
