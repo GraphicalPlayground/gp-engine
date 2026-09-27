@@ -21,6 +21,45 @@ struct Matrix4x4
 private:
     __m128 col[4];   // col[0..3], each holding 4 floats (one column)
 
+public:
+    /// @brief Default constructor that initializes the matrix to an identity matrix.
+    constexpr Matrix4x4() noexcept
+        : col{ _mm_set_ps(0, 0, 0, 1), _mm_set_ps(0, 0, 1, 0), _mm_set_ps(0, 1, 0, 0), _mm_set_ps(1, 0, 0, 0) }
+    {}
+
+    /// @brief Constructor that initializes the matrix with specified column vectors.
+    /// @param[in] c0 The first column vector.
+    /// @param[in] c1 The second column vector.
+    /// @param[in] c2 The third column vector.
+    /// @param[in] c3 The fourth column vector.
+    constexpr Matrix4x4(const __m128& c0, const __m128& c1, const __m128& c2, const __m128& c3) noexcept
+        : col{ c0, c1, c2, c3 }
+    {}
+
+    constexpr Matrix4x4(const T* const ptr) noexcept
+        : col{ _mm_loadu_ps(ptr), _mm_loadu_ps(ptr + 4), _mm_loadu_ps(ptr + 8), _mm_loadu_ps(ptr + 12) }
+    {
+        GP_ASSERT(ptr != nullptr, "Input pointer cannot be null");
+    }
+
+    constexpr Matrix4x4(const Matrix4x4& other) noexcept
+        : col{ other.col[0], other.col[1], other.col[2], other.col[3] }
+    {}
+
+    constexpr Matrix4x4& operator=(const Matrix4x4& other) noexcept
+    {
+        if (this != &other)
+        {
+            col[0] = other.col[0];
+            col[1] = other.col[1];
+            col[2] = other.col[2];
+            col[3] = other.col[3];
+        }
+        return *this;
+    }
+
+    //missing 
+    // constexpr Matrix4x4(vector4)
 
 public:    
     /// @brief Gets a reference to a column of the matrix by index.
@@ -150,7 +189,7 @@ public:
         }
         return result;
     }
-    
+
     /// @brief Multiplies a 4x4 matrix by a scalar using SIMD instructions.
     /// @param[in] A The matrix.
     /// @param[in] scalar The scalar value to multiply by.
