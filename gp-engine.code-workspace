@@ -200,7 +200,8 @@
       "hardware": "core",
       "targets": "target",
       "linkers": "contract",
-      "frameworks": "lib"
+      "frameworks": "lib",
+      "adr": "skills"
     },
     /* File Associations */
     "files.associations": {
