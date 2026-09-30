@@ -6,7 +6,7 @@
 
 #include "concepts/Concepts.hpp"
 #include "concepts/Construction.hpp"
-#include "CoreMinimal.hpp"
+#include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include <compare>
 
 namespace gp
