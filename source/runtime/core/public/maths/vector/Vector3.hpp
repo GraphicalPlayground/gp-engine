@@ -575,7 +575,7 @@ public:
     /// @return The length of the vector.
     [[nodiscard]] constexpr T length() const noexcept
     {
-        return math::sqrt(x * x + y * y + z * z);
+        return math::sqrt(lengthSquared());
     }
 
     /// @brief Get the squared length of the vector.
@@ -591,7 +591,7 @@ public:
     /// modified.
     constexpr bool normalize(const T tolerance = Constants<T>::smallNumber) noexcept
     {
-        const T squareSum = x * x + y * y + z * z;
+        const T squareSum = lengthSquared();
         if (squareSum > tolerance)
         {
             const T scale = math::inverseSqrt(squareSum);
@@ -609,7 +609,7 @@ public:
     /// length is zero (caller must ensure the length is greater than zero).
     [[nodiscard]] constexpr Vector3<T> getUnsafeNormal() const
     {
-        const T scale = math::inverseSqrt(x * x + y * y + z * z);
+        const T scale = math::inverseSqrt(lengthSquared());
         return Vector3<T>(x * scale, y * scale, z * scale);
     }
 
@@ -620,7 +620,7 @@ public:
     /// length is less than or equal to the tolerance.
     [[nodiscard]] constexpr Vector3<T> getSafeNormal(const T tolerance = Constants<T>::smallNumber) const noexcept
     {
-        const T squareSum = x * x + y * y + z * z;
+        const T squareSum = lengthSquared();
 
         if (squareSum == T{ 1 })
         {
