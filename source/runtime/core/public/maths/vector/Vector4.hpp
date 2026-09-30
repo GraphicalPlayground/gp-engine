@@ -277,6 +277,7 @@ public:
     /// @return The component-wise quotient of this vector and the other vector.
     [[nodiscard]] constexpr Vector4<T> operator/(const Vector4<T>& other) const noexcept
     {
+        GP_ASSERT(other.x != T{ 0 } && other.y != T{ 0 } && other.z != T{ 0 } && other.w != T{ 0 }, "Division by zero");
         return Vector4<T>(x / other.x, y / other.y, z / other.z, w / other.w);
     }
 
@@ -637,7 +638,7 @@ public:
         const T lenSq = lengthSquared();
         if (lenSq > tolerance * tolerance)
         {
-            const T invLen = static_cast<T>(1) / math::sqrt(lenSq);
+            const T invLen = math::inverseSqrt(lenSq);
             x *= invLen;
             y *= invLen;
             z *= invLen;
@@ -655,7 +656,7 @@ public:
     {
         const T lenSq = lengthSquared();
         GP_ASSERT(lenSq > T{ 0 }, "Cannot normalize a vector with zero length");
-        const T invLen = static_cast<T>(1) / math::sqrt(lenSq);
+        const T invLen = math::inverseSqrt(lenSq);
         return Vector4<T>(x * invLen, y * invLen, z * invLen, w * invLen);
     }
 
@@ -669,7 +670,7 @@ public:
         const T lenSq = lengthSquared();
         if (lenSq > tolerance * tolerance)
         {
-            const T invLen = static_cast<T>(1) / math::sqrt(lenSq);
+            const T invLen = math::inverseSqrt(lenSq);
             return Vector4<T>(x * invLen, y * invLen, z * invLen, w * invLen);
         }
         return Vector4<T>::zero();
