@@ -689,7 +689,8 @@ public:
     [[nodiscard]] constexpr Vector4<T> getProjectedToXY() const noexcept
     {
         GP_ASSERT(z != T{ 0 }, "Cannot project to XY plane when z component is zero");
-        return Vector4<T>(x / z, y / z, T{ 1 }, w);
+        const T invZ = T{ 1 } / z;
+        return Vector4<T>(x * invZ, y * invZ, T{ 1 }, w);
     }
 
     /// @brief Get the component-wise reciprocal of this vector, where each component is replaced by its reciprocal.

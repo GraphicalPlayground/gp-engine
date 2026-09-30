@@ -626,7 +626,7 @@ public:
         {
             return *this;
         }
-        else if (squareSum <= tolerance)
+        else if (squareSum <= tolerance * tolerance)
         {
             return Vector3<T>::zero();
         }

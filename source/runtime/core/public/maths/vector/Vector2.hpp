@@ -607,13 +607,13 @@ public:
     /// length is less than or equal to the tolerance.
     [[nodiscard]] constexpr Vector2<T> getSafeNormal(const T tolerance = Constants<T>::smallNumber) const noexcept
     {
-        const T squareSum = x * x + y * y;
+        const T squareSum = lengthSquared();
 
         if (squareSum == T{ 1 })
         {
             return *this;
         }
-        else if (squareSum < tolerance)
+        else if (squareSum < tolerance * tolerance)
         {
             return Vector2<T>::zero();
         }
