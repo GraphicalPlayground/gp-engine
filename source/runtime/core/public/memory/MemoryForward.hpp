@@ -14,6 +14,14 @@ namespace gp::memory
 class Malloc;
 class MallocAnsi;
 
+/// @section Allocator forward declarations
+
+template <gp::Int32 IndexSize, typename SubClass>
+class SizedAllocatorBase;
+
+template <gp::Int32 IndexSize, typename BaseMallocType>
+class SizedHeapAllocator;
+
 }   // namespace gp::memory
 
 namespace gp

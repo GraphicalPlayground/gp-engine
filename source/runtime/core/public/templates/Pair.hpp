@@ -6,7 +6,7 @@
 
 #include "concepts/Concepts.hpp"
 #include "concepts/Construction.hpp"
-#include "CoreMinimal.hpp"
+#include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include <compare>
 
 namespace gp
@@ -31,7 +31,8 @@ public:
 
 public:
     /// @brief Default constructor, value-initializes both elements.
-    [[nodiscard]] constexpr Pair() requires(concepts::IsDefaultConstructible<T1> && concepts::IsDefaultConstructible<T2>)
+    [[nodiscard]] constexpr Pair()
+        requires(concepts::IsDefaultConstructible<T1> && concepts::IsDefaultConstructible<T2>)
         : first()
         , second()
     {}

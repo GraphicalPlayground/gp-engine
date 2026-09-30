@@ -769,7 +769,9 @@ template <gp::concepts::IsCharacter CharT>
 std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os, const gp::container::BasicStringView<CharT>& sv)
 {
     if (sv.data())
+    {
         os.write(sv.data(), static_cast<std::streamsize>(sv.size()));
+    }
     return os;
 }
 

@@ -43,11 +43,15 @@ jobs:
           rm -rf gp-docs/docs/gp-engine
           mkdir -p gp-docs/docs/gp-engine
           cd gp-engine
+
+          # copy docs from gp-build-tool if it exists
           mkdir -p 'docs/Programming With C++/GP Build Tool'
           if [ -d "cmake/gp-build-tool/docs" ]; then
             cp -r cmake/gp-build-tool/docs/* 'docs/Programming With C++/GP Build Tool/'
           fi
-          find . -type f -path "*/docs/*" -not -path "./thirdparty/*" -not -path "./cmake/*" -print0 | while IFS= read -r -d '' file; do
+
+          # copy docs from gp-engine to gp-docs (excluding thirdparty, cmake and adrs)
+          find . -type f -path "*/docs/*" -not -path "./thirdparty/*" -not -path "./cmake/*" -not -path "*/docs/adr/*" -print0 | while IFS= read -r -d '' file; do
             rel_path="${file#./}"
             dest_path=$(echo "$rel_path" | sed -e 's|^docs/||' -e 's|/docs/|/|g')
             target_file="../gp-docs/docs/gp-engine/$dest_path"

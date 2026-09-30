@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="gp::math::Vector2&lt;*&gt;">
+    <DisplayString>[{x}, {y}]</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="gp::math::Vector3&lt;*&gt;">
+    <DisplayString>[{x}, {y}, {z}]</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+      <Item Name="z">z</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="gp::math::Vector4&lt;*&gt;">
+    <DisplayString>[{x}, {y}, {z}, {w}]</DisplayString>
+    <Expand>
+      <Item Name="x">x</Item>
+      <Item Name="y">y</Item>
+      <Item Name="z">z</Item>
+      <Item Name="w">w</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="gp::math::Rotator&lt;*&gt;">
+    <DisplayString>[Pitch={pitch} Yaw={yaw} Roll={roll}]</DisplayString>
+  </Type>
+
+  <Type Name="gp::math::Rotator2D&lt;*&gt;">
+    <DisplayString>[Angle={angle}]</DisplayString>
+  </Type>
+
+  <Type Name="gp::math::Quaternion&lt;*&gt;">
+    <DisplayString>[{x}, {y}, {z}, {w}]</DisplayString>
+  </Type>
+
+  <Type Name="gp::math::DualQuaternion&lt;*&gt;">
+    <DisplayString>Real={real} Dual={dual}</DisplayString>
+  </Type>
+
+  <Type Name="gp::math::Ray&lt;*&gt;">
+    <DisplayString>Origin={origin} Dir={direction}</DisplayString>
+  </Type>
+
+  <Type Name="gp::math::Sphere&lt;*&gt;">
+    <DisplayString>Center={center} Radius={radius}</DisplayString>
+  </Type>
+
+  <Type Name="gp::math::Plane&lt;*&gt;">
+    <DisplayString>Normal={normal} Distance={distance}</DisplayString>
+  </Type>
+
+  <Type Name="gp::math::Transform&lt;*&gt;">
+    <DisplayString>T={translation} R={rotation} S={scale}</DisplayString>
+    <Expand>
+      <Item Name="Translation">translation</Item>
+      <Item Name="Rotation">rotation</Item>
+      <Item Name="Scale">scale</Item>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>
