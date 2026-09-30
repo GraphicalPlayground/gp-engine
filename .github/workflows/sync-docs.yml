@@ -6,8 +6,6 @@ on:
       - main
     paths:
       - '**/docs/**'
-    paths-ignore:
-      - '**/docs/adr/**'
   workflow_dispatch:
 
 jobs:
