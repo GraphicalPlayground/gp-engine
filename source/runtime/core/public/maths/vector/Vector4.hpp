@@ -38,7 +38,7 @@ public:
     /// @return A vector with all components set to one.
     [[nodiscard]] static inline constexpr Vector4<T> one()
     {
-        return { T{ 1 }, T{ 1 }, T{ 1 }, T{ 1 } };
+        return { T{ 1 }, T{ 1 }, T{ 1 }, T{ 0 } };
     }
 
     /// @brief Returns a vector pointing upwards.
@@ -131,7 +131,7 @@ public:
         : x(T{ 0 })
         , y(T{ 0 })
         , z(T{ 0 })
-        , w(T{ 0 })
+        , w(T{ 1 })
     {}
 
     /// @brief Constructor with individual components.
@@ -185,7 +185,7 @@ public:
     /// @param[in] inW The w component of the Vector4, defaulting to 0 if not provided.
     template <concepts::IsFloatingPoint U = T>
     [[nodiscard]] explicit constexpr Vector4(
-        const Vector2<T>& vec, const U inZ = U{ 0 }, const U inW = U{ 0 }
+        const Vector2<T>& vec, const U inZ = U{ 0 }, const U inW = U{ 1 }
     ) noexcept;
 
     /// @brief Constructor that initializes the vector from a Vector3 and one additional component.
@@ -193,7 +193,7 @@ public:
     /// @param[in] vec The input Vector3 to initialize the x, y, and z components of the Vector4.
     /// @param[in] inW The w component of the Vector4, defaulting to 0 if not provided.
     template <concepts::IsFloatingPoint U = T>
-    [[nodiscard]] explicit constexpr Vector4(const Vector3<T>& vec, const U inW = U{ 0 }) noexcept;
+    [[nodiscard]] explicit constexpr Vector4(const Vector3<T>& vec, const U inW = U{ 1 }) noexcept;
 
     /// @brief Constructor that initializes the vector from two Vector2.
     /// @tparam U The floating-point type of the input vectors.
