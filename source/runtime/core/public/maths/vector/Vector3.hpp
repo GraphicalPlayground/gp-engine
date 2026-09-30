@@ -592,7 +592,7 @@ public:
     constexpr bool normalize(const T tolerance = Constants<T>::smallNumber) noexcept
     {
         const T squareSum = lengthSquared();
-        if (squareSum > tolerance)
+        if (squareSum > tolerance * tolerance)
         {
             const T scale = math::inverseSqrt(squareSum);
             x *= scale;
