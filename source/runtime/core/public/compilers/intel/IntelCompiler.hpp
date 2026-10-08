@@ -12,8 +12,8 @@
 
 #if defined(__INTEL_LLVM_COMPILER)
 
-    /// @section ICX (Intel oneAPI DPC++/C++, LLVM front-end).
-    ///          Largely identical to Clang; reuse its attribute vocabulary.
+/// @section ICX (Intel oneAPI DPC++/C++, LLVM front-end).
+///          Largely identical to Clang; reuse its attribute vocabulary.
 
     #define GP_COMPILER_VERSION_MAJOR   (__INTEL_LLVM_COMPILER / 10000)
     #define GP_COMPILER_VERSION_MINOR   (__INTEL_LLVM_COMPILER / 100 % 100)
@@ -41,7 +41,7 @@
 
 #else   // Classic ICC
 
-    /// @section ICC (classic Intel C++ compiler, GCC ABI).
+/// @section ICC (classic Intel C++ compiler, GCC ABI).
 
     #define GP_COMPILER_VERSION_MAJOR   (__INTEL_COMPILER / 100)
     #define GP_COMPILER_VERSION_MINOR   (__INTEL_COMPILER % 100 / 10)
@@ -70,4 +70,4 @@
     // ICC supports __attribute__((flatten)) since version 19.1.
     #define GP_FLATTEN                           __attribute__((flatten))
 
-#endif  // __INTEL_LLVM_COMPILER
+#endif   // __INTEL_LLVM_COMPILER

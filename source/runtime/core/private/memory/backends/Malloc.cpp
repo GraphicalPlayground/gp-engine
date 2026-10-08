@@ -48,4 +48,9 @@ bool Malloc::canGetAllocationSize()
     return false;
 }
 
+USize Malloc::getActualAllocationSize(USize requestedSize, UInt32 /* alignment */)
+{
+    return requestedSize;   // Default implementation has no way of determining this.
+}
+
 }   // namespace gp::memory

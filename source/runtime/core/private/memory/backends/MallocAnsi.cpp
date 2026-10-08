@@ -4,7 +4,7 @@
 
 #include "memory/backends/MallocAnsi.hpp"
 #include "maths/base/Scalar.hpp"
-#include "memory/Memory.hpp"
+#include "memory/Memory.hpp"   // IWYU pragma: keep
 #include "profiling/Profiler.hpp"
 #if GP_PLATFORM_USE_ANSI_POSIX_MALLOC
     #include <malloc.h>
