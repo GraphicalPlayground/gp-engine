@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
 #include "window/WindowDesc.hpp"
 
@@ -163,6 +164,12 @@ public:
     ///         associated with any display.
     [[nodiscard]] virtual const Display* getCurrentDisplay() const noexcept = 0;
 
+    /// @brief Gets the current content scale factor of the window, which represents the ratio between the window's
+    ///        logical size and its physical size on high-DPI displays
+    /// @return The current content scale factor of the window, where 1.0 represents a 1:1 ratio between logical and
+    ///         physical pixels.
+    [[nodiscard]] virtual float getContentScale() const noexcept = 0;
+
     /// @brief Sets the position of the window's top-left corner in screen coordinates.
     /// @param[in] position The new position of the window's top-left corner in screen coordinates.
     virtual void setPosition(const Point2D& position) noexcept = 0;
@@ -217,6 +224,35 @@ public:
     /// @param[in] width The maximum width constraint of the window's client area (drawable region) in pixels.
     /// @param[in] height The maximum height constraint of the window's client area (drawable region) in pixels.
     virtual void setMaximumSize(const UInt32 width, const UInt32 height) noexcept = 0;
+
+    /// @brief Sets the title of the window, which is typically displayed in the title bar or taskbar/dock. The title
+    ///        may be truncated or modified by the operating system depending on platform-specific limitations.
+    /// @param[in] title The new title of the window as a string view.
+    virtual void setTitle(gp::StringView title) noexcept = 0;
+
+    // TODO: Add methods for setting the window icon.
+
+    /// @brief Sets the visibility of the system cursor when over the window.
+    /// @param[in] visible True to make the cursor visible, false to hide it.
+    virtual void setCursorVisible(bool visible) noexcept = 0;
+
+    /// @brief Sets whether the system cursor is confined to the window's client area.
+    /// @param[in] confined True to confine the cursor to the window's client area.
+    virtual void setCursorConfined(bool confined) noexcept = 0;
+
+    /// @brief Sets the cursor shape to be used when the cursor is over the window.
+    /// @param[in] type The cursor shape to use when the cursor is over the window.
+    virtual void setCursorShape(CursorShape type) noexcept = 0;
+
+    /// @brief Sets the position of the cursor relative to the window's client area.
+    /// @param[in] position The new position of the cursor relative to the window's client area.
+    virtual void setCursorPosition(const Point2D& position) noexcept = 0;
+
+    /// @brief Sets the window mode (e.g., windowed, fullscreen, borderless) and optionally specifies the target
+    ///        display for fullscreen modes.
+    /// @param[in] mode The desired window mode to set.
+    /// @param[in] targetDisplay Optional pointer to the Display to use for fullscreen modes.
+    virtual void setWindowMode(WindowMode mode, const Display* targetDisplay = nullptr) = 0;
 
     /// @brief Opens the window and makes it ready for use. This may involve creating the underlying native window
     ///        resources and making the window visible on the screen. If the window is already open, this function may
