@@ -28,6 +28,19 @@ void* SharedLibrary::getExport(void* handle, gp::StringView procName) noexcept
     return reinterpret_cast<void*>(proc);
 }
 
+void* SharedLibrary::loadLibraryFromSearchPaths(gp::StringView filename) noexcept
+{
+    // TODO: Add a search path mechanism to find the library in the specified directories.
+    // TODO: Add a profiling mechanism to scope the IO activity of loading the library.
+
+    if (void* handle = GetModuleHandle(filename.data()))
+    {
+        return handle;
+    }
+
+    return nullptr;
+}
+
 void* SharedLibrary::getHandle(gp::StringView filename) noexcept
 {
     (void)filename;
