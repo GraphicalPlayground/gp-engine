@@ -450,7 +450,30 @@ _wip..._
 
 ### Reporting Bugs
 
-_wip..._
+Found a bug or experiencing unexpected engine behavior? Clear, detailed bug reports help keep
+`gp-engine` stable and reliable. Depending on the nature and severity of the issue, please use the
+appropriate channel below:
+
+- **GitHub Issues (Preferred for Confirmed Bugs)**: If you have identified a clear bug, engine
+  crash, or build failure:
+  - Search existing [GitHub Issues][issues] to
+    ensure the bug has not already been reported.
+  - Open a new issue using the Bug Report template.
+  - Provide full context: operating system, LLVM/Clang version, CMake preset used, step-by-step
+    reproduction instructions, stack traces, and relevant log output.
+- **GitHub Discussions & Discord (Preliminary Triage & Ambiguous Issues)**: If you are unsure
+  whether what you are seeing is a bug, a environment configuration issue, or expected engine
+  design:
+  - Start a topic on [GitHub Discussions][discussions]
+    under the Q&A or Support section.
+  - Join our [Discord Server][discord] to ask the community and maintainers in real time.
+
+> [!IMPORTANT]
+> **Critical Security Vulnerabilities**  
+> Please **do not** report critical security flaws or sensitive vulnerabilities via public GitHub
+> issues, discussions, or Discord channels. Instead, email us directly at
+> <security@graphical-playground.com>. For additional guidelines, please refer to our
+> [Security Policy](./SECURITY.md).
 
 ### Suggesting Enhancements
 
@@ -640,9 +663,8 @@ you built with `gp-engine`, we are here to support you.
 
 **Where to Connect:**
 
-- **Discord**: [Join our Discord Server](https://discord.graphical-playground.com) for real-time chat
-  with the maintainers and other developers. This is the best place for quick questions and informal
-  technical discussions.
+- **Discord**: [Join our Discord Server][discord] for real-time chat with the maintainers and other
+  developers. This is the best place for quick questions and informal technical discussions.
 - **GitHub Discussions**: For longer-form questions, architectural proposals, or sharing your
   showcases, head over to [GitHub Discussions](https://github.com/orgs/GraphicalPlayground/discussions).
 - **Social Media**: Follow our updates and community highlights on [LinkedIn](https://www.linkedin.com/company/graphical-playground).
@@ -685,3 +707,6 @@ _Thank you for being a part of the Graphical Playground. We can't wait to see wh
 ![Graphical Playground](https://github.com/GraphicalPlayground/.github/blob/main/assets/misc/gplayd-footer.svg)
 
 [gpbt]: https://github.com/GraphicalPlayground/gp-build-tool
+[discord]: https://discord.graphical-playground.com
+[discussions]: https://github.com/GraphicalPlayground/gp-engine/discussions
+[issues]: https://github.com/GraphicalPlayground/gp-engine/issues
