@@ -1,4 +1,5 @@
 <!-- markdownlint-disable MD041 -->
+<!-- markdownlint-disable MD013 -->
 ![Graphical Playground - Contribution Guidelines](https://github.com/GraphicalPlayground/.github/blob/main/assets/banners/gplayd-contributing.svg)
 
 🌎 Read this in: [English](CONTRIBUTING.md) | [Español](translations/es/CONTRIBUTING.md) | [Français](translations/fr/CONTRIBUTING.md) | [简体中文](translations/zh-cn/CONTRIBUTING.md)
@@ -29,12 +30,15 @@
 ┕ [Code Review](#code-review)  
 [Coding Standards](#coding-standards)  
 [Testing](#testing)  
+┕ [Test Philosophy: Specialized & Isolated Testing](#test-philosophy-specialized--isolated-testing)  
+┕ [Activating Tests in a Module](#activating-tests-in-a-module)  
 ┕ [Writing Unit Tests](#writing-unit-tests)  
 ┕ [Running the Test Suite](#running-the-test-suite)  
 [Documentation](#documentation)  
 ┕ [Inline Code Documentation](#inline-code-documentation)  
 ┕ [Writing Tutorials & Examples](#writing-tutorials--examples)  
 [Community & Getting Help](#community--getting-help)  
+<!-- markdownlint-enable MD013 -->
 
 ## Code of Conduct
 
@@ -629,15 +633,118 @@ C++ code.
 
 ## Testing
 
-_wip..._
+Testing is a core requirement for maintaining the stability, performance, and correctness of
+`gp-engine`. We enforce a rigorous testing discipline where core engine systems, mathematical
+utilities, and platform wrappers must be accompanied by appropriate automated test coverage.
+
+Our build system, the [Graphical Playground Build Tool][gpbt] (GPBT), integrates test target
+generation into our CMake toolchain. By default, [GoogleTest](https://github.com/google/googletest)
+(GTest) is used across the codebase, but [Catch2](https://github.com/catchorg/Catch2) is also fully
+supported for modules that prefer expressive BDD-style syntax.
+
+### Test Philosophy: Specialized & Isolated Testing
+
+To maintain speed, determinism, and maintainability, tests in `gp-engine` are categorized by scope
+and responsibility:
+
+- **Unit Tests vs. Functional Tests**:
+  - **Unit Tests**: Focus strictly on isolated, low-level logic—such as math functions, memory
+    allocators, custom containers, and string parsing. Unit tests must not initialize heavy
+    subsystems (e.g., Vulkan device context, window creation, or audio servers) and must run in
+    milliseconds.
+  - **Functional & Integration Tests**: Validate high-level interactions between multiple engine
+    subsystems (e.g., scene graph updates propagating to render queues, or job system task
+    dependencies).
+- **Hermetic & Deterministic**: Every test must be stateless, self-contained, and repeatable.
+  Tests should never depend on execution order, local filesystem state (unless using temporary
+  isolated directories), or GPU driver non-determinism without explicit tolerances.
+
+### Activating Tests in a Module
+
+Tests are organized per module within the `/source/` directory layout. You can activate test
+generation for any engine module by invoking `gpEnableTests` inside the module's
+`CMakeLists.txt` definition:
+
+```cmake
+include(gp-build-tool)
+
+gpStartModule(core)
+  gpEnableTests()
+
+  ...
+gpEndModule()
+```
+
+> Note: If `FRAMEWORK` is not explicitly declared, GPBT automatically defaults to GoogleTest.
 
 ### Writing Unit Tests
 
-_wip..._
+All test sources should reside inside a `tests/` directory within the respective module folder.
+
+#### 1. File & Test Naming Standards
+
+- File names must follow `<feature_or_class>.tests.cpp` (e.g., `Array.tests.cpp`).
+- Test suite names should take the form `<ClassName>Test`.
+- Individual test cases must use descriptive names that specify expected behavior:
+  `MethodName_Condition_ExpectedResult`.
+
+#### 2. GoogleTest Example
+
+```cpp
+#include <gtest/gtest.h>
+#include "maths/vector/Vector3.hpp"
+
+namespace gp::math::tests
+{
+
+using FloatingPointTypes = ::testing::Types<float, double>;
+TYPED_TEST_SUITE(Vector3Test, FloatingPointTypes);
+
+TYPED_TEST(Vector3Test, DefaultConstructor)
+{
+    Vector3<TypeParam> vec;
+
+    EXPECT_EQ(vec.x, this->zero);
+    EXPECT_EQ(vec.y, this->zero);
+    EXPECT_EQ(vec.z, this->zero);
+}
+
+}   // namespace gp::math::tests
+```
+
+#### 3. Catch2 Example
+
+```cpp
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include "maths/vector/Vector3.hpp"
+
+namespace gp::math::tests
+{
+
+SCENARIO("Vector3 default constructor initializes to zero", "[Vector3]")
+{
+    GIVEN("A Vector3 instance")
+    {
+        Vector3<float> vec;
+
+        THEN("All components should be zero")
+        {
+            REQUIRE(vec.x == 0.0f);
+            REQUIRE(vec.y == 0.0f);
+            REQUIRE(vec.z == 0.0f);
+        }
+    }
+}
+
+}   // namespace gp::math::tests
+```
 
 ### Running the Test Suite
 
-_wip..._
+Tests can be run across all platforms via CMake presets or CTest. Ensure you have configured the
+engine using your target preset before attempting to execute tests.
+You can also run tests directly from the command line or through your IDE's test runner.
 
 ## Documentation
 
