@@ -640,6 +640,23 @@ follow strict review ownership and merge rules:
 > 2. Pass all automated CI/CD checks (formatting, compilation across supported platforms, and unit tests).
 > 3. Resolve all open review discussions and inline thread feedback.
 
+#### Github Teams
+
+<!-- markdownlint-disable MD060 MD045 -->
+|     | Team | Responsibilities |
+| --- | ---  | ---------------- |
+| ![](https://avatars.githubusercontent.com/t/18658494?s=116) | Security | Safeguards cloud execution environments, protects user data and proprietary engine assets, and manages platform access controls and vulnerability management. |
+| ![](https://avatars.githubusercontent.com/t/18658514?s=116) | QA & Test Infrastructure | Develops automated testing pipelines, continuous integration workflows, and quality assurance suites across platform and engine releases. |
+| ![](https://avatars.githubusercontent.com/t/18658503?s=116) | Legal & Compliance | Oversees terms of service, IP licensing agreements, NDA enforcement, platform partner compliance, and regulatory standards. |
+| ![](https://avatars.githubusercontent.com/t/16191538?s=116) | Infrastructure & DevOps | Manages cloud infrastructure, remote GPU execution, deployment pipelines, and system scalability for the platform. |
+| ![](https://avatars.githubusercontent.com/t/16191529?s=116) | Graphics Engineering | Implements graphics algorithms, shaders, and real-time rendering systems used across the learning engine and experimental modules. |
+| ![](https://avatars.githubusercontent.com/t/16191525?s=116) | Engine Architecture | Designs and maintains the core graphics engine, including rendering pipelines, GPU abstractions, and low-level engine architecture. |
+| ![](https://avatars.githubusercontent.com/t/16191540?s=116) | Documentation & Knowledge | Maintains technical documentation, contributor guidelines, and educational references across the Graphical Playground ecosystem. |
+| ![](https://avatars.githubusercontent.com/t/18658516?s=116) | Data & Analytics | Tracks, models, and analyzes user learning behaviors, platform performance telemetry, and key growth metrics to guide product decisions. |
+| ![](https://avatars.githubusercontent.com/t/16191539?s=116) | Curriculum & Learning Design | Defines learning paths, educational structure, and progression across courses, sample projects, and certification programs. |
+| ![](https://avatars.githubusercontent.com/t/18658540?s=116) | Community & DevRel | Fosters developer engagement, manages community forums and events, and advocates for user and contributor needs across the platform ecosystem. |
+<!-- markdownlint-enable MD060 MD045 -->
+
 ## Coding Standards
 
 For a project of this scale, maintaining a consistent coding style is crucial for readability,
