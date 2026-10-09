@@ -618,7 +618,27 @@ _wip..._
 
 ### Code Review
 
-_wip..._
+Code review is a critical step in maintaining code quality, engine architecture integrity, and
+performance across `gp-engine`. To ensure all contributions meet our standards, code reviews
+follow strict review ownership and merge rules:
+
+- **Review Eligibility & Ownership**: Code reviews must be performed by project maintainers or
+  dedicated subsystem teams.
+- **Automated Assignment via CODEOWNERS**: Reviewers are automatically assigned to pull requests
+  based on the modified files and subsystems, as defined in our [`CODEOWNERS`](./.github/CODEOWNERS)
+  file (e.g., changes to `/source/runtime/renderer/` will automatically notify and request review
+  from the Rendering team).
+- **Merge Authority**: Only repository maintainers and administrators have permission to merge code
+  into protected integration and release branches (`main`, `dev`, `release-*`).
+
+> [!IMPORTANT]
+> **Merge Requirements**  
+> Before a pull request can be merged into `main` or `dev`, it must satisfy all of the following
+> conditions:
+>
+> 1. Formally approved by all designated code owners assigned via the `CODEOWNERS` file.
+> 2. Pass all automated CI/CD checks (formatting, compilation across supported platforms, and unit tests).
+> 3. Resolve all open review discussions and inline thread feedback.
 
 ## Coding Standards
 
