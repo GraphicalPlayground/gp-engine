@@ -28,9 +28,6 @@
 ┕ [Pull Request Process](#pull-request-process)  
 ┕ [Code Review](#code-review)  
 [Coding Standards](#coding-standards)  
-┕ [Style Guide](#style-guide)  
-┕ [Naming Conventions](#naming-conventions)  
-┕ [Performance & Memory Guidelines](#performance--memory-guidelines)  
 [Testing](#testing)  
 ┕ [Writing Unit Tests](#writing-unit-tests)  
 ┕ [Running the Test Suite](#running-the-test-suite)  
@@ -598,19 +595,14 @@ _wip..._
 
 ## Coding Standards
 
-_wip..._
+For a project of this scale, maintaining a consistent coding style is crucial for readability,
+maintainability, and collaboration. We have established a set of coding standards that all
+contributors are expected to follow.
 
-### Style Guide
-
-_wip..._
-
-### Naming Conventions
-
-_wip..._
-
-### Performance & Memory Guidelines
-
-_wip..._
+For a detailed breakdown of our coding standards, please refer to the
+[Coding Standards](./docs/Programming%20With%20C++/Coding%20Standard.md) document. It covers topics
+such as naming conventions, formatting rules, and best practices for writing clean and efficient
+C++ code.
 
 ## Testing
 
@@ -633,6 +625,10 @@ _wip..._
 _wip..._
 
 ### Writing Tutorials & Examples
+
+_wip..._
+
+### Architectural Design Records (ADRs)
 
 _wip..._
 
