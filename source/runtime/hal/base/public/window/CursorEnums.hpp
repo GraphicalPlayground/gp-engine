@@ -30,38 +30,21 @@ enum class CursorMode : gp::UInt8
 /// @brief Defines the visual icon used for the system cursor.
 enum class CursorShape : gp::UInt8
 {
-    /// @brief The standard OS arrow.
-    Arrow,
-
-    /// @brief A text input "I-Beam" cursor.
-    IBeam,
-
-    /// @brief A crosshair icon, often used for precision tools.
-    Crosshair,
-
-    /// @brief A hand icon, typically used for clicking links or grabbing objects.
-    Hand,
-
-    /// @brief Horizontal resize arrows (West-East).
-    ResizeEW,
-
-    /// @brief Vertical resize arrows (North-South).
-    ResizeNS,
-
-    /// @brief Diagonal resize arrows (NorthWest-SouthEast).
-    ResizeNWSE,
-
-    /// @brief Diagonal resize arrows (NorthEast-SouthWest).
-    ResizeNESW,
-
-    /// @brief Four-way movement arrows.
-    ResizeAll,
-
-    /// @brief A circle with a slash or "blocked" icon.
-    NotAllowed,
-
-    /// @brief The "Waiting" or "Busy" spinning icon.
-    Wait
+    Default = 0,
+    Arrow = 1,
+    IBeam = 2,       // Text input
+    Wait = 3,        // Hourglass / spinner
+    Crosshair = 4,
+    WaitArrow = 5,   // Arrow + hourglass
+    ResizeNWSE = 6,
+    ResizeNESW = 7,
+    ResizeWE = 8,
+    ResizeNS = 9,
+    ResizeAll = 10,   // Move (four-way arrow)
+    No = 11,          // Not allowed / forbidden
+    Hand = 12,        // Pointing hand (link hover)
+    Window = 13,      // Window dragging
+    Count = 14
 };
 
 }   // namespace gp::hal
