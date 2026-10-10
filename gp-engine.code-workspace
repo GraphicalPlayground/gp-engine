@@ -201,7 +201,8 @@
       "targets": "target",
       "linkers": "contract",
       "frameworks": "lib",
-      "adr": "skills"
+      "adr": "skills",
+      "clipboard": "tasks"
     },
     /* File Associations */
     "files.associations": {
