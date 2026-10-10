@@ -1,4 +1,5 @@
 <!-- markdownlint-disable MD041 -->
+<!-- markdownlint-disable MD013 -->
 ![Graphical Playground - Contribution Guidelines](https://github.com/GraphicalPlayground/.github/blob/main/assets/banners/gplayd-contributing.svg)
 
 🌎 Read this in: [English](CONTRIBUTING.md) | [Español](translations/es/CONTRIBUTING.md) | [Français](translations/fr/CONTRIBUTING.md) | [简体中文](translations/zh-cn/CONTRIBUTING.md)
@@ -28,16 +29,16 @@
 ┕ [Pull Request Process](#pull-request-process)  
 ┕ [Code Review](#code-review)  
 [Coding Standards](#coding-standards)  
-┕ [Style Guide](#style-guide)  
-┕ [Naming Conventions](#naming-conventions)  
-┕ [Performance & Memory Guidelines](#performance--memory-guidelines)  
 [Testing](#testing)  
+┕ [Test Philosophy: Specialized & Isolated Testing](#test-philosophy-specialized--isolated-testing)  
+┕ [Activating Tests in a Module](#activating-tests-in-a-module)  
 ┕ [Writing Unit Tests](#writing-unit-tests)  
 ┕ [Running the Test Suite](#running-the-test-suite)  
 [Documentation](#documentation)  
 ┕ [Inline Code Documentation](#inline-code-documentation)  
 ┕ [Writing Tutorials & Examples](#writing-tutorials--examples)  
 [Community & Getting Help](#community--getting-help)  
+<!-- markdownlint-enable MD013 -->
 
 ## Code of Conduct
 
@@ -453,7 +454,30 @@ _wip..._
 
 ### Reporting Bugs
 
-_wip..._
+Found a bug or experiencing unexpected engine behavior? Clear, detailed bug reports help keep
+`gp-engine` stable and reliable. Depending on the nature and severity of the issue, please use the
+appropriate channel below:
+
+- **GitHub Issues (Preferred for Confirmed Bugs)**: If you have identified a clear bug, engine
+  crash, or build failure:
+  - Search existing [GitHub Issues][issues] to
+    ensure the bug has not already been reported.
+  - Open a new issue using the Bug Report template.
+  - Provide full context: operating system, LLVM/Clang version, CMake preset used, step-by-step
+    reproduction instructions, stack traces, and relevant log output.
+- **GitHub Discussions & Discord (Preliminary Triage & Ambiguous Issues)**: If you are unsure
+  whether what you are seeing is a bug, a environment configuration issue, or expected engine
+  design:
+  - Start a topic on [GitHub Discussions][discussions]
+    under the Q&A or Support section.
+  - Join our [Discord Server][discord] to ask the community and maintainers in real time.
+
+> [!IMPORTANT]
+> **Critical Security Vulnerabilities**  
+> Please **do not** report critical security flaws or sensitive vulnerabilities via public GitHub
+> issues, discussions, or Discord channels. Instead, email us directly at
+> <security@graphical-playground.com>. For additional guidelines, please refer to our
+> [Security Policy](./SECURITY.md).
 
 ### Suggesting Enhancements
 
@@ -594,35 +618,170 @@ _wip..._
 
 ### Code Review
 
-_wip..._
+Code review is a critical step in maintaining code quality, engine architecture integrity, and
+performance across `gp-engine`. To ensure all contributions meet our standards, code reviews
+follow strict review ownership and merge rules:
+
+- **Review Eligibility & Ownership**: Code reviews must be performed by project maintainers or
+  dedicated subsystem teams.
+- **Automated Assignment via CODEOWNERS**: Reviewers are automatically assigned to pull requests
+  based on the modified files and subsystems, as defined in our [`CODEOWNERS`](./.github/CODEOWNERS)
+  file (e.g., changes to `/source/runtime/renderer/` will automatically notify and request review
+  from the Rendering team).
+- **Merge Authority**: Only repository maintainers and administrators have permission to merge code
+  into protected integration and release branches (`main`, `dev`, `release-*`).
+
+> [!IMPORTANT]
+> **Merge Requirements**  
+> Before a pull request can be merged into `main` or `dev`, it must satisfy all of the following
+> conditions:
+>
+> 1. Formally approved by all designated code owners assigned via the `CODEOWNERS` file.
+> 2. Pass all automated CI/CD checks (formatting, compilation across supported platforms, and unit tests).
+> 3. Resolve all open review discussions and inline thread feedback.
+
+#### Github Teams
+
+<!-- markdownlint-disable MD060 MD045 -->
+|     | Team | Responsibilities |
+| --- | ---  | ---------------- |
+| ![](https://avatars.githubusercontent.com/t/18658494?s=116) | Security | Safeguards cloud execution environments, protects user data and proprietary engine assets, and manages platform access controls and vulnerability management. |
+| ![](https://avatars.githubusercontent.com/t/18658514?s=116) | QA & Test Infrastructure | Develops automated testing pipelines, continuous integration workflows, and quality assurance suites across platform and engine releases. |
+| ![](https://avatars.githubusercontent.com/t/18658503?s=116) | Legal & Compliance | Oversees terms of service, IP licensing agreements, NDA enforcement, platform partner compliance, and regulatory standards. |
+| ![](https://avatars.githubusercontent.com/t/16191538?s=116) | Infrastructure & DevOps | Manages cloud infrastructure, remote GPU execution, deployment pipelines, and system scalability for the platform. |
+| ![](https://avatars.githubusercontent.com/t/16191529?s=116) | Graphics Engineering | Implements graphics algorithms, shaders, and real-time rendering systems used across the learning engine and experimental modules. |
+| ![](https://avatars.githubusercontent.com/t/16191525?s=116) | Engine Architecture | Designs and maintains the core graphics engine, including rendering pipelines, GPU abstractions, and low-level engine architecture. |
+| ![](https://avatars.githubusercontent.com/t/16191540?s=116) | Documentation & Knowledge | Maintains technical documentation, contributor guidelines, and educational references across the Graphical Playground ecosystem. |
+| ![](https://avatars.githubusercontent.com/t/18658516?s=116) | Data & Analytics | Tracks, models, and analyzes user learning behaviors, platform performance telemetry, and key growth metrics to guide product decisions. |
+| ![](https://avatars.githubusercontent.com/t/16191539?s=116) | Curriculum & Learning Design | Defines learning paths, educational structure, and progression across courses, sample projects, and certification programs. |
+| ![](https://avatars.githubusercontent.com/t/18658540?s=116) | Community & DevRel | Fosters developer engagement, manages community forums and events, and advocates for user and contributor needs across the platform ecosystem. |
+<!-- markdownlint-enable MD060 MD045 -->
 
 ## Coding Standards
 
-_wip..._
+For a project of this scale, maintaining a consistent coding style is crucial for readability,
+maintainability, and collaboration. We have established a set of coding standards that all
+contributors are expected to follow.
 
-### Style Guide
-
-_wip..._
-
-### Naming Conventions
-
-_wip..._
-
-### Performance & Memory Guidelines
-
-_wip..._
+For a detailed breakdown of our coding standards, please refer to the
+[Coding Standards](./docs/Programming%20With%20C++/Coding%20Standard.md) document. It covers topics
+such as naming conventions, formatting rules, and best practices for writing clean and efficient
+C++ code.
 
 ## Testing
 
-_wip..._
+Testing is a core requirement for maintaining the stability, performance, and correctness of
+`gp-engine`. We enforce a rigorous testing discipline where core engine systems, mathematical
+utilities, and platform wrappers must be accompanied by appropriate automated test coverage.
+
+Our build system, the [Graphical Playground Build Tool][gpbt] (GPBT), integrates test target
+generation into our CMake toolchain. By default, [GoogleTest](https://github.com/google/googletest)
+(GTest) is used across the codebase, but [Catch2](https://github.com/catchorg/Catch2) is also fully
+supported for modules that prefer expressive BDD-style syntax.
+
+### Test Philosophy: Specialized & Isolated Testing
+
+To maintain speed, determinism, and maintainability, tests in `gp-engine` are categorized by scope
+and responsibility:
+
+- **Unit Tests vs. Functional Tests**:
+  - **Unit Tests**: Focus strictly on isolated, low-level logic—such as math functions, memory
+    allocators, custom containers, and string parsing. Unit tests must not initialize heavy
+    subsystems (e.g., Vulkan device context, window creation, or audio servers) and must run in
+    milliseconds.
+  - **Functional & Integration Tests**: Validate high-level interactions between multiple engine
+    subsystems (e.g., scene graph updates propagating to render queues, or job system task
+    dependencies).
+- **Hermetic & Deterministic**: Every test must be stateless, self-contained, and repeatable.
+  Tests should never depend on execution order, local filesystem state (unless using temporary
+  isolated directories), or GPU driver non-determinism without explicit tolerances.
+
+### Activating Tests in a Module
+
+Tests are organized per module within the `/source/` directory layout. You can activate test
+generation for any engine module by invoking `gpEnableTests` inside the module's
+`CMakeLists.txt` definition:
+
+```cmake
+include(gp-build-tool)
+
+gpStartModule(core)
+  gpEnableTests()
+
+  ...
+gpEndModule()
+```
+
+> Note: If `FRAMEWORK` is not explicitly declared, GPBT automatically defaults to GoogleTest.
 
 ### Writing Unit Tests
 
-_wip..._
+All test sources should reside inside a `tests/` directory within the respective module folder.
+
+#### 1. File & Test Naming Standards
+
+- File names must follow `<feature_or_class>.tests.cpp` (e.g., `Array.tests.cpp`).
+- Test suite names should take the form `<ClassName>Test`.
+- Individual test cases must use descriptive names that specify expected behavior:
+  `MethodName_Condition_ExpectedResult`.
+
+#### 2. GoogleTest Example
+
+```cpp
+#include <gtest/gtest.h>
+#include "maths/vector/Vector3.hpp"
+
+namespace gp::math::tests
+{
+
+using FloatingPointTypes = ::testing::Types<float, double>;
+TYPED_TEST_SUITE(Vector3Test, FloatingPointTypes);
+
+TYPED_TEST(Vector3Test, DefaultConstructor)
+{
+    Vector3<TypeParam> vec;
+
+    EXPECT_EQ(vec.x, this->zero);
+    EXPECT_EQ(vec.y, this->zero);
+    EXPECT_EQ(vec.z, this->zero);
+}
+
+}   // namespace gp::math::tests
+```
+
+#### 3. Catch2 Example
+
+```cpp
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include "maths/vector/Vector3.hpp"
+
+namespace gp::math::tests
+{
+
+SCENARIO("Vector3 default constructor initializes to zero", "[Vector3]")
+{
+    GIVEN("A Vector3 instance")
+    {
+        Vector3<float> vec;
+
+        THEN("All components should be zero")
+        {
+            REQUIRE(vec.x == 0.0f);
+            REQUIRE(vec.y == 0.0f);
+            REQUIRE(vec.z == 0.0f);
+        }
+    }
+}
+
+}   // namespace gp::math::tests
+```
 
 ### Running the Test Suite
 
-_wip..._
+Tests can be run across all platforms via CMake presets or CTest. Ensure you have configured the
+engine using your target preset before attempting to execute tests.
+You can also run tests directly from the command line or through your IDE's test runner.
 
 ## Documentation
 
@@ -636,6 +795,10 @@ _wip..._
 
 _wip..._
 
+### Architectural Design Records (ADRs)
+
+_wip..._
+
 ## Community & Getting Help
 
 Getting stuck is a normal part of working on a complex C++ engine! Whether you need help configuring
@@ -644,9 +807,8 @@ you built with `gp-engine`, we are here to support you.
 
 **Where to Connect:**
 
-- **Discord**: [Join our Discord Server](https://discord.graphical-playground.com) for real-time chat
-  with the maintainers and other developers. This is the best place for quick questions and informal
-  technical discussions.
+- **Discord**: [Join our Discord Server][discord] for real-time chat with the maintainers and other
+  developers. This is the best place for quick questions and informal technical discussions.
 - **GitHub Discussions**: For longer-form questions, architectural proposals, or sharing your
   showcases, head over to [GitHub Discussions](https://github.com/orgs/GraphicalPlayground/discussions).
 - **Social Media**: Follow our updates and community highlights on [LinkedIn](https://www.linkedin.com/company/graphical-playground).
@@ -689,3 +851,6 @@ _Thank you for being a part of the Graphical Playground. We can't wait to see wh
 ![Graphical Playground](https://github.com/GraphicalPlayground/.github/blob/main/assets/misc/gplayd-footer.svg)
 
 [gpbt]: https://github.com/GraphicalPlayground/gp-build-tool
+[discord]: https://discord.graphical-playground.com
+[discussions]: https://github.com/GraphicalPlayground/gp-engine/discussions
+[issues]: https://github.com/GraphicalPlayground/gp-engine/issues
