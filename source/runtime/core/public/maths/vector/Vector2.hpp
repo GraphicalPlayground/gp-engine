@@ -419,7 +419,7 @@ public:
     /// @brief Component-wise cross product of this vector with another vector.
     /// @param[in] other The other vector to compute the cross product with.
     /// @return The cross product of this vector and the other vector.
-    [[nodiscard]] constexpr Vector2<T> cross(const Vector2<T>& other) const noexcept
+    [[nodiscard]] constexpr T cross(const Vector2<T>& other) const noexcept
     {
         return *this ^ other;
     }
