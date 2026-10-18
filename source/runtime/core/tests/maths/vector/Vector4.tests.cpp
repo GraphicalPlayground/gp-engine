@@ -146,18 +146,18 @@ TYPED_TEST(Vector4Test, Constants)
 {
     EXPECT_EQ(Vector4<TypeParam>::zero(), (Vector4<TypeParam>(0, 0, 0, 0)));
     EXPECT_EQ(Vector4<TypeParam>::one(), (Vector4<TypeParam>(1, 1, 1, 1)));
-    EXPECT_EQ(Vector4<TypeParam>::up(), (Vector4<TypeParam>(0, 1, 0, 0)));
-    EXPECT_EQ(Vector4<TypeParam>::down(), (Vector4<TypeParam>(0, -1, 0, 0)));
-    EXPECT_EQ(Vector4<TypeParam>::left(), (Vector4<TypeParam>(-1, 0, 0, 0)));
-    EXPECT_EQ(Vector4<TypeParam>::right(), (Vector4<TypeParam>(1, 0, 0, 0)));
-    EXPECT_EQ(Vector4<TypeParam>::forward(), (Vector4<TypeParam>(0, 0, 1, 0)));
-    EXPECT_EQ(Vector4<TypeParam>::backward(), (Vector4<TypeParam>(0, 0, -1, 0)));
+    EXPECT_EQ(Vector4<TypeParam>::up(), (Vector4<TypeParam>(0, 1, 0, 1)));
+    EXPECT_EQ(Vector4<TypeParam>::down(), (Vector4<TypeParam>(0, -1, 0, 1)));
+    EXPECT_EQ(Vector4<TypeParam>::left(), (Vector4<TypeParam>(-1, 0, 0, 1)));
+    EXPECT_EQ(Vector4<TypeParam>::right(), (Vector4<TypeParam>(1, 0, 0, 1)));
+    EXPECT_EQ(Vector4<TypeParam>::forward(), (Vector4<TypeParam>(0, 0, 1, 1)));
+    EXPECT_EQ(Vector4<TypeParam>::backward(), (Vector4<TypeParam>(0, 0, -1, 1)));
     EXPECT_EQ(Vector4<TypeParam>::negativeW(), (Vector4<TypeParam>(0, 0, 0, -1)));
     EXPECT_EQ(Vector4<TypeParam>::positiveW(), (Vector4<TypeParam>(0, 0, 0, 1)));
-    EXPECT_EQ(Vector4<TypeParam>::unitX(), Vector4<TypeParam>::right());
-    EXPECT_EQ(Vector4<TypeParam>::unitY(), Vector4<TypeParam>::up());
-    EXPECT_EQ(Vector4<TypeParam>::unitZ(), Vector4<TypeParam>::forward());
-    EXPECT_EQ(Vector4<TypeParam>::unitW(), Vector4<TypeParam>::positiveW());
+    EXPECT_EQ(Vector4<TypeParam>::unitX(), (Vector4<TypeParam>(1, 0, 0, 0)));
+    EXPECT_EQ(Vector4<TypeParam>::unitY(), (Vector4<TypeParam>(0, 1, 0, 0)));
+    EXPECT_EQ(Vector4<TypeParam>::unitZ(), (Vector4<TypeParam>(0, 0, 1, 0)));
+    EXPECT_EQ(Vector4<TypeParam>::unitW(), (Vector4<TypeParam>(0, 0, 0, 1)));
 }
 
 TYPED_TEST(Vector4Test, CrossProductOperator)
