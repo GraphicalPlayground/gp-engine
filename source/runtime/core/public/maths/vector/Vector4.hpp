@@ -38,49 +38,55 @@ public:
     /// @return A vector with all components set to one.
     [[nodiscard]] static inline constexpr Vector4<T> one()
     {
-        return { T{ 1 }, T{ 1 }, T{ 1 }, T{ 0 } };
+        return { T{ 1 }, T{ 1 }, T{ 1 }, T{ 1 } };
     }
 
     /// @brief Returns a vector pointing upwards.
     /// @return A vector pointing upwards.
+    /// @note The w component is set to 1 for homogeneous coordinates.
     [[nodiscard]] static inline constexpr Vector4<T> up()
     {
-        return { T{ 0 }, T{ 1 }, T{ 0 }, T{ 0 } };
+        return { T{ 0 }, T{ 1 }, T{ 0 }, T{ 1 } };
     }
 
     /// @brief Returns a vector pointing downwards.
     /// @return A vector pointing dowwards.
+    /// @note The w component is set to 1 for homogeneous coordinates.
     [[nodiscard]] static inline constexpr Vector4<T> down()
     {
-        return { T{ 0 }, T{ -1 }, T{ 0 }, T{ 0 } };
+        return { T{ 0 }, T{ -1 }, T{ 0 }, T{ 1 } };
     }
 
     /// @brief Returns a vector pointing to the left.
     /// @return A vector pointing to the left.
+    /// @note The w component is set to 1 for homogeneous coordinates.
     [[nodiscard]] static inline constexpr Vector4<T> left()
     {
-        return { T{ -1 }, T{ 0 }, T{ 0 }, T{ 0 } };
+        return { T{ -1 }, T{ 0 }, T{ 0 }, T{ 1 } };
     }
 
     /// @brief Returns a vector pointing to the right.
     /// @return A vector pointing to the right.
+    /// @note The w component is set to 1 for homogeneous coordinates.
     [[nodiscard]] static inline constexpr Vector4<T> right()
     {
-        return { T{ 1 }, T{ 0 }, T{ 0 }, T{ 0 } };
+        return { T{ 1 }, T{ 0 }, T{ 0 }, T{ 1 } };
     }
 
     /// @brief Returns a vector pointing forward.
     /// @return A vector pointing forward.
+    /// @note The w component is set to 1 for homogeneous coordinates.
     [[nodiscard]] static inline constexpr Vector4<T> forward()
     {
-        return { T{ 0 }, T{ 0 }, T{ 1 }, T{ 0 } };
+        return { T{ 0 }, T{ 0 }, T{ 1 }, T{ 1 } };
     }
 
     /// @brief Returns a vector pointing backward.
     /// @return A vector pointing backward.
+    /// @note The w component is set to 1 for homogeneous coordinates.
     [[nodiscard]] static inline constexpr Vector4<T> backward()
     {
-        return { T{ 0 }, T{ 0 }, T{ -1 }, T{ 0 } };
+        return { T{ 0 }, T{ 0 }, T{ -1 }, T{ 1 } };
     }
 
     /// @brief Returns a vector pointing to the negative W-axis.
@@ -126,7 +132,8 @@ public:
     }
 
 public:
-    /// @brief Default constructor initializes to (0, 0, 0, 0).
+    /// @brief Default constructor initializes to (0, 0, 0, 1).
+    /// @note The w component is set to 1 for homogeneous coordinates.
     [[nodiscard]] constexpr Vector4() noexcept
         : x(T{ 0 })
         , y(T{ 0 })
@@ -182,7 +189,7 @@ public:
     /// @tparam U The floating-point type of the input vector and additional components.
     /// @param[in] vec The input Vector2 to initialize the x and y components of the Vector4.
     /// @param[in] inZ The z component of the Vector4, defaulting to 0 if not provided.
-    /// @param[in] inW The w component of the Vector4, defaulting to 0 if not provided.
+    /// @param[in] inW The w component of the Vector4, defaulting to 1 if not provided.
     template <concepts::IsFloatingPoint U = T>
     [[nodiscard]] explicit constexpr Vector4(
         const Vector2<T>& vec, const U inZ = U{ 0 }, const U inW = U{ 1 }
@@ -191,7 +198,7 @@ public:
     /// @brief Constructor that initializes the vector from a Vector3 and one additional component.
     /// @tparam U The floating-point type of the input vector and additional component.
     /// @param[in] vec The input Vector3 to initialize the x, y, and z components of the Vector4.
-    /// @param[in] inW The w component of the Vector4, defaulting to 0 if not provided.
+    /// @param[in] inW The w component of the Vector4, defaulting to 1 if not provided.
     template <concepts::IsFloatingPoint U = T>
     [[nodiscard]] explicit constexpr Vector4(const Vector3<T>& vec, const U inW = U{ 1 }) noexcept;
 
@@ -270,6 +277,20 @@ public:
     [[nodiscard]] constexpr Vector4<T> operator*(const Vector4<T>& other) const noexcept
     {
         return Vector4<T>(x * other.x, y * other.y, z * other.z, w * other.w);
+    }
+
+    /// @brief Component-wise multiplication of this vector by a scalar scale factor.
+    /// @param[in] scale The scalar scale factor to multiply each component of the vector by.
+    /// @return The component-wise product of the vector and the scalar scale factor.
+    template <concepts::IsArithmetic U>
+    [[nodiscard]] constexpr Vector4<T> operator*(const U scale) const noexcept
+    {
+        return Vector4<T>(
+            x * static_cast<T>(scale),
+            y * static_cast<T>(scale),
+            z * static_cast<T>(scale),
+            w * static_cast<T>(scale)
+        );
     }
 
     /// @brief Component-wise division of this vector by another vector.
