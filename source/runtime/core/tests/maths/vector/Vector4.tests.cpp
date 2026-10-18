@@ -144,20 +144,20 @@ TYPED_TEST(Vector4Test, DoubleVector2Constructor)
 
 TYPED_TEST(Vector4Test, Constants)
 {
-    EXPECT_EQ(Vector4<TypeParam>::zero(), (Vector4<TypeParam>(0, 0, 0, 0)));
-    EXPECT_EQ(Vector4<TypeParam>::one(), (Vector4<TypeParam>(1, 1, 1, 1)));
-    EXPECT_EQ(Vector4<TypeParam>::up(), (Vector4<TypeParam>(0, 1, 0, 1)));
-    EXPECT_EQ(Vector4<TypeParam>::down(), (Vector4<TypeParam>(0, -1, 0, 1)));
-    EXPECT_EQ(Vector4<TypeParam>::left(), (Vector4<TypeParam>(-1, 0, 0, 1)));
-    EXPECT_EQ(Vector4<TypeParam>::right(), (Vector4<TypeParam>(1, 0, 0, 1)));
-    EXPECT_EQ(Vector4<TypeParam>::forward(), (Vector4<TypeParam>(0, 0, 1, 1)));
-    EXPECT_EQ(Vector4<TypeParam>::backward(), (Vector4<TypeParam>(0, 0, -1, 1)));
-    EXPECT_EQ(Vector4<TypeParam>::negativeW(), (Vector4<TypeParam>(0, 0, 0, -1)));
-    EXPECT_EQ(Vector4<TypeParam>::positiveW(), (Vector4<TypeParam>(0, 0, 0, 1)));
-    EXPECT_EQ(Vector4<TypeParam>::unitX(), (Vector4<TypeParam>(1, 0, 0, 0)));
-    EXPECT_EQ(Vector4<TypeParam>::unitY(), (Vector4<TypeParam>(0, 1, 0, 0)));
-    EXPECT_EQ(Vector4<TypeParam>::unitZ(), (Vector4<TypeParam>(0, 0, 1, 0)));
-    EXPECT_EQ(Vector4<TypeParam>::unitW(), (Vector4<TypeParam>(0, 0, 0, 1)));
+    EXPECT_EQ(Vector4<TypeParam>::zero(), Vector4<TypeParam>(0, 0, 0, 0));
+    EXPECT_EQ(Vector4<TypeParam>::one(), Vector4<TypeParam>(1, 1, 1, 1));
+    EXPECT_EQ(Vector4<TypeParam>::up(), Vector4<TypeParam>(0, 1, 0, 1));
+    EXPECT_EQ(Vector4<TypeParam>::down(), Vector4<TypeParam>(0, -1, 0, 1));
+    EXPECT_EQ(Vector4<TypeParam>::left(), Vector4<TypeParam>(-1, 0, 0, 1));
+    EXPECT_EQ(Vector4<TypeParam>::right(), Vector4<TypeParam>(1, 0, 0, 1));
+    EXPECT_EQ(Vector4<TypeParam>::forward(), Vector4<TypeParam>(0, 0, 1, 1));
+    EXPECT_EQ(Vector4<TypeParam>::backward(), Vector4<TypeParam>(0, 0, -1, 1));
+    EXPECT_EQ(Vector4<TypeParam>::negativeW(), Vector4<TypeParam>(0, 0, 0, -1));
+    EXPECT_EQ(Vector4<TypeParam>::positiveW(), Vector4<TypeParam>(0, 0, 0, 1));
+    EXPECT_EQ(Vector4<TypeParam>::unitX(), Vector4<TypeParam>(1, 0, 0, 0));
+    EXPECT_EQ(Vector4<TypeParam>::unitY(), Vector4<TypeParam>(0, 1, 0, 0));
+    EXPECT_EQ(Vector4<TypeParam>::unitZ(), Vector4<TypeParam>(0, 0, 1, 0));
+    EXPECT_EQ(Vector4<TypeParam>::unitW(), Vector4<TypeParam>(0, 0, 0, 1));
 }
 
 TYPED_TEST(Vector4Test, CrossProductOperator)
@@ -534,31 +534,39 @@ TYPED_TEST(Vector4Test, GetAbsMinMethod)
 
 TYPED_TEST(Vector4Test, GetComponentWiseMinMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>(-2, 4, -6, 8).getComponentWiseMin(Vector4<TypeParam>(-3, 5, -5, 7)),
-              (Vector4<TypeParam>(-3, 4, -6, 7)));
+    EXPECT_EQ(
+        Vector4<TypeParam>(-2, 4, -6, 8).getComponentWiseMin(Vector4<TypeParam>(-3, 5, -5, 7)),
+        Vector4<TypeParam>(-3, 4, -6, 7)
+    );
 }
 
 TYPED_TEST(Vector4Test, GetComponentWiseMaxMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>(-2, 4, -6, 8).getComponentWiseMax(Vector4<TypeParam>(-3, 5, -5, 7)),
-              (Vector4<TypeParam>(-2, 5, -5, 8)));
+    EXPECT_EQ(
+        Vector4<TypeParam>(-2, 4, -6, 8).getComponentWiseMax(Vector4<TypeParam>(-3, 5, -5, 7)),
+        Vector4<TypeParam>(-2, 5, -5, 8)
+    );
 }
 
 TYPED_TEST(Vector4Test, GetComponentWiseAbsMinMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>(-2, 4, -6, 8).getComponentWiseAbsMin(Vector4<TypeParam>(3, 5, -5, 7)),
-              (Vector4<TypeParam>(2, 4, 5, 7)));
+    EXPECT_EQ(
+        Vector4<TypeParam>(-2, 4, -6, 8).getComponentWiseAbsMin(Vector4<TypeParam>(3, 5, -5, 7)),
+        Vector4<TypeParam>(2, 4, 5, 7)
+    );
 }
 
 TYPED_TEST(Vector4Test, GetComponentWiseAbsMaxMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>(-2, 4, -6, 8).getComponentWiseAbsMax(Vector4<TypeParam>(3, 5, -5, 7)),
-              (Vector4<TypeParam>(3, 5, 6, 8)));
+    EXPECT_EQ(
+        Vector4<TypeParam>(-2, 4, -6, 8).getComponentWiseAbsMax(Vector4<TypeParam>(3, 5, -5, 7)),
+        Vector4<TypeParam>(3, 5, 6, 8)
+    );
 }
 
 TYPED_TEST(Vector4Test, GetAbsMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>(-2, 4, -6, 8).getAbs(), (Vector4<TypeParam>(2, 4, 6, 8)));
+    EXPECT_EQ(Vector4<TypeParam>(-2, 4, -6, 8).getAbs(), Vector4<TypeParam>(2, 4, 6, 8));
 }
 
 TYPED_TEST(Vector4Test, LengthMethod)
@@ -591,96 +599,105 @@ TYPED_TEST(Vector4Test, GetSafeNormalMethod)
 
 TYPED_TEST(Vector4Test, GetSignMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>(-2, 0, 3, 0).getSign(), (Vector4<TypeParam>(-1, 0, 1, 0)));
+    EXPECT_EQ(Vector4<TypeParam>(-2, 0, 3, 0).getSign(), Vector4<TypeParam>(-1, 0, 1, 0));
 }
 
 TYPED_TEST(Vector4Test, GetProjectedToXYMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>(2, 4, 5, 10).getProjectedToXY(), (Vector4<TypeParam>(0.4, 0.8, 1, 10)));
+    EXPECT_EQ(Vector4<TypeParam>(2, 4, 5, 10).getProjectedToXY(), Vector4<TypeParam>(0.4, 0.8, 1, 10));
 }
 
 TYPED_TEST(Vector4Test, GetReciprocalMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>(2, 4, 5, 10).getReciprocal(), (Vector4<TypeParam>(0.5, 0.25, 0.2, 0.1)));
+    EXPECT_EQ(Vector4<TypeParam>(2, 4, 5, 10).getReciprocal(), Vector4<TypeParam>(0.5, 0.25, 0.2, 0.1));
 }
 
 TYPED_TEST(Vector4Test, ProjectOnToNormalMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>(2, 4, 0, 1).projectOnToNormal(Vector4<TypeParam>::unitX()),
-              (Vector4<TypeParam>(2, 0, 0, 0)));
+    EXPECT_EQ(
+        Vector4<TypeParam>(2, 4, 0, 1).projectOnToNormal(Vector4<TypeParam>::unitX()), Vector4<TypeParam>(2, 0, 0, 0)
+    );
 }
 
 TYPED_TEST(Vector4Test, MirrorByMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>(1, -1, 0, 0).mirrorBy(Vector4<TypeParam>::unitY()),
-              (Vector4<TypeParam>(1, 1, 0, 0)));
+    EXPECT_EQ(Vector4<TypeParam>(1, -1, 0, 0).mirrorBy(Vector4<TypeParam>::unitY()), Vector4<TypeParam>(1, 1, 0, 0));
 }
 
 TYPED_TEST(Vector4Test, StaticCrossMethod)
 {
     const Vector4<TypeParam> a(1, 5, 3, 7);
     const Vector4<TypeParam> b(2, 4, 6, 8);
-    EXPECT_EQ(Vector4<TypeParam>::cross(a, b), (a ^ b));
+    EXPECT_EQ(Vector4<TypeParam>::cross(a, b), a ^ b);
 }
 
 TYPED_TEST(Vector4Test, StaticDotMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>::dot(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8)),
-              TypeParam{ 96 });
+    EXPECT_EQ(Vector4<TypeParam>::dot(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8)), TypeParam{ 96 });
 }
 
 TYPED_TEST(Vector4Test, StaticComponentWiseMinMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>::getComponentWiseMin(Vector4<TypeParam>(1, 5, 3, 7),
-                                                       Vector4<TypeParam>(2, 4, 6, 8)),
-              (Vector4<TypeParam>(1, 4, 3, 7)));
+    EXPECT_EQ(
+        Vector4<TypeParam>::getComponentWiseMin(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8)),
+        Vector4<TypeParam>(1, 4, 3, 7)
+    );
 }
 
 TYPED_TEST(Vector4Test, StaticComponentWiseMaxMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>::getComponentWiseMax(Vector4<TypeParam>(1, 5, 3, 7),
-                                                       Vector4<TypeParam>(2, 4, 6, 8)),
-              (Vector4<TypeParam>(2, 5, 6, 8)));
+    EXPECT_EQ(
+        Vector4<TypeParam>::getComponentWiseMax(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8)),
+        Vector4<TypeParam>(2, 5, 6, 8)
+    );
 }
 
 TYPED_TEST(Vector4Test, StaticClampMethod)
 {
-    EXPECT_EQ(Vector4<TypeParam>::clamp(Vector4<TypeParam>(-1, 5, 10, 4), Vector4<TypeParam>::zero(),
-                                        Vector4<TypeParam>(2, 4, 6, 8)),
-              (Vector4<TypeParam>(0, 4, 6, 4)));
+    EXPECT_EQ(
+        Vector4<TypeParam>::clamp(
+            Vector4<TypeParam>(-1, 5, 10, 4), Vector4<TypeParam>::zero(), Vector4<TypeParam>(2, 4, 6, 8)
+        ),
+        Vector4<TypeParam>(0, 4, 6, 4)
+    );
 }
 
 TYPED_TEST(Vector4Test, GlobalMin2Function)
 {
-    EXPECT_EQ(gp::math::min(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8)),
-              (Vector4<TypeParam>(1, 4, 3, 7)));
+    EXPECT_EQ(
+        gp::math::min(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8)), Vector4<TypeParam>(1, 4, 3, 7)
+    );
 }
 
 TYPED_TEST(Vector4Test, GlobalMax2Function)
 {
-    EXPECT_EQ(gp::math::max(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8)),
-              (Vector4<TypeParam>(2, 5, 6, 8)));
+    EXPECT_EQ(
+        gp::math::max(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8)), Vector4<TypeParam>(2, 5, 6, 8)
+    );
 }
 
 TYPED_TEST(Vector4Test, GlobalMin3Function)
 {
-    EXPECT_EQ(gp::math::min(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8),
-                            Vector4<TypeParam>(0, 7, 4, 6)),
-              (Vector4<TypeParam>(0, 4, 3, 6)));
+    EXPECT_EQ(
+        gp::math::min(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8), Vector4<TypeParam>(0, 7, 4, 6)),
+        Vector4<TypeParam>(0, 4, 3, 6)
+    );
 }
 
 TYPED_TEST(Vector4Test, GlobalMax3Function)
 {
-    EXPECT_EQ(gp::math::max(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8),
-                            Vector4<TypeParam>(0, 7, 4, 6)),
-              (Vector4<TypeParam>(2, 7, 6, 8)));
+    EXPECT_EQ(
+        gp::math::max(Vector4<TypeParam>(1, 5, 3, 7), Vector4<TypeParam>(2, 4, 6, 8), Vector4<TypeParam>(0, 7, 4, 6)),
+        Vector4<TypeParam>(2, 7, 6, 8)
+    );
 }
 
 TYPED_TEST(Vector4Test, GlobalClampFunction)
 {
-    EXPECT_EQ(gp::math::clamp(Vector4<TypeParam>(-1, 5, 10, 4), Vector4<TypeParam>::zero(),
-                              Vector4<TypeParam>(2, 4, 6, 8)),
-              (Vector4<TypeParam>(0, 4, 6, 4)));
+    EXPECT_EQ(
+        gp::math::clamp(Vector4<TypeParam>(-1, 5, 10, 4), Vector4<TypeParam>::zero(), Vector4<TypeParam>(2, 4, 6, 8)),
+        Vector4<TypeParam>(0, 4, 6, 4)
+    );
 }
 
 }   // namespace gp::math::tests
