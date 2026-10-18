@@ -286,10 +286,7 @@ public:
     [[nodiscard]] constexpr Vector4<T> operator*(const U scale) const noexcept
     {
         return Vector4<T>(
-            x * static_cast<T>(scale),
-            y * static_cast<T>(scale),
-            z * static_cast<T>(scale),
-            w * static_cast<T>(scale)
+            x * static_cast<T>(scale), y * static_cast<T>(scale), z * static_cast<T>(scale), w * static_cast<T>(scale)
         );
     }
 
