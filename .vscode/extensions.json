@@ -9,6 +9,7 @@
     "matepek.vscode-catch2-test-adapter",
     "Gruntfuggly.bettercomment",
     "ms-vscode.cmake-tools",
+    "KylinIdeTeam.cmake-intellisence",
     "cschlosser.doxdocgen",
 
     /* Shaders */
@@ -23,7 +24,10 @@
     /* Github */
     "GitHub.vscode-pull-request-github",
     "github.vscode-github-actions",
-    "me-dutour-mathieu.vscode-github-actions"
+    "me-dutour-mathieu.vscode-github-actions",
+
+    /* Other */
+    "FanaticPythoner.better-todo-tree"
   ],
   "unwantedRecommendations": [
     /* Conflicts with Clangd */

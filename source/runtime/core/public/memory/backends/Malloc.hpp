@@ -74,6 +74,15 @@ public:
     /// @brief Check if the allocator can get the size of an allocated memory block.
     /// @return true if the allocator can get the size, false otherwise.
     virtual bool canGetAllocationSize();
+
+    /// @brief Get the actual size of an allocation, which may be larger than the requested size.
+    /// @param[in] requestedSize The requested size of the memory block, in bytes.
+    /// @param[in] alignment The alignment requirement for the allocated memory block, in bytes.
+    /// @return The actual size of the allocated memory block, in bytes.
+    /// @details For some allocators this will return the actual size that should be requested to eliminate
+    /// internal fragmentation. The return value will always be >= requestedSize. This can be used to grow
+    /// and shrink containers to optimal sizes.
+    virtual USize getActualAllocationSize(USize requestedSize, UInt32 alignment = kDefaultAlignment);
 };
 
 }   // namespace gp::memory

@@ -117,8 +117,8 @@ Unexpected(E) -> Unexpected<std::decay_t<E>>;
 /// @param[in] error Error value to wrap.
 /// @return Unexpected<decay_t<E>> holding the provided error.
 template <typename E>
-[[nodiscard]] constexpr Unexpected<std::decay_t<E>> makeUnexpected(E&& error
-) noexcept(noexcept(Unexpected<std::decay_t<E>>(std::forward<E>(error))))
+[[nodiscard]] constexpr Unexpected<std::decay_t<E>>
+    makeUnexpected(E&& error) noexcept(noexcept(Unexpected<std::decay_t<E>>(std::forward<E>(error))))
 {
     return Unexpected<std::decay_t<E>>(std::forward<E>(error));
 }
@@ -240,7 +240,8 @@ public:
 
     /// @brief Move-constructs from another Expected.
     /// @param[in] other Expected to move from.
-    constexpr Expected(Expected&& other
+    constexpr Expected(
+        Expected&& other
     ) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
         : m_hasValue(other.m_hasValue)
     {
@@ -299,8 +300,10 @@ public:
     /// @brief Move-assigns from another Expected.
     /// @param[in] other Expected to move from.
     /// @return Reference to this Expected.
-    Expected& operator=(Expected&& other
-    ) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E> && std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_assignable_v<E>)
+    Expected& operator=(Expected&& other) noexcept(
+        std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E> &&
+        std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_assignable_v<E>
+    )
     {
         if (this == &other)
         {
@@ -596,7 +599,8 @@ public:
     /// constructs from the temporary. Three moves, zero heap allocations. On same-track swaps
     /// we delegate to std::swap which is free to use optimised intrinsics for trivial types.
     /// @param[in] other Expected to swap with.
-    void swap(Expected& other
+    void swap(
+        Expected& other
     ) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
     {
         if (m_hasValue && other.m_hasValue)

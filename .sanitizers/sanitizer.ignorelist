@@ -1,0 +1,1 @@
+# Sanitizer instrumentation exclusions for code that should not be instrumented.
