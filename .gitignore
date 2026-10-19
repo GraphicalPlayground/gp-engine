@@ -109,7 +109,10 @@ CLAUDE.md
 AGENTS.md
 AGENTS/
 .gemini/
+skills/
+.agents/
 GEMINI.md
+graphify-out/
 
 # ====================
 # Compiler Output
