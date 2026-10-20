@@ -10,7 +10,12 @@
 namespace gp::hal::generic
 {
 
+/// @brief
 class Window : public gp::hal::IWindow
-{};
+{
+protected:
+    WindowDesc m_desc{};
+    NativeWindowHandle m_nativeHandle{ NativeWindowBackend::Unknown };
+};
 
 }   // namespace gp::hal::generic
