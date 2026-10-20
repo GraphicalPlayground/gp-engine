@@ -6,6 +6,7 @@
 
 #include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
+#include "window/NativeWindow.hpp"
 #include "window/WindowDesc.hpp"
 
 namespace gp::hal
@@ -150,12 +151,9 @@ public:
     /// @see getMinimumSize() for the minimum size constraints of the window.
     [[nodiscard]] virtual Extent2D getMaximumSize() const noexcept = 0;
 
-    /// @brief Gets a pointer to the underlying native window handle or object. The actual type and meaning of this
-    ///        handle is platform-specific. It may be used for advanced operations that are not covered by this
-    ///        interface, but the caller must know the expected type and semantics of the handle for the specific
-    ///        platform. This may return nullptr if no native handle is available.
-    /// @return A pointer to the underlying native window handle or object, or nullptr if no native handle is available.
-    [[nodiscard]] virtual void* getNativeHandle() const noexcept = 0;
+    /// @brief Gets the native window handles required to bootstrap rendering APIs (Vulkan/D3D/Metal).
+    /// @return A tagged union containing the explicit backend type and associated handles.
+    [[nodiscard]] virtual NativeWindowHandle getNativeHandle() const noexcept = 0;
 
     /// @brief Gets a pointer to the Display that the window is currently associated with. This may return nullptr if
     ///        the window is not currently associated with any display. The returned Display pointer should not be owned
