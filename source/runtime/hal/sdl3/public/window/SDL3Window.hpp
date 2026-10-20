@@ -17,12 +17,13 @@ private:
     SDL_Window* m_window{ nullptr };
 
 public:
-    /// @brief Gets a pointer to the underlying native window handle or object. The actual type and meaning of this
-    ///        handle is platform-specific. It may be used for advanced operations that are not covered by this
-    ///        interface, but the caller must know the expected type and semantics of the handle for the specific
-    ///        platform. This may return nullptr if no native handle is available.
-    /// @return A pointer to the underlying native window handle or object, or nullptr if no native handle is available.
-    [[nodiscard]] virtual void* getNativeHandle() const noexcept override;
+    /// @brief Gets the native window handles required to bootstrap rendering APIs (Vulkan/D3D/Metal).
+    /// @return A tagged union containing the explicit backend type and associated handles.
+    [[nodiscard]] virtual NativeWindowHandle getNativeHandle() const noexcept override;
+
+private:
+    /// @brief Caches the native window handles for later use.
+    void cacheNativeHandle() noexcept;
 };
 
 }   // namespace gp::hal::sdl3
