@@ -11,15 +11,31 @@
 namespace gp::hal::sdl3
 {
 
+/// @brief Represents a window in the SDL3 backend, providing functionality to create, manage, and interact with.
 class Window : public gp::hal::generic::Window
 {
 private:
     SDL_Window* m_window{ nullptr };
 
 public:
-    /// @brief Gets the native window handles required to bootstrap rendering APIs (Vulkan/D3D/Metal).
-    /// @return A tagged union containing the explicit backend type and associated handles.
-    [[nodiscard]] virtual NativeWindowHandle getNativeHandle() const noexcept override;
+    /// @brief Initializes the SDL3 window wrapper using the provided description.
+    /// @param[in] desc The window description to initialize the window with.
+    explicit constexpr Window(const WindowDesc& desc) noexcept
+        : gp::hal::generic::Window(desc)
+    {}
+
+public:
+    /// @brief Opens the window and makes it ready for use. This may involve creating the underlying native window
+    ///        resources and making the window visible on the screen. If the window is already open, this function may
+    ///        have no effect or may reset the window state depending on the implementation.
+    virtual void open() override;
+
+    /// @brief Closes the window and releases any associated resources. After calling this function, the window should
+    /// no longer be
+    ///        considered valid or open. If the window is already closed, this function may have no effect.
+    /// @see requestClose() for requesting the window to close without immediately destroying it, allowing for cleanup
+    ///      or user confirmation.
+    virtual void close() override;
 
 private:
     /// @brief Caches the native window handles for later use.
