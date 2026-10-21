@@ -17,6 +17,7 @@
 ┕ [Building the Engine](#building-the-engine)  
 ┕ [Gallery](#gallery)  
 [Architecture](#architecture)  
+┕ [Decisions Records](#decisions-records)  
 ┕ [Core Systems](#core-systems)  
 ┕ [Progressive Abstractions](#progressive-abstractions)  
 ┕ [Rendering Pipelines (OpenGL / Vulkan / DirectX / ...)](#rendering-pipelines-opengl--vulkan--directx--)  
@@ -148,6 +149,16 @@ runtime. Each system is designed to be studied and swapped out in isolation, in 
 project's Deconstructionist Pedagogy. The engine targets Windows, Linux, macOS, iOS, Android, and
 WASM, and is built under strict portability constraints: no RTTI, no exceptions, and correctness
 across both endianness and architecture (x86_64 and ARM64).
+
+### Decisions Records
+
+You can find the full list of Architectural Decision Records (ADRs) in the
+[ADRs Index](./docs/adr/INDEX.md). These records document the foundational engineering choices that
+shape the `gp-engine`, explaining the trade-offs, constraints, and standards that informed our
+architecture. They serve as a permanent, educational ledger of the decisions made during the
+development of the engine, providing insight into why we enforce strict physical module boundaries,
+reject the STL in favor of custom memory-safe structures, and progressively abstract complex OS and
+hardware realities without hiding them behind a black box.
 
 ### Core Systems
 
