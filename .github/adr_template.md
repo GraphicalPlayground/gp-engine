@@ -12,6 +12,8 @@ deciders:
 <!-- markdownlint-disable MD025 -->
 # ADR-XXXX: [Short, descriptive title of the decision]
 
+> *Write the Premise (the problem or opportunity that this decision addresses)*
+
 ![Proposed][badge-proposed]
 <!-- proposed | accepted | rejected | deprecated | superseded -->
 
