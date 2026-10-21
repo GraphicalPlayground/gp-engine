@@ -30,6 +30,13 @@ void dumpPlatformConstants()
 
 int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
+    // Dump the arguments for debugging purposes
+    std::cout << "Launching with arguments:" << std::endl;
+    for (int i = 0; i < argc; ++i)
+    {
+        std::cout << "\targv[" << i << "]: " << argv[i] << std::endl;
+    }
+
     std::cout << "Launching editor..." << std::endl;
     std::cout << "Is Tracy enabled? " << (TRACY_ENABLE ? "Yes" : "No") << std::endl;
     dumpPlatformConstants();
