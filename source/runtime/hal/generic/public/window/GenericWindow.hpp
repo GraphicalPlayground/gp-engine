@@ -10,12 +10,294 @@
 namespace gp::hal::generic
 {
 
-/// @brief
+/// @brief Represents a generic window implementation that serves as a base for platform-specific
+/// window backends (e.g., SDL, GLFW, Win32).
 class Window : public gp::hal::IWindow
 {
 protected:
     WindowDesc m_desc{};
     NativeWindowHandle m_nativeHandle{ NativeWindowBackend::Unknown };
+    bool m_isOpen{ false };
+    bool m_vSyncEnabled{ false };
+
+public:
+    /// @brief Default constructor initializes the window with default values.
+    explicit constexpr Window() noexcept = default;
+
+    /// @brief Initializes the window with the specified description.
+    /// @param[in] desc The window description to initialize the window with.
+    explicit constexpr Window(const WindowDesc& desc) noexcept
+        : m_desc(desc)
+    {}
+
+public:
+    /// @brief Checks if the window is currently open and has not been closed by the user or the application.
+    /// @return True if the window is open, false if it has been closed.
+    [[nodiscard]] virtual bool isOpen() const noexcept override;
+
+    /// @brief Checks if the window is currently valid and can be interacted with.
+    /// @return True if the window is valid, false if it is in an invalid state (e.g., failed to initialize).
+    [[nodiscard]] virtual bool isValid() const noexcept override;
+
+    /// @brief Checks if the window is currently active (focused and receiving input).
+    /// @return True if the window is active, false otherwise.
+    // [[nodiscard]] virtual bool isActive() const noexcept = 0;
+
+    /// @brief Checks if the window is currently focused (has input focus).
+    /// @return True if the window is focused, false otherwise.
+    // [[nodiscard]] virtual bool isFocused() const noexcept = 0;
+
+    /// @brief Checks if the window is currently minimized (iconified).
+    /// @return True if the window is minimized, false otherwise.
+    // [[nodiscard]] virtual bool isMinimized() const noexcept = 0;
+
+    /// @brief Checks if the window is currently maximized.
+    /// @return True if the window is maximized, false otherwise.
+    // [[nodiscard]] virtual bool isMaximized() const noexcept = 0;
+
+    /// @brief Checks if the window is resizable by the user.
+    /// @return True if the window is resizable, false otherwise.
+    // [[nodiscard]] virtual bool isResizable() const noexcept = 0;
+
+    /// @brief Checks if the window is currently in fullscreen mode.
+    /// @return True if the window is in fullscreen mode, false otherwise.
+    // [[nodiscard]] virtual bool isFullscreen() const noexcept = 0;
+
+    /// @brief Checks if the window is currently in borderless mode.
+    /// @return True if the window is in borderless mode, false otherwise.
+    // [[nodiscard]] virtual bool isBorderless() const noexcept = 0;
+
+    /// @brief Checks if the window is transparent (allows underlying windows to show through).
+    /// @return True if the window is transparent, false otherwise.
+    // [[nodiscard]] virtual bool isTransparent() const noexcept = 0;
+
+    /// @brief Checks if the window is set to always be on top of other windows.
+    /// @return True if the window is always on top, false otherwise.
+    // [[nodiscard]] virtual bool isAlwaysOnTop() const noexcept = 0;
+
+    /// @brief Checks if the window is currently hovered by the mouse cursor.
+    /// @return True if the window is hovered, false otherwise.
+    // [[nodiscard]] virtual bool isHovered() const noexcept = 0;
+
+    /// @brief Checks if the window is currently visible to the user (not minimized or hidden).
+    /// @return True if the window is visible, false otherwise.
+    // [[nodiscard]] virtual bool isVisible() const noexcept = 0;
+
+    /// @brief Checks if the window is currently hidden from the user (minimized or explicitly hidden).
+    /// @return True if the window is hidden, false otherwise.
+    // [[nodiscard]] virtual bool isHidden() const noexcept = 0;
+
+    /// @brief Checks if the window has vertical synchronization (VSync) enabled for buffer swapping.
+    /// @return True if VSync is enabled, false otherwise.
+    // [[nodiscard]] virtual bool isVSyncEnabled() const noexcept = 0;
+
+    /// @brief Checks if the window is using a high-DPI backbuffer for rendering on supported displays.
+    /// @return True if high-DPI mode is enabled, false otherwise.
+    // [[nodiscard]] virtual bool isHighDPI() const noexcept = 0;
+
+    /// @brief Checks if the window has input focus grabbed.
+    /// @return True if the window has input focus grabbed, false otherwise.
+    // [[nodiscard]] virtual bool isInputGrabbed() const noexcept = 0;
+
+    /// @brief Checks if the window has mouse input grabbed.
+    /// @return True if the window has mouse input grabbed, false otherwise.
+    // [[nodiscard]] virtual bool isMouseGrabbed() const noexcept = 0;
+
+    /// @brief Checks if the window has keyboard input grabbed.
+    /// @return True if the window has keyboard input grabbed, false otherwise.
+    // [[nodiscard]] virtual bool isKeyboardGrabbed() const noexcept = 0;
+
+    /// @brief Checks if the system cursor is currently visible when over the window.
+    /// @return True if the cursor is visible, false otherwise.
+    // [[nodiscard]] virtual bool isCursorVisible() const noexcept = 0;
+
+    /// @brief Checks if the system cursor is currently hidden when over the window.
+    /// @return True if the cursor is hidden, false otherwise.
+    // [[nodiscard]] virtual bool isCursorHidden() const noexcept = 0;
+
+    /// @brief Checks if the system cursor is currently confined to the window's client area.
+    /// @return True if the cursor is confined, false otherwise.
+    // [[nodiscard]] virtual bool isCursorConfined() const noexcept = 0;
+
+    /// @brief Checks if the window is currently occluded (completely covered by other windows or off-screen).
+    /// @return True if the window is occluded, false otherwise.
+    // [[nodiscard]] virtual bool isOccluded() const noexcept = 0;
+
+    /// @brief Get the current position of the window's top-left corner in screen coordinates.
+    /// @return The current position of the window's top-left corner in screen coordinates.
+    /// @see getFullPosition() for the position of the entire window including non-client areas.
+    // [[nodiscard]] virtual Point2D getPosition() const noexcept = 0;
+
+    /// @brief Get the current position of the entire window including non-client areas in screen coordinates.
+    /// @return The current position of the entire window including non-client areas in screen coordinates.
+    /// @see getPosition() for the position of the client area (drawable region).
+    // [[nodiscard]] virtual Point2D getFullPosition() const noexcept = 0;
+
+    /// @brief Get the current size of the window's client area (drawable region) in pixels.
+    /// @return The current size of the window's client area (drawable region) in pixels.
+    /// @see getFullSize() for the total window size including non-client areas.
+    // [[nodiscard]] virtual Extent2D getSize() const noexcept = 0;
+
+    /// @brief Get the current size of the entire window including non-client areas in pixels.
+    /// @return The current size of the entire window including non-client areas in pixels.
+    /// @see getSize() for the size of the client area (drawable region).
+    // [[nodiscard]] virtual Extent2D getFullSize() const noexcept = 0;
+
+    /// @brief Get the current size of the framebuffer or backbuffer used for rendering, which may differ from the
+    ///        window's client area size on high-DPI displays.
+    /// @return The current size of the framebuffer or backbuffer used for rendering.
+    /// @see getSize() for the size of the client area (drawable region).
+    // [[nodiscard]] virtual Extent2D getFramebufferSize() const noexcept = 0;
+
+    /// @brief Get the minimum size constraints of the window's client area (drawable region) in pixels.
+    /// @return The minimum size constraints of the window's client area (drawable region) in pixels.
+    /// @see getMaximumSize() for the maximum size constraints of the window.
+    // [[nodiscard]] virtual Extent2D getMinimumSize() const noexcept = 0;
+
+    /// @brief Get the maximum size constraints of the window's client area (drawable region) in pixels.
+    /// @return The maximum size constraints of the window's client area (drawable region) in pixels.
+    /// @see getMinimumSize() for the minimum size constraints of the window.
+    // [[nodiscard]] virtual Extent2D getMaximumSize() const noexcept = 0;
+
+    /// @brief Gets the native window handles required to bootstrap rendering APIs (Vulkan/D3D/Metal).
+    /// @return A tagged union containing the explicit backend type and associated handles.
+    [[nodiscard]] virtual NativeWindowHandle getNativeHandle() const noexcept override;
+
+    /// @brief Gets a pointer to the Display that the window is currently associated with. This may return nullptr if
+    ///        the window is not currently associated with any display. The returned Display pointer should not be owned
+    ///        or deleted by the caller,
+    /// @return A pointer to the Display that the window is currently associated with, or nullptr if the window is not
+    ///         associated with any display.
+    // [[nodiscard]] virtual const Display* getCurrentDisplay() const noexcept = 0;
+
+    /// @brief Gets the current content scale factor of the window, which represents the ratio between the window's
+    ///        logical size and its physical size on high-DPI displays
+    /// @return The current content scale factor of the window, where 1.0 represents a 1:1 ratio between logical and
+    ///         physical pixels.
+    // [[nodiscard]] virtual float getContentScale() const noexcept = 0;
+
+    /// @brief Sets the position of the window's top-left corner in screen coordinates.
+    /// @param[in] position The new position of the window's top-left corner in screen coordinates.
+    // virtual void setPosition(const Point2D& position) noexcept = 0;
+
+    /// @brief Sets the position of the window's top-left corner in screen coordinates.
+    /// @param[in] x The new X coordinate of the window's top-left corner in screen coordinates.
+    /// @param[in] y The new Y coordinate of the window's top-left corner in screen coordinates.
+    // virtual void setPosition(const Int32 x, const Int32 y) noexcept = 0;
+
+    /// @brief Sets the size of the window's client area (drawable region) in pixels.
+    /// @param[in] size The new size of the window's client area (drawable region) in pixels.
+    // virtual void setSize(const Extent2D& size) noexcept = 0;
+
+    /// @brief Sets the size of the window's client area (drawable region) in pixels.
+    /// @param[in] width The new width of the window's client area (drawable region) in pixels.
+    /// @param[in] height The new height of the window's client area (drawable region) in pixels.
+    // virtual void setSize(const UInt32 width, const UInt32 height) noexcept = 0;
+
+    /// @brief Sets the size of the entire window including non-client areas in pixels.
+    /// @param[in] size The new size of the entire window including non-client areas in pixels.
+    // virtual void setFullSize(const Extent2D& size) noexcept = 0;
+
+    /// @brief Sets the size of the entire window including non-client areas in pixels.
+    /// @param[in] width The new width of the entire window including non-client areas in pixels.
+    /// @param[in] height The new height of the entire window including non-client areas in pixels.
+    // virtual void setFullSize(const UInt32 width, const UInt32 height) noexcept = 0;
+
+    /// @brief Set the minimum and maximum size constraints of the window's client area (drawable region) in pixels. The
+    ///        window will not be resizable to sizes outside of these constraints.
+    /// @param[in] minimum The minimum size constraints of the window's client area (drawable region) in pixels.
+    /// @param[in] maximum The maximum size constraints of the window's client area (drawable region) in pixels.
+    // virtual void setSizeLimits(const Extent2D& minimum, const Extent2D& maximum) noexcept = 0;
+
+    /// @brief Set the minimum size constraints of the window's client area (drawable region) in pixels. The window will
+    ///        not be resizable to sizes smaller than these constraints.
+    /// @param[in] size The minimum size constraint of the window's client area (drawable region) in pixels.
+    // virtual void setMinimumSize(const Extent2D& size) noexcept = 0;
+
+    /// @brief Set the minimum size constraints of the window's client area (drawable region) in pixels. The window will
+    ///        not be resizable to sizes smaller than these constraints.
+    /// @param[in] width The minimum width constraint of the window's client area (drawable region) in pixels.
+    /// @param[in] height The minimum height constraint of the window's client area (drawable region) in pixels.
+    // virtual void setMinimumSize(const UInt32 width, const UInt32 height) noexcept = 0;
+
+    /// @brief Set the maximum size constraints of the window's client area (drawable region) in pixels. The window will
+    ///        not be resizable to sizes larger than these constraints.
+    /// @param[in] size The maximum size constraint of the window's client area (drawable region) in pixels.
+    // virtual void setMaximumSize(const Extent2D& size) noexcept = 0;
+
+    /// @brief Set the maximum size constraints of the window's client area (drawable region) in pixels. The window will
+    ///        not be resizable to sizes larger than these constraints.
+    /// @param[in] width The maximum width constraint of the window's client area (drawable region) in pixels.
+    /// @param[in] height The maximum height constraint of the window's client area (drawable region) in pixels.
+    // virtual void setMaximumSize(const UInt32 width, const UInt32 height) noexcept = 0;
+
+    /// @brief Sets the title of the window, which is typically displayed in the title bar or taskbar/dock. The title
+    ///        may be truncated or modified by the operating system depending on platform-specific limitations.
+    /// @param[in] title The new title of the window as a string view.
+    // virtual void setTitle(gp::StringView title) noexcept = 0;
+
+    // TODO: Add methods for setting the window icon.
+
+    /// @brief Sets the visibility of the system cursor when over the window.
+    /// @param[in] visible True to make the cursor visible, false to hide it.
+    // virtual void setCursorVisible(bool visible) noexcept = 0;
+
+    /// @brief Sets whether the system cursor is confined to the window's client area.
+    /// @param[in] confined True to confine the cursor to the window's client area.
+    // virtual void setCursorConfined(bool confined) noexcept = 0;
+
+    /// @brief Sets the cursor shape to be used when the cursor is over the window.
+    /// @param[in] type The cursor shape to use when the cursor is over the window.
+    // virtual void setCursorShape(CursorShape type) noexcept = 0;
+
+    /// @brief Sets the position of the cursor relative to the window's client area.
+    /// @param[in] position The new position of the cursor relative to the window's client area.
+    // virtual void setCursorPosition(const Point2D& position) noexcept = 0;
+
+    /// @brief Sets the window mode (e.g., windowed, fullscreen, borderless) and optionally specifies the target
+    ///        display for fullscreen modes.
+    /// @param[in] mode The desired window mode to set.
+    /// @param[in] targetDisplay Optional pointer to the Display to use for fullscreen modes.
+    // virtual void setWindowMode(WindowMode mode, const Display* targetDisplay = nullptr) = 0;
+
+    /// @brief Requests the window to close, which may trigger a close event that can be handled by the application.
+    ///        This allows the application to perform any necessary cleanup or prompt the user for confirmation before
+    ///        the window is actually closed. The window may not close immediately after this call, and the application
+    ///        can choose to ignore the close request if desired.
+    // virtual void requestClose() = 0;
+
+    /// @brief Shows the window if it is currently hidden.
+    // virtual void show() = 0;
+
+    /// @brief Hides the window if it is currently visible.
+    // virtual void hide() = 0;
+
+    /// @brief Minimizes the window if it is currently not minimized.
+    // virtual void minimize() = 0;
+
+    /// @brief Maximizes the window if it is currently not maximized.
+    // virtual void maximize() = 0;
+
+    /// @brief Restores the window to its normal state if it is currently minimized or maximized.
+    // virtual void restore() = 0;
+
+    /// @brief Focuses the window, bringing it to the foreground and giving it input focus if possible.
+    // virtual void focus() = 0;
+
+    /// @brief Requests the user's attention to the window, which may cause the window to flash or bounce in the taskbar
+    ///        or dock depending on the platform and the specified flash mode. This can be used to notify the user of
+    ///        important events when the window is not currently focused.
+    /// @param[in] mode The flash mode that determines how the window should request the user's attention.
+    // virtual void requestAttention(WindowFlashMode mode = WindowFlashMode::UntilFocused) = 0;
+
+    /// @brief Centers the window on the specified display.
+    /// @param[in] display The display on which to center the window.
+    /// @note If the display parameter is nullptr, the window will be centered on the display that it is currently
+    ///       associated with, or on the primary display if it is not currently associated with any display.
+    // virtual void centerOnDisplay(const Display* display = nullptr) = 0;
+
+    /// @brief Dispatches any pending events for the window.
+    // virtual void dispatchEvents() noexcept = 0;
 };
 
 }   // namespace gp::hal::generic
