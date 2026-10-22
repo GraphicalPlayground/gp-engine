@@ -5,6 +5,7 @@
 [ADR Index](#adr-index)  
 ┕ [Source Tree & Build Architecture](#source-tree--build-architecture)  
 ┕ [Module Anatomy & Subsystem Patterns](#module-anatomy--subsystem-patterns)  
+┕ [Core Systems & Concurrency Primitives](#core-systems--concurrency-primitives)  
 ┕ [Math & Core Types](#math--core-types)  
 ┕ [Platform & OS Abstraction](#platform--os-abstraction)  
 ┕ [Concurrency & Event Routing](#concurrency--event-routing)  
@@ -69,6 +70,19 @@ support multiple APIs while maintaining a single, unified interface for the engi
   > Generalizes the abstract RHI structure to all pluralistic subsystems (Audio, Physics, Parsers),
   > requiring a central `base/` module alongside independent, dynamically loaded backend modules.
 
+### Core Systems & Concurrency Primitives
+
+These records detail the foundational multi-threading primitives and core data structures of the
+engine. By rejecting the C++ Standard Library (`<thread>`, `<atomic>`) in favor of custom,
+STL-free implementations, the engine guarantees ABI stability across dynamic modules, eliminates
+hidden heap allocations, and provides the absolute memory control required for high-performance,
+lock-free architectures.
+
+- [**ADR-0021**: STL-Free Concurrency Primitives and Platform Abstraction](./ADR-0021.md)
+  > Rejects `<thread>`, `<mutex>`, and `<atomic>` in favor of custom engine-native primitives
+  > (`gp::thread::Atomic`, `gp::thread::Thread`, `gp::container::SPSCByteRingBuffer`) placed in the
+  > core module, ensuring strict memory control and ABI stability across module boundaries.
+
 ### Math & Core Types
 
 These records cover the mathematical and foundational data structure decisions that ensure
@@ -105,6 +119,16 @@ cache-locality.
   > Mandates that OS events are pumped by a dedicated OS thread into a Single-Producer/Single-Consumer
   > lock-free ring buffer, allowing the Game Thread to drain them at the start of a frame to guarantee
   > a deterministic, lock-free, immutable input state.
+- [**ADR-0019**: Type-Length-Value (TLV) Byte-Stream for Cross-Thread Event Routing](./ADR-0019.md)
+  > Rejects fixed-size Tagged Unions and polymorphic event objects in favor of a contiguous raw byte
+  > stream (`EventHeader` + payload). This eliminates the "Largest Payload Problem," natively
+  > supports variable-length data (like file drop paths or UTF-8 text input), and maximizes CPU
+  > cache efficiency.
+- [**ADR-0020**: Strict Data-Oriented Design (PODs) at the Hardware-to-Engine Boundary](./ADR-0020.md)
+  > Mandates that all events crossing from the OS thread to the Game thread must be Trivially
+  > Copyable, Standard Layout Plain Old Data (POD) structs. Explicitly forbids the use of C++
+  > inheritance, virtual tables, RTTI, and heap allocations (`new`/`delete`) at the HAL level to
+  > prevent heap fragmentation and lock contention.
 
 ### Window Management
 
