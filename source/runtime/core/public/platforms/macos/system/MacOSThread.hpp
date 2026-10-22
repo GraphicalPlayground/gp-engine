@@ -5,13 +5,13 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
-#include "platforms/generic/system/Thread.hpp"
+#include "platforms/apple/system/AppleThread.hpp"
 
-namespace gp::platform::apple
+namespace gp::platform::macos
 {
 
 /// @brief
-class Thread : public gp::platform::generic::Thread
+class Thread : public gp::platform::apple::Thread
 {};
 
-}   // namespace gp::platform::apple
+}   // namespace gp::platform::macos

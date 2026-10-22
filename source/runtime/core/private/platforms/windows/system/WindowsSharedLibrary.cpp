@@ -2,7 +2,7 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "platforms/windows/system/SharedLibrary.hpp"
+#include "platforms/windows/system/WindowsSharedLibrary.hpp"
 #include <Windows.h>
 
 namespace gp::platform::windows

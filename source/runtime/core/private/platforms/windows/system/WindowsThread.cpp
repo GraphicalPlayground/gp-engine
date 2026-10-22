@@ -2,7 +2,7 @@
 // For more information, see https://graphical-playground.com/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "platforms/windows/system/Thread.hpp"
+#include "platforms/windows/system/WindowsThread.hpp"
 
 #ifndef WIN32_LEAN_AND_MEAN
     #define WIN32_LEAN_AND_MEAN

@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
-#include "platforms/generic/system/SharedLibrary.hpp"
+#include "platforms/generic/system/GenericSharedLibrary.hpp"
 
 namespace gp::platform::unix
 {
