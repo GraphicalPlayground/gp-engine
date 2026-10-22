@@ -5,12 +5,13 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "platforms/unix/system/Thread.hpp"
 
 namespace gp::platform::linux
 {
 
 /// @brief
-class Thread
+class Thread : public gp::platform::unix::Thread
 {};
 
 }   // namespace gp::platform::linux
