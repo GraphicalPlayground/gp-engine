@@ -5,12 +5,8 @@
 #include "CoreMinimal.hpp"
 #include "Launch.hpp"
 #include "platforms/base/Platform.hpp"
-
-// Exclude rarely-used Windows headers to speed up compilation
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
+#include "platforms/windows/WindowsHeaderWrapper.hpp"   // IWYU pragma: keep
 #include <cstdlib>
-#include <windows.h>
 
 // Included after windows.h to avoid conflicts with the min/max macros
 #include <shellapi.h>

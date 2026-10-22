@@ -10,7 +10,7 @@
     #include <malloc.h>
 #endif
 #if GP_PLATFORM_WINDOWS
-    #include <windows.h>   // TODO: Add a wrapper around windows.h and include that instead
+    #include "platforms/windows/WindowsHeaderWrapper.hpp"   // IWYU pragma: keep
 #endif
 
 namespace gp::memory

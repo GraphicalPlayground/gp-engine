@@ -3,14 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "platforms/windows/system/WindowsThread.hpp"
-
-#ifndef WIN32_LEAN_AND_MEAN
-    #define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-    #define NOMINMAX
-#endif
-#include <Windows.h>
+#include "platforms/windows/WindowsHeaderWrapper.hpp"   // IWYU pragma: keep
 
 // Include after Windows.h to avoid conflicts with min/max macros.
 #include <intrin.h>
