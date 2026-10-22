@@ -5,12 +5,12 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
-#include "platforms/unix/system/SharedLibrary.hpp"
+#include "platforms/apple/system/AppleSharedLibrary.hpp"
 
-namespace gp::platform::linux
+namespace gp::platform::macos
 {
 
-struct SharedLibrary final : public gp::platform::unix::SharedLibrary
+struct SharedLibrary final : public gp::platform::apple::SharedLibrary
 {};
 
-}   // namespace gp::platform::linux
+}   // namespace gp::platform::macos

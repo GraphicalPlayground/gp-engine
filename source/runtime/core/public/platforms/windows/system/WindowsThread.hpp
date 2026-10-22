@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
-#include "platforms/generic/system/Thread.hpp"
+#include "platforms/generic/system/GenericThread.hpp"
 
 namespace gp::platform::windows
 {

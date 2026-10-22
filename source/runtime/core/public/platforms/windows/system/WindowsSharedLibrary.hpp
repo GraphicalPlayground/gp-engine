@@ -4,10 +4,8 @@
 
 #pragma once
 
-#include "containers/arrays/Vector.hpp"
-#include "containers/ContainerForward.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
-#include "platforms/generic/system/SharedLibrary.hpp"
+#include "platforms/generic/system/GenericSharedLibrary.hpp"
 
 namespace gp::platform::windows
 {

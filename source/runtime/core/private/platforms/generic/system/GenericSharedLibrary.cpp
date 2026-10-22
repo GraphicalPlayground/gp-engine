@@ -2,7 +2,7 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "platforms/generic/system/SharedLibrary.hpp"
+#include "platforms/generic/system/GenericSharedLibrary.hpp"
 
 namespace gp::platform::generic
 {

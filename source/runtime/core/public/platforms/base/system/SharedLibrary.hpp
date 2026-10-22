@@ -6,13 +6,13 @@
 
 #include "platforms/base/Platform.hpp"   // IWYU pragma: keep
 #if GP_PLATFORM_WINDOWS
-    #include "platforms/windows/system/SharedLibrary.hpp"
+    #include "platforms/windows/system/WindowsSharedLibrary.hpp"
 #elif GP_PLATFORM_LINUX
-    #include "platforms/linux/system/SharedLibrary.hpp"
+    #include "platforms/linux/system/LinuxSharedLibrary.hpp"
 #elif GP_PLATFORM_MACOS
-    #include "platforms/macos/system/SharedLibrary.hpp"
+    #include "platforms/macos/system/MacOSSharedLibrary.hpp"
 #else
-    #include "platforms/generic/system/SharedLibrary.hpp"
+    #include "platforms/generic/system/GenericSharedLibrary.hpp"
 #endif
 
 namespace gp::platform
