@@ -3,7 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "platforms/windows/system/WindowsSharedLibrary.hpp"
-#include <Windows.h>
+#include "platforms/windows/WindowsHeaderWrapper.hpp"   // IWYU pragma: keep
 
 namespace gp::platform::windows
 {

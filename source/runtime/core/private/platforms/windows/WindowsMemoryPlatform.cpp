@@ -6,8 +6,8 @@
 #include "maths/base/Scalar.hpp"
 #include "memory/MemoryConstants.hpp"
 #include "platforms/base/PlatformMemory.hpp"
+#include "platforms/windows/WindowsHeaderWrapper.hpp"   // IWYU pragma: keep
 #include "platforms/windows/WindowsPlatformMemory.hpp"
-#include <Windows.h>
 
 namespace gp::platform::windows
 {
