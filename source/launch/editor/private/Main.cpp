@@ -94,7 +94,7 @@ int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
                                    .userData = const_cast<void*>(static_cast<const void*>(userData)) };
 
     gp::platform::Thread thread;
-    bool started = thread.start(desc);
+    const bool started = (thread.start(desc) == gp::platform::ThreadResult::Success);
     if (!started)
     {
         std::cerr << "Failed to start thread!" << std::endl;
@@ -110,7 +110,7 @@ int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
     if (started)
     {
-        thread.join();
+        (void)thread.join();
         std::cout << "Thread joined successfully." << std::endl;
     }
 
