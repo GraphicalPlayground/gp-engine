@@ -19,20 +19,49 @@
 namespace gp::platform::windows
 {
 
-namespace detail
+namespace
 {
 
-/// @brief Structure used to pass parameters to the thread entry function.
+/// @brief Maximum stack size supported by Win32 _beginthreadex (32-bit gp::UInt32 limit).
+constexpr gp::UInt64 kMaxWin32StackSize = 0xFFFFFFFFULL;
+
+/// @brief Fixed buffer capacity (including null terminator) for stack-copied thread names.
+constexpr gp::UInt32 kMaxThreadNameBytes = 64u;
+
+/// @brief Stack-allocated handoff packet passed from Thread::start() to threadTrampoline().
+/// @details Eliminates heap allocations during thread creation while guaranteeing that caller-owned
+///          strings and descriptors cannot dangle before the child thread begins execution.
 struct ThreadStartPayload
 {
     ThreadEntryFunction entry = nullptr;
     void* userData = nullptr;
-    const char* name = nullptr;
-    volatile long handoffComplete = 0;
+    HANDLE handoffEvent = nullptr;
+    char name[kMaxThreadNameBytes] = {};
 };
 
-/// @brief Sets the name of the current thread for debugging purposes.
-/// @param[in] name The name to assign to the current thread.
+/// @brief Copies a null-terminated UTF-8 thread name into a fixed-size buffer with guaranteed null termination.
+/// @param[out] dest Destination fixed-size character array.
+/// @param[in] src Source null-terminated string (may be nullptr).
+constexpr void copyThreadName(char (&dest)[kMaxThreadNameBytes], const char* src) noexcept
+{
+    if (src == nullptr)
+    {
+        dest[0] = '\0';
+        return;
+    }
+
+    gp::UInt32 i = 0u;
+    for (; i + 1u < kMaxThreadNameBytes && src[i] != '\0'; ++i)
+    {
+        dest[i] = src[i];
+    }
+    dest[i] = '\0';
+}
+
+/// @brief Assigns the UTF-8 debugger thread description on the calling Win32 thread.
+/// @details Converts the UTF-8 name into a stack-allocated UTF-16 buffer and invokes SetThreadDescription
+///          so the thread name surfaces in Visual Studio, PIX, RenderDoc, and Tracy.
+/// @param[in] name Null-terminated UTF-8 thread name string.
 void setCurrentThreadDebuggerName(const char* name) noexcept
 {
     if (name == nullptr || name[0] == '\0')
@@ -40,20 +69,21 @@ void setCurrentThreadDebuggerName(const char* name) noexcept
         return;
     }
 
-    // Stack-allocated UTF-16 conversion (zero heap allocations)
-    wchar_t wideName[64] = {};
-    const int converted = ::MultiByteToWideChar(CP_UTF8, 0, name, -1, wideName, 63);
+    wchar_t wideName[kMaxThreadNameBytes] = {};
+    const int converted =
+        ::MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, name, -1, wideName, static_cast<int>(kMaxThreadNameBytes));
+
     if (converted > 0)
     {
-        // SetThreadDescription is available on Windows 10 1607+ and surfaces in PIX, Tracy, and VS
-        ::SetThreadDescription(::GetCurrentThread(), wideName);
+        // Best-effort debugger metadata for PIX, Tracy, RenderDoc, and Visual Studio
+        (void)::SetThreadDescription(::GetCurrentThread(), wideName);
     }
 }
 
-/// @brief Converts a gp::platform::generic::ThreadPriority to the corresponding Win32 thread priority constant.
-/// @param[in] priority The gp::platform::generic::ThreadPriority value to convert.
-/// @return The corresponding Win32 thread priority constant.
-int toWin32Priority(ThreadPriority priority) noexcept
+/// @brief Maps an engine ThreadPriority enumerator to the corresponding Win32 thread priority constant.
+/// @param[in] priority Engine thread scheduling priority.
+/// @return Win32 THREAD_PRIORITY_* constant.
+[[nodiscard]] constexpr int toWin32Priority(ThreadPriority priority) noexcept
 {
     switch (priority)
     {
@@ -74,41 +104,65 @@ int toWin32Priority(ThreadPriority priority) noexcept
     }
 }
 
-/// @brief Trampoline function that serves as the entry point for the OS thread.
-/// @param[in] rawPayload Pointer to the ThreadStartPayload structure containing the entry function and user data.
-/// @return The exit code returned by the thread entry function.
+/// @brief Counts the number of set bits (population count) in a pointer-sized affinity bitmask.
+/// @param[in] bitmask Affinity mask to evaluate.
+/// @return Number of set bits in @p bitmask.
+[[nodiscard]] constexpr gp::UInt32 countSetBits(ULONG_PTR bitmask) noexcept
+{
+    gp::UInt32 count = 0u;
+    while (bitmask != 0u)
+    {
+        bitmask &= (bitmask - 1u);
+        ++count;
+    }
+    return count;
+}
+
+/// @brief Win32 _beginthreadex entry trampoline that completes startup handoff before invoking user code.
+/// @details Copies the entry function and user data onto the child thread's stack, sets the debugger thread
+///          name, signals the parent's manual-reset handoff event, and invokes the user entry point.
+/// @param[in] rawPayload Pointer to the parent stack-allocated ThreadStartPayload.
+/// @return Exit code returned by the user ThreadEntryFunction.
 gp::UInt32 __stdcall threadTrampoline(void* rawPayload) noexcept
 {
     auto* payload = static_cast<ThreadStartPayload*>(rawPayload);
 
-    // Copy startup parameters onto the child thread's own stack
+    // Copy startup parameters into child thread local stack
     const ThreadEntryFunction entry = payload->entry;
     void* const userData = payload->userData;
     setCurrentThreadDebuggerName(payload->name);
 
-    // Signal the parent thread that the stack payload is no longer needed
-    ::_InterlockedExchange(&payload->handoffComplete, 1);
+    // Signal the parent thread that the stack-allocated payload can be destroyed
+    ::SetEvent(payload->handoffEvent);
 
     return entry(userData);
 }
 
-}   // namespace detail
+}   // namespace
 
 Thread::~Thread() noexcept
 {
-    // Enforce clean lifecycle: join if still active at destruction
     if (isJoinable())
     {
-        join();
+        // In a AAA engine, destroying an unjoined thread is a lifecycle violation.
+        // Assert in debug builds; fall back to join() only if not executing on this thread.
+#if defined(_DEBUG)
+        __debugbreak();
+#endif
+
+        if (currentThreadId() != m_threadId)
+        {
+            (void)join();
+        }
     }
 }
 
 Thread::Thread(Thread&& other) noexcept
+    : m_handle(other.m_handle)
+    , m_threadId(other.m_threadId)
 {
-    m_handle = other.m_handle;
-    m_threadId = other.m_threadId;
     other.m_handle = nullptr;
-    other.m_threadId = 0;
+    other.m_threadId = 0ULL;
 }
 
 Thread& Thread::operator=(Thread&& other) noexcept
@@ -117,78 +171,139 @@ Thread& Thread::operator=(Thread&& other) noexcept
     {
         if (isJoinable())
         {
-            join();
+#if defined(_DEBUG)
+            __debugbreak();
+#endif
+
+            if (currentThreadId() != m_threadId)
+            {
+                (void)join();
+            }
         }
+
         m_handle = other.m_handle;
         m_threadId = other.m_threadId;
         other.m_handle = nullptr;
-        other.m_threadId = 0;
+        other.m_threadId = 0ULL;
     }
     return *this;
 }
 
-bool Thread::start(const ThreadDesc& desc) noexcept
+ThreadResult Thread::start(const ThreadDesc& desc) noexcept
 {
-    if (isJoinable() || desc.entry == nullptr)
+    if (isJoinable())
     {
-        return false;
+        return ThreadResult::AlreadyRunning;
     }
 
-    detail::ThreadStartPayload payload{};
+    if (desc.entry == nullptr)
+    {
+        return ThreadResult::InvalidArguments;
+    }
+
+    if (desc.stackSize > kMaxWin32StackSize)
+    {
+        return ThreadResult::StackSizeOverflow;
+    }
+
+    // Scoped kernel event avoids heap allocation and avoids parent CPU busy-spinning
+    const HANDLE handoffEvent = ::CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    if (handoffEvent == nullptr)
+    {
+        return ThreadResult::CreationFailed;
+    }
+
+    ThreadStartPayload payload{};
     payload.entry = desc.entry;
     payload.userData = desc.userData;
-    payload.name = desc.name;
-    payload.handoffComplete = 0;
+    payload.handoffEvent = handoffEvent;
+    copyThreadName(payload.name, desc.name);
 
-    gp::UInt32 winThreadId = 0;
-    const uintptr_t handle = ::_beginthreadex(
-        nullptr,
-        static_cast<gp::UInt32>(desc.stackSize),
-        &detail::threadTrampoline,
-        &payload,
-        CREATE_SUSPENDED,
-        &winThreadId
+    gp::UInt32 winThreadId = 0u;
+    const uintptr_t rawHandle = ::_beginthreadex(
+        nullptr, static_cast<gp::UInt32>(desc.stackSize), &threadTrampoline, &payload, CREATE_SUSPENDED, &winThreadId
     );
 
-    if (handle == 0)
+    if (rawHandle == 0u)
     {
-        return false;
+        ::CloseHandle(handoffEvent);
+        return ThreadResult::CreationFailed;
     }
 
-    m_handle = reinterpret_cast<NativeThreadHandle>(handle);
+    m_handle = reinterpret_cast<NativeHandle>(rawHandle);
     m_threadId = static_cast<ThreadId>(winThreadId);
 
-    // Apply core affinity and priority before waking the thread
-    if (desc.affinityMask != ~0ULL && desc.affinityMask != 0ULL)
+    // Apply affinity if explicitly specified (kNoAffinityMask = OS default)
+    if (desc.affinityMask != kNoAffinityMask)
     {
-        setAffinity(desc.affinityMask);
+        const ThreadResult affinityRes = setAffinity(desc.affinityMask);
+        if (affinityRes != ThreadResult::Success && desc.failOnConfigError)
+        {
+            // Safe to terminate: thread is still suspended and has not entered threadTrampoline
+            ::TerminateThread(static_cast<HANDLE>(m_handle), 0);
+            ::CloseHandle(static_cast<HANDLE>(m_handle));
+            ::CloseHandle(handoffEvent);
+            m_handle = nullptr;
+            m_threadId = 0ULL;
+            return affinityRes;
+        }
     }
 
     if (desc.priority != ThreadPriority::Normal)
     {
-        setPriority(desc.priority);
+        const ThreadResult priorityRes = setPriority(desc.priority);
+        if (priorityRes != ThreadResult::Success && desc.failOnConfigError)
+        {
+            ::TerminateThread(static_cast<HANDLE>(m_handle), 0);
+            ::CloseHandle(static_cast<HANDLE>(m_handle));
+            ::CloseHandle(handoffEvent);
+            m_handle = nullptr;
+            m_threadId = 0ULL;
+            return priorityRes;
+        }
     }
 
-    ::ResumeThread(static_cast<HANDLE>(m_handle));
-
-    // Wait for the child thread to copy the stack payload before start() returns
-    while (::_InterlockedCompareExchange(&payload.handoffComplete, 0, 0) == 0)
+    if (::ResumeThread(static_cast<HANDLE>(m_handle)) == static_cast<DWORD>(-1))
     {
-        ::_mm_pause();
+        ::TerminateThread(static_cast<HANDLE>(m_handle), 0);
+        ::CloseHandle(static_cast<HANDLE>(m_handle));
+        ::CloseHandle(handoffEvent);
+        m_handle = nullptr;
+        m_threadId = 0ULL;
+        return ThreadResult::ResumeFailed;
     }
 
-    return true;
+    // Wait on either handoff completion OR premature thread termination
+    HANDLE waitHandles[2] = { handoffEvent, static_cast<HANDLE>(m_handle) };
+    const DWORD waitStatus = ::WaitForMultipleObjects(2, waitHandles, FALSE, INFINITE);
+    ::CloseHandle(handoffEvent);
+
+    if (waitStatus != WAIT_OBJECT_0 && waitStatus != (WAIT_OBJECT_0 + 1))
+    {
+        return ThreadResult::WaitFailed;
+    }
+
+    return ThreadResult::Success;
 }
 
-void Thread::join(gp::UInt32* outExitCode) noexcept
+ThreadResult Thread::join(gp::UInt32* outExitCode) noexcept
 {
     if (!isJoinable())
     {
-        return;
+        return ThreadResult::NotJoinable;
+    }
+
+    if (currentThreadId() == m_threadId)
+    {
+        return ThreadResult::SelfJoinError;
     }
 
     const HANDLE winHandle = static_cast<HANDLE>(m_handle);
-    ::WaitForSingleObject(winHandle, INFINITE);
+    if (::WaitForSingleObject(winHandle, INFINITE) != WAIT_OBJECT_0)
+    {
+        // Do not close or clear m_handle on wait failure so caller can diagnose or retry
+        return ThreadResult::WaitFailed;
+    }
 
     if (outExitCode != nullptr)
     {
@@ -201,41 +316,51 @@ void Thread::join(gp::UInt32* outExitCode) noexcept
 
     ::CloseHandle(winHandle);
     m_handle = nullptr;
-    m_threadId = 0;
+    m_threadId = 0ULL;
+    return ThreadResult::Success;
 }
 
-void Thread::detach() noexcept
+ThreadResult Thread::detach() noexcept
 {
     if (!isJoinable())
     {
-        return;
+        return ThreadResult::NotJoinable;
     }
 
     ::CloseHandle(static_cast<HANDLE>(m_handle));
     m_handle = nullptr;
-    m_threadId = 0;
+    m_threadId = 0ULL;
+    return ThreadResult::Success;
 }
 
-bool Thread::setAffinity(gp::UInt64 affinityMask) noexcept
-{
-    if (!isJoinable() || affinityMask == 0ULL)
-    {
-        return false;
-    }
-
-    const DWORD_PTR previous =
-        ::SetThreadAffinityMask(static_cast<HANDLE>(m_handle), static_cast<DWORD_PTR>(affinityMask));
-    return previous != 0;
-}
-
-bool Thread::setPriority(ThreadPriority priority) noexcept
+ThreadResult Thread::setAffinity(gp::UInt64 affinityMask) noexcept
 {
     if (!isJoinable())
     {
-        return false;
+        return ThreadResult::NotJoinable;
     }
 
-    return ::SetThreadPriority(static_cast<HANDLE>(m_handle), detail::toWin32Priority(priority)) != FALSE;
+    if (affinityMask == 0ULL || affinityMask == kNoAffinityMask)
+    {
+        return ThreadResult::InvalidArguments;
+    }
+
+    const DWORD_PTR prevMask =
+        ::SetThreadAffinityMask(static_cast<HANDLE>(m_handle), static_cast<DWORD_PTR>(affinityMask));
+
+    return (prevMask != 0u) ? ThreadResult::Success : ThreadResult::AffinityFailed;
+}
+
+ThreadResult Thread::setPriority(ThreadPriority priority) noexcept
+{
+    if (!isJoinable())
+    {
+        return ThreadResult::NotJoinable;
+    }
+
+    const BOOL ok = ::SetThreadPriority(static_cast<HANDLE>(m_handle), toWin32Priority(priority));
+
+    return (ok != FALSE) ? ThreadResult::Success : ThreadResult::PriorityFailed;
 }
 
 void Thread::sleep(gp::UInt32 milliseconds) noexcept
@@ -245,7 +370,7 @@ void Thread::sleep(gp::UInt32 milliseconds) noexcept
 
 void Thread::yieldExecution() noexcept
 {
-    ::SwitchToThread();
+    (void)::SwitchToThread();
 }
 
 void Thread::spinWait() noexcept
@@ -260,9 +385,24 @@ ThreadId Thread::currentThreadId() noexcept
 
 gp::UInt32 Thread::getHardwareConcurrency() noexcept
 {
-    SYSTEM_INFO sys_info{};
-    ::GetSystemInfo(&sys_info);
-    return sys_info.dwNumberOfProcessors > 0 ? static_cast<gp::UInt32>(sys_info.dwNumberOfProcessors) : 1u;
+    SYSTEM_INFO sysInfo{};
+    ::GetSystemInfo(&sysInfo);
+    return (sysInfo.dwNumberOfProcessors > 0u) ? static_cast<gp::UInt32>(sysInfo.dwNumberOfProcessors) : 1u;
+}
+
+gp::UInt32 Thread::getProcessConcurrency() noexcept
+{
+    DWORD_PTR processMask = 0u;
+    DWORD_PTR systemMask = 0u;
+    if (::GetProcessAffinityMask(::GetCurrentProcess(), &processMask, &systemMask) != FALSE)
+    {
+        const gp::UInt32 count = countSetBits(processMask);
+        if (count > 0u)
+        {
+            return count;
+        }
+    }
+    return getHardwareConcurrency();
 }
 
 }   // namespace gp::platform::windows
