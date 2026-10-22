@@ -87,6 +87,12 @@ lock-free architectures.
   > stateless, C-style function pointers with `void*` context payloads, eliminating virtual dispatch
   > overhead and forced heap allocations to perfectly mirror low-level OS APIs and support
   > data-oriented Job Systems.
+- [**ADR-0023**: Zero-Allocation Thread Handoff via Suspended Creation and OS Synchronization](./ADR-0023.md)
+  > To prevent heap allocations and dangling pointers during OS thread creation, the engine mandates
+  > a synchronized handoff protocol where threads are spawned in a suspended state
+  > (`CREATE_SUSPENDED`). Startup parameters (including string names and context pointers) are passed
+  > via a parent-stack-allocated payload, and the parent thread blocks on an OS event until the child
+  > securely copies the data to its own local stack.
 
 ### Math & Core Types
 
