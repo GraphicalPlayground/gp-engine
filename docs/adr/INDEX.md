@@ -82,6 +82,11 @@ lock-free architectures.
   > Rejects `<thread>`, `<mutex>`, and `<atomic>` in favor of custom engine-native primitives
   > (`gp::thread::Atomic`, `gp::thread::Thread`, `gp::container::SPSCByteRingBuffer`) placed in the
   > core module, ensuring strict memory control and ABI stability across module boundaries.
+- [**ADR-0022**: Functional, Stateless Thread Execution over Object-Oriented Payloads](./ADR-0022.md)
+  > Rejects object-oriented thread interfaces (e.g., `IRunnable`) and `std::thread` in favor of
+  > stateless, C-style function pointers with `void*` context payloads, eliminating virtual dispatch
+  > overhead and forced heap allocations to perfectly mirror low-level OS APIs and support
+  > data-oriented Job Systems.
 
 ### Math & Core Types
 
