@@ -202,7 +202,8 @@
       "linkers": "contract",
       "frameworks": "lib",
       "adr": "skills",
-      "clipboard": "tasks"
+      "clipboard": "tasks",
+      "device": "connection"
     },
     /* File Associations */
     "files.associations": {
