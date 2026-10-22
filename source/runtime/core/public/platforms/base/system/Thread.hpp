@@ -6,13 +6,13 @@
 
 #include "platforms/base/Platform.hpp"   // IWYU pragma: keep
 #if GP_PLATFORM_WINDOWS
-    #include "platforms/windows/system/Thread.hpp"
+    #include "platforms/windows/system/WindowsThread.hpp"
 #elif GP_PLATFORM_LINUX
-    #include "platforms/linux/system/Thread.hpp"
+    #include "platforms/linux/system/LinuxThread.hpp"
 #elif GP_PLATFORM_MACOS
-    #include "platforms/macos/system/Thread.hpp"
+    #include "platforms/macos/system/MacOSThread.hpp"
 #else
-    #include "platforms/generic/system/Thread.hpp"
+    #include "platforms/generic/system/GenericThread.hpp"
 #endif
 
 namespace gp::platform
