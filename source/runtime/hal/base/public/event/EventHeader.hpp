@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
-#include "events/EventCategory.hpp"
+#include "event/EventCategory.hpp"
 
 namespace gp::hal::event
 {
