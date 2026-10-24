@@ -69,7 +69,7 @@ your development environment meets the following requirements:
 - **Graphics Drivers**: Up-to-date GPU drivers with support for:
   - Vulkan `tba`
   - OpenGL `tba`
-  - DirectX `tba` (Windows only)
+  - DirectX12 `tba` (Windows only)
   - Metal `tba` (macOS only)
 
 ### Building the Engine
