@@ -17,7 +17,7 @@ namespace gp::hal
 {
 
 // Forward declarations.
-class Display;
+class IDisplay;
 
 /// @brief Unique 32-bit identifier for an OS window instance, matching event payload windowId fields.
 using WindowId = gp::UInt32;
@@ -199,9 +199,9 @@ public:
     /// @return A tagged union containing the explicit backend type and associated handles.
     [[nodiscard]] virtual NativeWindowHandle getNativeHandle() const noexcept = 0;
 
-    /// @brief Gets a pointer to the Display that the window is currently associated with.
-    /// @return A pointer to the Display, or nullptr if not associated with any display.
-    [[nodiscard]] virtual const Display* getCurrentDisplay() const noexcept = 0;
+    /// @brief Gets a pointer to the IDisplay that the window is currently associated with.
+    /// @return A pointer to the IDisplay, or nullptr if not associated with any display.
+    [[nodiscard]] virtual const IDisplay* getCurrentDisplay() const noexcept = 0;
 
     /// @brief Gets the current OS display identifier index this window resides on.
     /// @return The 32-bit display identifier.
@@ -319,8 +319,8 @@ public:
 
     /// @brief Sets the window mode (Windowed, Borderless, Fullscreen, FullscreenDesktop).
     /// @param[in] mode The desired window mode to set.
-    /// @param[in] targetDisplay Optional pointer to the Display to use for fullscreen modes.
-    virtual void setWindowMode(WindowMode mode, const Display* targetDisplay = nullptr) noexcept = 0;
+    /// @param[in] targetDisplay Optional pointer to the IDisplay to use for fullscreen modes.
+    virtual void setWindowMode(WindowMode mode, const IDisplay* targetDisplay = nullptr) noexcept = 0;
 
     /// @brief Opens the window and creates the underlying native OS window resources.
     virtual void open() noexcept = 0;
@@ -359,7 +359,7 @@ public:
 
     /// @brief Centers the window on the specified display (or its current display if `nullptr`).
     /// @param[in] display Optional target display on which to center the window.
-    virtual void centerOnDisplay(const Display* display = nullptr) noexcept = 0;
+    virtual void centerOnDisplay(const IDisplay* display = nullptr) noexcept = 0;
 
     /// @brief Updates the window's internal shadow state from a decoded HAL `WindowEvent`.
     /// @note Invoked by the Application / WindowManager when draining the lock-free `SPSCByteRingBuffer`.

@@ -15,7 +15,7 @@ namespace gp::hal
 {
 
 // Forward declaration
-class Display;
+class IDisplay;
 
 /// @brief Configuration settings used to initialize a new Window instance.
 /// @details This structure defines the initial state, look, and OS-level behavior of a window.
@@ -29,7 +29,7 @@ struct WindowDesc
     Point2D position{ 100, 100 };
 
     /// @brief The preferred display to spawn the window on. If nullptr, the OS determines the best display.
-    const Display* targetDisplay{ nullptr };
+    const IDisplay* targetDisplay{ nullptr };
 
     /// @brief The initial size of the window's client area (drawable region) in pixels.
     Extent2D size{ 1280u, 720u };
