@@ -33,6 +33,25 @@ enum class WindowAction : gp::UInt8
     HDRStateChanged     // Window HDR output capability toggled
 };
 
+namespace detail
+{
+
+/// @brief Fixed-size POD payload for WindowAction::DPIChanged (8 bytes, zero implicit padding).
+struct DPIScale
+{
+    gp::Float32 scaleX;
+    gp::Float32 scaleY;
+};
+
+/// @brief Fixed-size POD payload for WindowAction::DisplayChanged (8 bytes, zero implicit padding).
+struct DisplayChange
+{
+    gp::UInt32 displayId;
+    gp::UInt32 reservedData;
+};
+
+}   // namespace detail
+
 /// @brief Fixed-size POD payload for EventCategory::Window (16 bytes, zero implicit padding).
 struct WindowEvent
 {
@@ -46,18 +65,8 @@ struct WindowEvent
     {
         gp::hal::Point2D position{};   // Signed screen coordinates (Moved)
         gp::hal::Extent2D extent;      // Unsigned client dimensions (Resized, PixelSizeChanged)
-
-        struct
-        {
-            gp::Float32 scaleX;   // DPI scaling factors (DPIChanged)
-            gp::Float32 scaleY;
-        } dpi;
-
-        struct
-        {
-            gp::UInt32 displayId;   // Target display index (DisplayChanged)
-            gp::UInt32 reservedData;
-        } display;
+        detail::DPIScale dpi;
+        detail::DisplayChange display;
     };
 };
 
