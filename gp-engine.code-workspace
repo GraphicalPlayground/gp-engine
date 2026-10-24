@@ -203,7 +203,9 @@
       "frameworks": "lib",
       "adr": "skills",
       "clipboard": "tasks",
-      "device": "connection"
+      "device": "connection",
+      "threading": "app",
+      "atomics": "atom"
     },
     /* File Associations */
     "files.associations": {
