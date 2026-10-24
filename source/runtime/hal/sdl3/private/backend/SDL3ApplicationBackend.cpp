@@ -316,6 +316,13 @@ BackendResult ApplicationBackend::initialize(const ApplicationBackendDesc& desc)
     m_wakeEventType = SDL_RegisterEvents(1);
     m_isInitialized = true;
 
+    // Enumerate physical monitors if the Video subsystem was initialized; otherwise falls back to headless display
+    if ((desc.subsystems & BackendSubsystemFlags::Video) != BackendSubsystemFlags::None)
+    {
+        refreshDisplays();
+    }
+    activateHeadlessFallbackIfEmpty();
+
     return BackendResult::Success;
 }
 
@@ -326,6 +333,7 @@ void ApplicationBackend::shutdown() noexcept
         return;
     }
 
+    clearDisplayTable();
     SDL_Quit();
     m_wakeEventType = 0u;
     m_isInitialized = false;
@@ -1236,7 +1244,83 @@ BackendResult ApplicationBackend::pumpEvents(gp::SPSCByteRingBuffer& eventStream
 
 UniquePtr<IWindow> ApplicationBackend::createWindow(const WindowDesc& desc) noexcept
 {
+    if (!m_isInitialized) [[unlikely]]
+    {
+        return nullptr;
+    }
+
     return gp::makeUnique<gp::hal::sdl3::Window>(desc);
+}
+
+void ApplicationBackend::refreshDisplays() noexcept
+{
+    clearDisplayTable();
+
+    const DisplayId primaryId = static_cast<DisplayId>(SDL_GetPrimaryDisplay());
+    int count = 0;
+    SDL_DisplayID* ids = SDL_GetDisplays(&count);
+
+    if (ids != nullptr && count > 0)
+    {
+        const gp::UInt32 limit =
+            (static_cast<gp::UInt32>(count) < kMaxDisplays) ? static_cast<gp::UInt32>(count) : kMaxDisplays;
+
+        for (gp::UInt32 i = 0u; i < limit; ++i)
+        {
+            const DisplayId currentId = static_cast<DisplayId>(ids[i]);
+            m_sdlDisplays[i].initialize(currentId, currentId == primaryId);
+            (void)registerDisplay(&m_sdlDisplays[i]);
+        }
+    }
+
+    if (ids != nullptr)
+    {
+        SDL_free(ids);
+    }
+
+    activateHeadlessFallbackIfEmpty();
+}
+
+void ApplicationBackend::onBackendDisplayConnected(DisplayId displayId) noexcept
+{
+    if (displayId == kInvalidDisplayId) [[unlikely]]
+    {
+        return;
+    }
+
+    const DisplayId primaryId = static_cast<DisplayId>(SDL_GetPrimaryDisplay());
+
+    // Check if this display ID already occupies a slot in m_sdlDisplays
+    for (gp::UInt32 i = 0u; i < kMaxDisplays; ++i)
+    {
+        if (m_sdlDisplays[i].getId() == displayId)
+        {
+            m_sdlDisplays[i].initialize(displayId, displayId == primaryId);
+            (void)registerDisplay(&m_sdlDisplays[i]);
+            return;
+        }
+    }
+
+    // Otherwise claim the first disconnected/unused slot in m_sdlDisplays
+    for (gp::UInt32 i = 0u; i < kMaxDisplays; ++i)
+    {
+        if (!m_sdlDisplays[i].isValid())
+        {
+            m_sdlDisplays[i].initialize(displayId, displayId == primaryId);
+            (void)registerDisplay(&m_sdlDisplays[i]);
+            return;
+        }
+    }
+}
+
+void ApplicationBackend::onBackendDisplayDisconnected(DisplayId displayId) noexcept
+{
+    // Refresh the OS primary display designation in case the primary monitor was unplugged
+    const DisplayId newPrimaryId = static_cast<DisplayId>(SDL_GetPrimaryDisplay());
+    if (newPrimaryId != kInvalidDisplayId && newPrimaryId != displayId)
+    {
+        m_primaryDisplayId = newPrimaryId;
+    }
 }
 
 }   // namespace gp::hal::sdl3
