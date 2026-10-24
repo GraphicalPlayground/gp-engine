@@ -192,9 +192,9 @@ void Window::open() noexcept
     case NativeWindowBackend::Wayland:
         if (m_desc.nativeParentHandle.wayland.surface != nullptr)
         {
-            /* (void)SDL_SetPointerProperty(
-                props, SDL_PROP_WINDOW_CREATE_WAYLAND_SURFACE_POINTER, m_desc.nativeParentHandle.wayland.surface
-            ); */
+            (void)SDL_SetPointerProperty(
+                props, SDL_PROP_WINDOW_CREATE_WAYLAND_WL_SURFACE_POINTER, m_desc.nativeParentHandle.wayland.surface
+            );
         }
         break;
     default:
