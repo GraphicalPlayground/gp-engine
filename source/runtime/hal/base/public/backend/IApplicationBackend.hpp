@@ -9,6 +9,7 @@
 #include "backend/EventPumpStats.hpp"
 #include "containers/queues/SPSCRingBuffer.hpp"
 #include "CoreMinimal.hpp"           // IWYU pragma: keep
+#include "display/Display.hpp"
 #include "event/EventCategory.hpp"   // IWYU pragma: keep
 #include "event/EventHeader.hpp"     // IWYU pragma: keep
 #include "memory/pointers/UniquePtr.hpp"
@@ -16,6 +17,9 @@
 
 namespace gp::hal
 {
+
+/// @brief Maximum number of physical monitors tracked simultaneously in the fixed topology table.
+inline constexpr gp::UInt32 kMaxDisplays = 16u;
 
 /// @brief Interface for application backends that manage the initialization and shutdown of platform-specific systems
 /// (e.g., SDL, GLFW, Win32) and provide resources creation functionality.
@@ -71,10 +75,44 @@ public:
     /// @return Null-terminated ASCII backend name string.
     [[nodiscard]] virtual gp::StringView getBackendName() const noexcept = 0;
 
-    /// @brief Creates a new native window with the specified description.
-    /// @param desc The description of the window to create.
-    /// @return A unique pointer to the created window.
-    [[nodiscard]] virtual UniquePtr<IWindow> createWindow(const WindowDesc& desc) noexcept = 0;
+    /// @brief Creates a new platform-specific window instance managed via the `IWindow` interface.
+    /// @param[in] desc Configuration descriptor for the window.
+    /// @return `UniquePtr<IWindow>` owning the newly created window, or `nullptr` on failure.
+    [[nodiscard]] virtual gp::UniquePtr<IWindow> createWindow(const WindowDesc& desc) noexcept = 0;
+
+    /// @brief Queries the number of active displays currently cached by the backend.
+    /// @return Number of connected displays (always >= 1 when initialized due to virtual headless fallback).
+    [[nodiscard]] virtual gp::UInt32 getDisplayCount() const noexcept = 0;
+
+    /// @brief Retrieves a pointer to a cached display by its index in `[0, getDisplayCount())`.
+    /// @param[in] index Zero-based display index.
+    /// @return Pointer to the `IDisplay`, or `nullptr` if out of range.
+    [[nodiscard]] virtual const IDisplay* getDisplay(gp::UInt32 index) const noexcept = 0;
+
+    /// @brief Finds a cached display by its unique OS `DisplayId`.
+    /// @param[in] displayId Target display identifier.
+    /// @return Pointer to the matching `IDisplay`, or `nullptr` if not found.
+    [[nodiscard]] virtual const IDisplay* findDisplayById(DisplayId displayId) const noexcept = 0;
+
+    /// @brief Retrieves the primary desktop display designated by the OS (or the virtual fallback if headless).
+    /// @return Pointer to the primary `IDisplay` (never `nullptr` while initialized).
+    [[nodiscard]] virtual const IDisplay* getPrimaryDisplay() const noexcept = 0;
+
+    /// @brief Finds the display containing the specified virtual desktop point, or the nearest display if off-screen.
+    /// @param[in] point Screen-space coordinate `(x, y)`.
+    /// @return Pointer to the containing or nearest `IDisplay`.
+    [[nodiscard]] virtual const IDisplay* getDisplayForPoint(const Point2D& point) const noexcept = 0;
+
+    /// @brief Finds the display that shares the largest overlapping pixel area with the specified rectangle.
+    /// @details Used to determine which monitor a window belongs to when spanning multiple monitors.
+    /// @param[in] rect Virtual desktop rectangle `(origin, extent)`.
+    /// @return Pointer to the `IDisplay` with maximum overlap, or nearest display if completely off-screen.
+    [[nodiscard]] virtual const IDisplay* getDisplayForRect(const DisplayRect& rect) const noexcept = 0;
+
+    /// @brief Synchronizes the backend's cached display topology table with a decoded `DisplayEvent`.
+    /// @note Invoked by `Application::drainEventStream()` on the Game Thread.
+    /// @param[in] ev The decoded display event packet.
+    virtual void notifyDisplayEvent(const event::DisplayEvent& ev) noexcept = 0;
 };
 
 }   // namespace gp::hal
