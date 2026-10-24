@@ -56,7 +56,7 @@ int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         return -1;
     }
 
-    auto window = backend.createWindow({});
+    auto window = backend.createWindow({ .startOpened = true });
     if (!window)
     {
         std::cerr << "Failed to create SDL window!" << std::endl;
@@ -64,8 +64,10 @@ int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         return -1;
     }
 
-    window->open();
-
+    std::cout << "\nWindow ID: " << window->getId() << std::endl;
+    std::cout << "Initial Client Size: " << window->getSize().width << "x" << window->getSize().height << std::endl;
+    std::cout << "Initial Framebuffer Size: " << window->getFramebufferSize().width << "x"
+              << window->getFramebufferSize().height << std::endl;
     std::cout << "\nWindow opened. Press 'Q' or 'Escape' or close the window to exit." << std::endl;
     std::cout << "Move the mouse and press keys to see lock-free TLV routing in action...\n" << std::endl;
 
@@ -112,14 +114,30 @@ int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
                     "WindowEvent",
                     [&](const gp::hal::event::WindowEvent& ev)
                 {
+                    window->onWindowEvent(ev);
+
                     if (ev.action == gp::hal::event::WindowAction::CloseRequested)
                     {
-                        std::cout << "[WINDOW] Close button clicked!" << std::endl;
+                        std::cout << "[WINDOW] Close requested." << std::endl;
+                        window->close();
                         isRunning = false;
                     }
                     else if (ev.action == gp::hal::event::WindowAction::Resized)
                     {
-                        std::cout << "[WINDOW] Resized to: " << ev.extent.width << "x" << ev.extent.height << std::endl;
+                        // Query shadow state in 0ns without syscalls!
+                        const gp::hal::Extent2D sz = window->getSize();
+                        const gp::hal::Extent2D fb = window->getFramebufferSize();
+                        std::cout << "[WINDOW] Resized. Logical: " << sz.width << "x" << sz.height
+                                  << " | Framebuffer: " << fb.width << "x" << fb.height << std::endl;
+                    }
+                    else if (ev.action == gp::hal::event::WindowAction::FocusGained)
+                    {
+                        std::cout << "[WINDOW] Focus Gained. Active: " << (window->isActive() ? "True" : "False")
+                                  << std::endl;
+                    }
+                    else if (ev.action == gp::hal::event::WindowAction::FocusLost)
+                    {
+                        std::cout << "[WINDOW] Focus Lost." << std::endl;
                     }
                 }
                 );
