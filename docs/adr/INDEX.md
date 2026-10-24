@@ -134,6 +134,22 @@ Hardware Abstraction Layer (HAL).
   > Defines the `gp::application::Application` class as the central manager that owns the injected
   > backend, tracks active windows, and acts as the orchestrator between OS events and engine
   > subsystems.
+- [**ADR-0028**: Zero-Allocation Cached Display Topology and Shadow Mode Tables](./ADR-0028.md)
+  > Querying OS display managers (`EnumDisplaySettings`, `SDL_GetFullscreenDisplayModes`) at runtime
+  > triggers synchronous EDID/driver calls and heap allocations that stall the calling thread. To
+  > eliminate runtime allocations and OS stalls, `gp::hal::generic::Display` caches monitor bounds,
+  > work areas, HDR luminance metadata, and deduplicated `DisplayMode` tables inside fixed-capacity
+  > inline storage (`kMaxCachedModes = 64`). The topology is populated once on startup and
+  > incrementally synchronized via `DisplayEvent` packets from the lock-free `SPSCByteRingBuffer`.
+- [**ADR-0029**: Centralized Display Topology, Spatial Resolution, and Headless Virtual Display Fallback](./ADR-0029.md)
+  > Scattering display enumeration, multi-monitor spatial math, and hotplug table management across
+  > individual OS backends duplicates complex geometry logic and causes nullptr crashes when the
+  > engine runs on headless CI runners or dedicated servers without a physical display. To guarantee
+  > a uniform contract, `gp::hal::generic::ApplicationBackend` centralizes the active display
+  > pointer table (`kMaxDisplays = 16`), implements deterministic spatial resolution
+  > (`getDisplayForPoint` via nearest clamped boundary distance and `getDisplayForRect` via maximum
+  > overlapping pixel area), and automatically provisions a synthetic `1920x1080 @ 60Hz` virtual
+  > primary display whenever zero physical monitors are detected.
 
 ### Concurrency & Event Routing
 
