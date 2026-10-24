@@ -93,6 +93,20 @@ lock-free architectures.
   > (`CREATE_SUSPENDED`). Startup parameters (including string names and context pointers) are passed
   > via a parent-stack-allocated payload, and the parent thread blocks on an OS event until the child
   > securely copies the data to its own local stack.
+- [**ADR-0024**: Strict Compile-Time Lock-Free Guarantees via Concept-Constrained Atomics](./ADR-0024.md)
+  > The C++ standard library (`std::atomic<T>`) silently falls back to hidden OS software locks if
+  > `T` exceeds the hardware's native register size, silently destroying real-time thread scaling.
+  > The engine strictly forbids this by constraining `gp::Atomic<T>` with a `C++20` concept
+  > (`AtomicValue`). This guarantees that any atomic instantiation is strictly 1, 2, 4, or 8 bytes
+  > and trivially copyable, ensuring it always compiles 1:1 down to hardware-native lock-free
+  > instructions (e.g., `LOCK CMPXCHG`) or fails at compile-time.
+- [**ADR-0025**: MESI Cache-Line Isolation and Shadow Indexing in Lock-Free Structures](./ADR-0025.md)
+  > To prevent "False Sharing" (cache-line ping-ponging) from bottlenecking cross-core throughput,
+  > all lock-free communication primitives (e.g., `SPSCRingBuffer`) must explicitly align and pad
+  > their internal state to hardware cache-line boundaries (64 bytes), separating Read-Only,
+  > Producer-Modified, and Consumer-Modified zones. Furthermore, cross-thread atomic reads must be
+  > minimized using local "Shadow Index Caching," restricting interconnect bus traffic to only when
+  > a buffer is completely full or completely empty.
 
 ### Math & Core Types
 
