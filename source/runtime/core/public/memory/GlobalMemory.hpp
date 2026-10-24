@@ -18,7 +18,7 @@ extern GP_CORE_API Malloc* g_malloc;
 
 #if !GP_IS_MONOLITHIC
 /// @brief Pointer to the local shadow memory allocator instance, used to bypass DLL Import overhead.
-extern Malloc* g_localShadowMalloc;
+inline Malloc* g_localShadowMalloc = nullptr;
 #endif
 
 }   // namespace detail
