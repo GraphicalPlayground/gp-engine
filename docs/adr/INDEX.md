@@ -164,6 +164,15 @@ cache-locality.
   > `Touch::Motion`) are shed once free ring buffer capacity drops below a reserved threshold
   > (`criticalReserveBytes`), preserving dedicated headroom strictly for discrete lifecycle and
   > button-state transitions.
+- [**ADR-0027**: Event-Driven Window Shadow State for Lock-Free Game Thread Queries](./ADR-0027.md)
+  > Native OS windowing APIs (Win32, Cocoa, Wayland, SDL3) restrict window property queries
+  > (`GetWindowRect`, `SDL_GetWindowSize`) to the main OS thread; invoking them from the Game or
+  > Render threads causes race conditions, kernel syscall overhead, and mid-frame state tearing. To
+  > guarantee thread safety and zero-cost queries, `gp::hal::generic::Window` maintains a local
+  > "Shadow State" (cached dimensions, framebuffer pixel extent, position, DPI scale, focus, and
+  > visibility flags). This shadow state is mutated exclusively on the Game Thread when draining
+  > `WindowEvent` packets from the lock-free `SPSCByteRingBuffer`, turning all IWindow getters into
+  > deterministic, `constexpr` L1-cache reads.
 
 ### Window Management
 
