@@ -223,4 +223,35 @@ GP_FORCEINLINE gp::USize getActualAllocationSize(gp::USize requestedSize, gp::UI
     return gp::memory::getInlineMalloc()->getActualAllocationSize(requestedSize, alignment);
 }
 
+/// @brief Rounds an unsigned integer up to the next power of two.
+/// @param[in] value Input capacity (must be > 0).
+/// @return Nearest power of two >= value, or 0 on overflow.
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr gp::USize roundUpToPowerOfTwo(gp::USize value) noexcept
+{
+    if (value == 0u) [[unlikely]]
+    {
+        return 0u;
+    }
+
+    // Already a power of two
+    if ((value & (value - 1u)) == 0u) [[likely]]
+    {
+        return value;
+    }
+
+    --value;
+    value |= value >> 1u;
+    value |= value >> 2u;
+    value |= value >> 4u;
+    value |= value >> 8u;
+    value |= value >> 16u;
+    if constexpr (sizeof(gp::USize) == 8u)
+    {
+        value |= value >> 32u;
+    }
+    ++value;
+
+    return value;
+}
+
 }   // namespace gp::memory
