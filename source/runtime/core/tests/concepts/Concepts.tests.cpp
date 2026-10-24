@@ -13,6 +13,14 @@ namespace gp::concepts::tests
 
 TEST(ConceptsTest, Fundamental)
 {
+    // Const
+    EXPECT_TRUE(IsConst<const int>);
+    EXPECT_FALSE(IsConst<int>);
+
+    // Bool
+    EXPECT_TRUE(IsBool<bool>);
+    EXPECT_FALSE(IsBool<int>);
+
     // Floating Point
     EXPECT_TRUE(IsFloatingPoint<float>);
     EXPECT_TRUE(IsFloatingPoint<double>);
