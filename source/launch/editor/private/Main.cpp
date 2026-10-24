@@ -2,78 +2,236 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
+#include "backend/SDL3ApplicationBackend.hpp"
+#include "containers/queues/SPSCRingBuffer.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "event/EventCategory.hpp"
+#include "event/EventHeader.hpp"
+#include "event/input/KeyboardEvent.hpp"
+#include "event/input/MouseEvent.hpp"
+#include "event/system/ApplicationEvent.hpp"
+#include "event/system/WindowEvent.hpp"
 #include "Launch.hpp"
-#include "memory/GlobalMemory.hpp"
-#include "platforms/base/PlatformMemory.hpp"
-#include <cstdlib>
+#include "platforms/base/system/Thread.hpp"
 #include <iostream>
 
 namespace gp
 {
 
-void dumpPlatformConstants()
+template <typename PayloadT>
+bool decodeAndPrintEvent(gp::SPSCByteRingBuffer& stream, [[maybe_unused]] const char* eventName, auto&& printLambda)
 {
-    auto constants = gp::platform::Memory::getPlatformConstants();
-
-    std::cout << "Platform Memory Constants:" << std::endl;
-    std::cout << "\tPhysical Memory (bytes): " << constants.physicalMemoryBytes << std::endl;
-    std::cout << "\tVirtual Memory (bytes): " << constants.virtualMemoryBytes << std::endl;
-    std::cout << "\tStandard Page Size (bytes): " << constants.standardPageSize << std::endl;
-    std::cout << "\tBinned Page Size (bytes): " << constants.binnedPageSize << std::endl;
-    std::cout << "\tStandard Allocation Granularity (bytes): " << constants.standardAllocationGranularity << std::endl;
-    std::cout << "\tBinned Allocation Granularity (bytes): " << constants.binnedAllocationGranularity << std::endl;
-    std::cout << "\tAddress Space Start: " << constants.addressSpaceStart << std::endl;
-    std::cout << "\tAddress Space Size (bytes): " << constants.addressSpaceSizeBytes << std::endl;
-    std::cout << "\tTotal Physical Memory (GB): " << constants.totalPhysicalMemoryGB << std::endl;
+    PayloadT payload{};
+    if (stream.tryPeekAt(sizeof(gp::hal::event::EventHeader), &payload, sizeof(PayloadT)))
+    {
+        printLambda(payload);
+        stream.advanceConsumer(sizeof(gp::hal::event::EventHeader) + sizeof(PayloadT));
+        return true;
+    }
+    return false;
 }
 
 int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
-    std::cout << "Launching editor..." << std::endl;
-    std::cout << "Is Tracy enabled? " << (TRACY_ENABLE ? "Yes" : "No") << std::endl;
-    dumpPlatformConstants();
+    std::cout << "--- GP Engine: Lock-Free Event Pump Test ---" << std::endl;
 
-    // Try allocating something with getGlobalAllocator
-    auto allocator = gp::memory::getGlobalMalloc();
-
-    std::cout << "Allocating 1024 bytes..." << std::endl;
-    void* ptr = allocator->allocate(1024);
-    if (ptr == nullptr)
+    // 1. Initialize the SPSC Byte Ring Buffer (4KB)
+    gp::SPSCByteRingBuffer eventStream;
+    if (!eventStream.initialize(4096u))
     {
-        std::cerr << "Allocation failed!" << std::endl;
-        return 1;
+        std::cerr << "Failed to allocate SPSC ring buffer!" << std::endl;
+        return -1;
     }
 
-    std::cout << "Allocation successful: " << ptr << std::endl;
-    std::memset(ptr, 0xAB, 1024);
+    gp::hal::sdl3::ApplicationBackend backend;
+    gp::hal::ApplicationBackendDesc desc{};
+    desc.appName = "GP Engine Test";
+    desc.subsystems = gp::hal::BackendSubsystemFlags::Default;
+    desc.maxEventsPerPump = 256u;
+    desc.criticalReserveBytes = 256u;
 
-    auto* bytes = static_cast<unsigned char*>(ptr);
-    bool valid = true;
-    for (size_t i = 0; i < 1024; ++i)
+    if (backend.initialize(desc) != gp::hal::BackendResult::Success)
     {
-        if (bytes[i] != 0xAB)
+        std::cerr << "Failed to initialize SDL3 Backend!" << std::endl;
+        return -1;
+    }
+
+    auto displayCount = backend.getDisplayCount();
+    std::cout << "Backend initialized. Detected " << displayCount << " display(s)." << std::endl;
+    for (gp::UInt32 i = 0u; i < displayCount; ++i)
+    {
+        auto display = backend.getDisplay(i);
+        if (display != nullptr)
         {
-            std::cerr << "Memory corruption at byte " << i << std::endl;
-            valid = false;
-            break;
+            std::cout << "Display " << i << ": ID=" << display->getId() << ", Name=\"" << display->getName()
+                      << "\", Resolution=" << display->getCurrentMode().resolution.width << "x"
+                      << display->getCurrentMode().resolution.height
+                      << ", RefreshRate=" << display->getCurrentMode().refreshRate
+                      << ", PixelDensity=" << display->getCurrentMode().pixelDensity
+                      << ", HDR=" << (display->isHDREnabled() ? "Yes" : "No") << std::endl;
+        }
+        else
+        {
+            std::cout << "Display " << i << ": nullptr" << std::endl;
         }
     }
 
-    if (valid)
+    auto window = backend.createWindow({ .startOpened = true });
+    if (!window)
     {
-        std::cout << "Memory write/read test passed." << std::endl;
+        std::cerr << "Failed to create SDL window!" << std::endl;
+        backend.shutdown();
+        return -1;
     }
 
-    allocator->deallocate(ptr);
+    std::cout << "\nWindow ID: " << window->getId() << std::endl;
+    std::cout << "Initial Client Size: " << window->getSize().width << "x" << window->getSize().height << std::endl;
+    std::cout << "Initial Framebuffer Size: " << window->getFramebufferSize().width << "x"
+              << window->getFramebufferSize().height << std::endl;
+    std::cout << "\nWindow opened. Press 'Q' or 'Escape' or close the window to exit." << std::endl;
+    std::cout << "Move the mouse and press keys to see lock-free TLV routing in action...\n" << std::endl;
 
-    std::cout << "Memory released." << std::endl;
+    bool isRunning = true;
 
-    // Wait for user input before exiting, allows us to actually attach the profiler if needed
-    std::cout << "Press Enter to exit..." << std::endl;
-    std::cin.get();
+    while (isRunning)
+    {
+        // OS Thread Pump: Translate raw SDL events -> Pack into TLV bytes -> Push to SPSC queue
+        gp::hal::EventPumpStats stats{};
+        (void)backend.pumpEvents(eventStream, &stats);
 
-    return valid ? 0 : 1;
+        // Game Thread Drain: Read TLV Headers -> Decode Payloads -> Advance Consumer Index
+        while (!eventStream.isEmptyApprox())
+        {
+            gp::hal::event::EventHeader header{};
+            if (!eventStream.tryPeekAt(0, &header, sizeof(gp::hal::event::EventHeader)))
+            {
+                break;   // Not enough bytes to form a header
+            }
+
+            switch (header.category)
+            {
+            case gp::hal::event::EventCategory::Application:
+            {
+                decodeAndPrintEvent<gp::hal::event::ApplicationEvent>(
+                    eventStream,
+                    "AppEvent",
+                    [&](const gp::hal::event::ApplicationEvent& ev)
+                {
+                    if (ev.action == gp::hal::event::ApplicationAction::QuitRequested)
+                    {
+                        std::cout << "[SYSTEM] Quit Requested. Shutting down." << std::endl;
+                        isRunning = false;
+                    }
+                }
+                );
+                break;
+            }
+
+            case gp::hal::event::EventCategory::Window:
+            {
+                decodeAndPrintEvent<gp::hal::event::WindowEvent>(
+                    eventStream,
+                    "WindowEvent",
+                    [&](const gp::hal::event::WindowEvent& ev)
+                {
+                    window->onWindowEvent(ev);
+
+                    if (ev.action == gp::hal::event::WindowAction::CloseRequested)
+                    {
+                        std::cout << "[WINDOW] Close requested." << std::endl;
+                        window->close();
+                        isRunning = false;
+                    }
+                    else if (ev.action == gp::hal::event::WindowAction::Resized)
+                    {
+                        // Query shadow state in 0ns without syscalls!
+                        const gp::hal::Extent2D sz = window->getSize();
+                        const gp::hal::Extent2D fb = window->getFramebufferSize();
+                        std::cout << "[WINDOW] Resized. Logical: " << sz.width << "x" << sz.height
+                                  << " | Framebuffer: " << fb.width << "x" << fb.height << std::endl;
+                    }
+                    else if (ev.action == gp::hal::event::WindowAction::FocusGained)
+                    {
+                        std::cout << "[WINDOW] Focus Gained. Active: " << (window->isActive() ? "True" : "False")
+                                  << std::endl;
+                    }
+                    else if (ev.action == gp::hal::event::WindowAction::FocusLost)
+                    {
+                        std::cout << "[WINDOW] Focus Lost." << std::endl;
+                    }
+                }
+                );
+                break;
+            }
+
+            case gp::hal::event::EventCategory::Keyboard:
+            {
+                decodeAndPrintEvent<gp::hal::event::KeyboardEvent>(
+                    eventStream,
+                    "KeyboardEvent",
+                    [&](const gp::hal::event::KeyboardEvent& ev)
+                {
+                    const char* stateStr = (ev.state == gp::hal::input::KeyState::Pressed) ? "Pressed" : "Released";
+
+                    // Treat 'Q' or 'Escape' as a quit command
+                    if (ev.state == gp::hal::input::KeyState::Released &&
+                        (ev.keycode == gp::hal::input::Keycode::Q || ev.keycode == gp::hal::input::Keycode::Escape))
+                    {
+                        std::cout << "[KEYBOARD] " << stateStr << " Q/Esc. Shutting down." << std::endl;
+                        isRunning = false;
+                    }
+                    else if (ev.isRepeat == 0u)   // Only print initial presses/releases to reduce spam
+                    {
+                        std::cout << "[KEYBOARD] " << stateStr << " KeyCode: " << static_cast<UInt32>(ev.keycode)
+                                  << std::endl;
+                    }
+                }
+                );
+                break;
+            }
+            case gp::hal::event::EventCategory::Mouse:
+            {
+                decodeAndPrintEvent<gp::hal::event::MouseEvent>(
+                    eventStream,
+                    "MouseEvent",
+                    [&](const gp::hal::event::MouseEvent& ev)
+                {
+                    if (ev.action == gp::hal::event::MouseAction::ButtonChanged)
+                    {
+                        const char* stateStr = (ev.state == gp::hal::input::KeyState::Pressed) ? "Pressed" : "Released";
+                        std::cout << "[MOUSE] Button " << static_cast<UInt32>(ev.button) << " " << stateStr
+                                  << " at X: " << ev.x << " Y: " << ev.y << std::endl;
+                    }
+                    else if (ev.action == gp::hal::event::MouseAction::WheelScrolled)
+                    {
+                        std::cout << "[MOUSE] Scroll DeltaY: " << ev.deltaY << std::endl;
+                    }
+                }
+                );
+                break;
+            }
+
+            default:
+            {
+                // For any event category we don't explicitly print in this test,
+                // just advance the consumer pointer by the header size + payload size.
+                eventStream.advanceConsumer(sizeof(gp::hal::event::EventHeader) + header.payloadSize);
+                break;
+            }
+            }
+        }
+
+        // Prevent the test loop from burning 100% of a CPU core
+        platform::Thread::sleep(16);
+    }
+
+    window->close();
+    backend.shutdown();
+    eventStream.shutdown();
+
+    std::cout << "--- Shutdown Complete ---" << std::endl;
+
+    return 0;
 }
 
 }   // namespace gp

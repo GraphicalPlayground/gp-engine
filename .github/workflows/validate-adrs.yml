@@ -1,0 +1,43 @@
+name: Validate ADRs
+
+on:
+  pull_request:
+    paths:
+      - 'docs/adr/**'
+  push:
+    paths:
+      - 'docs/adr/**'
+
+jobs:
+  validate-adrs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: List Modified ADRs
+        id: list-modified-adrs
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BASE_COMMIT=${{ github.event.pull_request.base.sha }}
+          else
+            BASE_COMMIT=${{ github.event.before }}
+          fi
+
+          if ! git cat-file -e $BASE_COMMIT^{commit} 2>/dev/null; then
+            BASE_COMMIT=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          FILES=$(git diff --name-only --diff-filter=ACMR $BASE_COMMIT ${{ github.sha }} | grep '^docs/adr/.*\.md$' | grep -iv 'index.md' | paste -sd "," - || true)
+
+          echo "Found modified files: $FILES"
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+      - name: Validate ADRs
+        if: steps.list-modified-adrs.outputs.files != ''
+        uses: GraphicalPlayground/gp-actions/validate-frontmatter@main
+        with:
+          files: ${{ steps.list-modified-adrs.outputs.files }}
+          schema: '.github/schemas/adr-schema.json'

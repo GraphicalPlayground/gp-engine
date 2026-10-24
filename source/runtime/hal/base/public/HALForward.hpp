@@ -7,6 +7,10 @@
 namespace gp::hal
 {
 
+/// @section Forward declarations
+
+class IApplicationBackend;
+
 /// @section Hardware information
 
 class IHardwareInfo;

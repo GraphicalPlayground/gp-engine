@@ -201,7 +201,11 @@
       "targets": "target",
       "linkers": "contract",
       "frameworks": "lib",
-      "adr": "skills"
+      "adr": "skills",
+      "clipboard": "tasks",
+      "device": "connection",
+      "threading": "app",
+      "atomics": "atom"
     },
     /* File Associations */
     "files.associations": {

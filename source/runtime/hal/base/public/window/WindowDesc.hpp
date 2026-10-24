@@ -4,8 +4,10 @@
 
 #pragma once
 
+#include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
 #include "window/CursorEnums.hpp"
+#include "window/NativeWindow.hpp"
 #include "window/WindowEnums.hpp"
 #include "window/WindowTypes.hpp"
 
@@ -13,21 +15,21 @@ namespace gp::hal
 {
 
 // Forward declaration
-class Display;
+class IDisplay;
 
 /// @brief Configuration settings used to initialize a new Window instance.
 /// @details This structure defines the initial state, look, and OS-level behavior of a window.
 struct WindowDesc
 {
     /// @brief The text displayed in the window's title bar and taskbar entry.
-    // StringView title{ "Graphical Playground" };
+    StringView title{ "Graphical Playground" };
 
     /// @brief The initial top-left position of the window in screen coordinates.
     /// @note If targetDisplay is non-null, this is often treated as an offset from that display's origin.
     Point2D position{ 100, 100 };
 
     /// @brief The preferred display to spawn the window on. If nullptr, the OS determines the best display.
-    const Display* targetDisplay{ nullptr };
+    const IDisplay* targetDisplay{ nullptr };
 
     /// @brief The initial size of the window's client area (drawable region) in pixels.
     Extent2D size{ 1280u, 720u };
@@ -101,7 +103,7 @@ struct WindowDesc
 
     /// @brief Optional native handle to a parent window. If provided, this window becomes a child.
     /// @details This is used for embedding the engine into external tools or editor environments (e.g., Win32 HWND).
-    void* nativeParentHandle{ nullptr };
+    NativeWindowHandle nativeParentHandle{ NativeWindowBackend::Unknown };
 };
 
 }   // namespace gp::hal
