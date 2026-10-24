@@ -154,6 +154,16 @@ cache-locality.
   > Copyable, Standard Layout Plain Old Data (POD) structs. Explicitly forbids the use of C++
   > inheritance, virtual tables, RTTI, and heap allocations (`new`/`delete`) at the HAL level to
   > prevent heap fragmentation and lock contention.
+- [**ADR-0026**: Two-Tier Backpressure and Critical Reserve Admission in Lock-Free Event Queues](./ADR-0026.md)
+  > High-polling-rate peripherals (8000 Hz mice, controller IMUs) can saturate a fixed-capacity
+  > lock-free ring buffer during temporary Game Thread stalls, causing critical discrete state
+  > transitions (such as `KeyState::Released` or `WindowAction::CloseRequested`) to be dropped and
+  > leaving the engine in a desynchronized "stuck key" state. To prevent this while maintaining a
+  > non-blocking OS message pump, the event producer enforces a two-tier admission policy:
+  > high-frequency continuous events (`Mouse::Moved`, `Gamepad::AxisMoved`, `Sensor`,
+  > `Touch::Motion`) are shed once free ring buffer capacity drops below a reserved threshold
+  > (`criticalReserveBytes`), preserving dedicated headroom strictly for discrete lifecycle and
+  > button-state transitions.
 
 ### Window Management
 
