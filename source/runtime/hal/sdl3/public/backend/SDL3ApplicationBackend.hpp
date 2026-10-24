@@ -5,6 +5,7 @@
 #pragma once
 
 #include "backend/GenericApplicationBackend.hpp"
+#include "display/SDL3Display.hpp"
 
 namespace gp::hal::sdl3
 {
@@ -19,9 +20,9 @@ public:
     static constexpr gp::UInt16 kMaxVariablePayloadBytes = 2048u;
 
 private:
-    ApplicationBackendDesc m_config{};
+    /// @brief Fixed-capacity inline storage for SDL3 physical display wrappers (zero heap allocations).
+    sdl3::Display m_sdlDisplays[kMaxDisplays]{};
     gp::UInt32 m_wakeEventType{ 0u };
-    bool m_isInitialized{ false };
 
 public:
     /// @brief Constructs an uninitialized SDL3 application backend.
@@ -36,52 +37,40 @@ public:
     ApplicationBackend& operator=(ApplicationBackend&&) = delete;
 
 public:
-    /// @brief Initializes the underlying platform abstraction library and configured hardware subsystems.
-    /// @param[in] desc Configuration parameters and metadata for the platform backend.
-    /// @return `BackendResult::Success` on success, or an error code detailing the failure reason.
-    [[nodiscard]] virtual BackendResult initialize(const ApplicationBackendDesc& desc) noexcept override;
+    /// @copydoc IApplicationBackend::initialize()
+    [[nodiscard]] BackendResult initialize(const ApplicationBackendDesc& desc) noexcept override;
 
-    /// @brief Shuts down all initialized hardware subsystems and releases OS handles.
-    virtual void shutdown() noexcept override;
+    /// @copydoc IApplicationBackend::shutdown()
+    void shutdown() noexcept override;
 
-    /// @brief Checks whether the backend is currently initialized and ready to pump events.
-    /// @return `true` if initialized, `false` otherwise.
-    [[nodiscard]] constexpr bool isInitialized() const noexcept override
-    {
-        return m_isInitialized;
-    }
+    /// @copydoc IApplicationBackend::pumpEvents()
+    BackendResult pumpEvents(gp::SPSCByteRingBuffer& eventStream, EventPumpStats* outStats = nullptr) noexcept override;
 
-    /// @brief Drains the OS message queue, translates messages into engine PODs, and writes TLV packets
-    ///        into the lock-free byte stream.
-    /// @note Must be called from the thread that initialized the video/windowing subsystem (the OS Thread).
-    /// @param[in,out] eventStream Target lock-free SPSC byte ring buffer shared with the Game Thread.
-    /// @param[out] outStats Optional pointer to receive telemetry counters for the pump invocation.
-    /// @return `BackendResult::Success` if all critical events were queued, `BackendResult::BufferOverflow`
-    ///         if any event was dropped due to ring buffer exhaustion, or `BackendResult::NotInitialized`.
-    virtual BackendResult
-        pumpEvents(gp::SPSCByteRingBuffer& eventStream, EventPumpStats* outStats = nullptr) noexcept override;
+    /// @copydoc IApplicationBackend::waitEventsTimeout()
+    [[nodiscard]] bool waitEventsTimeout(gp::UInt32 timeoutMs) noexcept override;
 
-    /// @brief Blocks the calling OS thread until at least one OS event arrives or the timeout expires.
-    /// @details Used when the application is minimized or backgrounded to reduce OS thread CPU usage to 0%.
-    /// @param[in] timeoutMs Maximum duration to wait in milliseconds (0 = non-blocking check).
-    /// @return `true` if an OS event is pending in the platform queue, `false` if the timeout expired.
-    [[nodiscard]] virtual bool waitEventsTimeout(gp::UInt32 timeoutMs) noexcept override;
+    /// @copydoc IApplicationBackend::wakeEventLoop()
+    void wakeEventLoop() noexcept override;
 
-    /// @brief Pushes a synthetic no-op wake signal into the OS event queue from any thread.
-    /// @details Immediately unblocks an OS thread sleeping inside `waitEventsTimeout()`.
-    virtual void wakeEventLoop() noexcept override;
-
-    /// @brief Returns the static human-readable identifier of the active backend (e.g., "SDL3").
-    /// @return Null-terminated ASCII backend name string.
+    /// @copydoc IApplicationBackend::getBackendName()
     [[nodiscard]] constexpr gp::StringView getBackendName() const noexcept override
     {
         return "SDL3";
     }
 
-    /// @brief Creates a new native window with the specified description.
-    /// @param desc The description of the window to create.
-    /// @return A unique pointer to the created window.
-    [[nodiscard]] virtual UniquePtr<IWindow> createWindow(const WindowDesc& desc) noexcept override;
+    /// @copydoc IApplicationBackend::createWindow()
+    [[nodiscard]] gp::UniquePtr<IWindow> createWindow(const WindowDesc& desc) noexcept override;
+
+    /// @brief Queries SDL3 for all currently connected monitors and populates `m_sdlDisplays` and `m_displayTable`.
+    /// @note Must only be called on the main OS thread.
+    void refreshDisplays() noexcept;
+
+protected:
+    /// @copydoc gp::hal::generic::ApplicationBackend::onBackendDisplayConnected()
+    void onBackendDisplayConnected(DisplayId displayId) noexcept override;
+
+    /// @copydoc gp::hal::generic::ApplicationBackend::onBackendDisplayDisconnected()
+    void onBackendDisplayDisconnected(DisplayId displayId) noexcept override;
 
 private:
     /// @brief Commits a fixed-size POD event into the SPSC byte ring buffer with backpressure filtering.
