@@ -56,6 +56,26 @@ int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
         return -1;
     }
 
+    auto displayCount = backend.getDisplayCount();
+    std::cout << "Backend initialized. Detected " << displayCount << " display(s)." << std::endl;
+    for (gp::UInt32 i = 0u; i < displayCount; ++i)
+    {
+        auto display = backend.getDisplay(i);
+        if (display != nullptr)
+        {
+            std::cout << "Display " << i << ": ID=" << display->getId() << ", Name=\"" << display->getName()
+                      << "\", Resolution=" << display->getCurrentMode().resolution.width << "x"
+                      << display->getCurrentMode().resolution.height
+                      << ", RefreshRate=" << display->getCurrentMode().refreshRate
+                      << ", PixelDensity=" << display->getCurrentMode().pixelDensity
+                      << ", HDR=" << (display->isHDREnabled() ? "Yes" : "No") << std::endl;
+        }
+        else
+        {
+            std::cout << "Display " << i << ": nullptr" << std::endl;
+        }
+    }
+
     auto window = backend.createWindow({ .startOpened = true });
     if (!window)
     {
