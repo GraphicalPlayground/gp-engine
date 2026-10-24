@@ -310,7 +310,7 @@ public:
     }
 
     /// @copydoc IWindow::getCurrentDisplay()
-    [[nodiscard]] constexpr const Display* getCurrentDisplay() const noexcept override
+    [[nodiscard]] constexpr const IDisplay* getCurrentDisplay() const noexcept override
     {
         return m_desc.targetDisplay;
     }
@@ -510,7 +510,7 @@ public:
     {}
 
     /// @copydoc IWindow::setWindowMode()
-    constexpr void setWindowMode(WindowMode mode, const Display* targetDisplay = nullptr) noexcept override
+    constexpr void setWindowMode(WindowMode mode, const IDisplay* targetDisplay = nullptr) noexcept override
     {
         m_desc.mode = mode;
         if (targetDisplay != nullptr)
@@ -596,7 +596,7 @@ public:
     {}
 
     /// @copydoc IWindow::centerOnDisplay()
-    constexpr void centerOnDisplay([[maybe_unused]] const Display* display = nullptr) noexcept override
+    constexpr void centerOnDisplay([[maybe_unused]] const IDisplay* display = nullptr) noexcept override
     {}
 
     /// @copydoc IWindow::onWindowEvent()
