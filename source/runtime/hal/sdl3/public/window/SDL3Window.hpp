@@ -69,7 +69,7 @@ public:
     void requestAttention(WindowFlashMode mode = WindowFlashMode::UntilFocused) noexcept override;
 
     /// @copydoc IWindow::centerOnDisplay()
-    void centerOnDisplay(const Display* display = nullptr) noexcept override;
+    void centerOnDisplay(const IDisplay* display = nullptr) noexcept override;
 
     /// @copydoc IWindow::setPosition(const Point2D&)
     void setPosition(const Point2D& position) noexcept override;
@@ -117,7 +117,7 @@ public:
     void setAlwaysOnTop(bool alwaysOnTop) noexcept override;
 
     /// @copydoc IWindow::setWindowMode()
-    void setWindowMode(WindowMode mode, const Display* targetDisplay = nullptr) noexcept override;
+    void setWindowMode(WindowMode mode, const IDisplay* targetDisplay = nullptr) noexcept override;
 
     /// @copydoc IWindow::setCursorMode()
     void setCursorMode(CursorMode mode) noexcept override;

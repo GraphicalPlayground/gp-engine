@@ -364,7 +364,7 @@ void Window::requestAttention(WindowFlashMode mode) noexcept
     (void)SDL_FlashWindow(m_window, toSdlFlashOperation(mode));
 }
 
-void Window::centerOnDisplay([[maybe_unused]] const Display* display) noexcept
+void Window::centerOnDisplay([[maybe_unused]] const IDisplay* display) noexcept
 {
     if (m_window == nullptr)
     {
@@ -505,7 +505,7 @@ void Window::setAlwaysOnTop(bool alwaysOnTop) noexcept
     }
 }
 
-void Window::setWindowMode(WindowMode mode, const Display* targetDisplay) noexcept
+void Window::setWindowMode(WindowMode mode, const IDisplay* targetDisplay) noexcept
 {
     gp::hal::generic::Window::setWindowMode(mode, targetDisplay);
 
