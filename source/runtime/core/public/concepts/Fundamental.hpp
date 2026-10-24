@@ -11,6 +11,18 @@
 namespace gp::concepts
 {
 
+/// @brief Concept to check if a type is const-qualified.
+/// @note Const-correctness is a fundamental principle in C++ that helps prevent unintended modifications to data,
+/// ensuring safer and more predictable code behavior.
+template <typename T>
+concept IsConst = std::is_const_v<T>;
+
+/// @brief COncept to check if a type is bool.
+/// @note The bool type is often used for flags, state indicators, and conditional logic in game engines,
+/// where performance and memory efficiency are critical.
+template <typename T>
+concept IsBool = std::is_same_v<T, bool>;
+
 /// @brief Concept to check if a type is a floating-point type (float, double, long double).
 /// @note In game engines, we prefer 'float' for most transformations to save memory and bandwidth,
 /// using 'double' only when high precision is required (e.g., large world coordinates).
@@ -21,6 +33,11 @@ concept IsFloatingPoint = std::is_floating_point_v<T>;
 /// @note Integral types are the backbone of indexing, bitfields, and discrete state machines.
 template <typename T>
 concept IsIntegral = std::is_integral_v<T>;
+
+/// @brief Concept to check if a type is a signed integral type (int, long, etc.).
+/// @note Signed types are essential for representing negative values, such as offsets, deltas, and error codes.
+template <typename T>
+concept IsSignedIntegral = IsIntegral<T> && std::is_signed_v<T>;
 
 /// @brief Concept to check if a type is an unsigned integral type (unsigned int, unsigned long, etc.).
 /// @note Unsigned types are often used for sizes, counts, and bitmasks where negative values are invalid.
