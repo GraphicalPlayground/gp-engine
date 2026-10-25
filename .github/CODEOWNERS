@@ -5,9 +5,9 @@
 # Avaiable teams:
 #   - @GraphicalPlayground/engine-architecture
 #   - @GraphicalPlayground/graphics-engineering
-#   - @GraphicalPlayground/documentation-knowledge
+#   - @GraphicalPlayground/documentation--knowledge
 #   - @GraphicalPlayground/curriculum-learning-design
-#   - @GraphicalPlayground/infrastructure-devops
+#   - @GraphicalPlayground/infrastructure--devops
 
 # Main Modules
 
@@ -24,16 +24,16 @@
 
 # Documentation
 
-/source/**/docs/                        @GraphicalPlayground/documentation-knowledge
-/docs/                                  @GraphicalPlayground/documentation-knowledge
-/examples/                              @GraphicalPlayground/documentation-knowledge
-/guides/                                @GraphicalPlayground/documentation-knowledge
+/source/**/docs/                        @GraphicalPlayground/documentation--knowledge
+/docs/                                  @GraphicalPlayground/documentation--knowledge
+/examples/                              @GraphicalPlayground/documentation--knowledge
+/guides/                                @GraphicalPlayground/documentation--knowledge
 
 # CI/CD
 
-/.github/workflows/                     @GraphicalPlayground/infrastructure-devops
-/.github/ISSUE_TEMPLATE/                @GraphicalPlayground/infrastructure-devops
-/.github/PULL_REQUEST_TEMPLATE/         @GraphicalPlayground/infrastructure-devops
+/.github/workflows/                     @GraphicalPlayground/infrastructure--devops
+/.github/ISSUE_TEMPLATE/                @GraphicalPlayground/infrastructure--devops
+/.github/PULL_REQUEST_TEMPLATE/         @GraphicalPlayground/infrastructure--devops
 
 # Runtime Specific
 
