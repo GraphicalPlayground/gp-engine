@@ -205,7 +205,8 @@
       "clipboard": "tasks",
       "device": "connection",
       "threading": "app",
-      "atomics": "atom"
+      "atomics": "atom",
+      "time": "temp"
     },
     /* File Associations */
     "files.associations": {
