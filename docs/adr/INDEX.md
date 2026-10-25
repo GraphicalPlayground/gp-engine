@@ -107,6 +107,41 @@ lock-free architectures.
   > Producer-Modified, and Consumer-Modified zones. Furthermore, cross-thread atomic reads must be
   > minimized using local "Shadow Index Caching," restricting interconnect bus traffic to only when
   > a buffer is completely full or completely empty.
+- [**ADR-0030**: 64-Bit Integer Nanoseconds and Rational Frame Rates as Canonical Time Units](./ADR-0030.md)
+  > Storing accumulated engine time in 32-bit `float` degrades precision past 1 millisecond after
+  > just 4.5 hours of uptime, while storing frame rates as floating-point seconds
+  > (`1.0f / 60.0f = 0.016666668f`) introduces cumulative rounding drift during long cutscenes and
+  > deterministic replays. The engine mandates 64-bit integer nanoseconds (`gp::Int64` for
+  > `Duration`, `gp::UInt64` for `Timestamp`) as the canonical internal representation ($\pm 292$
+  > years range at $1\text{ ns}$ resolution) alongside rational `FrameRate`
+  > (`numerator` / `denominator`) for exact frame intervals. Floating-point deltaTime
+  > (`Float32` / `Float64`) is strictly a read-only leaf view generated for shader and physics
+  > integrators.
+- [**ADR-0031**: Dual Hardware Counters and Per-Thread High-Resolution Kernel Waitable Timers](./ADR-0031.md)
+  > Calling Win32 `Sleep(1)` defaults to a 15.625ms OS scheduler quantum, while globally forcing
+  > `timeBeginPeriod(1)` degrades system-wide power efficiency and battery life across all running
+  > processes. Furthermore, OS monotonic clocks (`QueryPerformanceCounter`) have higher read latency
+  > (~15–25ns) than raw CPU cycle counters (`__rdtsc` ~1–3ns). `gp::platform::Time` abstracts both
+  > an invariant monotonic nanosecond clock (with a 1-cycle multiply fast-path when QPC runs at
+  > 10 MHz) and a raw CPU cycle counter (`cpuCycles()`) for micro-profiling, while implementing
+  > sub-millisecond thread sleep via thread-local `CREATE_WAITABLE_TIMER_HIGH_RESOLUTION` kernel
+  > objects on Windows and `clock_nanosleep` on POSIX.
+- [**ADR-0032**: Hierarchical Simulation Clock Domains with Multiplicative Time Dilation](./ADR-0032.md)
+  > A single global `DeltaTime` cannot simultaneously support pausing the game world while keeping
+  > UI animations smooth, triggering a 0.05x hit-stop on characters while keeping camera shake at
+  > 1.0x, or running network prediction at an independent rate. Inspired by Frostbite and Decima, the
+  > engine separates hardware timekeeping (`EngineClock`) from hierarchical domain clocks
+  > (`SimulationClock`). Any `SimulationClock` may attach to a parent clock; pause states propagate
+  > downward (`isEffectivelyPaused()`) and time dilation scales multiply (`getEffectiveTimeScale()`),
+  > with zero heap allocations.
+- [**ADR-0033**: Configurable Outlier-Rejected Delta Smoothing and Fixed-Accumulator Interpolation ($\alpha$)](./ADR-0033.md)
+  > Raw frame-to-frame deltas suffer from micro-jitter caused by OS background threads and driver
+  > buffer queues, while physics simulations explode if fed variable deltas or unbounded sub-steps
+  > during a CPU stall ("Spiral of Death"). The clock subsystem provides selectable delta
+  > smoothing (Raw, Exponential Moving Average, or Unreal-style Outlier-Rejected Rolling Window)
+  > alongside a deterministic Fixed-Timestep Accumulator that outputs discrete step counts capped by
+  > `maxSubSteps` and a normalized interpolation factor $\alpha \in [0.0, 1.0)$ for smooth visual
+  > rendering between fixed physics ticks.
 
 ### Math & Core Types
 
