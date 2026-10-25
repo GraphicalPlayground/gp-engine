@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.hpp"
 #include "display/Display.hpp"
+#include "GenericHAL.hpp"
 
 namespace gp::hal::generic
 {
@@ -13,7 +14,7 @@ namespace gp::hal::generic
 /// @brief Platform-agnostic base implementation of `gp::hal::IDisplay` maintaining shadow state on the Game Thread.
 /// @details Stores monitor geometry, DPI scale, HDR metadata, and supported fullscreen modes in fixed-capacity
 ///          inline buffers to guarantee zero heap allocations and 0ns L1-cache reads (ADR-0028).
-class Display : public gp::hal::IDisplay
+class GP_HAL_GENERIC_API Display : public gp::hal::IDisplay
 {
 public:
     /// @brief Maximum UTF-8 byte length for a monitor's human-readable name (including null terminator).

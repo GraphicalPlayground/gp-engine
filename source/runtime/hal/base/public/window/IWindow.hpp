@@ -7,6 +7,7 @@
 #include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
 #include "event/system/WindowEvent.hpp"
+#include "HALBase.hpp"
 #include "window/CursorEnums.hpp"
 #include "window/NativeWindow.hpp"
 #include "window/WindowDesc.hpp"
@@ -28,7 +29,7 @@ inline constexpr WindowId kInvalidWindowId = 0u;
 /// @brief Interface for platform-agnostic window management.
 /// @details State query methods read from a local shadow cache updated deterministically via `onWindowEvent()`,
 ///          making them safe and zero-cost to invoke from the Game Thread without OS-thread syscalls.
-class IWindow
+class GP_HAL_BASE_API IWindow
 {
 public:
     /// @brief Virtual destructor to ensure proper cleanup in derived classes.

@@ -6,6 +6,7 @@
 
 #include "backend/GenericApplicationBackend.hpp"
 #include "display/SDL3Display.hpp"
+#include "SDL3HAL.hpp"
 
 namespace gp::hal::sdl3
 {
@@ -13,7 +14,7 @@ namespace gp::hal::sdl3
 /// @brief Represents the SDL3 application backend, responsible for initializing and managing the SDL3 library HAL.
 /// @details Translates raw `SDL_Event` unions into engine-native POD structs and commits them into the
 ///          lock-free `SPSCByteRingBuffer` using two-tier backpressure admission control.
-class ApplicationBackend : public generic::ApplicationBackend
+class GP_HAL_SDL3_API ApplicationBackend : public generic::ApplicationBackend
 {
 public:
     /// @brief Maximum UTF-8 string payload length (in bytes) permitted in a single variable-length TLV event.

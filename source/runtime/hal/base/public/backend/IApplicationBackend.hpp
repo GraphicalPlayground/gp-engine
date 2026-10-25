@@ -12,6 +12,7 @@
 #include "display/Display.hpp"
 #include "event/EventCategory.hpp"   // IWYU pragma: keep
 #include "event/EventHeader.hpp"     // IWYU pragma: keep
+#include "HALBase.hpp"
 #include "memory/pointers/UniquePtr.hpp"
 #include "window/IWindow.hpp"
 
@@ -23,7 +24,7 @@ inline constexpr gp::UInt32 kMaxDisplays = 16u;
 
 /// @brief Interface for application backends that manage the initialization and shutdown of platform-specific systems
 /// (e.g., SDL, GLFW, Win32) and provide resources creation functionality.
-class IApplicationBackend
+class GP_HAL_BASE_API IApplicationBackend
 {
 public:
     /// @brief Default constructor.

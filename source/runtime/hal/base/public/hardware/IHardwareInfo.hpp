@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "HALBase.hpp"
 #include "hardware/CPUInfo.hpp"
 #include "hardware/DiskInfo.hpp"
 #include "hardware/GPUInfo.hpp"
@@ -18,7 +19,7 @@ namespace gp::hal
 
 /// @brief Interface for querying detailed hardware information about the system, including CPU, GPU, memory, storage,
 /// and power state.
-class IHardwareInfo
+class GP_HAL_BASE_API IHardwareInfo
 {
 public:
     /// @brief Virtual destructor for proper cleanup in derived classes.

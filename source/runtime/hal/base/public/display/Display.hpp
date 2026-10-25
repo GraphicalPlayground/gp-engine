@@ -9,6 +9,7 @@
 #include "display/DisplayEnums.hpp"
 #include "display/DisplayTypes.hpp"
 #include "event/system/DisplayEvent.hpp"
+#include "HALBase.hpp"
 
 namespace gp::hal
 {
@@ -16,7 +17,7 @@ namespace gp::hal
 /// @brief Platform-agnostic interface representing a physical or virtual display monitor.
 /// @details Provides zero-cost shadow-state queries for monitor resolution, virtual desktop bounds,
 ///          usable work area, DPI scaling, HDR capabilities, and supported fullscreen modes.
-class IDisplay
+class GP_HAL_BASE_API IDisplay
 {
 protected:
     /// @brief Protected copy and move operations prevent polymorphic slicing through base pointers

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "GenericHAL.hpp"
 #include "templates/Enums.hpp"
 #include "window/IWindow.hpp"
 
@@ -14,7 +15,7 @@ namespace gp::hal::generic
 /// @brief Platform-agnostic base window implementation maintaining the Game Thread shadow state (ADR-0027).
 /// @details Provides complete, zero-cost `constexpr` implementations for all `IWindow` state queries and
 ///          processes incoming `event::WindowEvent` packets to keep cached geometry and flags synchronized.
-class Window : public gp::hal::IWindow
+class GP_HAL_GENERIC_API Window : public gp::hal::IWindow
 {
 protected:
     /// @brief Fixed capacity for the internal null-terminated UTF-8 window title buffer.

@@ -7,13 +7,14 @@
 #include "backend/ApplicationBackendEnums.hpp"
 #include "backend/IApplicationBackend.hpp"
 #include "display/GenericDisplay.hpp"
+#include "GenericHAL.hpp"
 #include "window/GenericWindow.hpp"
 
 namespace gp::hal::generic
 {
 
 /// @brief Generic application backend that serves as a base for platform-specific backends (e.g., SDL, GLFW, Win32).
-class ApplicationBackend : public IApplicationBackend
+class GP_HAL_GENERIC_API ApplicationBackend : public IApplicationBackend
 {
 public:
     /// @brief Reserved identifier for the synthetic virtual display used in headless environments.
