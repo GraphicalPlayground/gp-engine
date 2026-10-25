@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "SDL3HAL.hpp"
 #include "window/GenericWindow.hpp"
 
 // Forward declarations of opaque SDL3 handles to prevent <SDL3/SDL.h> header pollution.
@@ -17,7 +18,7 @@ namespace gp::hal::sdl3
 /// @brief Concrete SDL3 implementation of `gp::hal::IWindow`.
 /// @details Manages an underlying `SDL_Window*` and `SDL_Cursor*` while keeping `GenericWindow`'s shadow state
 ///          synchronized for lock-free Game Thread reads.
-class Window final : public gp::hal::generic::Window
+class GP_HAL_SDL3_API Window final : public gp::hal::generic::Window
 {
 private:
     SDL_Window* m_window{ nullptr };

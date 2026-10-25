@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "display/GenericDisplay.hpp"
+#include "SDL3HAL.hpp"
 
 namespace gp::hal::sdl3
 {
@@ -13,7 +14,7 @@ namespace gp::hal::sdl3
 /// @brief Concrete SDL3 implementation of `gp::hal::IDisplay`.
 /// @details Queries SDL3 display properties, desktop bounds, usable work areas, HDR white levels,
 ///          and fullscreen mode tables, caching them into `generic::Display` for lock-free Game Thread reads.
-class Display final : public gp::hal::generic::Display
+class GP_HAL_SDL3_API Display final : public gp::hal::generic::Display
 {
 public:
     /// @brief Default-constructs an uninitialized SDL3 display slot (zero allocations).
