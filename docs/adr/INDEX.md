@@ -254,3 +254,8 @@ for gameplay programmers.
   > Establishes a modular hierarchy for hardware devices, separating them by capability
   > (e.g., `InputDevice` for buttons, `HapticDevice` for rumble/force-feedback, `SpatialDevice` for
   > VR/Gyro tracking) rather than monolithically grouping them.
+
+---
+© 2026 Graphical Playground. Built for the next generation of graphics engineers.
+
+![Graphical Playground](https://github.com/GraphicalPlayground/.github/blob/main/assets/misc/gplayd-footer.svg)
