@@ -4,6 +4,10 @@
 
 include(gp-build-tool)
 
+if(NOT WIN32)
+  return()
+endif()
+
 gpStartModule(rhi/d3d12)
   gpAddDependency(PUBLIC core)
   gpAddDependency(PUBLIC rhi/base)
