@@ -6,6 +6,7 @@
 
 #include "backend/ApplicationBackendEnums.hpp"
 #include "backend/IApplicationBackend.hpp"
+#include "clipboard/GenericClipboard.hpp"
 #include "dialog/GenericDialog.hpp"
 #include "display/GenericDisplay.hpp"
 #include "GenericHAL.hpp"
@@ -35,6 +36,9 @@ protected:
 
     /// @brief Dialog service instance for modal message boxes and async file pickers.
     gp::hal::generic::Dialog m_genericDialog{};
+
+    /// @brief Generic clipboard service instance for UTF-8 text, primary selection, and binary MIME payloads.
+    gp::hal::generic::Clipboard m_genericClipboard{};
 
     bool m_isInitialized{ false };
 
@@ -334,6 +338,18 @@ public:
     [[nodiscard]] constexpr const IDialog& getDialog() const noexcept override
     {
         return m_genericDialog;
+    }
+
+    /// @copydoc IApplicationBackend::getClipboard()
+    [[nodiscard]] constexpr IClipboard& getClipboard() noexcept override
+    {
+        return m_genericClipboard;
+    }
+
+    /// @copydoc IApplicationBackend::getClipboard()
+    [[nodiscard]] constexpr const IClipboard& getClipboard() const noexcept override
+    {
+        return m_genericClipboard;
     }
 
 protected:
