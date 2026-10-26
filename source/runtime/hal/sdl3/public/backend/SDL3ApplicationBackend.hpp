@@ -5,6 +5,7 @@
 #pragma once
 
 #include "backend/GenericApplicationBackend.hpp"
+#include "dialog/SDL3Dialog.hpp"
 #include "display/SDL3Display.hpp"
 #include "SDL3HAL.hpp"
 
@@ -24,6 +25,7 @@ private:
     /// @brief Fixed-capacity inline storage for SDL3 physical display wrappers (zero heap allocations).
     sdl3::Display m_sdlDisplays[kMaxDisplays]{};
     gp::UInt32 m_wakeEventType{ 0u };
+    sdl3::Dialog m_sdlDialog{};
 
 public:
     /// @brief Constructs an uninitialized SDL3 application backend.
@@ -68,6 +70,18 @@ public:
     /// @brief Queries SDL3 for all currently connected monitors and populates `m_sdlDisplays` and `m_displayTable`.
     /// @note Must only be called on the main OS thread.
     void refreshDisplays() noexcept;
+
+    /// @copydoc IApplicationBackend::getDialog()
+    [[nodiscard]] constexpr IDialog& getDialog() noexcept override
+    {
+        return m_sdlDialog;
+    }
+
+    /// @copydoc IApplicationBackend::getDialog()
+    [[nodiscard]] constexpr const IDialog& getDialog() const noexcept override
+    {
+        return m_sdlDialog;
+    }
 
 protected:
     /// @copydoc gp::hal::generic::ApplicationBackend::onBackendDisplayConnected()
