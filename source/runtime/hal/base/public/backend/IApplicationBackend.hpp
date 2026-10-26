@@ -13,6 +13,7 @@
 #include "event/EventCategory.hpp"   // IWYU pragma: keep
 #include "event/EventHeader.hpp"     // IWYU pragma: keep
 #include "HALBase.hpp"
+#include "input/IInputSystem.hpp"
 #include "memory/pointers/UniquePtr.hpp"
 #include "window/IWindow.hpp"
 
@@ -75,6 +76,10 @@ public:
     /// @brief Returns the static human-readable identifier of the active backend (e.g., "SDL3").
     /// @return Null-terminated ASCII backend name string.
     [[nodiscard]] virtual gp::StringView getBackendName() const noexcept = 0;
+
+    /// @brief Creates a platform-specific input system instance matching this backend.
+    /// @return `UniquePtr<input::IInputSystem>` owning the created input coordinator, or `nullptr` on failure.
+    [[nodiscard]] virtual gp::UniquePtr<input::IInputSystem> createInputSystem() noexcept = 0;
 
     /// @brief Creates a new platform-specific window instance managed via the `IWindow` interface.
     /// @param[in] desc Configuration descriptor for the window.
