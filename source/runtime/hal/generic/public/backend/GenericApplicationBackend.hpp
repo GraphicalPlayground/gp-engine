@@ -6,6 +6,7 @@
 
 #include "backend/ApplicationBackendEnums.hpp"
 #include "backend/IApplicationBackend.hpp"
+#include "dialog/GenericDialog.hpp"
 #include "display/GenericDisplay.hpp"
 #include "GenericHAL.hpp"
 #include "input/GenericInputSystem.hpp"
@@ -31,6 +32,9 @@ protected:
 
     /// @brief Synthetic 1080p@60Hz fallback display activated when no physical monitors are available.
     gp::hal::generic::Display m_headlessDisplay{};
+
+    /// @brief Dialog service instance for modal message boxes and async file pickers.
+    gp::hal::generic::Dialog m_genericDialog{};
 
     bool m_isInitialized{ false };
 
@@ -318,6 +322,18 @@ public:
         {
             target->onDisplayEvent(ev);
         }
+    }
+
+    /// @copydoc IApplicationBackend::getDialog()
+    [[nodiscard]] constexpr IDialog& getDialog() noexcept override
+    {
+        return m_genericDialog;
+    }
+
+    /// @copydoc IApplicationBackend::getDialog()
+    [[nodiscard]] constexpr const IDialog& getDialog() const noexcept override
+    {
+        return m_genericDialog;
     }
 
 protected:
