@@ -150,8 +150,14 @@ engine-wide consistency.
 
 - [**ADR-0009**: Vector4 default construction uses homogeneous point coordinates](./ADR-0009.md)
   > Establishes that the default constructor for the engine's 4D vector type initializes as a
-  > homogeneous point (w=1) rather than a direction (w=0) or a zero-vector, ensuring correct affine
+  > homogeneous point (`w=1`) rather than a direction (`w=0`) or a zero-vector, ensuring correct affine
   > transformations by default.
+- [**ADR-0037**: Vector4 as a General-Purpose Four-Dimensional Vector with Homogeneous Coordinate Support](./ADR-0037.md)
+  > Defines `gp::math::Vector4<T>` as a general-purpose four-dimensional vector whose mathematical
+  > operations consistently account for all four components, while preserving its compatibility with
+  > homogeneous 3D coordinates (`w = 0` for directions, `w = 1` for points). This separates general
+  > 4D mathematics from affine point/direction semantics, preventing context-dependent behavior in
+  > fundamental vector operations.
 
 ### Platform & OS Abstraction
 
