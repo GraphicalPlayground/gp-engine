@@ -147,6 +147,21 @@ protected:
             std::cout << "[DIALOG] User clicked button ID: " << choice << "\n";
         }
 
+        // Copy text to clipboard on Ctrl+C, and paste on Ctrl+V
+        const auto& kb = getInput().getKeyboard();
+        if (kb.hasModifiers(gp::hal::input::KeyModifier::Ctrl))
+        {
+            if (kb.wasKeyJustPressed(gp::hal::input::Keycode::C))
+            {
+                (void)getBackend()->getClipboard().setText("Copied from Graphical Playground Engine!");
+            }
+            else if (kb.wasKeyJustPressed(gp::hal::input::Keycode::V))
+            {
+                const gp::StringView pasted = getBackend()->getClipboard().getText();
+                std::cout << "[CLIPBOARD] Pasted UTF-8 Text: " << pasted.data() << "\n";
+            }
+        }
+
         // Open an asynchronous native File Picker when pressing 'O'
         if (getInput().wasKeyJustPressed(gp::hal::input::Keycode::O))
         {
