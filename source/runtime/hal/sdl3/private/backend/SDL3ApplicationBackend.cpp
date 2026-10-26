@@ -1115,19 +1115,6 @@ BackendResult ApplicationBackend::pumpEvents(gp::SPSCByteRingBuffer& eventStream
         case SDL_EVENT_GAMEPAD_REMOVED:
         case SDL_EVENT_GAMEPAD_REMAPPED:
         {
-            if (sdlEvent.type == SDL_EVENT_GAMEPAD_ADDED)
-            {
-                // Automatically open the gamepad so SDL begins generating button/axis events for it
-                (void)SDL_OpenGamepad(sdlEvent.gdevice.which);
-            }
-            else if (sdlEvent.type == SDL_EVENT_GAMEPAD_REMOVED)
-            {
-                if (SDL_Gamepad* pad = SDL_GetGamepadFromID(sdlEvent.gdevice.which))
-                {
-                    SDL_CloseGamepad(pad);
-                }
-            }
-
             gp::hal::event::DeviceChangeEvent ev{};
             ev.deviceId = sdlEvent.gdevice.which;
             ev.domain = gp::hal::event::DeviceDomain::Input;

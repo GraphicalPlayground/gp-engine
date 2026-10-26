@@ -5,6 +5,7 @@
 #pragma once
 
 #include "backend/GenericApplicationBackend.hpp"
+#include "clipboard/SDL3Clipboard.hpp"
 #include "dialog/SDL3Dialog.hpp"
 #include "display/SDL3Display.hpp"
 #include "SDL3HAL.hpp"
@@ -26,6 +27,7 @@ private:
     sdl3::Display m_sdlDisplays[kMaxDisplays]{};
     gp::UInt32 m_wakeEventType{ 0u };
     sdl3::Dialog m_sdlDialog{};
+    sdl3::Clipboard m_sdlClipboard{};
 
 public:
     /// @brief Constructs an uninitialized SDL3 application backend.
@@ -81,6 +83,18 @@ public:
     [[nodiscard]] constexpr const IDialog& getDialog() const noexcept override
     {
         return m_sdlDialog;
+    }
+
+    /// @copydoc IApplicationBackend::getClipboard()
+    [[nodiscard]] constexpr IClipboard& getClipboard() noexcept override
+    {
+        return m_sdlClipboard;
+    }
+
+    /// @copydoc IApplicationBackend::getClipboard()
+    [[nodiscard]] constexpr const IClipboard& getClipboard() const noexcept override
+    {
+        return m_sdlClipboard;
     }
 
 protected:
