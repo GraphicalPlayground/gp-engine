@@ -17,6 +17,11 @@ namespace gp::math
 
 /// @brief A 4D vector template.
 /// @tparam T The floating-point type for the vector components.
+/// @details
+/// Vector4 is a general-purpose four-dimensional vector. It can also carry
+/// homogeneous 3D coordinates when used with matrices, where w is conventionally
+/// 0 for a direction and 1 for a point. General vector operations, including
+/// dot products, lengths, and normalization, operate on all four components.
 template <concepts::IsFloatingPoint T>
 struct Vector4
 {
@@ -162,9 +167,9 @@ public:
         , w(scalar)
     {}
 
-    /// @brief Constructor that initializes the vector from an array of 3 components.
-    /// @param[in] ptr A pointer to an array of 3 components (x, y, z).
-    /// @note The input pointer must not be null and should point to an array of at least 3 elements.
+    /// @brief Constructor that initializes the vector from an array of 4 components.
+    /// @param[in] ptr A pointer to an array of 4 components (x, y, z, w).
+    /// @note The input pointer must not be null and should point to an array of at least 4 elements.
     [[nodiscard]] explicit constexpr Vector4(const T* const ptr) noexcept
         : x(ptr[0])
         , y(ptr[1])
@@ -209,17 +214,22 @@ public:
     [[nodiscard]] explicit constexpr Vector4(const Vector2<T>& vecXY, const Vector2<T>& vecZW) noexcept;
 
 public:
-    /// @brief Component-wise cross product of this vector with another vector.
+    /// @brief 3D cross product of this vector with another vector.
     /// @param[in] other The other vector to compute the cross product with.
-    /// @return The cross product of this vector and the other vector.
+    /// @return The 3D cross product in xyz with w set to zero.
     [[nodiscard]] constexpr Vector4<T> operator^(const Vector4<T>& other) const noexcept
     {
-        return Vector4<T>(y * other.z - z * other.y, z * other.x - x * other.z, x * other.y - y * other.x, w * other.w);
+        return Vector4<T>(
+            y * other.z - z * other.y,
+            z * other.x - x * other.z,
+            x * other.y - y * other.x,
+            T{ 0 }
+        );
     }
 
-    /// @brief Component-wise dot product of this vector with another vector.
+    /// @brief Four-dimensional dot product of this vector with another vector.
     /// @param[in] other The other vector to compute the dot product with.
-    /// @return The dot product of this vector and the other vector.
+    /// @return The four-dimensional dot product, including the w components.
     [[nodiscard]] constexpr T operator|(const Vector4<T>& other) const noexcept
     {
         return x * other.x + y * other.y + z * other.z + w * other.w;
@@ -476,9 +486,9 @@ public:
         return *(&x + index);
     }
 
-    /// @brief Component-wise cross product of this vector with another vector.
+    /// @brief 3D cross product of this vector with another vector.
     /// @param[in] other The other vector to compute the cross product with.
-    /// @return The cross product of this vector and the other vector.
+    /// @return The 3D cross product in xyz with w set to zero.
     [[nodiscard]] constexpr Vector4<T> cross(const Vector4<T>& other) const noexcept
     {
         return *this ^ other;
@@ -741,10 +751,10 @@ public:
     }
 
 public:
-    /// @brief Component-wise cross product of two vectors.
+    /// @brief 3D cross product of two vectors.
     /// @param[in] lhs The first vector to compute the cross product with.
     /// @param[in] rhs The second vector to compute the cross product with.
-    /// @return The cross product of the two vectors.
+    /// @return The 3D cross product in xyz with w set to zero.
     [[nodiscard]] static constexpr Vector4<T> cross(const Vector4<T>& lhs, const Vector4<T>& rhs) noexcept
     {
         return lhs ^ rhs;
