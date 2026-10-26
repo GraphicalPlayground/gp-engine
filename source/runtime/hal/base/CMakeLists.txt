@@ -5,6 +5,7 @@
 include(gp-build-tool)
 
 gpStartModule(hal/base)
+  gpEnableTests()
   gpAddDependency(PUBLIC core)
 
   gpAddDependency(DYNAMIC hal/sdl3)
