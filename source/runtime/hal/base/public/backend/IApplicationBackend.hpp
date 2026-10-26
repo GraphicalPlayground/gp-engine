@@ -8,7 +8,8 @@
 #include "backend/ApplicationBackendEnums.hpp"
 #include "backend/EventPumpStats.hpp"
 #include "containers/queues/SPSCRingBuffer.hpp"
-#include "CoreMinimal.hpp"           // IWYU pragma: keep
+#include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "dialog/IDialog.hpp"
 #include "display/Display.hpp"
 #include "event/EventCategory.hpp"   // IWYU pragma: keep
 #include "event/EventHeader.hpp"     // IWYU pragma: keep
@@ -119,6 +120,14 @@ public:
     /// @note Invoked by `Application::drainEventStream()` on the Game Thread.
     /// @param[in] ev The decoded display event packet.
     virtual void notifyDisplayEvent(const event::DisplayEvent& ev) noexcept = 0;
+
+    /// @brief Retrieves the native dialog service for modal message boxes and async file pickers.
+    /// @return Reference to `IDialog`.
+    [[nodiscard]] virtual IDialog& getDialog() noexcept = 0;
+
+    /// @brief Retrieves a const reference to the native dialog service.
+    /// @return Const reference to `IDialog`.
+    [[nodiscard]] virtual const IDialog& getDialog() const noexcept = 0;
 };
 
 }   // namespace gp::hal
