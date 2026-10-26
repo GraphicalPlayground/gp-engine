@@ -443,6 +443,7 @@ void Application::drainEventStream() noexcept
                 m_eventStream.tryPeekAt(sizeof(EventHeader), &ev, sizeof(ClipboardEvent)))
             {
                 m_eventStream.advanceConsumer(totalPacketBytes);
+                m_backend->getClipboard().onClipboardEvent(ev);
                 onClipboardEvent(ev);
             }
             else
