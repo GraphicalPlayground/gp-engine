@@ -18,6 +18,7 @@
 #include "event/system/ApplicationEvent.hpp"
 #include "event/system/DisplayEvent.hpp"
 #include "event/system/WindowEvent.hpp"
+#include "input/SDL3InputSystem.hpp"
 #include "memory/Memory.hpp"
 #include "window/SDL3Window.hpp"
 #include <SDL3/SDL.h>
@@ -1240,6 +1241,16 @@ BackendResult ApplicationBackend::pumpEvents(gp::SPSCByteRingBuffer& eventStream
     }
 
     return (localStats.droppedCriticalCount == 0u) ? BackendResult::Success : BackendResult::BufferOverflow;
+}
+
+UniquePtr<input::IInputSystem> ApplicationBackend::createInputSystem() noexcept
+{
+    if (!m_isInitialized) [[unlikely]]
+    {
+        return nullptr;
+    }
+
+    return gp::makeUnique<sdl3::InputSystem>();
 }
 
 UniquePtr<IWindow> ApplicationBackend::createWindow(const WindowDesc& desc) noexcept
