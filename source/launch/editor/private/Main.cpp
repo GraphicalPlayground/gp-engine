@@ -102,6 +102,15 @@ protected:
                     gp::hal::input::HapticRumbleDesc rumble{ 0.75f, 0.4f, 250u };
                     const_cast<gp::hal::input::IGamepad*>(pad)->setRumble(rumble);
                 }
+
+                // Move the windows around with the gamepad's left stick (for testing purposes)
+                if (getMainWindow()->isActive())
+                {
+                    const auto winPos = getMainWindow()->getPosition();
+                    const gp::hal::Point2D newPos{ winPos.x + static_cast<gp::Int32>(leftStick.x * 5.0f),
+                                                   winPos.y + static_cast<gp::Int32>(leftStick.y * 5.0f) };
+                    getMainWindow()->setPosition(newPos);
+                }
             }
         }
 
