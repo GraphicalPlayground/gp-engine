@@ -12,7 +12,7 @@
 namespace gp::platform::windows
 {
 
-namespace
+namespace detail
 {
 
 /// @brief Maximum stack size supported by Win32 _beginthreadex (32-bit gp::UInt32 limit).
@@ -131,7 +131,7 @@ gp::UInt32 __stdcall threadTrampoline(void* rawPayload) noexcept
     return entry(userData);
 }
 
-}   // namespace
+}   // namespace detail
 
 Thread::~Thread() noexcept
 {
@@ -194,7 +194,7 @@ ThreadResult Thread::start(const ThreadDesc& desc) noexcept
         return ThreadResult::InvalidArguments;
     }
 
-    if (desc.stackSize > kMaxWin32StackSize)
+    if (desc.stackSize > detail::kMaxWin32StackSize)
     {
         return ThreadResult::StackSizeOverflow;
     }
@@ -206,15 +206,20 @@ ThreadResult Thread::start(const ThreadDesc& desc) noexcept
         return ThreadResult::CreationFailed;
     }
 
-    ThreadStartPayload payload{};
+    detail::ThreadStartPayload payload{};
     payload.entry = desc.entry;
     payload.userData = desc.userData;
     payload.handoffEvent = handoffEvent;
-    copyThreadName(payload.name, desc.name);
+    detail::copyThreadName(payload.name, desc.name);
 
     gp::UInt32 winThreadId = 0u;
     const uintptr_t rawHandle = ::_beginthreadex(
-        nullptr, static_cast<gp::UInt32>(desc.stackSize), &threadTrampoline, &payload, CREATE_SUSPENDED, &winThreadId
+        nullptr,
+        static_cast<gp::UInt32>(desc.stackSize),
+        &detail::threadTrampoline,
+        &payload,
+        CREATE_SUSPENDED,
+        &winThreadId
     );
 
     if (rawHandle == 0u)
@@ -351,7 +356,7 @@ ThreadResult Thread::setPriority(ThreadPriority priority) noexcept
         return ThreadResult::NotJoinable;
     }
 
-    const BOOL ok = ::SetThreadPriority(static_cast<HANDLE>(m_handle), toWin32Priority(priority));
+    const BOOL ok = ::SetThreadPriority(static_cast<HANDLE>(m_handle), detail::toWin32Priority(priority));
 
     return (ok != FALSE) ? ThreadResult::Success : ThreadResult::PriorityFailed;
 }
@@ -389,7 +394,7 @@ gp::UInt32 Thread::getProcessConcurrency() noexcept
     DWORD_PTR systemMask = 0u;
     if (::GetProcessAffinityMask(::GetCurrentProcess(), &processMask, &systemMask) != FALSE)
     {
-        const gp::UInt32 count = countSetBits(processMask);
+        const gp::UInt32 count = detail::countSetBits(processMask);
         if (count > 0u)
         {
             return count;
