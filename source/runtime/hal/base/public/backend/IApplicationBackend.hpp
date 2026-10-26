@@ -7,6 +7,7 @@
 #include "backend/ApplicationBackendDesc.hpp"
 #include "backend/ApplicationBackendEnums.hpp"
 #include "backend/EventPumpStats.hpp"
+#include "clipboard/IClipboard.hpp"
 #include "containers/queues/SPSCRingBuffer.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "dialog/IDialog.hpp"
@@ -128,6 +129,14 @@ public:
     /// @brief Retrieves a const reference to the native dialog service.
     /// @return Const reference to `IDialog`.
     [[nodiscard]] virtual const IDialog& getDialog() const noexcept = 0;
+
+    /// @brief Retrieves the OS clipboard service for UTF-8 text, primary selections, and MIME payloads.
+    /// @return Reference to `IClipboard`.
+    [[nodiscard]] virtual IClipboard& getClipboard() noexcept = 0;
+
+    /// @brief Retrieves a const reference to the OS clipboard service.
+    /// @return Const reference to `IClipboard`.
+    [[nodiscard]] virtual const IClipboard& getClipboard() const noexcept = 0;
 };
 
 }   // namespace gp::hal
