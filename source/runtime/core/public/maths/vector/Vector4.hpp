@@ -219,12 +219,7 @@ public:
     /// @return The 3D cross product in xyz with w set to zero.
     [[nodiscard]] constexpr Vector4<T> operator^(const Vector4<T>& other) const noexcept
     {
-        return Vector4<T>(
-            y * other.z - z * other.y,
-            z * other.x - x * other.z,
-            x * other.y - y * other.x,
-            T{ 0 }
-        );
+        return Vector4<T>(y * other.z - z * other.y, z * other.x - x * other.z, x * other.y - y * other.x, T{ 0 });
     }
 
     /// @brief Four-dimensional dot product of this vector with another vector.
