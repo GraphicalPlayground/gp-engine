@@ -132,5 +132,4 @@ TEST(GenericWindowTest, OnWindowEventUpdatesState)
     EXPECT_FALSE(window.isFocused());
 }
 
-} // namespace gp::hal::generic::tests
-
+}   // namespace gp::hal::generic::tests
