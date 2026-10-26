@@ -6,4 +6,6 @@ include(gp-build-tool)
 
 gpStartModule(application)
   gpAddDependency(PUBLIC core)
+  gpAddDependency(PUBLIC hal/base)
+  gpAddDependency(PUBLIC hal/generic)
 gpEndModule()
