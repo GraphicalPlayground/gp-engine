@@ -468,6 +468,7 @@ protected:
     {
         if (m_displayCount == 0u)
         {
+            configureHeadlessFallbackDisplay();
             m_displayTable[0] = &m_headlessDisplay;
             m_displayCount = 1u;
             m_primaryDisplayId = kHeadlessDisplayId;
