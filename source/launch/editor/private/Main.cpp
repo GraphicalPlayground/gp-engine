@@ -122,6 +122,57 @@ protected:
             std::cout << "[CLOCK] Smoothed FPS: " << timeStats.smoothedFps << " | Frame Index: " << timeStats.frameIndex
                       << " | Active Device: " << static_cast<int>(input.getActiveDeviceType()) << "\n";
         }
+
+        // Trigger a themed 3-button custom modal message box when pressing 'M'
+        if (getInput().wasKeyJustPressed(gp::hal::input::Keycode::M))
+        {
+            using namespace gp::hal;
+            const DialogButtonDesc buttons[] = {
+                DialogButtonDesc(100, "Save & Continue", DialogButtonFlags::ReturnKeyDefault),
+                DialogButtonDesc(200, "Discard Changes"),
+                DialogButtonDesc(300, "Cancel", DialogButtonFlags::EscapeKeyDefault)
+            };
+            const DialogColorScheme darkTheme{};
+
+            MessageBoxDesc box{};
+            box.title = "Unsaved Scene Changes";
+            box.message = "Your level has unsaved modifications. How would you like to proceed?";
+            box.parentWindow = getMainWindow();
+            box.buttons = buttons;
+            box.buttonCount = 3u;
+            box.colorScheme = &darkTheme;
+            box.icon = DialogIcon::Warning;
+
+            const gp::Int32 choice = getBackend()->getDialog().showMessageBox(box);
+            std::cout << "[DIALOG] User clicked button ID: " << choice << "\n";
+        }
+
+        // Open an asynchronous native File Picker when pressing 'O'
+        if (getInput().wasKeyJustPressed(gp::hal::input::Keycode::O))
+        {
+            using namespace gp::hal;
+            static constexpr DialogFileFilter kFilters[] = { DialogFileFilter("3D Models (glTF/FBX)", "gltf;glb;fbx"),
+                                                             DialogFileFilter("All Files", "*") };
+
+            FileDialogDesc fileDesc{};
+            fileDesc.title = "Import 3D Asset";
+            fileDesc.parentWindow = getMainWindow();
+            fileDesc.filters = kFilters;
+            fileDesc.filterCount = 2u;
+            fileDesc.allowMultiple = true;
+            fileDesc.callback = [](void*, const FileDialogResult& res) noexcept
+            {
+                if (res.status == DialogFileStatus::Accepted)
+                {
+                    for (gp::UInt32 i = 0u; i < res.pathCount; ++i)
+                    {
+                        std::cout << "[FILE DIALOG] Selected [" << i << "]: " << res.paths[i].data() << "\n";
+                    }
+                }
+            };
+
+            (void)getBackend()->getDialog().showOpenFileDialog(fileDesc);
+        }
     }
 
     /// @brief Invoked once per frame to record rendering commands.
