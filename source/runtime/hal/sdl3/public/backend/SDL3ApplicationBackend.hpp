@@ -59,6 +59,9 @@ public:
         return "SDL3";
     }
 
+    /// @copydoc IApplicationBackend::createInputSystem()
+    [[nodiscard]] gp::UniquePtr<input::IInputSystem> createInputSystem() noexcept override;
+
     /// @copydoc IApplicationBackend::createWindow()
     [[nodiscard]] gp::UniquePtr<IWindow> createWindow(const WindowDesc& desc) noexcept override;
 
