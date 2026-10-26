@@ -162,15 +162,17 @@ TYPED_TEST(Vector4Test, Constants)
 
 TYPED_TEST(Vector4Test, CrossProductOperator)
 {
-    Vector4<TypeParam> vecA(TypeParam{ 1.0 }, TypeParam{ 0.0 }, TypeParam{ 0.0 }, TypeParam{ 0.0 });
-    Vector4<TypeParam> vecB(TypeParam{ 0.0 }, TypeParam{ 1.0 }, TypeParam{ 0.0 }, TypeParam{ 0.0 });
+    Vector4<TypeParam> vecA(TypeParam{ 1.0 }, TypeParam{ 0.0 }, TypeParam{ 0.0 }, TypeParam{ 1.0 });
+    Vector4<TypeParam> vecB(TypeParam{ 0.0 }, TypeParam{ 1.0 }, TypeParam{ 0.0 }, TypeParam{ 1.0 });
 
     Vector4<TypeParam> cross = vecA ^ vecB;
+    Vector4<TypeParam> reverseCross = vecB ^ vecA;
 
     EXPECT_EQ(cross.x, this->zero);
     EXPECT_EQ(cross.y, this->zero);
     EXPECT_EQ(cross.z, this->one);
     EXPECT_EQ(cross.w, this->zero);
+    EXPECT_EQ(reverseCross, -cross);
 }
 
 TYPED_TEST(Vector4Test, DotProductOperator)
