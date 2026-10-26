@@ -522,7 +522,10 @@ public:
 
     /// @copydoc IWindow::open()
     constexpr void open() noexcept override
-    {}
+    {
+        m_isOpen = true;
+        m_isCloseRequested = false;
+    }
 
     /// @copydoc IWindow::close()
     constexpr void close() noexcept override
