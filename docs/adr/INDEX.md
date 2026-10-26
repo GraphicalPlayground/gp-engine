@@ -260,6 +260,31 @@ for gameplay programmers.
   > Establishes a modular hierarchy for hardware devices, separating them by capability
   > (e.g., `InputDevice` for buttons, `HapticDevice` for rumble/force-feedback, `SpatialDevice` for
   > VR/Gyro tracking) rather than monolithically grouping them.
+- [**ADR-0034**: Sub-Frame Edge Latching and Two-Phase Frame Transition Snapshots](./ADR-0034.md)
+  > Naive double-buffered input state arrays (`current[k] && !previous[k]`) silently drop rapid
+  > sub-frame "micro-clicks" whenever both a `KeyState::Pressed` and `KeyState::Released` event for
+  > the same button are queued into the `SPSCByteRingBuffer` during a single frame tick. To guarantee
+  > zero dropped inputs regardless of frame rate or CPU hitches, `gp::hal::input::InputSystem`
+  > separates continuous hold state (`Held`) from edge-latched transition flags (`PressedThisFrame`,
+  > `ReleasedThisFrame`, `RepeatedThisFrame`). `beginFrame()` clears the previous frame's edge
+  > latches and zeroes relative motion deltas prior to pumping OS events, while event ingestion
+  > latches all intra-frame edges before gameplay `onUpdate()` executes.
+- [**ADR-0035**: Scaled Radial 2D Thumbstick Deadzones and Hysteresis-Gated Active Device Switching](./ADR-0035.md)
+  > Applying independent 1D axial deadzones to analog thumbsticks creates a cardinal
+  > "cross-snapping" artifact that degrades 360-degree character and camera movement, while raw
+  > analog potentiometer noise causes UI prompts to flicker between Keyboard/Mouse and Gamepad icons.
+  > The input system enforces 2D Scaled Radial Deadzones
+  > ($\vec{v}_{\text{out}} = \hat{v} \cdot \text{remap}(\Vert{}\vec{v}\Vert{}, dz_{\text{in}}, dz_{\text{out}})$)
+  > on dual-axis thumbsticks, 1D axial deadzones on triggers, and requires analog inputs to exceed
+  > an intentional actuation threshold before switching the active `InputDeviceType`.
+- [**ADR-0036**: Logical Player Slot Mapping and Focus-Loss Input Sanitization](./ADR-0036.md)
+  > OS hardware instance IDs (`deviceId`) increment monotonically across USB/Bluetooth reconnects,
+  > breaking gameplay systems that index controllers by player number, while losing OS window focus
+  > (`WindowAction::FocusLost`) mid-keypress causes the OS to swallow the subsequent key-up message,
+  > leaving the engine in a permanent "stuck key" state. `InputSystem` maps dynamic hardware
+  > `deviceId` handles onto fixed-capacity logical player slots (`kMaxGamepads = 8`) with automatic
+  > reconnect rebinding, and forcefully synthesizes release transitions for all active keys and
+  > buttons upon window focus loss or application backgrounding.
 
 ---
 © 2026 Graphical Playground. Built for the next generation of graphics engineers.
