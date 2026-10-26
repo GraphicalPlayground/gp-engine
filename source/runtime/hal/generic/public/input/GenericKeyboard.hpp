@@ -209,7 +209,52 @@ public:
     /// @copydoc IKeyboard::hasModifiers()
     [[nodiscard]] constexpr bool hasModifiers(KeyModifier modifiers) const noexcept override
     {
-        return (m_modifiers & modifiers) == modifiers;
+        if (modifiers == KeyModifier::None)
+        {
+            return true;
+        }
+
+        KeyModifier remaining = modifiers;
+
+        // Evaluate paired convenience masks (Shift, Ctrl, Alt, Gui): satisfied if EITHER Left or Right is held
+        if ((remaining & KeyModifier::Shift) == KeyModifier::Shift)
+        {
+            if ((m_modifiers & KeyModifier::Shift) == KeyModifier::None)
+            {
+                return false;
+            }
+            remaining &= ~KeyModifier::Shift;
+        }
+
+        if ((remaining & KeyModifier::Ctrl) == KeyModifier::Ctrl)
+        {
+            if ((m_modifiers & KeyModifier::Ctrl) == KeyModifier::None)
+            {
+                return false;
+            }
+            remaining &= ~KeyModifier::Ctrl;
+        }
+
+        if ((remaining & KeyModifier::Alt) == KeyModifier::Alt)
+        {
+            if ((m_modifiers & KeyModifier::Alt) == KeyModifier::None)
+            {
+                return false;
+            }
+            remaining &= ~KeyModifier::Alt;
+        }
+
+        if ((remaining & KeyModifier::Gui) == KeyModifier::Gui)
+        {
+            if ((m_modifiers & KeyModifier::Gui) == KeyModifier::None)
+            {
+                return false;
+            }
+            remaining &= ~KeyModifier::Gui;
+        }
+
+        // Any remaining single-key bits (e.g. LeftCtrl, RightAlt, CapsLock, NumLock) must match exactly
+        return (m_modifiers & remaining) == remaining;
     }
 
     /// @copydoc IKeyboard::onKeyboardEvent()
@@ -233,10 +278,83 @@ public:
             updateOverflowKeycode(ev.keycode, ev.state, isRepeat);
         }
 
-        m_modifiers = ev.modifiers;
+        // Combine OS-reported modifiers with physical modifier scancode states and strip any just-released modifier
+        m_modifiers = (ev.modifiers | deriveHeldModifiersFromScancodes());
+        if (ev.state == KeyState::Released)
+        {
+            m_modifiers &= ~scancodeToModifier(ev.scancode);
+        }
     }
 
 private:
+    /// @brief Maps a physical modifier `Scancode` to its corresponding `KeyModifier` bit.
+    /// @param[in] scancode Physical key scancode.
+    /// @return Corresponding `KeyModifier` bit, or `KeyModifier::None` if not a modifier key.
+    [[nodiscard]] GP_FORCEINLINE_HINT static constexpr KeyModifier scancodeToModifier(Scancode scancode) noexcept
+    {
+        switch (scancode)
+        {
+        case Scancode::LeftShift:
+            return KeyModifier::LeftShift;
+        case Scancode::RightShift:
+            return KeyModifier::RightShift;
+        case Scancode::LeftCtrl:
+            return KeyModifier::LeftCtrl;
+        case Scancode::RightCtrl:
+            return KeyModifier::RightCtrl;
+        case Scancode::LeftAlt:
+            return KeyModifier::LeftAlt;
+        case Scancode::RightAlt:
+            return KeyModifier::RightAlt;
+        case Scancode::LeftGui:
+            return KeyModifier::LeftGui;
+        case Scancode::RightGui:
+            return KeyModifier::RightGui;
+        default:
+            return KeyModifier::None;
+        }
+    }
+
+    /// @brief Builds a `KeyModifier` bitmask from the currently held physical modifier scancodes.
+    /// @return Active `KeyModifier` flags derived from `m_scancodes`.
+    [[nodiscard]] GP_FORCEINLINE_HINT constexpr KeyModifier deriveHeldModifiersFromScancodes() const noexcept
+    {
+        KeyModifier held = KeyModifier::None;
+        if (isScancodeDown(Scancode::LeftShift))
+        {
+            held |= KeyModifier::LeftShift;
+        }
+        if (isScancodeDown(Scancode::RightShift))
+        {
+            held |= KeyModifier::RightShift;
+        }
+        if (isScancodeDown(Scancode::LeftCtrl))
+        {
+            held |= KeyModifier::LeftCtrl;
+        }
+        if (isScancodeDown(Scancode::RightCtrl))
+        {
+            held |= KeyModifier::RightCtrl;
+        }
+        if (isScancodeDown(Scancode::LeftAlt))
+        {
+            held |= KeyModifier::LeftAlt;
+        }
+        if (isScancodeDown(Scancode::RightAlt))
+        {
+            held |= KeyModifier::RightAlt;
+        }
+        if (isScancodeDown(Scancode::LeftGui))
+        {
+            held |= KeyModifier::LeftGui;
+        }
+        if (isScancodeDown(Scancode::RightGui))
+        {
+            held |= KeyModifier::RightGui;
+        }
+        return held;
+    }
+
     /// @brief Maps a 32-bit `Keycode` into `[0, kMaxKeycodeSlots)` in O(1) time.
     /// @param[in] keycode Virtual keycode to map.
     /// @return Compact table index, or `kMaxKeycodeSlots` if unmapped Unicode.
