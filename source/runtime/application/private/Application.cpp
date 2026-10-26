@@ -69,13 +69,13 @@ bool Application::initializeInternal() noexcept
         return true;
     }
 
-    // 1. Allocate the lock-free SPSC byte ring buffer
+    // Allocate the lock-free SPSC byte ring buffer
     if (!m_eventStream.initialize(m_desc.eventRingBufferBytes)) [[unlikely]]
     {
         return false;
     }
 
-    // 2. If no concrete backend was injected, fall back to the dependency-free GenericApplicationBackend
+    // If no concrete backend was injected, fall back to the dependency-free GenericApplicationBackend
     if (!m_backend.isValid())
     {
         m_backend = gp::makeUnique<hal::generic::ApplicationBackend>();
@@ -86,14 +86,14 @@ bool Application::initializeInternal() noexcept
         }
     }
 
-    // 3. Initialize the backend and enumerate display topology
+    // Initialize the backend and enumerate display topology
     if (m_backend->initialize(m_desc.backend) != hal::BackendResult::Success) [[unlikely]]
     {
         m_eventStream.shutdown();
         return false;
     }
 
-    // 4. Ask the initialized backend to create its matching IInputSystem if none was injected
+    // Ask the initialized backend to create its matching IInputSystem if none was injected
     if (!m_inputSystem.isValid())
     {
         m_inputSystem = m_backend->createInputSystem();
@@ -109,7 +109,7 @@ bool Application::initializeInternal() noexcept
         }
     }
 
-    // 5. Create the primary application window via the backend factory if requested
+    // Create the primary application window via the backend factory if requested
     if (m_desc.createMainWindow)
     {
         if (m_desc.mainWindow.targetDisplay == nullptr)
@@ -185,7 +185,7 @@ gp::Int32 Application::run() noexcept
             (void)m_backend->waitEventsTimeout(100u);
         }
 
-        // Clear previous frame's transient input edge latches and motion deltas (ADR-0034)
+        // Clear previous frame's transient input edge latches and motion deltas
         m_inputSystem->beginFrame();
 
         // Producer Phase: Poll OS message queue and pack TLV events into the SPSC ring buffer
@@ -288,7 +288,7 @@ void Application::drainEventStream() noexcept
                     m_mainWindow->onWindowEvent(ev);
                 }
 
-                // Sanitize held inputs on focus loss, minimization, or hiding to prevent stuck keys (ADR-0036)
+                // Sanitize held inputs on focus loss, minimization, or hiding to prevent stuck keys
                 if (ev.action == WindowAction::FocusLost || ev.action == WindowAction::Hidden ||
                     (ev.action == WindowAction::StateChanged && ev.state == WindowState::Minimized))
                 {

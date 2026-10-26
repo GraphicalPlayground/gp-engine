@@ -43,7 +43,7 @@ protected:
         return true;
     }
 
-    /// @brief Invoked at the deterministic fixed frequency (60 Hz by default) for physics calculations (ADR-0033).
+    /// @brief Invoked at the deterministic fixed frequency (60 Hz by default) for physics calculations.
     /// @param[in] fixedDelta Exact fixed timestep duration (e.g., 16.66ms).
     void onFixedUpdate([[maybe_unused]] gp::time::Duration fixedDelta) noexcept override
     {}
@@ -83,7 +83,7 @@ protected:
                       << ", " << mouseDelta.y << ")\n";
         }
 
-        // Query Gamepad State (Player 1 left thumbstick with 2D radial deadzone, ADR-0035)
+        // Query Gamepad State (Player 1 left thumbstick with 2D radial deadzone)
         if (const auto* pad = input.getGamepad(gp::hal::input::GamepadSlot::Player1))
         {
             if (pad->isConnected())
