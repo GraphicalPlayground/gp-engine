@@ -191,6 +191,18 @@ Hardware Abstraction Layer (HAL).
   > (`getDisplayForPoint` via nearest clamped boundary distance and `getDisplayForRect` via maximum
   > overlapping pixel area), and automatically provisions a synthetic `1920x1080 @ 60Hz` virtual
   > primary display whenever zero physical monitors are detected.
+- [**ADR-0038**: Synchronous Modal Message Boxes and Asynchronous Native File Dialogs with Headless Auto-Resolution](./ADR-0038.md)
+  > Native OS file and folder pickers execute on asynchronous desktop compositor loops that stall
+  > swapchain presentation or deadlock the window manager if blocked synchronously on the Game
+  > Thread. Conversely, fatal assertion and crash message boxes must block synchronously and
+  > function even before the graphics/window backend is initialized or after it has crashed.
+  > Furthermore, spawning interactive OS modal dialogs on headless CI runners or dedicated servers
+  > hangs automated pipelines indefinitely. The HAL `IDialog` subsystem separates synchronous modal
+  > alerts (`showAlert`, `showMessageBox`, capable of pre-initialization panic execution and custom
+  > button/theme layouts) from non-blocking, callback-driven native file/folder pickers
+  > (`showOpenFileDialog`, `showSaveFileDialog`, `showOpenFolderDialog`), while `generic::Dialog`
+  > enforces deterministic headless auto-resolution (returning the designated default button or
+  > immediate cancellation without blocking).
 
 ### Concurrency & Event Routing
 
