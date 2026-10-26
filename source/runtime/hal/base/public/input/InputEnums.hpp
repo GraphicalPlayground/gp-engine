@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "templates/Enums.hpp"
 
 namespace gp::hal::input
 {
@@ -725,3 +726,8 @@ enum class KeyState : gp::UInt8
 };
 
 }   // namespace gp::hal::input
+
+GP_ENABLE_ENUM_BITWISE_OPERATIONS(gp::hal::input::KeyModifier);
+GP_ENABLE_ENUM_BITWISE_OPERATIONS(gp::hal::input::MouseButtonMask);
+GP_ENABLE_ENUM_BITWISE_OPERATIONS(gp::hal::input::HatPosition);
+GP_ENABLE_ENUM_BITWISE_OPERATIONS(gp::hal::input::PenButton);
