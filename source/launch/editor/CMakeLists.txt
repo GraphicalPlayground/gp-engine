@@ -18,6 +18,5 @@ gpStartExecutable(editor)
   gpAddDependency(PUBLIC renderer)
   gpAddDependency(PUBLIC engine)
   gpAddDependency(PUBLIC application)
-
   gpAddDependency(PUBLIC hal/sdl3)
 gpEndExecutable()
