@@ -8,6 +8,7 @@
 #include "backend/IApplicationBackend.hpp"
 #include "display/GenericDisplay.hpp"
 #include "GenericHAL.hpp"
+#include "input/GenericInputSystem.hpp"
 #include "window/GenericWindow.hpp"
 
 namespace gp::hal::generic
@@ -96,6 +97,16 @@ public:
     [[nodiscard]] constexpr gp::StringView getBackendName() const noexcept override
     {
         return "Generic";
+    }
+
+    /// @copydoc IApplicationBackend::createInputSystem()
+    [[nodiscard]] gp::UniquePtr<input::IInputSystem> createInputSystem() noexcept override
+    {
+        if (!m_isInitialized) [[unlikely]]
+        {
+            return nullptr;
+        }
+        return gp::makeUnique<gp::hal::input::generic::InputSystem>();
     }
 
     /// @copydoc IApplicationBackend::createWindow()
