@@ -8,12 +8,13 @@
 #include "CoreMinimal.hpp"
 #include "dialog/DialogEnums.hpp"
 #include "dialog/DialogTypes.hpp"
+#include "HALBase.hpp"
 
 namespace gp::hal
 {
 
 /// @brief Platform-agnostic interface for native OS modal message boxes and asynchronous file/folder dialogs.
-class IDialog
+class GP_HAL_BASE_API IDialog
 {
 public:
     /// @brief Default constructor.

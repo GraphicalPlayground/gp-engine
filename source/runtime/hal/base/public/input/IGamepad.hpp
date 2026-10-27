@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.hpp"
 #include "event/input/GamepadEvent.hpp"
+#include "HALBase.hpp"
 #include "input/IHapticDevice.hpp"
 #include "input/IInputDevice.hpp"
 #include "input/ISpatialDevice.hpp"
@@ -15,7 +16,7 @@ namespace gp::hal::input
 
 /// @brief Unified interface for a modern gamepad controller composing Input, Haptic, and Spatial capabilities
 /// (ADR-0018).
-class IGamepad
+class GP_HAL_BASE_API IGamepad
     : public IInputDevice
     , public IHapticDevice
     , public ISpatialDevice

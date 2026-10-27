@@ -9,6 +9,7 @@
 #include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
 #include "event/data/ClipboardEvent.hpp"
+#include "HALBase.hpp"
 
 namespace gp::hal
 {
@@ -16,7 +17,7 @@ namespace gp::hal
 /// @brief Platform-agnostic interface for interacting with the OS system clipboard and primary selection buffer.
 /// @details Supports UTF-8 text, X11/Wayland primary selection buffers, and arbitrary binary MIME payloads
 ///          (for editor asset copy-paste) while guaranteeing zero memory leaks or dangling `StringView` pointers.
-class IClipboard
+class GP_HAL_BASE_API IClipboard
 {
 public:
     /// @brief Default constructor.

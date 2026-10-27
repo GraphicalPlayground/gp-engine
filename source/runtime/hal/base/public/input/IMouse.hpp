@@ -6,13 +6,14 @@
 
 #include "CoreMinimal.hpp"
 #include "event/input/MouseEvent.hpp"
+#include "HALBase.hpp"
 #include "input/IInputDevice.hpp"
 
 namespace gp::hal::input
 {
 
 /// @brief Interface for mouse pointer, button, and scroll wheel input devices.
-class IMouse : public IInputDevice
+class GP_HAL_BASE_API IMouse : public IInputDevice
 {
 public:
     /// @brief Default constructor.

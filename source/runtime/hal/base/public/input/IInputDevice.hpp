@@ -6,6 +6,7 @@
 
 #include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
+#include "HALBase.hpp"
 #include "input/InputEnums.hpp"
 #include "input/InputTypes.hpp"
 
@@ -15,7 +16,7 @@ namespace gp::hal::input
 /// @brief Base capability interface for all hardware and virtual input peripherals in the HAL (ADR-0018).
 /// @details Provides uniform device identification, connection status, battery telemetry, and
 ///          per-frame edge-latch lifecycle management.
-class IInputDevice
+class GP_HAL_BASE_API IInputDevice
 {
 public:
     /// @brief Default constructor.

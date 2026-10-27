@@ -12,6 +12,7 @@
 #include "event/input/PenEvent.hpp"
 #include "event/input/SensorEvent.hpp"
 #include "event/input/TouchEvent.hpp"
+#include "HALBase.hpp"
 #include "input/IGamepad.hpp"
 #include "input/IKeyboard.hpp"
 #include "input/IMouse.hpp"
@@ -22,7 +23,7 @@ namespace gp::hal::input
 
 /// @brief Master coordinator interface owning and routing HAL events to `IKeyboard`, `IMouse`, `IGamepad`, and
 /// `ISpatialDevice`.
-class IInputSystem
+class GP_HAL_BASE_API IInputSystem
 {
 public:
     /// @brief Default constructor.

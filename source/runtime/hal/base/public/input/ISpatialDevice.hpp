@@ -8,6 +8,7 @@
 #include "event/input/PenEvent.hpp"
 #include "event/input/SensorEvent.hpp"
 #include "event/input/TouchEvent.hpp"
+#include "HALBase.hpp"
 #include "input/InputEnums.hpp"
 #include "input/InputTypes.hpp"
 
@@ -16,7 +17,7 @@ namespace gp::hal::input
 
 /// @brief Capability interface for 3D motion sensors (IMU Gyro/Accel), multi-touch surfaces, and 6-DoF styluses
 /// (ADR-0018).
-class ISpatialDevice
+class GP_HAL_BASE_API ISpatialDevice
 {
 public:
     /// @brief Default constructor.
