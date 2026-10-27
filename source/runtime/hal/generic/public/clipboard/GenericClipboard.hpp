@@ -6,6 +6,7 @@
 
 #include "clipboard/IClipboard.hpp"
 #include "CoreMinimal.hpp"
+#include "GenericHAL.hpp"
 
 namespace gp::hal::generic
 {
@@ -13,7 +14,7 @@ namespace gp::hal::generic
 /// @brief Platform-agnostic base and headless loopback implementation of `IClipboard`.
 /// @details Maintains inline buffers for standard text, primary selection text, and binary MIME payloads
 ///          so `StringView` returns never dangle and headless unit tests execute deterministically.
-class Clipboard : public gp::hal::IClipboard
+class GP_HAL_GENERIC_API Clipboard : public gp::hal::IClipboard
 {
 protected:
     char m_standardTextCache[kMaxInlineClipboardTextBytes]{};

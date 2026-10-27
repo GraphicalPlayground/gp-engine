@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.hpp"
 #include "dialog/IDialog.hpp"
+#include "GenericHAL.hpp"
 
 namespace gp::hal::generic
 {
@@ -13,7 +14,7 @@ namespace gp::hal::generic
 /// @brief Platform-agnostic base and headless fallback implementation of `IDialog`.
 /// @details Automatically resolves modal message boxes by selecting the Return-key default button
 ///          and immediately cancels file dialogs so headless servers and CI tests never hang.
-class Dialog : public gp::hal::IDialog
+class GP_HAL_GENERIC_API Dialog : public gp::hal::IDialog
 {
 public:
     /// @brief Default constructor.

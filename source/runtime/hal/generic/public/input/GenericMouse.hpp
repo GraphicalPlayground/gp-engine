@@ -5,13 +5,14 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "GenericHAL.hpp"
 #include "input/IMouse.hpp"
 
 namespace gp::hal::input::generic
 {
 
 /// @brief Platform-agnostic implementation of `IMouse` tracking buttons, sub-pixel coords, relative deltas, and scroll.
-class Mouse : public IMouse
+class GP_HAL_GENERIC_API Mouse : public IMouse
 {
 protected:
     ButtonStateFlags m_buttons[kMaxMouseButtons]{};

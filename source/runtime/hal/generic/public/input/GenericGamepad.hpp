@@ -5,13 +5,14 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "GenericHAL.hpp"
 #include "input/IGamepad.hpp"
 
 namespace gp::hal::input::generic
 {
 
 /// @brief Platform-agnostic base implementation of `IGamepad` with 2D radial deadzones and IMU/touchpad shadow state.
-class Gamepad : public IGamepad
+class GP_HAL_GENERIC_API Gamepad : public IGamepad
 {
 public:
     static constexpr gp::USize kMaxGamepadNameBytes = 128u;

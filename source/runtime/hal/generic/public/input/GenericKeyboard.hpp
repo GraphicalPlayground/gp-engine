@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "GenericHAL.hpp"
 #include "input/IKeyboard.hpp"
 
 namespace gp::hal::input::generic
@@ -12,7 +13,7 @@ namespace gp::hal::input::generic
 
 /// @brief Platform-agnostic implementation of `IKeyboard` with O(1) Scancode/Keycode tables and sub-frame edge
 /// latching.
-class Keyboard : public IKeyboard
+class GP_HAL_GENERIC_API Keyboard : public IKeyboard
 {
 public:
     static constexpr gp::UInt32 kOverflowKeycodeCapacity = 32u;
