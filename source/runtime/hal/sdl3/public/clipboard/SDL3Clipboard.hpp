@@ -6,6 +6,7 @@
 
 #include "clipboard/GenericClipboard.hpp"
 #include "CoreMinimal.hpp"
+#include "SDL3HAL.hpp"
 
 namespace gp::hal::sdl3
 {
@@ -14,7 +15,7 @@ namespace gp::hal::sdl3
 /// @details Bridges `StringView` text and binary MIME operations to native OS clipboards via SDL3,
 ///          copying returned strings into `generic::Clipboard`'s inline cache and immediately invoking
 ///          `SDL_free()` so zero heap allocations ever leak to the caller.
-class Clipboard final : public gp::hal::generic::Clipboard
+class GP_HAL_SDL3_API Clipboard final : public gp::hal::generic::Clipboard
 {
 public:
     /// @brief Default constructor.
