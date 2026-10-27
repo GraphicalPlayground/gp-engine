@@ -6,13 +6,14 @@
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "event/input/KeyboardEvent.hpp"
+#include "HALBase.hpp"
 #include "input/IInputDevice.hpp"
 
 namespace gp::hal::input
 {
 
 /// @brief Interface for keyboard input devices supporting both physical Scancodes and localized Keycodes.
-class IKeyboard : public IInputDevice
+class GP_HAL_BASE_API IKeyboard : public IInputDevice
 {
 public:
     /// @brief Default constructor.

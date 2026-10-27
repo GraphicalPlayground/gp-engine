@@ -5,13 +5,14 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "HALBase.hpp"
 #include "input/InputTypes.hpp"
 
 namespace gp::hal::input
 {
 
 /// @brief Capability interface for force-feedback actuators, trigger rumble motors, and device LEDs (ADR-0018).
-class IHapticDevice
+class GP_HAL_BASE_API IHapticDevice
 {
 public:
     /// @brief Default constructor.
