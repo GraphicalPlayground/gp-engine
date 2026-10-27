@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.hpp"
 #include "dialog/GenericDialog.hpp"
+#include "SDL3HAL.hpp"
 
 namespace gp::hal::sdl3
 {
@@ -14,7 +15,7 @@ namespace gp::hal::sdl3
 /// @details Translates `StringView` descriptors into native OS modal message boxes (`SDL_ShowMessageBox`)
 ///          and asynchronous portal/OS file pickers (`SDL_ShowOpenFileDialog`, `SDL_ShowSaveFileDialog`,
 ///          `SDL_ShowOpenFolderDialog`) with fixed-capacity context pooling for filter lifetime safety.
-class Dialog final : public gp::hal::generic::Dialog
+class GP_HAL_SDL3_API Dialog final : public gp::hal::generic::Dialog
 {
 public:
     /// @brief Default constructor.

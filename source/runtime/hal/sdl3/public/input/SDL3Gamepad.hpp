@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "input/GenericGamepad.hpp"
+#include "SDL3HAL.hpp"
 
 // Forward declaration of opaque SDL3 handle to avoid leaking <SDL3/SDL.h>
 struct SDL_Gamepad;
@@ -16,7 +17,7 @@ namespace gp::hal::sdl3
 /// @brief Concrete SDL3 implementation of `gp::hal::input::IGamepad`.
 /// @details Bridges `IHapticDevice` (motor rumble, impulse trigger rumble, RGB LEDs, player slot lights)
 ///          and `ISpatialDevice` (6-axis IMU Gyroscope/Accelerometer activation) to native SDL3 hardware calls.
-class Gamepad final : public gp::hal::input::generic::Gamepad
+class GP_HAL_SDL3_API Gamepad final : public gp::hal::input::generic::Gamepad
 {
 private:
     SDL_Gamepad* m_sdlGamepad{ nullptr };

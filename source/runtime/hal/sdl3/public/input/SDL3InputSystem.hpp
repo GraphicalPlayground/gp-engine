@@ -7,6 +7,7 @@
 #include "CoreMinimal.hpp"
 #include "input/GenericInputSystem.hpp"
 #include "input/SDL3Gamepad.hpp"
+#include "SDL3HAL.hpp"
 
 namespace gp::hal::sdl3
 {
@@ -14,7 +15,7 @@ namespace gp::hal::sdl3
 /// @brief Concrete SDL3 implementation of `IInputSystem`.
 /// @details Binds 8 inline `sdl3::Gamepad` instances into `generic::InputSystem`'s slot table and
 ///          automatically opens/closes native `SDL_Gamepad` handles on hotplug events.
-class InputSystem final : public gp::hal::input::generic::InputSystem
+class GP_HAL_SDL3_API InputSystem final : public gp::hal::input::generic::InputSystem
 {
 private:
     sdl3::Gamepad m_sdlGamepads[gp::hal::input::kMaxGamepads]{};
