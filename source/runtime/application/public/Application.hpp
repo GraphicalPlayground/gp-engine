@@ -32,13 +32,23 @@
 #include "window/IWindow.hpp"
 #include "window/WindowDesc.hpp"   // IWYU pragma: keep
 
+#if GP_IS_MONOLITHIC
+    #define GP_APPLICATION_API
+#else
+    #if defined(GP_APPLICATION_EXPORTS)
+        #define GP_APPLICATION_API GP_DLLEXPORT
+    #else
+        #define GP_APPLICATION_API GP_DLLIMPORT
+    #endif
+#endif
+
 namespace gp
 {
 
 /// @brief Backend-agnostic engine application host orchestrating HAL interfaces, time, input, and event routing.
 /// @details Completely decoupled from concrete platform libraries (such as SDL3). Concrete backends are injected
 ///          at construction time, falling back to `gp::hal::generic::ApplicationBackend` if omitted.
-class Application
+class GP_APPLICATION_API Application
 {
 private:
     ApplicationDesc m_desc{};
