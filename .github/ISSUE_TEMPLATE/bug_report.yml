@@ -9,14 +9,14 @@ body:
         - Write a descriptive title above.
         - One issue per bug. Found several? Open a separate issue for each.
         - Search [open](https://github.com/GraphicalPlayground/gp-engine/issues) and [closed](https://github.com/GraphicalPlayground/gp-engine/issues?q=is%3Aissue+is%3Aclosed) issues first. If nothing matches, open a new one.
-        - Check whether the bug reproduces on the latest `main` — it may already be fixed.
+        - Check whether the bug reproduces on the latest `main`, it may already be fixed.
         - On a custom build, verify the bug also occurs on an official release without local modifications or third-party modules.
 
   - type: textarea
     attributes:
       label: Tested versions
       description: |
-        Knowing when a bug was introduced matters. List the GP engine version and commit hash where it occurs (`git rev-parse --short HEAD`). If you can, test the previous release tag too and note whether the bug is there — that narrows down regressions quickly.
+        Knowing when a bug was introduced matters. List the GP engine version and commit hash where it occurs (`git rev-parse --short HEAD`). If you can, test the previous release tag too and note whether the bug is there, that narrows down regressions quickly.
       placeholder: |
         - Reproducible in: v0.3.0 [a1b2c3d], main @ 2026-02-20 [e4f5g6h]
         - Not reproducible in: v0.2.1 [x9y8z7w]
