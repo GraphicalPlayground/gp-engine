@@ -14,7 +14,7 @@ namespace gp::platform::linux
 /// @details Inherits vDSO-accelerated `CLOCK_MONOTONIC` and calendar queries from `unix::Time` and upgrades
 ///          `sleepNanoseconds()` to use `clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME)` backed by
 ///          Linux kernel high-resolution timers (`hrtimers`) for zero-drift wakeup under signal interrupts.
-class Time : public gp::platform::unix::Time
+class GP_CORE_API Time : public gp::platform::unix::Time
 {
 public:
     Time() = delete;
