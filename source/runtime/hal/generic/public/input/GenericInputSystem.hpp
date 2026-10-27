@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "GenericHAL.hpp"
 #include "input/GenericGamepad.hpp"
 #include "input/GenericKeyboard.hpp"
 #include "input/GenericMouse.hpp"
@@ -17,7 +18,7 @@ namespace gp::hal::input::generic
 /// @brief Platform-agnostic coordinator implementation of `IInputSystem`.
 /// @details Owns the primary `Keyboard`, `Mouse`, and `SpatialDevice`, and routes controller events
 ///          across 8 logical player `Gamepad` slots with hysteresis-gated active device detection.
-class InputSystem : public IInputSystem
+class GP_HAL_GENERIC_API InputSystem : public IInputSystem
 {
 public:
     /// @brief Minimum analog stick deflection required to switch `m_activeDeviceType` to `Gamepad`.

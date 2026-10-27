@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "GenericHAL.hpp"
 #include "input/IInputDevice.hpp"
 #include "input/ISpatialDevice.hpp"
 
@@ -13,7 +14,7 @@ namespace gp::hal::input::generic
 
 /// @brief Platform-agnostic implementation of `ISpatialDevice` managing multi-touch contacts, 6-DoF styluses, and
 /// standalone IMUs.
-class SpatialDevice
+class GP_HAL_GENERIC_API SpatialDevice
     : public IInputDevice
     , public ISpatialDevice
 {
