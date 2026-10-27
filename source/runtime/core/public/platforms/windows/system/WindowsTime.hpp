@@ -14,7 +14,7 @@ namespace gp::platform::windows
 /// @details Uses `QueryPerformanceCounter` with a 1-cycle fast path for 10 MHz invariant TSC clocks,
 ///          `__rdtsc()` for cycle-accurate profiling, and `CREATE_WAITABLE_TIMER_HIGH_RESOLUTION` for
 ///          sub-millisecond thread pacing without polluting global OS timer resolution (ADR-0031).
-class Time : public gp::platform::generic::Time
+class GP_CORE_API Time : public gp::platform::generic::Time
 {
 public:
     Time() = delete;

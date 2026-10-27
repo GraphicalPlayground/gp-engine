@@ -15,7 +15,7 @@ namespace gp::platform::windows
 /// @note Lifecycle Policy: Callers must explicitly join() or detach() before destruction.
 ///       Destroying a joinable thread triggers an assertion in debug builds and attempts
 ///       a fallback join() if not executing on the thread itself.
-class Thread : public gp::platform::generic::Thread
+class GP_CORE_API Thread : public gp::platform::generic::Thread
 {
 public:
     /// @brief Opaque representation of a Win32 HANDLE to avoid leaking <Windows.h> into public headers.

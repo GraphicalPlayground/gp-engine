@@ -14,7 +14,7 @@ namespace gp::platform::unix
 /// @details Uses `clock_gettime(CLOCK_MONOTONIC)` for invariant nanosecond timekeeping,
 ///          reentrant `localtime_r`/`gmtime_r` for thread-safe calendar queries, and an `EINTR`-safe
 ///          `nanosleep` loop for sub-millisecond thread suspension.
-class Time : public gp::platform::generic::Time
+class GP_CORE_API Time : public gp::platform::generic::Time
 {
 public:
     Time() = delete;

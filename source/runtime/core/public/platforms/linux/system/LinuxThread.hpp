@@ -11,7 +11,7 @@ namespace gp::platform::linux
 {
 
 /// @brief
-class Thread : public gp::platform::unix::Thread
+class GP_CORE_API Thread : public gp::platform::unix::Thread
 {};
 
 }   // namespace gp::platform::linux

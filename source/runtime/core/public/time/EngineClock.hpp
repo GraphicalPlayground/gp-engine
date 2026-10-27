@@ -36,7 +36,7 @@ struct EngineClockDesc
 /// clocks.
 /// @details Maintains the 6 canonical engine clock domains (`RealTime`, `UI`, `Gameplay`, `Physics`, `Animation`,
 /// `Audio`) and produces a unified `FrameTimeStats` snapshot on every frame tick.
-class EngineClock final
+class GP_CORE_API EngineClock final
 {
 public:
     /// @brief Number of historical frame deltas retained for outlier-rejected rolling average smoothing.

@@ -11,7 +11,7 @@ namespace gp::platform::macos
 {
 
 /// @brief
-class Thread : public gp::platform::apple::Thread
+class GP_CORE_API Thread : public gp::platform::apple::Thread
 {};
 
 }   // namespace gp::platform::macos

@@ -14,7 +14,7 @@ namespace gp::platform::apple
 /// @details Inherits POSIX UTC/calendar queries and CPU cycle counters from `gp::platform::unix::Time`,
 ///          while overriding monotonic counter and sleep methods with Darwin commpage-backed
 ///          `clock_gettime_nsec_np(CLOCK_UPTIME_RAW)`, `mach_absolute_time()`, and `mach_wait_until()`.
-class Time : public gp::platform::unix::Time
+class GP_CORE_API Time : public gp::platform::unix::Time
 {
 public:
     Time() = delete;
