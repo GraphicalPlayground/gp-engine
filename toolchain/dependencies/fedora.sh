@@ -100,17 +100,17 @@ source ${SCRIPT_DIR}/common.sh
 echo -e "\n--- Required Dependencies ---"
 check_command "ninja" "1.10" "false" || FAILURES=$((FAILURES+1))
 check_command "ld.lld" "" "false" || FAILURES=$((FAILURES+1))
-check_command "clang" "20" "false" || FAILURES=$((FAILURES+1))
-check_command "clang++" "20" "false" || FAILURES=$((FAILURES+1))
+check_command "clang" "17" "false" || FAILURES=$((FAILURES+1))
+check_command "clang++" "17" "false" || FAILURES=$((FAILURES+1))
 check_command "ccache" "" "false" || FAILURES=$((FAILURES+1))
 
 echo -e "\n--- Libraries ---"
 check_cxx_lib "libc++(abi)" "clang++" "-stdlib=libc++" "false" || FAILURES=$((FAILURES+1))
 
 echo -e "\n--- Optional Dependencies ---"
-check_command "clang-format" "20" "true" || FAILURES=$((FAILURES+1))
-check_command "clangd" "20" "true" || FAILURES=$((FAILURES+1))
-check_command "clang-tidy" "20" "true" || FAILURES=$((FAILURES+1))
+check_command "clang-format" "17" "true" || FAILURES=$((FAILURES+1))
+check_command "clangd" "17" "true" || FAILURES=$((FAILURES+1))
+check_command "clang-tidy" "17" "true" || FAILURES=$((FAILURES+1))
 check_command "doxygen" "" "true" || FAILURES=$((FAILURES+1))
 check_command "graphviz" "" "true" || FAILURES=$((FAILURES+1))
 
