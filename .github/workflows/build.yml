@@ -219,6 +219,7 @@ jobs:
     needs: [setup-matrix, build]
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
         build-type: [Development]
@@ -227,6 +228,16 @@ jobs:
         uses: actions/checkout@v5
         with:
           submodules: recursive
+
+      - name: Set up MSVC Dev Cmd
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup Dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          os: ${{ matrix.os }}
+          build-dir: build
 
       - name: Download Build Tree
         uses: actions/download-artifact@v4
@@ -249,6 +260,8 @@ jobs:
       - name: Run Tests
         shell: bash
         run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/binaries/lib:$GITHUB_WORKSPACE/binaries/bin:${LD_LIBRARY_PATH:-}"
+          export DYLD_LIBRARY_PATH="$GITHUB_WORKSPACE/binaries/lib:$GITHUB_WORKSPACE/binaries/bin:${DYLD_LIBRARY_PATH:-}"
           cd build
           ctest --output-on-failure -C ${{ matrix.build-type }} -VV
 
@@ -258,6 +271,7 @@ jobs:
     if: inputs.package-artifacts == true
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
         build-type: [Development]
