@@ -6,6 +6,7 @@
 #include "backend/SDL3ApplicationBackend.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "Launch.hpp"
+#include "miscellaneous/CommandLine.hpp"
 #include <iostream>
 
 namespace gp
@@ -222,6 +223,13 @@ int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     desc.mainWindow.size = gp::hal::Extent2D(1280u, 720u);
     desc.targetForegroundFps = 120.0;
     desc.targetBackgroundFps = 30.0;
+
+    UInt32 argumentCount = CommandLine::getArgumentCount();
+    for (UInt32 i = 0u; i < argumentCount; ++i)
+    {
+        const gp::StringView arg = CommandLine::getArgument(i);
+        std::cout << "[CMDLINE] Argument [" << i << "]: " << arg.data() << "\n";
+    }
 
     EditorApplication app(desc, gp::makeUnique<gp::hal::sdl3::ApplicationBackend>());
     return app.run();
