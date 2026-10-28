@@ -29,6 +29,18 @@ on:
         type: string
         required: false
         default: ''
+  workflow_dispatch:
+    inputs:
+      package-artifacts:
+        description: 'Whether to package and upload the compiled binaries'
+        type: boolean
+        required: false
+        default: false
+      target-os:
+        description: 'Comma-separated list of OS to build (e.g., linux,windows). Leave empty for all.'
+        type: string
+        required: false
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
