@@ -156,9 +156,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.cache/cmake_deps
-          key: ${{ runner.os }}-cmake-deps-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+          key: ${{ runner.os }}-cmake-deps-v1-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
           restore-keys: |
-            ${{ runner.os }}-cmake-deps-
+            ${{ runner.os }}-cmake-deps-v1-
 
       - name: Configure CMake
         shell: bash
@@ -168,6 +168,12 @@ jobs:
             EXTRA_ARGS+=(
               "-DCMAKE_C_COMPILER_LAUNCHER=ccache"
               "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+            )
+          else
+            EXTRA_ARGS+=(
+              "-DCMAKE_C_COMPILER_LAUNCHER="
+              "-DCMAKE_CXX_COMPILER_LAUNCHER="
+              "-DCMAKE_RC_COMPILER_LAUNCHER="
             )
           fi
 
