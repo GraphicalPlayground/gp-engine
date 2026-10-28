@@ -231,7 +231,7 @@ jobs:
         shell: bash
         run: |
           cd build
-          ctest --output-on-failure -C ${{ matrix.build-type }}
+          ctest --output-on-failure -C ${{ matrix.build-type }} -VV
 
   package:
     name: Package (${{ matrix.os }})
