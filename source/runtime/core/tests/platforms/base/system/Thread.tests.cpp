@@ -259,7 +259,10 @@ TEST(PlatformThreadTest, SetPriorityAndAffinityOnActiveThread)
     // Affinity tests
     EXPECT_EQ(thread.setAffinity(0ULL), ThreadResult::InvalidArguments);
     EXPECT_EQ(thread.setAffinity(kNoAffinityMask), ThreadResult::InvalidArguments);
-    EXPECT_EQ(thread.setAffinity(1ULL), ThreadResult::Success);   // Bind to logical core 0
+
+    // Bind to logical core 0 (returns UnsupportedPlatform on Apple Silicon where XNU disables affinity tags)
+    const ThreadResult affinityResult = thread.setAffinity(1ULL);
+    EXPECT_TRUE(affinityResult == ThreadResult::Success || affinityResult == ThreadResult::UnsupportedPlatform);
 
     // Clean up
     ctx.canExit.store(true, std::memory_order_release);
