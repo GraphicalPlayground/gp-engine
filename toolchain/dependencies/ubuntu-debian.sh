@@ -24,11 +24,14 @@ fi
 
 echo "Detected OS: $OS $VER"
 
+export DEBIAN_FRONTEND=noninteractive
 sudo apt-get update
 
 CORE_DEPS=(
   "build-essential"
   "cmake"
+  "clang"
+  "llvm"
   "lld"
   "libc++-dev"
   "libc++abi-dev"
@@ -36,9 +39,9 @@ CORE_DEPS=(
   "git"
   "pkg-config"
   "gdb"
-  "clang-format-22"
-  "clangd-22"
-  "clang-tidy-22"
+  "clang-format"
+  "clangd"
+  "clang-tidy"
   "ccache"
   "libjemalloc-dev"
 )
@@ -58,6 +61,8 @@ SDL3_DEPS=(
   "libasound2-dev"
   "libpulse-dev"
   "libaudio-dev"
+  "libjack-dev"
+  "libsndio-dev"
   "libx11-dev"
   "libxext-dev"
   "libxrandr-dev"
@@ -70,6 +75,10 @@ SDL3_DEPS=(
   "libdrm-dev"
   "libgbm-dev"
   "libgl1-mesa-dev"
+  "libgles2-mesa-dev"
+  "libegl1-mesa-dev"
+  "libibus-1.0-dev"
+  "libudev-dev"
 )
 
 if awk "BEGIN {exit !($VER >= 22.04)}"; then
@@ -97,17 +106,17 @@ source ${SCRIPT_DIR}/common.sh
 echo -e "\n--- Required Dependencies ---"
 check_command "ninja" "1.10" "false" || FAILURES=$((FAILURES+1))
 check_command "ld.lld" "" "false" || FAILURES=$((FAILURES+1))
-check_command "clang" "20" "false" || FAILURES=$((FAILURES+1))
-check_command "clang++" "20" "false" || FAILURES=$((FAILURES+1))
+check_command "clang" "17" "false" || FAILURES=$((FAILURES+1))
+check_command "clang++" "17" "false" || FAILURES=$((FAILURES+1))
 check_command "ccache" "" "false" || FAILURES=$((FAILURES+1))
 
 echo -e "\n--- Libraries ---"
 check_cxx_lib "libc++(abi)" "clang++" "-stdlib=libc++" "false" || FAILURES=$((FAILURES+1))
 
 echo -e "\n--- Optional Dependencies ---"
-check_command "clang-format" "20" "true" || FAILURES=$((FAILURES+1))
-check_command "clangd" "20" "true" || FAILURES=$((FAILURES+1))
-check_command "clang-tidy" "20" "true" || FAILURES=$((FAILURES+1))
+check_command "clang-format" "17" "true" || FAILURES=$((FAILURES+1))
+check_command "clangd" "17" "true" || FAILURES=$((FAILURES+1))
+check_command "clang-tidy" "17" "true" || FAILURES=$((FAILURES+1))
 check_command "doxygen" "" "true" || FAILURES=$((FAILURES+1))
 check_command "graphviz" "" "true" || FAILURES=$((FAILURES+1))
 

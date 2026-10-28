@@ -147,6 +147,7 @@ jobs:
           build-dir: build
 
       - name: Setup Ccache
+        if: runner.os != 'Windows'
         uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           key: ${{ matrix.os }}-${{ matrix.build-type }}
@@ -155,18 +156,35 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.cache/cmake_deps
-          key: ${{ runner.os }}-cmake-deps-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+          key: ${{ runner.os }}-cmake-deps-v2-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
           restore-keys: |
-            ${{ runner.os }}-cmake-deps-
+            ${{ runner.os }}-cmake-deps-v2-
 
       - name: Configure CMake
         shell: bash
         run: |
+          EXTRA_ARGS=()
+          if [ "${{ runner.os }}" != "Windows" ]; then
+            EXTRA_ARGS+=(
+              "-DCMAKE_C_COMPILER_LAUNCHER=ccache"
+              "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+            )
+          else
+            EXTRA_ARGS+=(
+              "-DNO_CCACHE=ON"
+              "-DCCACHE_FOUND=OFF"
+              "-DCCACHE=OFF"
+              "-DSDL_CCACHE=OFF"
+              "-DCMAKE_C_COMPILER_LAUNCHER="
+              "-DCMAKE_CXX_COMPILER_LAUNCHER="
+              "-DCMAKE_RC_COMPILER_LAUNCHER="
+            )
+          fi
+
           cmake -S . -B build \
             -G Ninja \
+            "${EXTRA_ARGS[@]}" \
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DFETCHCONTENT_BASE_DIR="$HOME/.cache/cmake_deps" \
             -DGPBT_RUNNING_IN_CI=TRUE \
@@ -179,6 +197,7 @@ jobs:
             -DGPBT_EXPORT_DEPENDENCY_GRAPH=FALSE
 
       - name: Build
+        shell: bash
         run: cmake --build build --config ${{ matrix.build-type }} --parallel --verbose
 
       - name: Upload Build Tree
@@ -200,14 +219,25 @@ jobs:
     needs: [setup-matrix, build]
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
-        build-type: [Release]
+        build-type: [Development]
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
           submodules: recursive
+
+      - name: Set up MSVC Dev Cmd
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup Dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          os: ${{ matrix.os }}
+          build-dir: build
 
       - name: Download Build Tree
         uses: actions/download-artifact@v4
@@ -230,8 +260,10 @@ jobs:
       - name: Run Tests
         shell: bash
         run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/binaries/lib:$GITHUB_WORKSPACE/binaries/bin:${LD_LIBRARY_PATH:-}"
+          export DYLD_LIBRARY_PATH="$GITHUB_WORKSPACE/binaries/lib:$GITHUB_WORKSPACE/binaries/bin:${DYLD_LIBRARY_PATH:-}"
           cd build
-          ctest --output-on-failure -C ${{ matrix.build-type }}
+          ctest --output-on-failure -C ${{ matrix.build-type }} -VV
 
   package:
     name: Package (${{ matrix.os }})
@@ -239,9 +271,10 @@ jobs:
     if: inputs.package-artifacts == true
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
-        build-type: [Release]
+        build-type: [Development]
     steps:
       - uses: actions/checkout@v5
       - name: Download Build Tree

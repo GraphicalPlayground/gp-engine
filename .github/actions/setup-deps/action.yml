@@ -17,15 +17,8 @@ runs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        sudo apt-get update
-        # Includes Clang, Ninja, Vulkan headers, and all SDL3 system requirements.
-        # (Removed git/cmake/build-essential as they are pre-installed on GitHub runners)
-        sudo apt-get install -y clang llvm ninja-build pkg-config \
-          libasound2-dev libpulse-dev libaudio-dev libjack-dev libsndio-dev \
-          libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev \
-          libxi-dev libxss-dev libxtst-dev libxkbcommon-dev libdrm-dev \
-          libgbm-dev libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
-          libdbus-1-dev libibus-1.0-dev libudev-dev libwayland-dev libvulkan-dev
+        chmod +x ./toolchain/dependencies/ubuntu-debian.sh
+        bash ./toolchain/dependencies/ubuntu-debian.sh
 
     - name: Install macOS Dependencies
       if: runner.os == 'macOS'
@@ -42,6 +35,12 @@ runs:
         # Windows SDK (D3D11/D3D12) is pre-installed on GitHub runners.
         # We need LLVM/Clang and Ninja.
         choco install llvm ninja -y
+        "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+        "C:\ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+        # Ensure ccache is removed from Chocolatey bin on Windows runners as it breaks clang-cl RC compilation
+        if (Test-Path "C:\ProgramData\chocolatey\bin\ccache.exe") {
+          Remove-Item "C:\ProgramData\chocolatey\bin\ccache.exe" -Force -ErrorAction SilentlyContinue
+        }
 
     - name: Enforce Clang for CMake on Unix
       if: runner.os != 'Windows'
