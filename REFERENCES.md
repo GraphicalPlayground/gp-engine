@@ -134,9 +134,79 @@ _Foundational textbooks, architectural bibles, and advanced rendering literature
 
 _GDC, SIGGRAPH, CppCon, and other industry talks that shaped our technical decisions._
 
-- **[Talk Title]** ([Year]) by [Speaker] at [Conference]
-  - _Focus:_ [e.g., "Render Graph architecture and frame graph optimizations."]
-  - _Link:_ [YouTube/PDF Link]
+<table>
+  <tr>
+    <td width="170">
+      <img
+        src="https://www.gstar.or.kr/resources/renew/images/main_logo.png"
+        alt="G-STAR 2026"
+        width="150"
+      />
+    </td>
+    <td valign="top">
+      <h3>G-STAR 2026 (G-CON)</h3>
+      <p><strong>November 20, 2026, Busan, South Korea (BEXCO)</strong></p>
+      <p>
+        South Korea's premier international game conference featuring keynotes, technical sessions,
+        and narrative design insights from industry leaders and AAA studios worldwide.
+      </p>
+      <p><strong>Featured Studios &amp; Speakers:</strong></p>
+      <ul>
+        <li>
+          <strong><a href="https://www.remedygames.com">Remedy Games</a></strong>:
+          Elmeri Raitanen (Art Director)
+        </li>
+        <li>
+          <strong><a href="https://www.pearlabyss.com">Pearl Abyss</a></strong>:
+          Geuntae Ahn (Art Level Senior Leader), Jinho Yoon
+          (Game Engine Graphics Senior Leader)
+        </li>
+        <li>
+          <strong><a href="https://www.cdprojektred.com">CD Projekt Red</a></strong>:
+          Marcin Blacha (VP, Story Director), Philipp Weber (Narrative Director)
+        </li>
+        <li>
+          <strong><a href="https://www.pixar.com">Pixar</a></strong>:
+          Hyesook Kim (Senior Animator)
+        </li>
+        <li>
+          <strong><a href="https://www.square-enix.com">Square Enix</a></strong>:
+          Naoki Hamaguchi (Game Director), Yoshinori Kitase (Game Producer)
+        </li>
+        <li>
+          <strong><a href="https://www.supergiantgames.com">Supergiant Games</a></strong>:
+          Greg Kasavin (Creative Director), Darren Korb (Audio Director)
+        </li>
+        <li>
+          <strong><a href="https://www.capcom.com">Capcom</a></strong>:
+          Cho Yonghee (Game Director)
+        </li>
+        <li>
+          <strong><a href="https://sms.playstation.com">Santa Monica Studio</a></strong>:
+          Bruno Velazquez (Game Director)
+        </li>
+        <li>
+          <strong><a href="https://insomniac.games">Insomniac Games</a></strong>:
+          Gavin Goulden (Senior Art Director)
+        </li>
+        <li>
+          <strong><a href="https://www.20thcenturystudios.com">20th Century Games</a></strong>:
+          Lis Moberly (Creative Lead)
+        </li>
+        <li>
+          <strong><a href="https://thatgamecompany.com">thatgamecompany</a></strong>:
+          Cecil Kim (Studio Art Director)
+        </li>
+      </ul>
+      <a
+        alt="View G-CON Speakers"
+        href="https://www.gstar.or.kr/eng/conference/conf_info.do#gcon-speakers"
+      >
+        View Conference Speakers
+      </a>
+    </td>
+  </tr>
+</table>
 
 ## Open Source Projects & Engines
 

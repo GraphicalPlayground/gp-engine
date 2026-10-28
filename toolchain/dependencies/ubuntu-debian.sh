@@ -65,6 +65,7 @@ SDL3_DEPS=(
   "libxfixes-dev"
   "libxi-dev"
   "libxss-dev"
+  "libxtst-dev"
   "libxkbcommon-dev"
   "libdrm-dev"
   "libgbm-dev"

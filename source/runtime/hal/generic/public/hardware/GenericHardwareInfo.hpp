@@ -4,13 +4,14 @@
 
 #pragma once
 
+#include "GenericHAL.hpp"
 #include "hardware/IHardwareInfo.hpp"
 
 namespace gp::hal::generic
 {
 
 /// @brief Generic implementation of the IHardwareInfo interface for cross-platform hardware interrogation.
-class HardwareInfo : public IHardwareInfo
+class GP_HAL_GENERIC_API HardwareInfo : public IHardwareInfo
 {
 private:
     bool m_initialized{ false };

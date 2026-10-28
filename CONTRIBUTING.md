@@ -685,7 +685,7 @@ To maintain speed, determinism, and maintainability, tests in `gp-engine` are ca
 and responsibility:
 
 - **Unit Tests vs. Functional Tests**:
-  - **Unit Tests**: Focus strictly on isolated, low-level logic—such as math functions, memory
+  - **Unit Tests**: Focus strictly on isolated, low-level logic, such as math functions, memory
     allocators, custom containers, and string parsing. Unit tests must not initialize heavy
     subsystems (e.g., Vulkan device context, window creation, or audio servers) and must run in
     milliseconds.

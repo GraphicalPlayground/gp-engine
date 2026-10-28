@@ -3,3 +3,16 @@
 // mailto:support AT graphical-playground DOT com
 
 #pragma once
+
+#include "CoreMinimal.hpp"
+#include "HALBase.hpp"   // IWYU pragma: export
+
+#if GP_IS_MONOLITHIC
+    #define GP_HAL_GENERIC_API
+#else
+    #if defined(GP_HAL_GENERIC_EXPORTS)
+        #define GP_HAL_GENERIC_API GP_DLLEXPORT
+    #else
+        #define GP_HAL_GENERIC_API GP_DLLIMPORT
+    #endif
+#endif
