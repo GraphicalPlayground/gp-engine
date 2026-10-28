@@ -16,6 +16,7 @@ gpStartThirdparty("rapidjson" VERSION "1.1.0")
   )
 
   gpThirdpartySetCMakeArgs(
+    CCACHE_FOUND=OFF
     RAPIDJSON_HAS_STDSTRING=OFF
     RAPIDJSON_USE_MEMBERSMAP=OFF
     RAPIDJSON_BUILD_DOC=OFF

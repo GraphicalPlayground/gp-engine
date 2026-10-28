@@ -37,6 +37,10 @@ runs:
         choco install llvm ninja -y
         "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
         "C:\ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+        # Ensure ccache is removed from Chocolatey bin on Windows runners as it breaks clang-cl RC compilation
+        if (Test-Path "C:\ProgramData\chocolatey\bin\ccache.exe") {
+          Remove-Item "C:\ProgramData\chocolatey\bin\ccache.exe" -Force -ErrorAction SilentlyContinue
+        }
 
     - name: Enforce Clang for CMake on Unix
       if: runner.os != 'Windows'
