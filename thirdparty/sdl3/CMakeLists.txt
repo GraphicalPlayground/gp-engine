@@ -22,6 +22,7 @@ gpStartThirdparty("sdl3" VERSION "3.4.8")
   )
 
   gpThirdpartySetCMakeArgs(
+    SDL_CCACHE=OFF
     SDL_STATIC=ON
     SDL_SHARED=OFF
     SDL_TEST_LIBRARY=OFF

@@ -14,6 +14,8 @@ gpStartThirdparty("tracy" VERSION "0.14.1")
   )
 
   gpThirdpartySetCMakeArgs(
+    NO_CCACHE=ON
+    CCACHE=OFF
     TRACY_ENABLE=ON
     TRACY_STATIC=ON
   )
