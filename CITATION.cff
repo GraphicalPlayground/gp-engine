@@ -1,13 +1,35 @@
 cff-version: 1.2.0
-message: "If you use this software or educational material, please cite it as below."
+message: >-
+  If you use Graphical Playground in your research, software, or educational
+  material, please cite it using the metadata provided in this file.
+type: software
+
 title: "Graphical Playground"
-abstract: "An open-source platform and hybrid ecosystem dedicated to learning modern graphics engineering through hands-on experimentation and deconstructionist pedagogy."
+
+abstract: >-
+  Graphical Playground is an open-source platform for learning modern graphics
+  engineering through hands-on experimentation, software development, and
+  deconstructionist pedagogy. It provides an environment for exploring graphics
+  programming, engine architecture, and the engineering principles behind
+  real-time rendering systems.
+
 authors:
-  - name: "The Graphical Playground Team"
-    address: "Lyon, France"
+  - name: "Graphical Playground"
+    alias: "GPlayd"
+    website: "https://graphical-playground.com"
     email: "support@graphical-playground.com"
-    affiliation: "Graphical Playground"
-type: "software"
+    city: "Lyon"
+    country: "FR"
+
+contact:
+  - name: "Graphical Playground"
+    alias: "GPlayd"
+    website: "https://graphical-playground.com"
+    email: "support@graphical-playground.com"
+    city: "Lyon"
+    country: "FR"
+
 repository-code: "https://github.com/GraphicalPlayground/gp-engine"
-url: https://graphical-playground.com
-license: Apache 2.0
+url: "https://graphical-playground.com"
+
+license: "Apache 2.0"
