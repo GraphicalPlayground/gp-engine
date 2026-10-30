@@ -142,7 +142,7 @@ lock-free architectures.
   > alongside a deterministic Fixed-Timestep Accumulator that outputs discrete step counts capped by
   > `maxSubSteps` and a normalized interpolation factor $\alpha \in [0.0, 1.0)$ for smooth visual
   > rendering between fixed physics ticks.
-- [**ADR-0039**: Lifetime-Scoped Arena Allocators, First-Class Allocator Contract, and Named Pool Telemetry](./ADR-0039.md)
+- [**ADR-0042**: Lifetime-Scoped Arena Allocators, First-Class Allocator Contract, and Named Pool Telemetry](./ADR-0039.md)
   > Container-owned storage wrappers modeled after Unreal Engine (`SizedAllocatorBase`,
   > `ForAnyElementType`, `ForElementType<T>`) invert memory ownership by embedding the container's
   > data pointer inside the policy, cannot be instantiated as standalone memory allocators, and fail
