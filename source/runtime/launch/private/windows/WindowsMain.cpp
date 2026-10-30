@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.hpp"
 #include "Launch.hpp"
+#include "miscellaneous/CommandLine.hpp"
 #include "platforms/base/Platform.hpp"
 #include "platforms/windows/WindowsHeaderWrapper.hpp"   // IWYU pragma: keep
 #include <cstdlib>
@@ -58,6 +59,9 @@ inline int launchWindowsEngine()
     }
 
     ::LocalFree(argvW);
+
+    // Initialize the command-line subsystem with the converted arguments
+    gp::CommandLine::initialize(argc, argv);
 
     // Launch the engine with the converted arguments
     int exitCode = gp::launch(argc, argv);
