@@ -52,6 +52,11 @@ strict visibility rules that prevent the codebase from becoming a tangled "ball 
 - [**ADR-0008**: GPBT Extracted to an Independent, Versioned Repository](./ADR-0008.md)
   > Extracts the custom GPBT build tool into a standalone, version-controlled repository linked as a
   > Git submodule, decoupling its release cadence from the main engine.
+- [**ADR-0041**: Three-Tier Engine Bootstrapping Topology (`gp::core`, `gp::application`, `gp::launch`)](./ADR-0041.md)
+  > Enforces a strict upward Directed Acyclic Graph (DAG) separating foundational OS primitives
+  > (`gp::core`), the hot-reloadable runtime orchestrator (`gp::application`), and the static
+  > executable entry-point shell (`gp::launch`) so low-level subsystems can query boot parameters
+  > without circular module dependencies.
 
 ### Module Anatomy & Subsystem Patterns
 
@@ -203,6 +208,12 @@ Hardware Abstraction Layer (HAL).
   > (`showOpenFileDialog`, `showSaveFileDialog`, `showOpenFolderDialog`), while `generic::Dialog`
   > enforces deterministic headless auto-resolution (returning the designated default button or
   > immediate cancellation without blocking).
+- [**ADR-0040**: Zero-Allocation `.bss` Arena and Tokenized `StringView` Command-Line Parser](./ADR-0040.md)
+  > Establishes a globally accessible, zero-heap-allocation command-line subsystem in `gp::core`
+  > backed by a fixed-capacity `.bss` character arena (`8 KiB`) and a contiguous `gp::StringView`
+  > token array (`128` slots), providing non-dangling lifetime guarantees, last-wins override
+  > semantics, `-no-<flag>` boolean negation, and `<charconv>` typed value extraction before dynamic
+  > memory allocators initialize.
 
 ### Concurrency & Event Routing
 

@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "Launch.hpp"
+#include "miscellaneous/CommandLine.hpp"
 
 int main(int argc, char** argv)
 {
+    gp::CommandLine::initialize(argc, argv);
     return gp::launch(argc, argv);
 }
