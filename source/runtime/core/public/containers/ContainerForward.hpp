@@ -6,6 +6,7 @@
 
 #include "concepts/Concepts.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "memory/MemoryForward.hpp"
 
 namespace gp::container
 {
@@ -40,10 +41,10 @@ class Array;
 
 /// @section Vector related forward declarations
 
-template <typename T, typename Allocator /* = gp::memory::DefaultAllocator */>
+template <typename T, typename Allocator = gp::memory::DefaultAllocator>
 class Vector;
 template <typename T>
-using Vector64 = Vector<T, float /* TODO: Replace with gp::memory::DefaultAllocator64 */>;
+using Vector64 = Vector<T, gp::memory::DefaultAllocator>;
 template <typename T, typename SizeType = Int32>
 class VectorView;
 template <typename T>
@@ -58,62 +59,65 @@ using ConstVectorView64 = VectorView<const T, Int64>;
 template <
     typename KeyType,
     typename ValueType,
-    typename SetAllocator /* = DefaultSparseSetAllocator */,
+    typename SetAllocator = gp::memory::DefaultAllocator,
     typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
 class SparseMap;
 template <
     typename KeyType,
     typename ValueType,
-    typename SetAllocator /* = DefaultCompactSetAllocator */,
+    typename SetAllocator = gp::memory::DefaultAllocator,
     typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
 class CompactMap;
 template <
     typename KeyType,
     typename ValueType,
-    typename SetAllocator /* = DefaultSetAllocator */,
+    typename SetAllocator = gp::memory::DefaultAllocator,
     typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
 class Map;
 template <
     typename KeyType,
     typename ValueType,
-    typename SetAllocator /* = DefaultSparseSetAllocator */,
+    typename SetAllocator = gp::memory::DefaultAllocator,
     typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
 class SparseMultiMap;
 template <
     typename KeyType,
     typename ValueType,
-    typename SetAllocator /* = DefaultCompactSetAllocator */,
+    typename SetAllocator = gp::memory::DefaultAllocator,
     typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
 class CompactMultiMap;
 template <
     typename KeyType,
     typename ValueType,
-    typename SetAllocator /* = DefaultSetAllocator */,
+    typename SetAllocator = gp::memory::DefaultAllocator,
     typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
 class MultiMap;
 
 template <
     typename KeyType,
     typename ValueType,
-    typename ArrayAllocator /* = FDefaultAllocator */,
+    typename ArrayAllocator = gp::memory::DefaultAllocator,
     typename SortPredicate = container::Less<typename TypeTraits<KeyType>::ConstPointerType>>
 class SortedMap;
-template <typename T, typename ArrayAllocator /* = FDefaultAllocator */, typename SortPredicate = container::Less<T>>
+template <
+    typename T,
+    typename ArrayAllocator = gp::memory::DefaultAllocator,
+    typename SortPredicate = container::Less<T>>
 class SortedSet;
 template <
     typename T,
     typename KeyFunctions = container::DefaultKeyFunctions<T>,
-    typename Allocator = float /* = DefaultSparseSetAllocator */>
+    typename Allocator = gp::memory::DefaultAllocator>
 class SparseSet;
 template <
     typename T,
     typename KeyFunctions = container::DefaultKeyFunctions<T>,
-    typename Allocator = float /* = DefaultCompactSetAllocator */>
+    typename Allocator = gp::memory::DefaultAllocator>
 class CompactSet;
 template <
     typename T,
     typename KeyFunctions = container::DefaultKeyFunctions<T>,
-    typename Allocator = float /* = DefaultSetAllocator */>
+    typename Allocator = gp::memory::DefaultAllocator>
 class Set;
 template <typename T, typename InSizeType = Int32>
 class StridedView;

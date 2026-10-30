@@ -14,13 +14,42 @@ namespace gp::memory
 class Malloc;
 class MallocAnsi;
 
-/// @section Allocator forward declarations
+/// @section Allocator primitives & types forward declarations
 
-template <gp::Int32 IndexSize, typename SubClass>
-class SizedAllocatorBase;
+enum class AllocatorFlags : gp::UInt8;
+enum class AllocatorGrowthPolicy : gp::UInt8;
 
-template <gp::Int32 IndexSize, typename BaseMallocType>
-class SizedHeapAllocator;
+struct MemoryMark;
+struct AllocatorStats;
+
+template <typename InArenaAllocator>
+class ScopedMemoryMark;
+
+class IAllocator;
+class HeapAllocator;
+using DefaultAllocator = HeapAllocator;
+
+template <gp::UInt32 InAlignment>
+class AlignedHeapAllocator;
+
+class LinearAllocator;
+class StackAllocator;
+class PoolAllocator;
+
+template <gp::USize InCapacityBytes, gp::UInt32 InAlignment>
+class FixedBufferAllocator;
+
+template <gp::USize InCapacityBytes, gp::UInt32 InAlignment, typename InFallbackAllocator>
+class InlineAllocator;
+
+class ThreadScratchArena;
+class ThreadScratchAllocator;
+class ScopedScratchMark;
+
+template <typename InInnerAllocator>
+class TaggedAllocator;
+
+class PolymorphicAllocator;
 
 }   // namespace gp::memory
 

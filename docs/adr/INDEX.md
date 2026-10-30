@@ -147,6 +147,19 @@ lock-free architectures.
   > alongside a deterministic Fixed-Timestep Accumulator that outputs discrete step counts capped by
   > `maxSubSteps` and a normalized interpolation factor $\alpha \in [0.0, 1.0)$ for smooth visual
   > rendering between fixed physics ticks.
+- [**ADR-0042**: Lifetime-Scoped Arena Allocators, First-Class Allocator Contract, and Named Pool Telemetry](./ADR-0039.md)
+  > Container-owned storage wrappers modeled after Unreal Engine (`SizedAllocatorBase`,
+  > `ForAnyElementType`, `ForElementType<T>`) invert memory ownership by embedding the container's
+  > data pointer inside the policy, cannot be instantiated as standalone memory allocators, and fail
+  > to express explicit physical memory lifetimes (per-frame linear scratchpads, LIFO stacks, and
+  > fixed-block node pools). `gp-engine` replaces container storage wrappers with a first-class,
+  > lifetime-scoped allocator library (`HeapAllocator`, `AlignedHeapAllocator`, `LinearAllocator`,
+  > `StackAllocator`, `PoolAllocator`, `FixedBufferAllocator`, `InlineAllocator`,
+  > `ThreadScratchAllocator`, `TaggedAllocator`, and `PolymorphicAllocator`) backed by
+  > `gp::memory::Malloc`. All allocators satisfy a unified C++23 sized allocation contract
+  > (`gp::concepts::IsAllocator`) that passes `oldSizeInBytes` on reallocation and deallocation to
+  > enable headerless $O(1)$ arena operations and named pool telemetry (`GP_MEM_ALLOC_N`,
+  > `GP_MEM_FREE_N`) in the Tracy profiler.
 
 ### Math & Core Types
 
