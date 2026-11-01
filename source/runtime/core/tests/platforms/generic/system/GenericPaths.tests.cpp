@@ -76,8 +76,25 @@ static_assert(
 );
 
 static_assert(
+    Paths::createStandardFilename("a/..").view() == ".",
+    "Self-cancelling relative path 'a/..' must collapse to '.' rather than empty string."
+);
+
+static_assert(
+    Paths::createStandardFilename("a/b/../..").view() == ".",
+    "Multi-segment self-cancelling relative path 'a/b/../..' must collapse to '.'."
+);
+
+static_assert(Paths::createStandardFilename("./.").view() == ".", "Dot-only relative path './.' must collapse to '.'.");
+
+static_assert(
     Paths::equals("C:\\Engine\\Source\\Core\\", "c:/engine/source/runtime/../core"),
     "equals must match normalized collapsed paths case-insensitively by default."
+);
+
+static_assert(
+    Paths::less("C:/Engine/Source/Audio", "C:/Engine/Source/Core"),
+    "less must order normalized paths lexicographically."
 );
 
 static_assert(
@@ -110,8 +127,12 @@ TEST_F(GenericPathsTest, VolumeSpecifierAndFirstComponentSplitting)
     EXPECT_EQ(remainder, gp::StringView("//Shaders/Common.hlsl"));
 
     Paths::splitVolumeSpecifier("//nas01/assets/hero.fbx", volume, remainder);
+    EXPECT_EQ(volume, gp::StringView("//nas01/assets"));
+    EXPECT_EQ(remainder, gp::StringView("/hero.fbx"));
+
+    Paths::splitVolumeSpecifier("//nas01", volume, remainder);
     EXPECT_EQ(volume, gp::StringView("//nas01"));
-    EXPECT_EQ(remainder, gp::StringView("/assets/hero.fbx"));
+    EXPECT_TRUE(remainder.isEmpty());
 
     Paths::splitVolumeSpecifier("Relative/Path/File.txt", volume, remainder);
     EXPECT_TRUE(volume.isEmpty());
@@ -186,6 +207,42 @@ TEST_F(GenericPathsTest, CollapseRelativeDirectoriesNominalAndEdgeCases)
     PathBuffer p6("engine://Shaders/Common/../PBR//Lighting.hlsl");
     EXPECT_TRUE(Paths::collapseRelativeDirectories(p6));
     EXPECT_EQ(p6.view(), gp::StringView("engine://Shaders/PBR/Lighting.hlsl"));
+
+    // Self-cancelling relative paths must collapse to "." rather than ""
+    PathBuffer p7("a/..");
+    EXPECT_TRUE(Paths::collapseRelativeDirectories(p7));
+    EXPECT_EQ(p7.view(), gp::StringView("."));
+
+    PathBuffer p8("a/b/../..");
+    EXPECT_TRUE(Paths::collapseRelativeDirectories(p8));
+    EXPECT_EQ(p8.view(), gp::StringView("."));
+
+    PathBuffer p9("./.");
+    EXPECT_TRUE(Paths::collapseRelativeDirectories(p9));
+    EXPECT_EQ(p9.view(), gp::StringView("."));
+
+    PathBuffer p10("./a/../.");
+    EXPECT_TRUE(Paths::collapseRelativeDirectories(p10));
+    EXPECT_EQ(p10.view(), gp::StringView("."));
+
+    // UNC network share root preservation and clamping
+    PathBuffer p11("\\\\nas01\\assets\\meshes\\..\\hero.fbx");
+    EXPECT_TRUE(Paths::collapseRelativeDirectories(p11));
+    EXPECT_EQ(p11.view(), gp::StringView("//nas01/assets/hero.fbx"));
+
+    PathBuffer p12("\\\\nas01\\assets\\..\\other_share\\hero.fbx");
+    EXPECT_FALSE(Paths::collapseRelativeDirectories(p12));
+    EXPECT_EQ(p12.view(), gp::StringView("//nas01/assets/other_share/hero.fbx"));
+
+    // Windows extended-length path prefixes ("\\?\" and "\\?\UNC\")
+    EXPECT_EQ(
+        Paths::createStandardFilename("\\\\?\\C:\\Engine\\Source\\..\\Shaders\\PBR.hlsl").view(),
+        gp::StringView("C:/Engine/Shaders/PBR.hlsl")
+    );
+    EXPECT_EQ(
+        Paths::createStandardFilename("\\\\?\\UNC\\nas01\\assets\\meshes\\..\\hero.fbx").view(),
+        gp::StringView("//nas01/assets/hero.fbx")
+    );
 }
 
 TEST_F(GenericPathsTest, TryMakeChildPathRelativeToAndHierarchyChecks)
@@ -225,6 +282,17 @@ TEST_F(GenericPathsTest, MakePathRelativeToAndComputeRelativePath)
     const gp::Optional<PathBuffer> crossDrive =
         Paths::computeRelativePath("D:/Assets/Hero.uasset", "C:/Project/Content");
     EXPECT_FALSE(crossDrive.hasValue());
+
+    // Different UNC shares on the same server cannot be made relative to each other
+    const gp::Optional<PathBuffer> crossShare =
+        Paths::computeRelativePath("//nas01/assets/Hero.uasset", "//nas01/backups/Content/");
+    EXPECT_FALSE(crossShare.hasValue());
+
+    // Same UNC share can be made relative
+    const gp::Optional<PathBuffer> sameShare =
+        Paths::computeRelativePath("//nas01/assets/Meshes/Hero.uasset", "//nas01/assets/Textures/");
+    ASSERT_TRUE(sameShare.hasValue());
+    EXPECT_EQ(sameShare->view(), gp::StringView("../Meshes/Hero.uasset"));
 }
 
 TEST_F(GenericPathsTest, ValidatePathAndMakeValidFileName)
@@ -232,6 +300,12 @@ TEST_F(GenericPathsTest, ValidatePathAndMakeValidFileName)
     PathValidationError err = PathValidationError::None;
 
     EXPECT_TRUE(Paths::validatePath("C:/Projects/gp-engine/source/Paths.hpp", &err));
+    EXPECT_EQ(err, PathValidationError::None);
+
+    EXPECT_TRUE(Paths::validatePath("\\\\?\\C:\\Projects\\gp-engine\\source\\Paths.hpp", &err));
+    EXPECT_EQ(err, PathValidationError::None);
+
+    EXPECT_TRUE(Paths::validatePath("\\\\?\\UNC\\nas01\\assets\\Hero.uasset", &err));
     EXPECT_EQ(err, PathValidationError::None);
 
     EXPECT_TRUE(Paths::validatePath("engine://Shaders/Forward.hlsl", &err));
@@ -252,13 +326,87 @@ TEST_F(GenericPathsTest, ValidatePathAndMakeValidFileName)
     EXPECT_FALSE(Paths::validatePath("C:/Projects/com1.txt", &err));
     EXPECT_EQ(err, PathValidationError::ReservedDeviceName);
 
+    // Compound extensions on Windows reserved device names must also be rejected
+    EXPECT_FALSE(Paths::validatePath("C:/Projects/NUL.tar.gz", &err));
+    EXPECT_EQ(err, PathValidationError::ReservedDeviceName);
+
+    EXPECT_FALSE(Paths::validatePath("C:/Projects/lpt1.v1.log.txt", &err));
+    EXPECT_EQ(err, PathValidationError::ReservedDeviceName);
+
     EXPECT_FALSE(Paths::validatePath("C:/Projects/TrailingDot./file.txt", &err));
     EXPECT_EQ(err, PathValidationError::TrailingDotOrSpace);
 
     EXPECT_EQ(Paths::makeValidFileName("Hero:Weapon*01?.uasset", '_').view(), gp::StringView("Hero_Weapon_01_.uasset"));
     EXPECT_EQ(Paths::makeValidFileName("Hero:Weapon*01?.uasset", '\0').view(), gp::StringView("HeroWeapon01.uasset"));
     EXPECT_EQ(Paths::makeValidFileName("CON.txt", '_').view(), gp::StringView("_CON.txt"));
+    EXPECT_EQ(Paths::makeValidFileName("NUL.tar.gz", '_').view(), gp::StringView("_NUL.tar.gz"));
     EXPECT_EQ(Paths::makeValidFileName("TrailingSpace. . ", '_').view(), gp::StringView("TrailingSpace"));
+
+    // All-dots or all-spaces filenames must fall back to a valid non-empty filename
+    EXPECT_EQ(Paths::makeValidFileName("...", '_').view(), gp::StringView("_"));
+    EXPECT_EQ(Paths::makeValidFileName("   ", '_').view(), gp::StringView("_"));
+    EXPECT_EQ(Paths::makeValidFileName("", '_').view(), gp::StringView(""));
+
+    // Invalid replacementChar must be sanitized to '_'
+    EXPECT_EQ(Paths::makeValidFileName("Hero*01.uasset", '?').view(), gp::StringView("Hero_01.uasset"));
+    EXPECT_EQ(Paths::makeValidFileName("Hero*01.uasset", '/').view(), gp::StringView("Hero_01.uasset"));
+
+    // Max-length filename with reserved device stem must clamp at kMaxPathLength without overflowing
+    char maxReserved[kMaxPathLength + 1u]{};
+    maxReserved[0] = 'C';
+    maxReserved[1] = 'O';
+    maxReserved[2] = 'N';
+    maxReserved[3] = '.';
+    for (gp::USize i = 4u; i < kMaxPathLength; ++i)
+    {
+        maxReserved[i] = 'a';
+    }
+    maxReserved[kMaxPathLength] = '\0';
+
+    const PathBuffer sanitizedMax = Paths::makeValidFileName(gp::StringView(maxReserved, kMaxPathLength), '_');
+    EXPECT_EQ(sanitizedMax.size(), kMaxPathLength);
+    EXPECT_TRUE(sanitizedMax.view().startsWith("_CON."));
+}
+
+TEST_F(GenericPathsTest, EqualsAndLessFastAndSlowPathComparisons)
+{
+    // Fast-path comparisons (no dot segments or duplicate slashes)
+    EXPECT_TRUE(Paths::equals("C:/Engine/Source/Core", "c:\\engine\\source\\core/", false));
+    EXPECT_FALSE(Paths::equals("C:/Engine/Source/Core", "c:/engine/source/core", true));
+
+    // Slow-path comparisons (relative segments and duplicate slashes)
+    EXPECT_TRUE(Paths::equals("C://Engine/Source/Runtime/../Core/", "c:\\engine\\source\\./core", false));
+
+    // Lexicographical ordering
+    EXPECT_TRUE(Paths::less("C:/Engine/Source/Audio", "c:/engine/source/core", false));
+    EXPECT_FALSE(Paths::less("C:/Engine/Source/Core", "c:/engine/source/audio", false));
+    EXPECT_FALSE(Paths::less("C:/Engine/Source/Core/", "c:\\engine\\source\\core", false));
+}
+
+TEST_F(GenericPathsTest, BoundsSafeClampingOnOverlongPaths)
+{
+    char overlong[kMaxPathLength + 128u]{};
+    overlong[0] = 'C';
+    overlong[1] = ':';
+    overlong[2] = '/';
+    for (gp::USize i = 3u; i < kMaxPathLength + 100u; ++i)
+    {
+        overlong[i] = 'x';
+    }
+    const gp::StringView overlongView(overlong, kMaxPathLength + 100u);
+
+    PathValidationError err = PathValidationError::None;
+    EXPECT_FALSE(Paths::validatePath(overlongView, &err));
+    EXPECT_EQ(err, PathValidationError::ExceedsMaxLength);
+
+    const PathBuffer clampedNorm = Paths::createNormalizedFilename(overlongView);
+    EXPECT_EQ(clampedNorm.size(), kMaxPathLength);
+
+    const PathBuffer clampedStd = Paths::createStandardFilename(overlongView);
+    EXPECT_EQ(clampedStd.size(), kMaxPathLength);
+
+    const PathBuffer clampedExt = Paths::setExtension(overlongView, "uasset");
+    EXPECT_LE(clampedExt.size(), kMaxPathLength);
 }
 
 TEST_F(GenericPathsTest, ComponentAndAncestorIteration)
