@@ -74,6 +74,42 @@ TEST(ThreadScratchAllocatorTest, ExplicitInitializationResetAndNestedScopedScrat
     ThreadScratchArena::shutdownThreadScratch();
 }
 
+TEST(ThreadScratchAllocatorTest, ColdQueriesAndEmptyScopedScratchMarkDoNotTriggerLazySlabAllocation)
+{
+    ThreadScratchArena::shutdownThreadScratch();
+    EXPECT_EQ(ThreadScratchArena::tryGet(), nullptr);
+
+    ThreadScratchAllocator scratch{};
+
+    // None of these cold/read/cleanup operations may lazily allocate the 256 KiB thread-local slab!
+    EXPECT_FALSE(scratch.owns(reinterpret_cast<const void*>(0x1000)));
+    scratch.deallocate(nullptr, 0u);
+    scratch.deallocate(reinterpret_cast<void*>(0x1000), 32u);
+    EXPECT_EQ(scratch.getActualAllocationSize(64u, 16u), 64u);
+    scratch.reset();
+    {
+        ScopedScratchMark coldScope{};
+        EXPECT_EQ(coldScope.getMark().offset, 0u);
+    }
+    EXPECT_EQ(ThreadScratchArena::tryGet(), nullptr);
+
+    // Only an actual non-zero allocation should lazily initialize the slab
+    {
+        ScopedScratchMark activeScope{};
+        void* ptr = scratch.allocate(64u, 16u);
+        ASSERT_NE(ptr, nullptr);
+        ASSERT_NE(ThreadScratchArena::tryGet(), nullptr);
+        EXPECT_EQ(ThreadScratchArena::tryGet()->getUsedBytes(), 64u);
+    }
+
+    // Rewound back to 0 when activeScope exited
+    ASSERT_NE(ThreadScratchArena::tryGet(), nullptr);
+    EXPECT_EQ(ThreadScratchArena::tryGet()->getUsedBytes(), 0u);
+
+    ThreadScratchArena::shutdownThreadScratch();
+    EXPECT_EQ(ThreadScratchArena::tryGet(), nullptr);
+}
+
 TEST(ThreadScratchAllocatorTest, MultiThreadedConcurrentScratchIsolationStressTest)
 {
     constexpr gp::UInt32 kThreadCount = 6u;

@@ -91,6 +91,11 @@ TEST(TaggedAllocatorTest, HandlesFailedAllocationAndReallocationGracefully)
 
     boundedTagged.deallocate(validBlock, 32u, 16u);
     EXPECT_EQ(boundedTagged.getStats().allocatedBytes, 0u);
+
+    TaggedAllocator<HeapAllocator> tagA("Pool.A");
+    TaggedAllocator<HeapAllocator> tagB("Pool.B");
+    EXPECT_TRUE(tagA == tagB);
+    EXPECT_TRUE(boundedTagged == boundedTagged);
 }
 
 }   // namespace gp::memory::tests

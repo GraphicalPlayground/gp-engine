@@ -101,18 +101,22 @@ TEST(LinearAllocatorTest, NonTopReallocationRelocatesAndPreservesPayload)
         firstBytes[i] = static_cast<gp::UInt8>(i + 100u);
     }
 
-    // Shrinking a non-top allocation returns the same pointer without advancing cursor
+    // Shrinking a non-top allocation returns the same pointer without advancing cursor and updates allocatedBytes
     const gp::USize usedBeforeShrink = arena.getUsedBytes();
     EXPECT_EQ(arena.reallocate(first, 32u, 16u, 16u), first);
     EXPECT_EQ(arena.getUsedBytes(), usedBeforeShrink);
+    EXPECT_EQ(arena.getStats().allocatedBytes, 16u + 32u);
+    EXPECT_EQ(arena.getStats().activeAllocations, 2ull);
 
-    // Growing a non-top allocation allocates a new block at the top and copies existing bytes
-    void* relocatedFirst = arena.reallocate(first, 32u, 128u, 16u);
+    // Growing a non-top allocation allocates a new block at the top, copies existing bytes, and retires old stats
+    void* relocatedFirst = arena.reallocate(first, 16u, 128u, 16u);
     ASSERT_NE(relocatedFirst, nullptr);
     EXPECT_NE(relocatedFirst, first);
+    EXPECT_EQ(arena.getStats().activeAllocations, 2ull);
+    EXPECT_EQ(arena.getStats().allocatedBytes, 128u + 32u);
 
     const gp::UInt8* relocatedBytes = static_cast<const gp::UInt8*>(relocatedFirst);
-    for (gp::USize i = 0u; i < 32u; ++i)
+    for (gp::USize i = 0u; i < 16u; ++i)
     {
         EXPECT_EQ(relocatedBytes[i], static_cast<gp::UInt8>(i + 100u));
     }
@@ -165,11 +169,13 @@ TEST(LinearAllocatorTest, MoveConstructionAndMoveAssignmentTransferOwnership)
     EXPECT_TRUE(movedConstructed.owns(ptr));
 
     LinearAllocator moveAssigned(512u, nullptr, "Test.LinearTarget");
+    EXPECT_FALSE(moveAssigned == movedConstructed);
     moveAssigned = std::move(movedConstructed);
     EXPECT_FALSE(movedConstructed.isValid());
     EXPECT_TRUE(moveAssigned.isValid());
     EXPECT_EQ(moveAssigned.getCapacity(), 1024u);
     EXPECT_TRUE(moveAssigned.owns(ptr));
+    EXPECT_TRUE(moveAssigned == moveAssigned);
 }
 
 }   // namespace gp::memory::tests

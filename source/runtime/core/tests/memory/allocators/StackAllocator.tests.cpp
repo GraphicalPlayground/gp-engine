@@ -119,9 +119,74 @@ TEST(StackAllocatorTest, ExternalBufferScopedMemoryMarkAndMoveSemantics)
     EXPECT_FALSE(stack.isValid());
     EXPECT_TRUE(movedStack.isValid());
     EXPECT_TRUE(movedStack.owns(base));
+    EXPECT_TRUE(movedStack == movedStack);
+    EXPECT_FALSE(movedStack == stack);
 
     movedStack.reset();
     EXPECT_EQ(movedStack.getUsedBytes(), 0u);
+}
+
+TEST(StackAllocatorTest, DefaultAlignmentGuaranteesEightByteMinimumAlignmentAfterOddSizedAllocation)
+{
+    StackAllocator stack(1024u, nullptr, "Test.StackDefaultAlignment");
+    ASSERT_TRUE(stack.isValid());
+
+    // Allocate 12 bytes with default alignment (kDefaultAlignment = 0) -> ends at a 4-byte-odd offset (20)
+    void* oddBlock = stack.allocate(12u);
+    ASSERT_NE(oddBlock, nullptr);
+    EXPECT_TRUE(gp::memory::isAligned(oddBlock, kMinimumAlignment));
+
+    // Next allocation with default alignment MUST still be aligned to kMinimumAlignment (8 bytes), NOT 4 bytes!
+    void* nextBlock = stack.allocate(16u);
+    ASSERT_NE(nextBlock, nullptr);
+    EXPECT_TRUE(gp::memory::isAligned(nextBlock, kMinimumAlignment));
+
+    stack.deallocate(nextBlock, 16u);
+    stack.deallocate(oddBlock, 12u);
+    EXPECT_EQ(stack.getUsedBytes(), 0u);
+}
+
+TEST(StackAllocatorTest, NonTopShrinkStaysInPlaceAndNonTopGrowRetiresOldAllocationStats)
+{
+    StackAllocator stack(2048u, nullptr, "Test.StackNonTopRealloc");
+    ASSERT_TRUE(stack.isValid());
+
+    void* block1 = stack.allocate(128u, 16u);
+    void* block2 = stack.allocate(64u, 16u);
+    ASSERT_NE(block1, nullptr);
+    ASSERT_NE(block2, nullptr);
+    EXPECT_EQ(stack.getStats().activeAllocations, 2ull);
+    EXPECT_EQ(stack.getStats().allocatedBytes, 192u);
+
+    const gp::USize usedBeforeShrink = stack.getUsedBytes();
+
+    // Shrinking non-top block1 must stay in place without advancing cursor or allocating a new block
+    void* shrunkBlock1 = stack.reallocate(block1, 128u, 64u, 16u);
+    EXPECT_EQ(shrunkBlock1, block1);
+    EXPECT_EQ(stack.getUsedBytes(), usedBeforeShrink);
+    EXPECT_EQ(stack.getStats().activeAllocations, 2ull);
+    EXPECT_EQ(stack.getStats().allocatedBytes, 128u);
+
+    // Popping block2 then shrunkBlock1 in LIFO order must still unwind the stack all the way to 0!
+    stack.deallocate(block2, 64u, 16u);
+    stack.deallocate(shrunkBlock1, 64u, 16u);
+    EXPECT_EQ(stack.getUsedBytes(), 0u);
+    EXPECT_EQ(stack.getStats().activeAllocations, 0ull);
+    EXPECT_EQ(stack.getStats().allocatedBytes, 0u);
+
+    // Now test non-top grow: must relocate and retire old block1 from activeAllocations and allocatedBytes
+    void* first = stack.allocate(64u, 16u);
+    void* second = stack.allocate(32u, 16u);
+    ASSERT_NE(first, nullptr);
+    ASSERT_NE(second, nullptr);
+    EXPECT_EQ(stack.getStats().activeAllocations, 2ull);
+    EXPECT_EQ(stack.getStats().allocatedBytes, 96u);
+
+    void* grownFirst = stack.reallocate(first, 64u, 256u, 16u);
+    ASSERT_NE(grownFirst, nullptr);
+    EXPECT_NE(grownFirst, first);
+    EXPECT_EQ(stack.getStats().activeAllocations, 2ull);
+    EXPECT_EQ(stack.getStats().allocatedBytes, 256u + 32u);
 }
 
 }   // namespace gp::memory::tests

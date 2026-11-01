@@ -86,4 +86,49 @@ TEST(FixedBufferAllocatorTest, ScopedMemoryMarkRewindAndNoHeapFallbackOnExhausti
     EXPECT_EQ(arena.getRemainingBytes(), 256u);
 }
 
+TEST(FixedBufferAllocatorTest, GetActualAllocationSizeReturnsExactPayloadSizeWithoutFalseOomRounding)
+{
+    FixedBufferAllocator<60u, 16u> arena{};
+    FixedBufferAllocator<60u, 16u> otherArena{};
+    EXPECT_TRUE(arena == arena);
+    EXPECT_FALSE(arena == otherArena);
+
+    // Requesting 52 bytes at 16-byte alignment in a 60-byte fixed buffer must return 52 (not round up to 64 > 60!)
+    const gp::USize actual = arena.getActualAllocationSize(52u, 16u);
+    EXPECT_EQ(actual, 52u);
+
+    void* ptr = arena.allocate(actual, 16u);
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_TRUE(arena.owns(ptr));
+    EXPECT_EQ(arena.getUsedBytes(), 52u);
+    EXPECT_EQ(arena.getStats().allocatedBytes, 52u);
+}
+
+TEST(FixedBufferAllocatorTest, NonTopReallocationUpdatesAllocatedBytesAndActiveAllocationsWithoutLeak)
+{
+    FixedBufferAllocator<512u, 32u> arena{};
+
+    // First allocation: 13 bytes (8-byte alignment)
+    void* first = arena.allocate(13u, 8u);
+    // Second allocation: 16 bytes (16-byte alignment -> pads offset from 13 to 16, usedBytes = 32, allocatedBytes = 29)
+    void* second = arena.allocate(16u, 16u);
+    ASSERT_NE(first, nullptr);
+    ASSERT_NE(second, nullptr);
+    EXPECT_EQ(arena.getUsedBytes(), 32u);
+    EXPECT_EQ(arena.getStats().allocatedBytes, 29u);
+    EXPECT_EQ(arena.getStats().activeAllocations, 2ull);
+
+    // Shrink non-top `first` from 13 to 8 bytes in place: allocatedBytes becomes 8 + 16 = 24
+    EXPECT_EQ(arena.reallocate(first, 13u, 8u, 8u), first);
+    EXPECT_EQ(arena.getStats().allocatedBytes, 24u);
+    EXPECT_EQ(arena.getStats().activeAllocations, 2ull);
+
+    // Grow non-top `first` from 8 to 64 bytes -> relocates to top of bumper; old 8-byte block retired from stats!
+    void* relocatedFirst = arena.reallocate(first, 8u, 64u, 16u);
+    ASSERT_NE(relocatedFirst, nullptr);
+    EXPECT_NE(relocatedFirst, first);
+    EXPECT_EQ(arena.getStats().activeAllocations, 2ull);
+    EXPECT_EQ(arena.getStats().allocatedBytes, 64u + 16u);
+}
+
 }   // namespace gp::memory::tests

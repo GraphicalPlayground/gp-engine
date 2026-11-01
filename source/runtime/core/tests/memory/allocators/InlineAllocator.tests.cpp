@@ -86,4 +86,55 @@ TEST(InlineAllocatorTest, SeamlesslySpillsOverToFallbackAllocatorAndPreservesPay
     EXPECT_EQ(allocator.getFallbackAllocator().getStats().allocatedBytes, 0u);
 }
 
+TEST(InlineAllocatorTest, DeallocatingFirstInlineSubAllocationDoesNotCorruptSecondLiveInlineSubAllocation)
+{
+    InlineAllocator<128u, 16u> allocator{};
+    InlineAllocator<128u, 16u> otherAllocator{};
+    EXPECT_TRUE(allocator == allocator);
+    EXPECT_FALSE(allocator == otherAllocator);
+
+    void* blockA = allocator.allocate(32u, 16u);
+    void* blockB = allocator.allocate(32u, 16u);
+    ASSERT_NE(blockA, nullptr);
+    ASSERT_NE(blockB, nullptr);
+    EXPECT_TRUE(allocator.isInlinePointer(blockA));
+    EXPECT_TRUE(allocator.isInlinePointer(blockB));
+    EXPECT_EQ(allocator.getInlineUsedBytes(), 64u);
+
+    gp::UInt8* bytesB = static_cast<gp::UInt8*>(blockB);
+    for (gp::USize i = 0u; i < 32u; ++i)
+    {
+        bytesB[i] = static_cast<gp::UInt8>(0xC0u + i);
+    }
+
+    // Freeing blockA (at offset 0) with explicit size 32 while blockB is still live at [32, 64) MUST NOT reset offset!
+    allocator.deallocate(blockA, 32u, 16u);
+    EXPECT_EQ(allocator.getInlineUsedBytes(), 64u);
+
+    // Next inline allocation must land at offset 64, never overwriting blockB!
+    void* blockC = allocator.allocate(32u, 16u);
+    ASSERT_NE(blockC, nullptr);
+    EXPECT_NE(blockC, blockB);
+    EXPECT_NE(blockC, blockA);
+    EXPECT_EQ(allocator.getInlineUsedBytes(), 96u);
+
+    for (gp::USize i = 0u; i < 32u; ++i)
+    {
+        EXPECT_EQ(bytesB[i], static_cast<gp::UInt8>(0xC0u + i));
+    }
+}
+
+TEST(InlineAllocatorTest, GetActualAllocationSizeDoesNotOverroundOrExceedRemainingInlineCapacity)
+{
+    InlineAllocator<60u, 16u> allocator{};
+
+    // 52 bytes aligned to 16 fits inside the 60-byte inline buffer at offset 0; must return 52 (not 64!)
+    const gp::USize actualSize = allocator.getActualAllocationSize(52u, 16u);
+    EXPECT_EQ(actualSize, 52u);
+
+    void* ptr = allocator.allocate(actualSize, 16u);
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_TRUE(allocator.isInlinePointer(ptr));
+}
+
 }   // namespace gp::memory::tests
