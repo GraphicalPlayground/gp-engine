@@ -4,6 +4,7 @@
 
 #include "platforms/generic/system/GenericPaths.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "threading/atomics/Atomic.hpp"
 
 namespace gp::platform::generic
 {
@@ -11,8 +12,11 @@ namespace gp::platform::generic
 namespace detail
 {
 
-/// @brief Monotonic generation counter incremented whenever `resetCachesForTesting()` is invoked.
-static gp::UInt32 s_cacheGeneration = 1u;
+/// @brief Monotonic atomic generation counter incremented whenever `resetCachesForTesting()` or a test override runs.
+static gp::thread::Atomic<gp::UInt32> s_cacheGeneration(1u);
+
+/// @brief Lightweight atomic spinlock protecting `.bss` path cache writes during lazy initialization.
+static gp::thread::Atomic<gp::UInt32> s_cacheSpinLock(0u);
 
 /// @brief Explicit unit-test override buffer for `executablePath()`.
 static PathBuffer s_executablePathOverride{};
@@ -28,50 +32,76 @@ static PathBuffer s_documentsDirOverride{};
 
 /// @brief Normalized `.bss` cache for the `-basedir=` command-line override.
 static PathBuffer s_cliBaseDirCache{};
+static const char* s_cliBaseDirSourcePtr = nullptr;
 
 /// @brief Normalized `.bss` cache for the `-appdata=` command-line override.
 static PathBuffer s_cliAppDataDirCache{};
+static const char* s_cliAppDataDirSourcePtr = nullptr;
 
 /// @brief Normalized `.bss` cache for the `-userdir=` command-line override.
 static PathBuffer s_cliDocumentsDirCache{};
+static const char* s_cliDocumentsDirSourcePtr = nullptr;
 
 /// @brief Normalized `.bss` cache for `generic::Paths::executablePath()`.
 static PathBuffer s_genericExecutablePathCache{};
+static const char* s_genericExecutablePathSourcePtr = nullptr;
 
 /// @brief Normalized `.bss` cache for `generic::Paths::executableDir()`.
 static PathBuffer s_genericExecutableDirCache{};
+static gp::thread::Atomic<gp::UInt32> s_genericExecutableDirGen(0u);
 
 /// @brief Normalized `.bss` cache for `generic::Paths::launchDir()`.
 static PathBuffer s_genericLaunchDirCache{};
+static gp::thread::Atomic<gp::UInt32> s_genericLaunchDirGen(0u);
 
 /// @brief Formats a directory override into `outBuffer` with normalized forward slashes and a trailing `'/'`.
 /// @param[in] rawDir Raw directory string view.
 /// @param[out] outBuffer Target `PathBuffer` to populate.
 static void formatDirectoryOverride(const gp::StringView rawDir, PathBuffer& outBuffer) noexcept
 {
-    outBuffer.assign(rawDir);
+    const gp::USize clampedLen = (rawDir.size() <= kMaxPathLength) ? rawDir.size() : kMaxPathLength;
+    outBuffer.assign(rawDir.substr(0u, clampedLen));
     Paths::makeStandardFilename(outBuffer);
     Paths::ensureTrailingSeparator(outBuffer);
 }
 
 }   // namespace detail
 
+void Paths::acquireCacheLock() noexcept
+{
+    while (detail::s_cacheSpinLock.exchange(1u, gp::memory::MemoryOrder::Acquire) != 0u)
+    {
+        while (detail::s_cacheSpinLock.load(gp::memory::MemoryOrder::Relaxed) != 0u)
+        {
+            gp::platform::Atomics::compilerBarrier();
+        }
+    }
+}
+
+void Paths::releaseCacheLock() noexcept
+{
+    detail::s_cacheSpinLock.store(0u, gp::memory::MemoryOrder::Release);
+}
+
 void Paths::setExecutablePathForTesting(const gp::StringView path) noexcept
 {
+    const ScopedCacheLock lock;
     if (path.isEmpty())
     {
         detail::s_executablePathOverride.clear();
     }
     else
     {
-        detail::s_executablePathOverride.assign(path);
+        const gp::USize clampedLen = (path.size() <= kMaxPathLength) ? path.size() : kMaxPathLength;
+        detail::s_executablePathOverride.assign(path.substr(0u, clampedLen));
         makeStandardFilename(detail::s_executablePathOverride);
     }
-    ++detail::s_cacheGeneration;
+    detail::s_cacheGeneration.fetchAdd(1u, gp::memory::MemoryOrder::AcqRel);
 }
 
 void Paths::setBaseDirForTesting(const gp::StringView dir) noexcept
 {
+    const ScopedCacheLock lock;
     if (dir.isEmpty())
     {
         detail::s_baseDirOverride.clear();
@@ -80,11 +110,12 @@ void Paths::setBaseDirForTesting(const gp::StringView dir) noexcept
     {
         detail::formatDirectoryOverride(dir, detail::s_baseDirOverride);
     }
-    ++detail::s_cacheGeneration;
+    detail::s_cacheGeneration.fetchAdd(1u, gp::memory::MemoryOrder::AcqRel);
 }
 
 void Paths::setAppDataDirForTesting(const gp::StringView dir) noexcept
 {
+    const ScopedCacheLock lock;
     if (dir.isEmpty())
     {
         detail::s_appDataDirOverride.clear();
@@ -93,11 +124,12 @@ void Paths::setAppDataDirForTesting(const gp::StringView dir) noexcept
     {
         detail::formatDirectoryOverride(dir, detail::s_appDataDirOverride);
     }
-    ++detail::s_cacheGeneration;
+    detail::s_cacheGeneration.fetchAdd(1u, gp::memory::MemoryOrder::AcqRel);
 }
 
 void Paths::setDocumentsDirForTesting(const gp::StringView dir) noexcept
 {
+    const ScopedCacheLock lock;
     if (dir.isEmpty())
     {
         detail::s_documentsDirOverride.clear();
@@ -106,22 +138,29 @@ void Paths::setDocumentsDirForTesting(const gp::StringView dir) noexcept
     {
         detail::formatDirectoryOverride(dir, detail::s_documentsDirOverride);
     }
-    ++detail::s_cacheGeneration;
+    detail::s_cacheGeneration.fetchAdd(1u, gp::memory::MemoryOrder::AcqRel);
 }
 
 void Paths::resetCachesForTesting() noexcept
 {
+    const ScopedCacheLock lock;
     detail::s_executablePathOverride.clear();
     detail::s_baseDirOverride.clear();
     detail::s_appDataDirOverride.clear();
     detail::s_documentsDirOverride.clear();
     detail::s_cliBaseDirCache.clear();
+    detail::s_cliBaseDirSourcePtr = nullptr;
     detail::s_cliAppDataDirCache.clear();
+    detail::s_cliAppDataDirSourcePtr = nullptr;
     detail::s_cliDocumentsDirCache.clear();
+    detail::s_cliDocumentsDirSourcePtr = nullptr;
     detail::s_genericExecutablePathCache.clear();
+    detail::s_genericExecutablePathSourcePtr = nullptr;
     detail::s_genericExecutableDirCache.clear();
+    detail::s_genericExecutableDirGen.store(0u, gp::memory::MemoryOrder::Relaxed);
     detail::s_genericLaunchDirCache.clear();
-    ++detail::s_cacheGeneration;
+    detail::s_genericLaunchDirGen.store(0u, gp::memory::MemoryOrder::Relaxed);
+    detail::s_cacheGeneration.fetchAdd(1u, gp::memory::MemoryOrder::AcqRel);
 }
 
 gp::StringView Paths::tryGetExecutablePathOverride() noexcept
@@ -141,7 +180,12 @@ gp::StringView Paths::tryGetBaseDirOverride() noexcept
         const gp::Optional<gp::StringView> cliVal = gp::CommandLine::tryGetString("-basedir");
         if (cliVal.hasValue() && !cliVal->isEmpty())
         {
-            detail::formatDirectoryOverride(*cliVal, detail::s_cliBaseDirCache);
+            const ScopedCacheLock lock;
+            if (detail::s_cliBaseDirSourcePtr != cliVal->data() || detail::s_cliBaseDirCache.isEmpty())
+            {
+                detail::formatDirectoryOverride(*cliVal, detail::s_cliBaseDirCache);
+                detail::s_cliBaseDirSourcePtr = cliVal->data();
+            }
             return detail::s_cliBaseDirCache.view();
         }
     }
@@ -161,7 +205,12 @@ gp::StringView Paths::tryGetAppDataDirOverride() noexcept
         const gp::Optional<gp::StringView> cliVal = gp::CommandLine::tryGetString("-appdata");
         if (cliVal.hasValue() && !cliVal->isEmpty())
         {
-            detail::formatDirectoryOverride(*cliVal, detail::s_cliAppDataDirCache);
+            const ScopedCacheLock lock;
+            if (detail::s_cliAppDataDirSourcePtr != cliVal->data() || detail::s_cliAppDataDirCache.isEmpty())
+            {
+                detail::formatDirectoryOverride(*cliVal, detail::s_cliAppDataDirCache);
+                detail::s_cliAppDataDirSourcePtr = cliVal->data();
+            }
             return detail::s_cliAppDataDirCache.view();
         }
     }
@@ -181,7 +230,12 @@ gp::StringView Paths::tryGetDocumentsDirOverride() noexcept
         const gp::Optional<gp::StringView> cliVal = gp::CommandLine::tryGetString("-userdir");
         if (cliVal.hasValue() && !cliVal->isEmpty())
         {
-            detail::formatDirectoryOverride(*cliVal, detail::s_cliDocumentsDirCache);
+            const ScopedCacheLock lock;
+            if (detail::s_cliDocumentsDirSourcePtr != cliVal->data() || detail::s_cliDocumentsDirCache.isEmpty())
+            {
+                detail::formatDirectoryOverride(*cliVal, detail::s_cliDocumentsDirCache);
+                detail::s_cliDocumentsDirSourcePtr = cliVal->data();
+            }
             return detail::s_cliDocumentsDirCache.view();
         }
     }
@@ -191,7 +245,7 @@ gp::StringView Paths::tryGetDocumentsDirOverride() noexcept
 
 gp::UInt32 Paths::getCacheGeneration() noexcept
 {
-    return detail::s_cacheGeneration;
+    return detail::s_cacheGeneration.load(gp::memory::MemoryOrder::Acquire);
 }
 
 gp::StringView Paths::executablePath() noexcept
@@ -207,8 +261,15 @@ gp::StringView Paths::executablePath() noexcept
         const gp::StringView cliExe = gp::CommandLine::getExecutablePath();
         if (!cliExe.isEmpty())
         {
-            detail::s_genericExecutablePathCache.assign(cliExe);
-            makeStandardFilename(detail::s_genericExecutablePathCache);
+            const ScopedCacheLock lock;
+            if (detail::s_genericExecutablePathSourcePtr != cliExe.data() ||
+                detail::s_genericExecutablePathCache.isEmpty())
+            {
+                const gp::USize clampedLen = (cliExe.size() <= kMaxPathLength) ? cliExe.size() : kMaxPathLength;
+                detail::s_genericExecutablePathCache.assign(cliExe.substr(0u, clampedLen));
+                makeStandardFilename(detail::s_genericExecutablePathCache);
+                detail::s_genericExecutablePathSourcePtr = cliExe.data();
+            }
             return detail::s_genericExecutablePathCache.view();
         }
     }
@@ -229,13 +290,24 @@ gp::StringView Paths::executableName(const bool removeExtension) noexcept
 
 gp::StringView Paths::executableDir() noexcept
 {
+    const gp::UInt32 currentGen = getCacheGeneration();
     const gp::StringView exePath = executablePath();
     if (!exePath.isEmpty())
     {
-        const gp::StringView dirView = getPath(exePath);
-        if (!dirView.isEmpty())
+        if (detail::s_genericExecutableDirGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
         {
-            detail::formatDirectoryOverride(dirView, detail::s_genericExecutableDirCache);
+            const gp::StringView dirView = getPath(exePath);
+            if (!dirView.isEmpty())
+            {
+                PathBuffer formatted{};
+                detail::formatDirectoryOverride(dirView, formatted);
+                const ScopedCacheLock lock;
+                detail::s_genericExecutableDirCache = formatted;
+                detail::s_genericExecutableDirGen.store(currentGen, gp::memory::MemoryOrder::Release);
+            }
+        }
+        if (!detail::s_genericExecutableDirCache.isEmpty())
+        {
             return detail::s_genericExecutableDirCache.view();
         }
     }
@@ -254,6 +326,11 @@ gp::StringView Paths::baseDir() noexcept
     return executableDir();
 }
 
+gp::StringView Paths::appResourcesDir() noexcept
+{
+    return baseDir();
+}
+
 PathBuffer Paths::workingDir() noexcept
 {
     return PathBuffer("./");
@@ -261,11 +338,16 @@ PathBuffer Paths::workingDir() noexcept
 
 gp::StringView Paths::launchDir() noexcept
 {
-    static gp::UInt32 s_cachedGen = 0u;
-    if (detail::s_genericLaunchDirCache.isEmpty() || s_cachedGen != getCacheGeneration())
+    const gp::UInt32 currentGen = getCacheGeneration();
+    if (detail::s_genericLaunchDirGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
-        detail::s_genericLaunchDirCache = workingDir();
-        s_cachedGen = getCacheGeneration();
+        const PathBuffer cwd = workingDir();
+        const ScopedCacheLock lock;
+        if (detail::s_genericLaunchDirGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            detail::s_genericLaunchDirCache = cwd;
+            detail::s_genericLaunchDirGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
     return detail::s_genericLaunchDirCache.view();
 }
