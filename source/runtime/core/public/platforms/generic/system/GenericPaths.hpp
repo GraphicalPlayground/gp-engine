@@ -52,6 +52,12 @@ public:
     /// @return Non-owning `StringView` pointing to the static `.bss` base directory cache (guaranteed trailing `'/'`).
     [[nodiscard]] static gp::StringView baseDir() noexcept;
 
+    /// @brief Queries the read-only application bundle resources directory.
+    /// @details On macOS `.app` bundles (`MyGame.app/Contents/MacOS/`), resolves to `MyGame.app/Contents/Resources/`.
+    ///          On all other platforms (or non-bundle builds), returns `baseDir()`. Guaranteed to end with `'/'`.
+    /// @return Non-owning `StringView` pointing to the static `.bss` resources directory cache.
+    [[nodiscard]] static gp::StringView appResourcesDir() noexcept;
+
     /// @brief Queries the current OS working directory of the calling process, normalized with a trailing `'/'`.
     /// @note Unlike known folders, the OS working directory is mutable at runtime (`chdir` / `SetCurrentDirectoryW`),
     ///       so this function returns a stack-allocated `PathBuffer` snapshot rather than a cached view.
@@ -248,7 +254,7 @@ public:
             }
         }
 
-        // Check for UNC network share prefix ("//server" or "\\server")
+        // Check for UNC network share prefix ("//server/share" or "\\server\share", or bare "//server")
         if (path.size() >= 2u && isSeparator(path[0]) && isSeparator(path[1]))
         {
             if (path.size() == 2u || isSeparator(path[2]))
@@ -263,6 +269,25 @@ public:
             {
                 ++serverEnd;
             }
+
+            // If a share component immediately follows the server name (e.g. "//server/share"), include it in the
+            // UNC volume root so relative ".." segments cannot climb out of the share into the host name.
+            if (serverEnd < path.size() && isSeparator(path[serverEnd]))
+            {
+                const gp::USize shareStart = serverEnd + 1u;
+                if (shareStart < path.size() && !isSeparator(path[shareStart]))
+                {
+                    gp::USize shareEnd = shareStart;
+                    while (shareEnd < path.size() && !isSeparator(path[shareEnd]))
+                    {
+                        ++shareEnd;
+                    }
+                    outVolume = path.substr(0u, shareEnd);
+                    outRemainder = path.substr(shareEnd);
+                    return;
+                }
+            }
+
             outVolume = path.substr(0u, serverEnd);
             outRemainder = path.substr(serverEnd);
         }
@@ -518,13 +543,15 @@ public:
     /// @brief Extracts the base filename without its extension.
     /// @param[in] path Input path view.
     /// @param[in] removePath If true (default), strips the directory prefix and returns only the filename stem;
-    ///                       if false, retains the directory prefix and strips only the final extension.
+    ///                       if false, retains the directory prefix and strips the extension.
+    /// @param[in] flags Optional `PathFlags::AllowCompoundExtension` to strip compound extensions (e.g. `".tar.gz"`).
     /// @return Sub-view containing the base filename (with or without directory prefix).
-    [[nodiscard]] static constexpr gp::StringView
-        getBaseFilename(const gp::StringView path, const bool removePath = true) noexcept
+    [[nodiscard]] static constexpr gp::StringView getBaseFilename(
+        const gp::StringView path, const bool removePath = true, const PathFlags flags = PathFlags::None
+    ) noexcept
     {
         const gp::StringView cleanName = getCleanFilename(path);
-        const gp::StringView extWithDot = getExtension(cleanName, PathFlags::IncludeDot);
+        const gp::StringView extWithDot = getExtension(cleanName, flags | PathFlags::IncludeDot);
 
         if (removePath)
         {
@@ -795,7 +822,8 @@ public:
 public:
     /// @section Stack-Allocated `PathBuffer` Normalization & Collapsing (`constexpr`)
 
-    /// @brief Normalizes all directory separators in `inOutPath` to `'/'` and removes redundant duplicate slashes.
+    /// @brief Normalizes all directory separators in `inOutPath` to `'/'`, strips Win32 extended-length prefixes
+    ///        (`"\\?\"` and `"\\?\UNC\"`), and removes redundant duplicate slashes in-place.
     /// @details Preserves a leading `"//"` for UNC network paths and `"://"` for VFS URI schemes.
     /// @param[in,out] inOutPath Path buffer to normalize in-place.
     static constexpr void normalizeFilename(PathBuffer& inOutPath) noexcept
@@ -803,6 +831,20 @@ public:
         if (inOutPath.isEmpty())
         {
             return;
+        }
+
+        bool isExtendedUnc = false;
+        const gp::StringView stripped = stripExtendedLengthPrefix(inOutPath.view(), isExtendedUnc);
+        if (isExtendedUnc)
+        {
+            PathBuffer uncBuffer("//");
+            appendClamped(uncBuffer, stripped);
+            inOutPath = uncBuffer;
+        }
+        else if (stripped.size() != inOutPath.size())
+        {
+            const PathBuffer directBuffer = clampToPathBuffer(stripped);
+            inOutPath = directBuffer;
         }
 
         char* const data = inOutPath.data();
@@ -819,11 +861,11 @@ public:
     }
 
     /// @brief Returns a new `PathBuffer` with all separators converted to `'/'` and duplicate slashes removed.
-    /// @param[in] path Input path view.
+    /// @param[in] path Input path view (clamped to `kMaxPathLength` if overlong).
     /// @return Normalized `PathBuffer`.
     [[nodiscard]] static constexpr PathBuffer createNormalizedFilename(const gp::StringView path) noexcept
     {
-        PathBuffer result(path);
+        PathBuffer result = clampToPathBuffer(path);
         normalizeFilename(result);
         return result;
     }
@@ -845,7 +887,7 @@ public:
     /// @return Normalized `PathBuffer`.
     [[nodiscard]] static constexpr PathBuffer createNormalizedDirectoryName(const gp::StringView path) noexcept
     {
-        PathBuffer result(path);
+        PathBuffer result = clampToPathBuffer(path);
         normalizeDirectoryName(result);
         return result;
     }
@@ -867,47 +909,49 @@ public:
         }
     }
 
-    /// @brief Removes consecutive duplicate forward slashes (`"//" -> "/"`) in-place.
+    /// @brief Removes consecutive duplicate forward slashes (`"//" -> "/"`) in-place with zero temporary buffer copies.
     /// @details Preserves a leading `"//"` at index 0 (UNC network share) and `"://"` (VFS logical URI scheme).
     /// @param[in,out] inOutPath Path buffer to compact in-place.
     static constexpr void removeDuplicateSlashes(PathBuffer& inOutPath) noexcept
     {
-        const gp::StringView original = inOutPath.view();
-        if (original.size() < 2u)
+        const gp::USize origLen = inOutPath.size();
+        if (origLen < 2u)
         {
             return;
         }
 
-        PathBuffer compacted{};
-        for (gp::USize i = 0u; i < original.size(); ++i)
+        char* const data = inOutPath.data();
+        gp::USize writeIdx = 0u;
+
+        for (gp::USize readIdx = 0u; readIdx < origLen; ++readIdx)
         {
-            const char ch = isSeparator(original[i]) ? kPreferredSeparator : original[i];
-            if (ch == kPreferredSeparator && !compacted.isEmpty() && compacted.back() == kPreferredSeparator)
+            const char ch = isSeparator(data[readIdx]) ? kPreferredSeparator : data[readIdx];
+            if (ch == kPreferredSeparator && writeIdx > 0u && data[writeIdx - 1u] == kPreferredSeparator)
             {
                 // Preserve leading "//" for UNC share paths (only when the original path is not "///" root)
-                if (compacted.size() == 1u && i == 1u && (original.size() == 2u || !isSeparator(original[2])))
+                if (writeIdx == 1u && readIdx == 1u && (origLen == 2u || !isSeparator(data[2])))
                 {
-                    compacted.pushBack(ch);
+                    data[writeIdx++] = ch;
                     continue;
                 }
 
                 // Preserve "://" for VFS URI schemes
-                if (compacted.size() >= 3u &&
-                    compacted[static_cast<PathBuffer::SizeType>(compacted.size() - 2u)] == ':' &&
-                    (compacted.size() == 2u ||
-                     compacted[static_cast<PathBuffer::SizeType>(compacted.size() - 3u)] != kPreferredSeparator))
+                if (writeIdx >= 3u && data[writeIdx - 2u] == ':' && data[writeIdx - 3u] != kPreferredSeparator)
                 {
-                    compacted.pushBack(ch);
+                    data[writeIdx++] = ch;
                     continue;
                 }
 
                 continue;
             }
 
-            compacted.pushBack(ch);
+            data[writeIdx++] = ch;
         }
 
-        inOutPath = compacted;
+        while (inOutPath.size() > writeIdx)
+        {
+            inOutPath.popBack();
+        }
     }
 
     /// @brief Returns a copy of `path` with consecutive duplicate slashes collapsed.
@@ -915,7 +959,7 @@ public:
     /// @return `PathBuffer` without duplicate slashes.
     [[nodiscard]] static constexpr PathBuffer createWithoutDuplicateSlashes(const gp::StringView path) noexcept
     {
-        PathBuffer result(path);
+        PathBuffer result = clampToPathBuffer(path);
         removeDuplicateSlashes(result);
         return result;
     }
@@ -1083,7 +1127,7 @@ public:
             inOutPath.pushBack(kPreferredSeparator);
         }
 
-        if (inOutPath.isEmpty() && fullView == ".")
+        if (inOutPath.isEmpty() && !fullView.isEmpty() && !isRooted && volume.isEmpty())
         {
             inOutPath.assign(".");
         }
@@ -1092,13 +1136,15 @@ public:
     }
 
     /// @brief Standardizes a path in-place by normalizing slashes, collapsing relative `"."` / `".."` segments, and
-    ///        stripping redundant trailing separators.
+    ///        stripping redundant trailing separators in a single normalization pass.
     /// @param[in,out] inOutPath Path buffer to standardize in-place.
     static constexpr void makeStandardFilename(PathBuffer& inOutPath) noexcept
     {
-        normalizeFilename(inOutPath);
         (void)collapseRelativeDirectories(inOutPath, true);
-        normalizeDirectoryName(inOutPath);
+        while (hasRedundantTerminatingSeparator(inOutPath.view()))
+        {
+            inOutPath.popBack();
+        }
     }
 
     /// @brief Returns a standardized copy of `path` with normalized slashes, collapsed `"."` / `".."` segments, and no
@@ -1107,7 +1153,7 @@ public:
     /// @return Standardized `PathBuffer`.
     [[nodiscard]] static constexpr PathBuffer createStandardFilename(const gp::StringView path) noexcept
     {
-        PathBuffer result(path);
+        PathBuffer result = clampToPathBuffer(path);
         makeStandardFilename(result);
         return result;
     }
@@ -1133,7 +1179,7 @@ public:
     /// @return Platform-formatted `PathBuffer`.
     [[nodiscard]] static constexpr PathBuffer createPlatformFilename(const gp::StringView path) noexcept
     {
-        PathBuffer result(path);
+        PathBuffer result = clampToPathBuffer(path);
         makePlatformFilename(result);
         return result;
     }
@@ -1142,8 +1188,8 @@ public:
     /// @section Zero-Allocation Path Comparison & Hierarchy Queries (`constexpr`)
 
     /// @brief Compares two paths for lexical equivalence after normalizing slashes and collapsing relative segments.
-    /// @details Treats `'/'` and `'\\'` as identical, ignores redundant trailing slashes, and defaults to ASCII
-    ///          case-insensitive comparison for cross-platform determinism (Windows/macOS APFS/console parity).
+    /// @details Uses a zero-allocation `StringView` fast path when neither path contains `"."` / `".."` segments or
+    ///          duplicate slashes, and falls back to `createStandardFilename()` otherwise.
     /// @param[in] lhs First path view.
     /// @param[in] rhs Second path view.
     /// @param[in] caseSensitive If false (default), performs ASCII case-insensitive comparison; if true, exact match.
@@ -1151,6 +1197,17 @@ public:
     [[nodiscard]] static constexpr bool
         equals(const gp::StringView lhs, const gp::StringView rhs, const bool caseSensitive = false) noexcept
     {
+        if (canCompareDirectlyWithoutCollapsing(lhs) && canCompareDirectlyWithoutCollapsing(rhs))
+        {
+            const gp::StringView trimLhs = trimRedundantTerminatingSeparator(lhs);
+            const gp::StringView trimRhs = trimRedundantTerminatingSeparator(rhs);
+            if (trimLhs.size() != trimRhs.size())
+            {
+                return false;
+            }
+            return compareDirectNormalizedViews(trimLhs, trimRhs, caseSensitive) == 0;
+        }
+
         const PathBuffer stdLhs = createStandardFilename(lhs);
         const PathBuffer stdRhs = createStandardFilename(rhs);
 
@@ -1173,6 +1230,8 @@ public:
     }
 
     /// @brief Strict weak ordering comparison for standardized paths (`stdLhs < stdRhs`).
+    /// @details Uses a zero-allocation `StringView` fast path when neither path contains `"."` / `".."` segments or
+    ///          duplicate slashes.
     /// @param[in] lhs First path view.
     /// @param[in] rhs Second path view.
     /// @param[in] caseSensitive If false (default), orders case-insensitively.
@@ -1180,6 +1239,13 @@ public:
     [[nodiscard]] static constexpr bool
         less(const gp::StringView lhs, const gp::StringView rhs, const bool caseSensitive = false) noexcept
     {
+        if (canCompareDirectlyWithoutCollapsing(lhs) && canCompareDirectlyWithoutCollapsing(rhs))
+        {
+            const gp::StringView trimLhs = trimRedundantTerminatingSeparator(lhs);
+            const gp::StringView trimRhs = trimRedundantTerminatingSeparator(rhs);
+            return compareDirectNormalizedViews(trimLhs, trimRhs, caseSensitive) < 0;
+        }
+
         const PathBuffer stdLhs = createStandardFilename(lhs);
         const PathBuffer stdRhs = createStandardFilename(rhs);
 
@@ -1398,17 +1464,17 @@ public:
         const gp::StringView existingExtWithDot = getExtension(path, PathFlags::IncludeDot);
         if (existingExtWithDot.isEmpty())
         {
-            return PathBuffer(path);
+            return clampToPathBuffer(path);
         }
 
-        PathBuffer result(path.substr(0u, path.size() - existingExtWithDot.size()));
+        PathBuffer result = clampToPathBuffer(path.substr(0u, path.size() - existingExtWithDot.size()));
         if (!newExtension.isEmpty())
         {
-            if (newExtension.front() != '.')
+            if (newExtension.front() != '.' && result.size() < result.capacity())
             {
                 result.pushBack('.');
             }
-            result.append(newExtension);
+            appendClamped(result, newExtension);
         }
         return result;
     }
@@ -1423,15 +1489,15 @@ public:
         setExtension(const gp::StringView path, const gp::StringView newExtension) noexcept
     {
         const gp::StringView existingExtWithDot = getExtension(path, PathFlags::IncludeDot);
-        PathBuffer result(path.substr(0u, path.size() - existingExtWithDot.size()));
+        PathBuffer result = clampToPathBuffer(path.substr(0u, path.size() - existingExtWithDot.size()));
 
         if (!newExtension.isEmpty() && !result.isEmpty())
         {
-            if (newExtension.front() != '.')
+            if (newExtension.front() != '.' && result.size() < result.capacity())
             {
                 result.pushBack('.');
             }
-            result.append(newExtension);
+            appendClamped(result, newExtension);
         }
         return result;
     }
@@ -1483,8 +1549,10 @@ public:
     /// @details Standardizes both paths, verifies that their volume/root prefixes match, strips common ancestor
     ///          components, and prepends `"../"` for each remaining directory level in `relativeTo`.
     ///          If both paths resolve to the exact same location, `inOutPath` is set to `"."`.
-    ///          If the paths reside on different drives/schemes (e.g., `"C:/..."` vs `"D:/..."`) or mix relative and
-    ///          absolute roots, `inOutPath` is left unchanged and `false` is returned.
+    ///          If the paths reside on different drives/schemes/UNC shares or mix relative and absolute roots,
+    ///          `inOutPath` is left unchanged and `false` is returned.
+    /// @note Uses compact 4-byte `TokenSpan` descriptors rather than 16-byte `StringView` arrays to keep the stack
+    ///       frame small on fiber-based job threads.
     /// @param[in,out] inOutPath Target path buffer to convert in-place into a relative path.
     /// @param[in] relativeTo Base directory view from which the relative path is computed.
     /// @param[in] caseSensitive If false (default), matches common path components case-insensitively.
@@ -1498,8 +1566,8 @@ public:
             return false;
         }
 
-        PathBuffer targetStd = createStandardFilename(inOutPath.view());
-        PathBuffer baseStd = createStandardFilename(relativeTo);
+        const PathBuffer targetStd = createStandardFilename(inOutPath.view());
+        const PathBuffer baseStd = createStandardFilename(relativeTo);
 
         const gp::StringView targetView = targetStd.view();
         const gp::StringView baseView = baseStd.view();
@@ -1524,7 +1592,13 @@ public:
             return false;
         }
 
-        gp::StringView targetTokens[256]{};
+        struct TokenSpan
+        {
+            gp::UInt16 offset{ 0u };
+            gp::UInt16 length{ 0u };
+        };
+
+        TokenSpan targetTokens[256]{};
         gp::UInt32 targetCount = 0u;
         {
             gp::USize pos = 0u;
@@ -1546,12 +1620,13 @@ public:
                 const gp::StringView tok = targetRem.substr(start, pos - start);
                 if (tok != ".")
                 {
-                    targetTokens[targetCount++] = tok;
+                    targetTokens[targetCount++] =
+                        TokenSpan{ static_cast<gp::UInt16>(start), static_cast<gp::UInt16>(pos - start) };
                 }
             }
         }
 
-        gp::StringView baseTokens[256]{};
+        TokenSpan baseTokens[256]{};
         gp::UInt32 baseCount = 0u;
         {
             gp::USize pos = 0u;
@@ -1573,7 +1648,8 @@ public:
                 const gp::StringView tok = baseRem.substr(start, pos - start);
                 if (tok != ".")
                 {
-                    baseTokens[baseCount++] = tok;
+                    baseTokens[baseCount++] =
+                        TokenSpan{ static_cast<gp::UInt16>(start), static_cast<gp::UInt16>(pos - start) };
                 }
             }
         }
@@ -1581,9 +1657,10 @@ public:
         gp::UInt32 commonCount = 0u;
         while (commonCount < targetCount && commonCount < baseCount)
         {
-            const bool same = caseSensitive
-                                  ? (targetTokens[commonCount] == baseTokens[commonCount])
-                                  : (compareCaseInsensitive(targetTokens[commonCount], baseTokens[commonCount]) == 0);
+            const gp::StringView tTok =
+                targetRem.substr(targetTokens[commonCount].offset, targetTokens[commonCount].length);
+            const gp::StringView bTok = baseRem.substr(baseTokens[commonCount].offset, baseTokens[commonCount].length);
+            const bool same = caseSensitive ? (tTok == bTok) : (compareCaseInsensitive(tTok, bTok) == 0);
             if (!same)
             {
                 break;
@@ -1592,7 +1669,8 @@ public:
         }
 
         // Cannot climb above a leading ".." that differs in a relative base path
-        if (commonCount < baseCount && baseTokens[commonCount] == "..")
+        if (commonCount < baseCount &&
+            baseRem.substr(baseTokens[commonCount].offset, baseTokens[commonCount].length) == "..")
         {
             return false;
         }
@@ -1601,20 +1679,21 @@ public:
         const gp::UInt32 upCount = baseCount - commonCount;
         for (gp::UInt32 i = 0u; i < upCount; ++i)
         {
-            if (!result.isEmpty())
+            if (!result.isEmpty() && result.size() < result.capacity())
             {
                 result.pushBack(kPreferredSeparator);
             }
-            result.append("..");
+            appendClamped(result, "..");
         }
 
         for (gp::UInt32 i = commonCount; i < targetCount; ++i)
         {
-            if (!result.isEmpty())
+            if (!result.isEmpty() && result.size() < result.capacity())
             {
                 result.pushBack(kPreferredSeparator);
             }
-            result.append(targetTokens[i]);
+            const gp::StringView tTok = targetRem.substr(targetTokens[i].offset, targetTokens[i].length);
+            appendClamped(result, tTok);
         }
 
         if (result.isEmpty())
@@ -1635,7 +1714,7 @@ public:
         const gp::StringView targetPath, const gp::StringView basePath, const bool caseSensitive = false
     ) noexcept
     {
-        PathBuffer buffer(targetPath);
+        PathBuffer buffer = clampToPathBuffer(targetPath);
         if (!makePathRelativeTo(buffer, basePath, caseSensitive))
         {
             return gp::nullopt;
@@ -1660,7 +1739,7 @@ public:
         PathBuffer result{};
         if (!xdgEnvValue.isEmpty() && isAbsolute(xdgEnvValue))
         {
-            result.assign(xdgEnvValue);
+            result = clampToPathBuffer(xdgEnvValue);
         }
         else
         {
@@ -1670,6 +1749,134 @@ public:
         makeStandardFilename(result);
         ensureTrailingSeparator(result);
         return result;
+    }
+
+    /// @brief Parses a freedesktop.org `user-dirs.dirs` configuration buffer for a specific key such as
+    ///        `"XDG_DOCUMENTS_DIR"` (`constexpr` pure lexical helper).
+    /// @details Ignores comment lines (`#`), strips surrounding double quotes, expands leading `"$HOME/"` or
+    ///          `"${HOME}/"` tokens against `homeDirectory`, and rejects relative paths per XDG rules.
+    /// @param[in] configContent Full text contents of `$XDG_CONFIG_HOME/user-dirs.dirs`.
+    /// @param[in] keyName Target variable name (e.g., `"XDG_DOCUMENTS_DIR"`).
+    /// @param[in] homeDirectory Normalized user `$HOME` directory path.
+    /// @return Normalized directory `PathBuffer` with trailing `'/'` if found and valid, or empty `PathBuffer`.
+    [[nodiscard]] static constexpr PathBuffer parseXdgUserDirsEntry(
+        const gp::StringView configContent, const gp::StringView keyName, const gp::StringView homeDirectory
+    ) noexcept
+    {
+        if (configContent.isEmpty() || keyName.isEmpty())
+        {
+            return {};
+        }
+
+        gp::USize pos = 0u;
+        while (pos < configContent.size())
+        {
+            gp::USize lineEnd = pos;
+            while (lineEnd < configContent.size() && configContent[lineEnd] != '\n' && configContent[lineEnd] != '\r')
+            {
+                ++lineEnd;
+            }
+
+            gp::StringView line = configContent.substr(pos, lineEnd - pos);
+            pos = lineEnd;
+            while (pos < configContent.size() && (configContent[pos] == '\n' || configContent[pos] == '\r'))
+            {
+                ++pos;
+            }
+
+            // Trim leading whitespace
+            gp::USize start = 0u;
+            while (start < line.size() && (line[start] == ' ' || line[start] == '\t'))
+            {
+                ++start;
+            }
+            line = line.substr(start);
+
+            if (line.isEmpty() || line.front() == '#')
+            {
+                continue;
+            }
+
+            if (line.size() > keyName.size() && line.startsWith(keyName) && line[keyName.size()] == '=')
+            {
+                gp::StringView rawVal = line.substr(keyName.size() + 1u);
+
+                // Trim trailing whitespace
+                gp::USize valEnd = rawVal.size();
+                while (valEnd > 0u && (rawVal[valEnd - 1u] == ' ' || rawVal[valEnd - 1u] == '\t'))
+                {
+                    --valEnd;
+                }
+                rawVal = rawVal.substr(0u, valEnd);
+
+                // Strip surrounding double quotes
+                if (rawVal.size() >= 2u && rawVal.front() == '"' && rawVal.back() == '"')
+                {
+                    rawVal = rawVal.substr(1u, rawVal.size() - 2u);
+                }
+
+                PathBuffer resolved{};
+                if (rawVal == "$HOME" || rawVal == "${HOME}")
+                {
+                    resolved = clampToPathBuffer(homeDirectory);
+                }
+                else if (rawVal.startsWith("$HOME/"))
+                {
+                    resolved = combine(homeDirectory, rawVal.substr(6u));
+                }
+                else if (rawVal.startsWith("${HOME}/"))
+                {
+                    resolved = combine(homeDirectory, rawVal.substr(8u));
+                }
+                else if (isAbsolute(rawVal))
+                {
+                    resolved = clampToPathBuffer(rawVal);
+                }
+
+                if (!resolved.isEmpty() && isAbsolute(resolved.view()))
+                {
+                    makeStandardFilename(resolved);
+                    ensureTrailingSeparator(resolved);
+                    return resolved;
+                }
+            }
+        }
+
+        return {};
+    }
+
+    /// @brief Resolves the macOS `.app` bundle `Contents/Resources/` directory from an executable directory path
+    ///        (`constexpr` pure lexical helper).
+    /// @details If `executableDirectory` ends with `".app/Contents/MacOS"` (or `".app/Contents/MacOS/"`), maps it to
+    ///          `".app/Contents/Resources/"`. Otherwise returns `executableDirectory` normalized with a trailing `'/'`.
+    /// @param[in] executableDirectory Path to the directory containing the running executable.
+    /// @return Normalized directory `PathBuffer` guaranteed to end with `'/'`.
+    [[nodiscard]] static constexpr PathBuffer
+        resolveMacOsBundleResourcesDir(const gp::StringView executableDirectory) noexcept
+    {
+        if (executableDirectory.isEmpty())
+        {
+            return {};
+        }
+
+        PathBuffer stdDir = createStandardFilename(executableDirectory);
+        const gp::StringView view = stdDir.view();
+        constexpr gp::StringView kMacOsSuffix = ".app/Contents/MacOS";
+
+        if (view.size() > kMacOsSuffix.size())
+        {
+            const gp::StringView tail = view.substr(view.size() - kMacOsSuffix.size());
+            if (compareCaseInsensitive(tail, kMacOsSuffix) == 0)
+            {
+                constexpr gp::USize kMacOsTokenLen = 5u;   // "MacOS"
+                PathBuffer resourcesDir = clampToPathBuffer(view.substr(0u, view.size() - kMacOsTokenLen));
+                appendClamped(resourcesDir, "Resources/");
+                return resourcesDir;
+            }
+        }
+
+        ensureTrailingSeparator(stdDir);
+        return stdDir;
     }
 
 public:
@@ -1725,16 +1932,32 @@ public:
     }
 
     /// @brief Sanitizes a candidate filename by replacing or stripping illegal characters, trailing dots/spaces, and
-    ///        reserved Windows device names.
+    ///        reserved Windows device names (including compound extensions like `"NUL.tar.gz"`).
     /// @param[in] fileName Raw candidate filename view.
-    /// @param[in] replacementChar Replacement character for invalid symbols (if `'\0'`, invalid chars are omitted).
+    /// @param[in] replacementChar Replacement character for invalid symbols (if `'\0'`, invalid chars are omitted; if
+    ///                            itself illegal, falls back to `'_'`).
     /// @return Sanitized `PathBuffer` safe for file creation on Windows, Linux, macOS, and consoles.
     [[nodiscard]] static constexpr PathBuffer
         makeValidFileName(const gp::StringView fileName, const char replacementChar = '_') noexcept
     {
-        const gp::StringView invalidChars = getInvalidFileSystemChars();
-        PathBuffer output{};
+        if (fileName.isEmpty())
+        {
+            return {};
+        }
 
+        const gp::StringView invalidChars = getInvalidFileSystemChars();
+        char safeReplacement = replacementChar;
+        if (safeReplacement != '\0')
+        {
+            const gp::UInt8 repByte = static_cast<gp::UInt8>(safeReplacement);
+            if (repByte < 32u || safeReplacement == ' ' || safeReplacement == '.' ||
+                invalidChars.contains(safeReplacement))
+            {
+                safeReplacement = '_';
+            }
+        }
+
+        PathBuffer output{};
         for (gp::USize i = 0u; i < fileName.size(); ++i)
         {
             const char ch = fileName[i];
@@ -1743,9 +1966,9 @@ public:
 
             if (isIllegal)
             {
-                if (replacementChar != '\0' && output.size() < output.capacity())
+                if (safeReplacement != '\0' && output.size() < output.capacity())
                 {
-                    output.pushBack(replacementChar);
+                    output.pushBack(safeReplacement);
                 }
             }
             else if (output.size() < output.capacity())
@@ -1760,12 +1983,19 @@ public:
             output.popBack();
         }
 
-        // Check if the resulting stem is a reserved Windows device name (e.g., "CON" or "NUL.txt")
-        const gp::StringView stem = getBaseFilename(output.view(), true);
-        if (isReservedWindowsDeviceName(stem))
+        if (output.isEmpty())
+        {
+            output.pushBack((safeReplacement != '\0') ? safeReplacement : '_');
+            return output;
+        }
+
+        // Check both the primary stem (before first dot, e.g. "NUL.tar.gz") and single-extension stem
+        const gp::StringView compoundStem = getBaseFilename(output.view(), true, PathFlags::AllowCompoundExtension);
+        const gp::StringView singleStem = getBaseFilename(output.view(), true, PathFlags::None);
+        if (isReservedWindowsDeviceName(compoundStem) || isReservedWindowsDeviceName(singleStem))
         {
             PathBuffer prefixed("_");
-            prefixed.append(output.view());
+            appendClamped(prefixed, output.view());
             output = prefixed;
         }
 
@@ -1798,14 +2028,28 @@ public:
             return setError(PathValidationError::ExceedsMaxLength);
         }
 
-        if (isDriveSpecifierWithoutRoot(path))
+        bool isExtendedUnc = false;
+        const gp::StringView effectivePath = stripExtendedLengthPrefix(path, isExtendedUnc);
+        if (effectivePath.isEmpty())
+        {
+            return setError(PathValidationError::EmptyPath);
+        }
+
+        if (!isExtendedUnc && isDriveSpecifierWithoutRoot(effectivePath))
         {
             return setError(PathValidationError::UnrootedDriveSpecifier);
         }
 
         gp::StringView volume{};
         gp::StringView remainder{};
-        splitVolumeSpecifier(path, volume, remainder);
+        if (isExtendedUnc)
+        {
+            remainder = effectivePath;
+        }
+        else
+        {
+            splitVolumeSpecifier(effectivePath, volume, remainder);
+        }
 
         // Validate characters inside volume specifier (if any)
         for (gp::USize i = 0u; i < volume.size(); ++i)
@@ -1856,8 +2100,9 @@ public:
                     return setError(PathValidationError::TrailingDotOrSpace);
                 }
 
-                const gp::StringView stem = getBaseFilename(comp, true);
-                if (isReservedWindowsDeviceName(stem))
+                const gp::StringView compoundStem = getBaseFilename(comp, true, PathFlags::AllowCompoundExtension);
+                const gp::StringView singleStem = getBaseFilename(comp, true, PathFlags::None);
+                if (isReservedWindowsDeviceName(compoundStem) || isReservedWindowsDeviceName(singleStem))
                 {
                     return setError(PathValidationError::ReservedDeviceName);
                 }
@@ -1925,16 +2170,7 @@ public:
             return true;
         }
 
-        gp::StringView current = path;
-        if (hasRedundantTerminatingSeparator(current))
-        {
-            gp::USize endPos = current.size();
-            while (endPos > 0u && isSeparator(current[endPos - 1u]))
-            {
-                --endPos;
-            }
-            current = current.substr(0u, endPos);
-        }
+        gp::StringView current = trimRedundantTerminatingSeparator(path);
 
         while (!current.isEmpty())
         {
@@ -1980,6 +2216,181 @@ protected:
 
     /// @brief Returns the monotonic cache generation counter incremented by `resetCachesForTesting()`.
     [[nodiscard]] static gp::UInt32 getCacheGeneration() noexcept;
+
+    /// @brief Acquires the global `.bss` path cache spinlock for thread-safe lazy initialization and override updates.
+    static void acquireCacheLock() noexcept;
+
+    /// @brief Releases the global `.bss` path cache spinlock.
+    static void releaseCacheLock() noexcept;
+
+    /// @brief Scoped RAII guard for the `.bss` path cache spinlock.
+    class ScopedCacheLock final
+    {
+    public:
+        /// @brief Acquires the cache spinlock upon construction.
+        ScopedCacheLock() noexcept
+        {
+            Paths::acquireCacheLock();
+        }
+
+        /// @brief Releases the cache spinlock upon destruction.
+        ~ScopedCacheLock() noexcept
+        {
+            Paths::releaseCacheLock();
+        }
+
+        ScopedCacheLock(const ScopedCacheLock&) = delete;
+        ScopedCacheLock& operator=(const ScopedCacheLock&) = delete;
+        ScopedCacheLock(ScopedCacheLock&&) = delete;
+        ScopedCacheLock& operator=(ScopedCacheLock&&) = delete;
+    };
+
+private:
+    /// @section Internal Bounds-Safety & Zero-Allocation Fast-Path Helpers (`constexpr`)
+
+    /// @brief Constructs a `PathBuffer` from `view`, clamping its length to `kMaxPathLength` (`1024` bytes).
+    /// @param[in] view Input string view.
+    /// @return Capacity-safe `PathBuffer`.
+    [[nodiscard]] static constexpr PathBuffer clampToPathBuffer(const gp::StringView view) noexcept
+    {
+        const gp::USize clampedLen = (view.size() <= kMaxPathLength) ? view.size() : kMaxPathLength;
+        return PathBuffer(view.substr(0u, clampedLen));
+    }
+
+    /// @brief Appends `view` to `inOutBuffer`, clamping to the remaining capacity of `inOutBuffer`.
+    /// @param[in,out] inOutBuffer Target path buffer.
+    /// @param[in] view String view to append.
+    static constexpr void appendClamped(PathBuffer& inOutBuffer, const gp::StringView view) noexcept
+    {
+        if (view.isEmpty() || inOutBuffer.size() >= inOutBuffer.capacity())
+        {
+            return;
+        }
+
+        const gp::USize avail = inOutBuffer.capacity() - inOutBuffer.size();
+        const gp::USize copyLen = (view.size() <= avail) ? view.size() : avail;
+        inOutBuffer.append(view.substr(0u, copyLen));
+    }
+
+    /// @brief Strips a leading Windows extended-length path prefix (`"\\?\"` or `"\\?\UNC\"`) if present.
+    /// @param[in] path Input path view.
+    /// @param[out] outIsExtendedUnc Set to true if `path` started with `"\\?\UNC\"`.
+    /// @return Sub-view following the extended-length prefix, or `path` unchanged.
+    [[nodiscard]] static constexpr gp::StringView
+        stripExtendedLengthPrefix(const gp::StringView path, bool& outIsExtendedUnc) noexcept
+    {
+        outIsExtendedUnc = false;
+        if (path.size() >= 4u && isSeparator(path[0]) && isSeparator(path[1]) && path[2] == '?' && isSeparator(path[3]))
+        {
+            if (path.size() >= 8u && toUpperAscii(path[4]) == 'U' && toUpperAscii(path[5]) == 'N' &&
+                toUpperAscii(path[6]) == 'C' && isSeparator(path[7]))
+            {
+                outIsExtendedUnc = true;
+                return path.substr(8u);
+            }
+            if (path.size() >= 6u && isAsciiAlpha(path[4]) && path[5] == ':')
+            {
+                return path.substr(4u);
+            }
+        }
+        return path;
+    }
+
+    /// @brief Returns a sub-view of `path` with any redundant trailing separators removed.
+    /// @param[in] path Input path view.
+    /// @return Trimmed `StringView`.
+    [[nodiscard]] static constexpr gp::StringView trimRedundantTerminatingSeparator(const gp::StringView path) noexcept
+    {
+        gp::StringView trimmed = path;
+        if (hasRedundantTerminatingSeparator(trimmed))
+        {
+            gp::USize endPos = trimmed.size();
+            while (endPos > 0u && isSeparator(trimmed[endPos - 1u]))
+            {
+                --endPos;
+            }
+            trimmed = trimmed.substr(0u, endPos);
+        }
+        return trimmed;
+    }
+
+    /// @brief Checks if `path` can be compared directly via `StringView` without allocating a `PathBuffer` to collapse
+    ///        relative `"."` / `".."` segments or duplicate slashes.
+    /// @param[in] path Input path view.
+    /// @return True if `path` has no `"."` / `".."` segments, no duplicate slashes, and no Win32 extended prefix.
+    [[nodiscard]] static constexpr bool canCompareDirectlyWithoutCollapsing(const gp::StringView path) noexcept
+    {
+        if (path.size() > kMaxPathLength)
+        {
+            return false;
+        }
+
+        bool isExtUnc = false;
+        if (stripExtendedLengthPrefix(path, isExtUnc).size() != path.size())
+        {
+            return false;
+        }
+
+        for (gp::USize i = 0u; i < path.size(); ++i)
+        {
+            if (isSeparator(path[i]) && i > 0u && isSeparator(path[i - 1u]))
+            {
+                const bool isUncPrefix = (i == 1u) && (path.size() == 2u || !isSeparator(path[2]));
+                const bool isUriScheme = (i >= 2u) && (path[i - 2u] == ':') && (i == 2u || !isSeparator(path[i - 3u]));
+                if (!isUncPrefix && !isUriScheme)
+                {
+                    return false;
+                }
+            }
+
+            if (path[i] == '.' && (i == 0u || isSeparator(path[i - 1u])))
+            {
+                if ((i + 1u) == path.size() || isSeparator(path[i + 1u]))
+                {
+                    return false;
+                }
+                if (path[i + 1u] == '.' && ((i + 2u) == path.size() || isSeparator(path[i + 2u])))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /// @brief Compares two pre-vetted path views character-by-character, treating `'/'` and `'\\'` as identical.
+    /// @param[in] lhs First trimmed path view.
+    /// @param[in] rhs Second trimmed path view.
+    /// @param[in] caseSensitive If false, compares ASCII characters case-insensitively.
+    /// @return Negative if `lhs < rhs`, zero if equal, positive if `lhs > rhs`.
+    [[nodiscard]] static constexpr gp::Int32 compareDirectNormalizedViews(
+        const gp::StringView lhs, const gp::StringView rhs, const bool caseSensitive
+    ) noexcept
+    {
+        const gp::USize minLen = (lhs.size() < rhs.size()) ? lhs.size() : rhs.size();
+        for (gp::USize i = 0u; i < minLen; ++i)
+        {
+            const char rawL = isSeparator(lhs[i]) ? kPreferredSeparator : lhs[i];
+            const char rawR = isSeparator(rhs[i]) ? kPreferredSeparator : rhs[i];
+            const gp::UInt8 a = static_cast<gp::UInt8>(caseSensitive ? rawL : toLowerAscii(rawL));
+            const gp::UInt8 b = static_cast<gp::UInt8>(caseSensitive ? rawR : toLowerAscii(rawR));
+            if (a != b)
+            {
+                return (a < b) ? -1 : 1;
+            }
+        }
+
+        if (lhs.size() < rhs.size())
+        {
+            return -1;
+        }
+        if (lhs.size() > rhs.size())
+        {
+            return 1;
+        }
+        return 0;
+    }
 };
 
 }   // namespace gp::platform::generic
