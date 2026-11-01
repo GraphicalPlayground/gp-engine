@@ -14,6 +14,17 @@ static_assert(
     "apple::Paths must derive from unix::Paths."
 );
 
+static_assert(
+    Paths::resolveMacOsBundleResourcesDir("/Applications/GraphicalPlayground.app/Contents/MacOS/").view() ==
+        "/Applications/GraphicalPlayground.app/Contents/Resources/",
+    "resolveMacOsBundleResourcesDir must map .app/Contents/MacOS/ to .app/Contents/Resources/ at compile time."
+);
+
+static_assert(
+    Paths::resolveMacOsBundleResourcesDir("/Users/developer/bin/").view() == "/Users/developer/bin/",
+    "resolveMacOsBundleResourcesDir must fall back to the executable directory when not inside a .app bundle."
+);
+
 TEST(ApplePathsContractTest, InheritsLexicalAndBundleFallbacks)
 {
     const PathBuffer appSupport = Paths::resolveXdgDirectory("", "/Users/developer/", "Library/Application Support");
@@ -21,6 +32,12 @@ TEST(ApplePathsContractTest, InheritsLexicalAndBundleFallbacks)
 
     const PathBuffer caches = Paths::resolveXdgDirectory("", "/Users/developer/", "Library/Caches");
     EXPECT_EQ(caches.view(), gp::StringView("/Users/developer/Library/Caches/"));
+
+    const PathBuffer bundleRes = Paths::resolveMacOsBundleResourcesDir("/Applications/MyGame.app/Contents/MacOS");
+    EXPECT_EQ(bundleRes.view(), gp::StringView("/Applications/MyGame.app/Contents/Resources/"));
+
+    const PathBuffer nonBundleRes = Paths::resolveMacOsBundleResourcesDir("/usr/local/bin/");
+    EXPECT_EQ(nonBundleRes.view(), gp::StringView("/usr/local/bin/"));
 }
 
 #if GP_PLATFORM_APPLE

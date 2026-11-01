@@ -25,6 +25,16 @@ static_assert(
     "Per XDG Base Directory Specification, relative XDG environment paths must be ignored."
 );
 
+static_assert(
+    Paths::parseXdgUserDirsEntry(
+        "# ~/.config/user-dirs.dirs\nXDG_DESKTOP_DIR=\"$HOME/Desktop\"\nXDG_DOCUMENTS_DIR=\"$HOME/MyDocs\"\n",
+        "XDG_DOCUMENTS_DIR",
+        "/home/developer/"
+    )
+            .view() == "/home/developer/MyDocs/",
+    "parseXdgUserDirsEntry must expand $HOME and normalize the configured user directory at compile time."
+);
+
 TEST(UnixPathsXdgSpecTest, ResolveXdgDirectoryHonorsAbsoluteAndRejectsRelativeEnvPaths)
 {
     const PathBuffer customData =
@@ -36,6 +46,25 @@ TEST(UnixPathsXdgSpecTest, ResolveXdgDirectoryHonorsAbsoluteAndRejectsRelativeEn
 
     const PathBuffer rejectedRelative = Paths::resolveXdgDirectory("./relative_xdg", "/home/user/", ".config");
     EXPECT_EQ(rejectedRelative.view(), gp::StringView("/home/user/.config/"));
+}
+
+TEST(UnixPathsXdgSpecTest, ParseXdgUserDirsEntryExpandsHomeAndIgnoresComments)
+{
+    constexpr gp::StringView kSampleUserDirs =
+        "# This file is written by xdg-user-dirs-update\n"
+        "# XDG_DOCUMENTS_DIR=\"/commented/out\"\n"
+        "XDG_DOWNLOAD_DIR=\"$HOME/Downloads\"\n"
+        "XDG_DOCUMENTS_DIR=\"$HOME/Workspace/Docs\"\n"
+        "XDG_PICTURES_DIR=\"/mnt/media/Pictures\"\n";
+
+    const PathBuffer docsDir = Paths::parseXdgUserDirsEntry(kSampleUserDirs, "XDG_DOCUMENTS_DIR", "/home/user/");
+    EXPECT_EQ(docsDir.view(), gp::StringView("/home/user/Workspace/Docs/"));
+
+    const PathBuffer picsDir = Paths::parseXdgUserDirsEntry(kSampleUserDirs, "XDG_PICTURES_DIR", "/home/user/");
+    EXPECT_EQ(picsDir.view(), gp::StringView("/mnt/media/Pictures/"));
+
+    const PathBuffer missingDir = Paths::parseXdgUserDirsEntry(kSampleUserDirs, "XDG_MUSIC_DIR", "/home/user/");
+    EXPECT_TRUE(missingDir.isEmpty());
 }
 
 #if GP_PLATFORM_UNIX

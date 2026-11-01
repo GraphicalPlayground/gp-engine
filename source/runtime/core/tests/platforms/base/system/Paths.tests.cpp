@@ -4,7 +4,10 @@
 
 #include "platforms/base/system/Paths.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "threading/atomics/Atomic.hpp"
 #include <gtest/gtest.h>
+#include <thread>
+#include <vector>
 
 namespace gp::platform::tests
 {
@@ -83,6 +86,64 @@ TEST_F(PlatformPathsTest, EndToEndVfsMountRootConstructionAndRelativeResolution)
         Paths::tryMakeChildPathRelativeTo(saveGamesDir.view(), Paths::documentsDir(), relativeSaveSubpath, false)
     );
     EXPECT_EQ(relativeSaveSubpath, gp::StringView("GraphicalPlayground/SaveGames"));
+}
+
+TEST_F(PlatformPathsTest, MultiThreadedConcurrentCommandLineOverridesAreRaceFree)
+{
+    constexpr gp::UInt32 kThreadCount = 8u;
+    constexpr gp::UInt32 kIterationsPerThread = 250u;
+
+    const char* const argv[] = {
+        "gp-editor.exe", "-basedir=D:\\OverrideBase", "-appdata=D:\\OverrideAppData", "-userdir=D:\\OverrideDocs"
+    };
+    gp::CommandLine::initialize(4, argv);
+    Paths::setExecutablePathForTesting("C:\\CustomBin\\gp-editor.exe");
+
+    gp::thread::Atomic<bool> startLatch(false);
+    gp::thread::Atomic<gp::UInt32> readyThreads(0u);
+    gp::thread::Atomic<gp::UInt32> validChecks(0u);
+
+    std::vector<std::thread> workers;
+    workers.reserve(kThreadCount);
+
+    for (gp::UInt32 t = 0u; t < kThreadCount; ++t)
+    {
+        workers.emplace_back([&startLatch, &readyThreads, &validChecks]() noexcept
+        {
+            readyThreads.fetchAdd(1u, gp::memory::MemoryOrder::AcqRel);
+            while (!startLatch.load(gp::memory::MemoryOrder::Acquire))
+            {
+                std::this_thread::yield();
+            }
+
+            for (gp::UInt32 i = 0u; i < kIterationsPerThread; ++i)
+            {
+                const gp::StringView exeDir = Paths::executableDir();
+                const gp::StringView base = Paths::baseDir();
+                const gp::StringView appData = Paths::appDataDir();
+                const gp::StringView docs = Paths::documentsDir();
+
+                if (exeDir == "C:/CustomBin/" && base == "D:/OverrideBase/" && appData == "D:/OverrideAppData/" &&
+                    docs == "D:/OverrideDocs/")
+                {
+                    validChecks.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed);
+                }
+            }
+        });
+    }
+
+    while (readyThreads.load(gp::memory::MemoryOrder::Acquire) < kThreadCount)
+    {
+        std::this_thread::yield();
+    }
+    startLatch.store(true, gp::memory::MemoryOrder::Release);
+
+    for (std::thread& worker: workers)
+    {
+        worker.join();
+    }
+
+    EXPECT_EQ(validChecks.load(gp::memory::MemoryOrder::Acquire), kThreadCount * kIterationsPerThread);
 }
 
 }   // namespace gp::platform::tests
