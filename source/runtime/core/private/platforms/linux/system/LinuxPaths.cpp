@@ -3,6 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "platforms/linux/system/LinuxPaths.hpp"
+#include "threading/atomics/Atomic.hpp"
 #include <unistd.h>
 
 namespace gp::platform::linux
@@ -17,20 +18,27 @@ gp::StringView Paths::executablePath() noexcept
     }
 
     static PathBuffer s_exePathCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_exePathCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
+        PathBuffer computed{};
         char linkBuf[kMaxPathLength + 1u]{};
         const ssize_t readBytes = ::readlink("/proc/self/exe", linkBuf, kMaxPathLength);
         if (readBytes > 0 && static_cast<gp::USize>(readBytes) <= kMaxPathLength)
         {
             linkBuf[readBytes] = '\0';
-            s_exePathCache.assign(gp::StringView(linkBuf, static_cast<gp::USize>(readBytes)));
-            makeStandardFilename(s_exePathCache);
+            computed.assign(gp::StringView(linkBuf, static_cast<gp::USize>(readBytes)));
+            makeStandardFilename(computed);
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_exePathCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_exePathCache.view();
@@ -50,24 +58,32 @@ gp::StringView Paths::executableName(const bool removeExtension) noexcept
 gp::StringView Paths::executableDir() noexcept
 {
     static PathBuffer s_exeDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    const gp::StringView exePath = executablePath();
-    if (s_exeDirCache.isEmpty() || s_cachedGen != currentGen || !tryGetExecutablePathOverride().isEmpty())
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
+        const gp::StringView exePath = executablePath();
         const gp::StringView dirPart = getPath(exePath);
+        PathBuffer computed{};
         if (!dirPart.isEmpty())
         {
-            s_exeDirCache.assign(dirPart);
-            makeStandardFilename(s_exeDirCache);
-            ensureTrailingSeparator(s_exeDirCache);
+            const gp::USize clampedLen = (dirPart.size() <= kMaxPathLength) ? dirPart.size() : kMaxPathLength;
+            computed.assign(dirPart.substr(0u, clampedLen));
+            makeStandardFilename(computed);
+            ensureTrailingSeparator(computed);
         }
         else
         {
-            s_exeDirCache = workingDir();
+            computed = workingDir();
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_exeDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_exeDirCache.view();
