@@ -4,6 +4,7 @@
 
 #include "platforms/windows/system/WindowsPaths.hpp"
 #include "platforms/windows/WindowsHeaderWrapper.hpp"   // IWYU pragma: keep
+#include "threading/atomics/Atomic.hpp"
 #include <initguid.h>
 #include <KnownFolders.h>
 
@@ -110,19 +111,26 @@ gp::StringView Paths::executablePath() noexcept
     }
 
     static PathBuffer s_exePathCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_exePathCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
+        PathBuffer computed{};
         wchar_t wideModulePath[detail::kWin32WideBufferCapacity]{};
         const DWORD len =
             ::GetModuleFileNameW(nullptr, wideModulePath, static_cast<DWORD>(detail::kWin32WideBufferCapacity));
         if (len > 0u && len < detail::kWin32WideBufferCapacity)
         {
-            (void)detail::wideToNormalizedUtf8(wideModulePath, s_exePathCache, false);
+            (void)detail::wideToNormalizedUtf8(wideModulePath, computed, false);
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_exePathCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_exePathCache.view();
@@ -142,24 +150,32 @@ gp::StringView Paths::executableName(const bool removeExtension) noexcept
 gp::StringView Paths::executableDir() noexcept
 {
     static PathBuffer s_exeDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    const gp::StringView exePath = executablePath();
-    if (s_exeDirCache.isEmpty() || s_cachedGen != currentGen || !tryGetExecutablePathOverride().isEmpty())
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
+        const gp::StringView exePath = executablePath();
         const gp::StringView dirPart = getPath(exePath);
+        PathBuffer computed{};
         if (!dirPart.isEmpty())
         {
-            s_exeDirCache.assign(dirPart);
-            makeStandardFilename(s_exeDirCache);
-            ensureTrailingSeparator(s_exeDirCache);
+            const gp::USize clampedLen = (dirPart.size() <= kMaxPathLength) ? dirPart.size() : kMaxPathLength;
+            computed.assign(dirPart.substr(0u, clampedLen));
+            makeStandardFilename(computed);
+            ensureTrailingSeparator(computed);
         }
         else
         {
-            s_exeDirCache.assign("./");
+            computed.assign("./");
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_exeDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_exeDirCache.view();
@@ -196,13 +212,18 @@ PathBuffer Paths::workingDir() noexcept
 gp::StringView Paths::launchDir() noexcept
 {
     static PathBuffer s_launchDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_launchDirCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
-        s_launchDirCache = workingDir();
-        s_cachedGen = currentGen;
+        const PathBuffer computed = workingDir();
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_launchDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_launchDirCache.view();
@@ -211,19 +232,26 @@ gp::StringView Paths::launchDir() noexcept
 gp::StringView Paths::homeDir() noexcept
 {
     static PathBuffer s_homeDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_homeDirCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
-        if (!detail::queryShellKnownFolder(FOLDERID_Profile, s_homeDirCache))
+        PathBuffer computed{};
+        if (!detail::queryShellKnownFolder(FOLDERID_Profile, computed))
         {
-            if (!detail::queryWideEnvDirectory(L"USERPROFILE", s_homeDirCache))
+            if (!detail::queryWideEnvDirectory(L"USERPROFILE", computed))
             {
-                s_homeDirCache = executableDir();
+                computed.assign(executableDir());
             }
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_homeDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_homeDirCache.view();
@@ -238,19 +266,26 @@ gp::StringView Paths::appDataDir() noexcept
     }
 
     static PathBuffer s_appDataDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_appDataDirCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
-        if (!detail::queryShellKnownFolder(FOLDERID_RoamingAppData, s_appDataDirCache))
+        PathBuffer computed{};
+        if (!detail::queryShellKnownFolder(FOLDERID_RoamingAppData, computed))
         {
-            if (!detail::queryWideEnvDirectory(L"APPDATA", s_appDataDirCache))
+            if (!detail::queryWideEnvDirectory(L"APPDATA", computed))
             {
-                s_appDataDirCache = homeDir();
+                computed.assign(homeDir());
             }
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_appDataDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_appDataDirCache.view();
@@ -259,19 +294,26 @@ gp::StringView Paths::appDataDir() noexcept
 gp::StringView Paths::localAppDataDir() noexcept
 {
     static PathBuffer s_localAppDataDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_localAppDataDirCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
-        if (!detail::queryShellKnownFolder(FOLDERID_LocalAppData, s_localAppDataDirCache))
+        PathBuffer computed{};
+        if (!detail::queryShellKnownFolder(FOLDERID_LocalAppData, computed))
         {
-            if (!detail::queryWideEnvDirectory(L"LOCALAPPDATA", s_localAppDataDirCache))
+            if (!detail::queryWideEnvDirectory(L"LOCALAPPDATA", computed))
             {
-                s_localAppDataDirCache = appDataDir();
+                computed.assign(appDataDir());
             }
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_localAppDataDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_localAppDataDirCache.view();
@@ -296,17 +338,24 @@ gp::StringView Paths::documentsDir() noexcept
     }
 
     static PathBuffer s_documentsDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_documentsDirCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
-        if (!detail::queryShellKnownFolder(FOLDERID_Documents, s_documentsDirCache))
+        PathBuffer computed{};
+        if (!detail::queryShellKnownFolder(FOLDERID_Documents, computed))
         {
-            s_documentsDirCache = combine(homeDir(), "Documents");
-            ensureTrailingSeparator(s_documentsDirCache);
+            computed = combine(homeDir(), "Documents");
+            ensureTrailingSeparator(computed);
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_documentsDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_documentsDirCache.view();
@@ -320,11 +369,12 @@ gp::StringView Paths::userDir() noexcept
 gp::StringView Paths::tempDir() noexcept
 {
     static PathBuffer s_tempDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_tempDirCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
+        PathBuffer computed{};
         wchar_t shortTempBuf[detail::kWin32WideBufferCapacity]{};
         const DWORD tempLen = ::GetTempPathW(static_cast<DWORD>(detail::kWin32WideBufferCapacity), shortTempBuf);
         if (tempLen > 0u && tempLen < detail::kWin32WideBufferCapacity)
@@ -334,15 +384,21 @@ gp::StringView Paths::tempDir() noexcept
                 ::GetLongPathNameW(shortTempBuf, longTempBuf, static_cast<DWORD>(detail::kWin32WideBufferCapacity));
             const wchar_t* const chosenBuf =
                 (longLen > 0u && longLen < detail::kWin32WideBufferCapacity) ? longTempBuf : shortTempBuf;
-            (void)detail::wideToNormalizedUtf8(chosenBuf, s_tempDirCache, true);
+            (void)detail::wideToNormalizedUtf8(chosenBuf, computed, true);
         }
 
-        if (s_tempDirCache.isEmpty())
+        if (computed.isEmpty())
         {
-            s_tempDirCache = combine(localAppDataDir(), "Temp");
-            ensureTrailingSeparator(s_tempDirCache);
+            computed = combine(localAppDataDir(), "Temp");
+            ensureTrailingSeparator(computed);
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_tempDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_tempDirCache.view();
