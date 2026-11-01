@@ -145,6 +145,9 @@ void* LinearAllocator::allocate(const gp::USize sizeInBytes, const gp::UInt32 al
     }
 
     const gp::UInt32 effectiveAlignment = math::max<gp::UInt32>(alignment, kMinimumAlignment);
+    GP_ASSERT(
+        math::isPowerOfTwo(effectiveAlignment), "LinearAllocator::allocate requires a power-of-two byte alignment."
+    );
     const gp::UInt64 baseAddress = reinterpret_cast<gp::UInt64>(m_buffer);
     const gp::UInt64 currentAddress = baseAddress + static_cast<gp::UInt64>(m_offset);
     const gp::UInt64 alignedAddress = memory::align(currentAddress, static_cast<gp::UInt64>(effectiveAlignment));
@@ -218,13 +221,25 @@ void* LinearAllocator::reallocate(
     // If shrinking a non-top allocation and alignment is already satisfied, keep the existing block in place.
     if (newSizeInBytes <= oldSizeInBytes && memory::isAligned(ptr, static_cast<gp::UInt64>(effectiveAlignment)))
     {
+        const gp::USize delta = oldSizeInBytes - newSizeInBytes;
+        m_stats.allocatedBytes = m_stats.allocatedBytes >= delta ? (m_stats.allocatedBytes - delta) : 0u;
         return ptr;
     }
 
     void* const newPtr = allocate(newSizeInBytes, effectiveAlignment);
-    if (newPtr != nullptr && oldSizeInBytes > 0u) [[likely]]
+    if (newPtr != nullptr) [[likely]]
     {
-        memory::copyMemory(newPtr, ptr, math::min(oldSizeInBytes, newSizeInBytes));
+        if (oldSizeInBytes > 0u)
+        {
+            memory::copyMemory(newPtr, ptr, math::min(oldSizeInBytes, newSizeInBytes));
+            m_stats.allocatedBytes =
+                m_stats.allocatedBytes >= oldSizeInBytes ? (m_stats.allocatedBytes - oldSizeInBytes) : 0u;
+        }
+
+        if (m_stats.activeAllocations > 0ull)
+        {
+            --m_stats.activeAllocations;
+        }
     }
 
     return newPtr;
