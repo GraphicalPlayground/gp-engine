@@ -193,12 +193,11 @@ template <typename InSizeType>
 #if GP_CONTAINER_INITIAL_ALLOC_ZERO_SLACK
     if (currentSize)
     {
-        const gp::USize proportionalSlack =
-            (requestedElements / GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
-                GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR +
-            ((requestedElements % GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
-             GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR) /
-                GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR;
+        const gp::USize proportionalSlack = (requestedElements / GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
+                                                GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR +
+                                            ((requestedElements % GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
+                                             GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR) /
+                                                GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR;
         grow = requestedElements + proportionalSlack + constantGrow;
     }
     else if (requestedElements > grow)
@@ -208,12 +207,11 @@ template <typename InSizeType>
 #else
     if (currentSize || requestedElements > grow)
     {
-        const gp::USize proportionalSlack =
-            (requestedElements / GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
-                GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR +
-            ((requestedElements % GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
-             GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR) /
-                GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR;
+        const gp::USize proportionalSlack = (requestedElements / GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
+                                                GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR +
+                                            ((requestedElements % GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
+                                             GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR) /
+                                                GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR;
         grow = requestedElements + proportionalSlack + constantGrow;
     }
 #endif
