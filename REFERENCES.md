@@ -128,6 +128,150 @@ _Foundational textbooks, architectural bibles, and advanced rendering literature
       </a>
     </td>
   </tr>
+  <tr>
+    <td width="170">
+      <img
+        src="https://m.media-amazon.com/images/I/81zB2XpFhXL._SY522_.jpg"
+        alt="Mastering Graphics Programming With Vulkan"
+        width="150"
+      />
+    </td>
+    <td valign="top">
+      <h3>Mastering Graphics Programming With Vulkan</h3>
+      <p>by
+        <strong><a href="https://www.linkedin.com/in/marcocastorina/">Marco Castorina</a></strong>,
+        <strong><a href="https://www.linkedin.com/in/gabrielsassone/">Gabriel Sassone</a></strong>
+      </p>
+      <p>
+        A practical guide to Vulkan, covering advanced topics like GPU-driven rendering, ray tracing,
+        and performance optimization.
+      </p>
+      <a
+        alt="Buy on Amazon"
+        href="https://www.amazon.com/dp/B0HD177FKT"
+      >
+        Buy on Amazon
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td width="170">
+      <img
+        src="https://m.media-amazon.com/images/I/81i4dQlHUIL._SY522_.jpg"
+        alt="GPU Pro Series: Advanced Rendering Techniques"
+        width="150"
+      />
+    </td>
+    <td valign="top">
+      <h3>GPU Pro Series: Advanced Rendering Techniques</h3>
+      <p>by
+        <strong><a href="https://www.linkedin.com/in/wolfgangengel/">Wolfgang Engel</a></strong>
+      </p>
+      <p>
+        A collection of articles and techniques from industry experts, covering a wide range of
+        graphics programming topics, from rendering techniques to optimization strategies.
+      </p>
+      <span>
+        Buy on Amazon:
+        <a
+          alt="Buy on Volume 1 Amazon"
+          href="https://www.amazon.com/dp/B00SC81GPU"
+        >
+          Volume 1
+        </a>,
+        <a
+          alt="Buy on Volume 2 Amazon"
+          href="https://www.amazon.com/dp/B00OD4G2G0"
+        >
+          Volume 2
+        </a>,
+        <a
+          alt="Buy on Volume 3 Amazon"
+          href="https://www.amazon.com/dp/B00OD4DT2K"
+        >
+          Volume 3
+        </a>,
+        <a
+          alt="Buy on Volume 4 Amazon"
+          href="https://www.amazon.com/dp/B00OD421OW"
+        >
+          Volume 4
+        </a>,
+        <a
+          alt="Buy on Volume 5 Amazon"
+          href="https://www.amazon.com/dp/B00OD3ZEQA"
+        >
+          Volume 5
+        </a>,
+        <a
+          alt="Buy on Volume 6 Amazon"
+          href="https://www.amazon.com/dp/B07NPQZ3NX"
+        >
+          Volume 6
+        </a>,
+        <a
+          alt="Buy on Volume 7 Amazon"
+          href="https://www.amazon.com/dp/B07NPK73PK"
+        >
+          Volume 7
+        </a>
+      </span>
+    </td>
+  </tr>
+  <tr>
+    <td width="170">
+      <img
+        src="https://m.media-amazon.com/images/I/81KDVm3AkdL._SY522_.jpg"
+        alt="GPU Zen Series: Advanced Rendering Techniques"
+        width="150"
+      />
+    </td>
+    <td valign="top">
+      <h3>GPU Zen Series: Advanced Rendering Techniques</h3>
+      <p>by
+        <strong><a href="https://www.linkedin.com/in/wolfgangengel/">Wolfgang Engel</a></strong>,
+        <strong><a href="https://www.linkedin.com/in/laurareznikov/">Laura Reznikov</a></strong>,
+        <strong><a href="https://www.linkedin.com/in/bazhenovc/">Kirill Bazhenov</a></strong>,
+        <strong><a href="https://www.linkedin.com/in/lopeznicolas/">Nicolas Lopez</a></strong>,
+        <strong><a href="https://www.linkedin.com/in/victorblancoruiz/">Victor Blanco</a></strong>,
+        <strong><a href="https://www.linkedin.com/in/kaplanyan/">Anton Kaplanyan</a></strong>,
+        <strong><a href="https://www.linkedin.com/in/petersikachev/">Peter Sickachev</a></strong>,
+        <strong><a href="https://www.linkedin.com/in/wbahnassi/">Wessam Bahnassi</a></strong>
+      </p>
+      <p>
+        A continuation of the GPU Pro series, this collection focuses on cutting-edge rendering
+        techniques, including real-time ray tracing, global illumination, and advanced shading
+        models.
+      </p>
+      <span>
+        Buy on Amazon:
+        <a
+          alt="Buy on Volume 1 Amazon"
+          href="https://www.amazon.com/dp/B0711SD1DW"
+        >
+          Volume 1
+        </a>,
+        <a
+          alt="Buy on Volume 2 Amazon"
+          href="https://www.amazon.com/dp/B07SYP7P6B"
+        >
+          Volume 2
+        </a>,
+        <a
+          alt="Buy on Volume 3 Amazon"
+          href="https://www.amazon.com/dp/B0DNWXT24X"
+        >
+          Volume 3
+        </a>,
+        <a
+          alt="Buy on Volume 4 Amazon"
+          href="https://www.amazon.com/dp/B0GP9TJXYM"
+        >
+          Volume 4
+        </a>
+      </span>
+    </td>
+  </tr>
 </table>
 
 ## Conferences & Presentations
@@ -150,6 +294,14 @@ _GDC, SIGGRAPH, CppCon, and other industry talks that shaped our technical decis
         South Korea's premier international game conference featuring keynotes, technical sessions,
         and narrative design insights from industry leaders and AAA studios worldwide.
       </p>
+      <p><strong>Physically Attended:</strong></p>
+      <blockquote>
+        Thanks to <a href="https://www.kmu.ac.kr">Keimyung University</a> for sponsoring our attendance!
+      </blockquote>
+      <ul>
+        <li><strong><a href="https://github.com/mallory-scotton">@mallory-scotton</a></strong></li>
+        <li><strong><a href="https://github.com/Hugo-Cathelain">@hugo-cathelain</a></strong></li>
+      </ul>
       <p><strong>Featured Studios &amp; Speakers:</strong></p>
       <ul>
         <li>
@@ -212,10 +364,250 @@ _GDC, SIGGRAPH, CppCon, and other industry talks that shaped our technical decis
 
 _Codebases we’ve studied, integrated, or taken architectural inspiration from._
 
-- **[Project/Engine Name]**
-  - _Inspiration:_ [e.g., "Inspired our modular plugin system and Entity Component System
-    (ECS) design."]
-  - _Link:_ [GitHub/Website]
+> [!IMPORTANT]
+> **Licensing Notice:** While engines such as **Godot Engine** and historical **id Tech** releases (id Tech 1-4)
+> are freely available under permissive or copyleft open-source licenses (MIT and GPL), **Unreal Engine** and
+> **Unity** are **proprietary, source-available or reference-only engines**. Their source code is governed by
+> restrictive commercial End User License Agreements (EULA) and reference licenses, not OSI-approved open-source
+> licenses. Please see individual engine entries for their respective licensing terms.
+
+<table>
+  <tr>
+    <td width="170">
+      <img
+        src="https://cdn.simpleicons.org/unrealengine/black/white"
+        alt="Unreal Engine Logo"
+        width="150"
+      />
+    </td>
+    <td valign="top">
+      <h3>Unreal Engine</h3>
+      <p>by <strong><a href="https://www.epicgames.com">Epic Games</a></strong></p>
+      <p>
+        Epic Games' flagship engine stands as an industry benchmark for state-of-the-art AAA
+        production architecture. We study Unreal Engine extensively for its robust Render Hardware
+        Interface (RHI) hardware abstraction layer, Nanite virtualized micropolygon geometry,
+        Lumen real-time dynamic global illumination, hierarchical Task Graph multithreaded job
+        dispatching, and cache-conscious low-level memory allocators (BinnedAllocators).
+      </p>
+      <p>
+        <strong>Architectural Influence:</strong>
+        Explicit RHI command list recording, memory arena abstractions, and deferred shading passes.
+      </p>
+      <p>
+        <strong>License Disclaimer:</strong>
+        Unreal Engine is <em>source-available proprietary software</em> governed by the
+        <a href="https://www.unrealengine.com/eula/unreal">Unreal Engine End User License Agreement (EULA)</a>.
+        Access to its source code requires registration with Epic Games and linking an account;
+        it is <strong>not</strong> open source (not OSI-compliant). Commercial distribution, revenue
+        thresholds, and royalties are governed by the EULA.
+      </p>
+      <span>
+        Resources:
+        <a
+          alt="Unreal Engine GitHub"
+          href="https://github.com/EpicGames/UnrealEngine"
+        >
+          GitHub Repository
+        </a>,
+        <a
+          alt="Unreal Engine Official Website"
+          href="https://www.unrealengine.com"
+        >
+          Official Website
+        </a>
+      </span>
+    </td>
+  </tr>
+  <tr>
+    <td width="170">
+      <img
+        src="https://cdn.simpleicons.org/unity/black/white"
+        alt="Unity Logo"
+        width="150"
+      />
+    </td>
+    <td valign="top">
+      <h3>Unity</h3>
+      <p>by <strong><a href="https://unity.com">Unity Technologies</a></strong></p>
+      <p>
+        Unity popularized commercial Data-Oriented Design (DOD) through its Data-Oriented
+        Technology Stack (DOTS). We study Unity for its archetype-based Entity Component System
+        (Entities/ECS), the chunk-based memory layout prioritizing L1/L2 cache locality, the
+        high-performance job scheduling system, and the modular Scriptable Render Pipeline (SRP)
+        architecture.
+      </p>
+      <p>
+        <strong>Architectural Influence:</strong>
+        Cache-friendly chunk-based entity component storage, SOA vs. AOS memory layout principles,
+        and fine-grained job-based execution graphs.
+      </p>
+      <p>
+        <strong>License Disclaimer:</strong>
+        Unity is <em>proprietary commercial software</em>. The reference source code published in
+        <a href="https://github.com/Unity-Technologies/UnityCsReference">UnityCsReference</a> is provided
+        under the <a href="https://unity.com/legal/licenses/unity-companion-license">Unity Companion License (UCL)</a>
+        strictly for reference, educational, and debugging purposes. It is <strong>not</strong> open
+        source and does not permit redistribution or incorporation into competing game engines.
+      </p>
+      <span>
+        Resources:
+        <a
+          alt="Unity C# Reference GitHub"
+          href="https://github.com/Unity-Technologies/UnityCsReference"
+        >
+          Reference Repository
+        </a>,
+        <a
+          alt="Unity Official Website"
+          href="https://unity.com"
+        >
+          Official Website
+        </a>
+      </span>
+    </td>
+  </tr>
+  <tr>
+    <td width="170">
+      <img
+        src="https://upload.wikimedia.org/wikipedia/commons/6/6a/Godot_icon.svg"
+        alt="Godot Engine Logo"
+        width="150"
+      />
+    </td>
+    <td valign="top">
+      <h3>Godot Engine</h3>
+      <p>
+        by <strong><a href="https://godot.foundation">Godot Foundation</a></strong>
+        (Juan Linietsky, Ariel Manzur &amp; Contributors)
+      </p>
+      <p>
+        The premier open-source 2D and 3D game engine. Godot exemplifies a clean, modular C++
+        architecture with zero external dependency bloat. We deeply appreciate Godot's decoupled
+        server architecture (such as <code>RenderingServer</code> and <code>PhysicsServer</code>),
+        its explicit node hierarchy, lightweight resource management pipelines, and modern Vulkan
+        rendering backend.
+      </p>
+      <p>
+        <strong>Architectural Influence:</strong>
+        Decoupled server/client subsystem boundaries, lightweight handle-based resource pipelines,
+        and clean cross-platform abstraction layers (OS/DisplayServer).
+      </p>
+      <p>
+        <strong>License:</strong>
+        Fully Free and Open Source under the
+        <a href="https://github.com/godotengine/godot/blob/master/LICENSE.txt">MIT License</a>.
+      </p>
+      <span>
+        Resources:
+        <a
+          alt="Godot GitHub"
+          href="https://github.com/godotengine/godot"
+        >
+          GitHub Repository
+        </a>,
+        <a
+          alt="Godot Official Website"
+          href="https://godotengine.org"
+        >
+          Official Website
+        </a>
+      </span>
+    </td>
+  </tr>
+  <tr>
+    <td width="170">
+      <img
+        src="https://cdn.simpleicons.org/cryengine/black/white"
+        alt="CRYENGINE Logo"
+        width="150"
+      />
+    </td>
+    <td valign="top">
+      <h3>CRYENGINE</h3>
+      <p>by <strong><a href="https://www.crytek.com">Crytek</a></strong></p>
+      <p>
+        Renowned for pushing the boundaries of real-time photorealism and large-scale world
+        rendering. CRYENGINE provides invaluable architectural lessons in physically based
+        rendering (PBR), Sparse Voxel Octree Global Illumination (SVOGI), volumetric cloud and
+        fog simulation, RenderGraph resource transitions, and high-throughput multithreaded task
+        dispatching.
+      </p>
+      <p>
+        <strong>Architectural Influence:</strong>
+        RenderGraph pass dependency tracking, transient resource aliasing, and volumetric lighting
+        integrals.
+      </p>
+      <p>
+        <strong>License:</strong>
+        Source-available under the
+        <a href="https://www.cryengine.com/ce-terms">Crytek CRYENGINE License Agreement</a>.
+      </p>
+      <span>
+        Resources:
+        <a
+          alt="CRYENGINE GitHub"
+          href="https://github.com/CRYTEK/CRYENGINE"
+        >
+          GitHub Repository
+        </a>,
+        <a
+          alt="CRYENGINE Official Website"
+          href="https://www.cryengine.com"
+        >
+          Official Website
+        </a>
+      </span>
+    </td>
+  </tr>
+  <tr>
+    <td width="170">
+      <img
+        src="https://avatars.githubusercontent.com/u/1395534?v=4"
+        alt="id Software / id Tech Logo"
+        width="150"
+      />
+    </td>
+    <td valign="top">
+      <h3>id Tech</h3>
+      <p>by <strong><a href="https://www.idsoftware.com">id Software</a></strong> (John Carmack &amp; Team)</p>
+      <p>
+        The seminal lineage of real-time 3D engine engineering. From id Tech 1 (Doom BSP trees)
+        and id Tech 2/3 (Quake client-server network model, PVS visibility, fast inverse square root)
+        to id Tech 4 (Doom 3 unified per-pixel dynamic lighting) and modern id Tech 6/7 (Vulkan
+        zero-driver-overhead architecture, Megatexture evolution, and lock-free job concurrency).
+        John Carmack's publicly released codebases remain the gold standard of mechanical sympathy
+        and masterclass pedagogical code clarity.
+      </p>
+      <p>
+        <strong>Architectural Influence:</strong>
+        Mechanical sympathy, rigorous data alignment, lock-free linear allocators, deterministic
+        command buffer recording, and minimal abstraction overhead.
+      </p>
+      <p>
+        <strong>License:</strong>
+        Historical codebases (id Tech 1 through 4) are open source under the
+        <a href="https://github.com/id-Software">GNU General Public License (GPL v2/v3)</a>. Modern
+        engines (id Tech 6, 7, and 8) are proprietary technology of id Software / Bethesda Softworks.
+      </p>
+      <span>
+        Resources:
+        <a
+          alt="id Software GitHub"
+          href="https://github.com/id-Software"
+        >
+          GitHub Organization
+        </a>,
+        <a
+          alt="id Software Official Website"
+          href="https://www.idsoftware.com"
+        >
+          Official Website
+        </a>
+      </span>
+    </td>
+  </tr>
+</table>
 
 ## Tutorials & Articles
 
