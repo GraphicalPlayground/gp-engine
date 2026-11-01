@@ -7,6 +7,7 @@
 #include "memory/allocators/HeapAllocator.hpp"
 #include "memory/Memory.hpp"   // IWYU pragma: keep
 #include "profiling/Profiler.hpp"
+#include <limits>
 #include <utility>
 
 namespace gp::memory
@@ -44,6 +45,7 @@ PoolAllocator::PoolAllocator(PoolAllocator&& other) noexcept
     , m_stride(std::exchange(other.m_stride, 0u))
     , m_blockCount(std::exchange(other.m_blockCount, 0u))
     , m_usedBlockCount(std::exchange(other.m_usedBlockCount, 0u))
+    , m_initializedBlockCount(std::exchange(other.m_initializedBlockCount, 0u))
     , m_blockAlignment(other.m_blockAlignment)
     , m_stats(std::exchange(other.m_stats, AllocatorStats{}))
     , m_ownsBuffer(std::exchange(other.m_ownsBuffer, false))
@@ -64,6 +66,7 @@ PoolAllocator& PoolAllocator::operator=(PoolAllocator&& other) noexcept
         m_stride = std::exchange(other.m_stride, 0u);
         m_blockCount = std::exchange(other.m_blockCount, 0u);
         m_usedBlockCount = std::exchange(other.m_usedBlockCount, 0u);
+        m_initializedBlockCount = std::exchange(other.m_initializedBlockCount, 0u);
         m_blockAlignment = other.m_blockAlignment;
         m_stats = std::exchange(other.m_stats, AllocatorStats{});
         m_ownsBuffer = std::exchange(other.m_ownsBuffer, false);
@@ -101,6 +104,11 @@ bool PoolAllocator::initialize(
     const gp::USize stride = static_cast<gp::USize>(
         memory::align(static_cast<gp::UInt64>(minBlockSize), static_cast<gp::UInt64>(effectiveAlignment))
     );
+    if (stride < minBlockSize || blockCount > (std::numeric_limits<gp::USize>::max() / stride)) [[unlikely]]
+    {
+        return false;
+    }
+
     const gp::USize totalBytes = stride * blockCount;
 
     Malloc* resolvedMalloc = (backingMalloc != nullptr) ? backingMalloc : detail::resolveActiveMalloc();
@@ -212,13 +220,14 @@ void PoolAllocator::shutdown() noexcept
     m_stride = 0u;
     m_blockCount = 0u;
     m_usedBlockCount = 0u;
+    m_initializedBlockCount = 0u;
     m_stats = AllocatorStats{};
     m_ownsBuffer = false;
 }
 
 void* PoolAllocator::allocate(const gp::USize sizeInBytes, const gp::UInt32 alignment) noexcept
 {
-    if (!isValid() || sizeInBytes == 0u || m_freeListHead == nullptr) [[unlikely]]
+    if (!isValid() || sizeInBytes == 0u) [[unlikely]]
     {
         return nullptr;
     }
@@ -229,8 +238,22 @@ void* PoolAllocator::allocate(const gp::USize sizeInBytes, const gp::UInt32 alig
         return nullptr;
     }
 
-    FreeBlock* block = m_freeListHead;
-    m_freeListHead = block->next;
+    void* resultBlock = nullptr;
+    if (m_freeListHead != nullptr)
+    {
+        FreeBlock* block = m_freeListHead;
+        m_freeListHead = block->next;
+        resultBlock = static_cast<void*>(block);
+    }
+    else if (m_initializedBlockCount < m_blockCount)
+    {
+        resultBlock = static_cast<void*>(m_alignedStart + (m_initializedBlockCount * m_stride));
+        ++m_initializedBlockCount;
+    }
+    else [[unlikely]]
+    {
+        return nullptr;
+    }
 
     ++m_usedBlockCount;
     m_stats.allocatedBytes = m_usedBlockCount * m_stride;
@@ -240,7 +263,7 @@ void* PoolAllocator::allocate(const gp::USize sizeInBytes, const gp::UInt32 alig
 
     GP_PLOT(m_poolName, static_cast<gp::Int64>(m_stats.allocatedBytes));
 
-    return static_cast<void*>(block);
+    return resultBlock;
 }
 
 void* PoolAllocator::reallocate(
@@ -282,10 +305,21 @@ void PoolAllocator::deallocate(
     }
 
     GP_ASSERT(owns(ptr), "PoolAllocator::deallocate called with a pointer outside this pool's buffer.");
+    if (!owns(ptr)) [[unlikely]]
+    {
+        return;
+    }
 
     const gp::UIntPtr byteOffset = reinterpret_cast<gp::UIntPtr>(ptr) - reinterpret_cast<gp::UIntPtr>(m_alignedStart);
     GP_ASSERT((byteOffset % m_stride) == 0u, "PoolAllocator::deallocate called with a misaligned block pointer.");
-    (void)byteOffset;
+    GP_ASSERT(
+        ptr != static_cast<const void*>(m_freeListHead),
+        "PoolAllocator::deallocate detected an immediate double-free at the head of the free list."
+    );
+    if ((byteOffset % m_stride) != 0u || ptr == static_cast<const void*>(m_freeListHead)) [[unlikely]]
+    {
+        return;
+    }
 
     FreeBlock* block = static_cast<FreeBlock*>(ptr);
     block->next = m_freeListHead;
@@ -358,23 +392,8 @@ void PoolAllocator::reset() noexcept
 
 void PoolAllocator::rebuildFreeList() noexcept
 {
-    if (m_alignedStart == nullptr || m_blockCount == 0u || m_stride == 0u)
-    {
-        m_freeListHead = nullptr;
-        return;
-    }
-
-    m_freeListHead = reinterpret_cast<FreeBlock*>(m_alignedStart);
-    FreeBlock* current = m_freeListHead;
-
-    for (gp::USize index = 1u; index < m_blockCount; ++index)
-    {
-        FreeBlock* nextBlock = reinterpret_cast<FreeBlock*>(m_alignedStart + (index * m_stride));
-        current->next = nextBlock;
-        current = nextBlock;
-    }
-
-    current->next = nullptr;
+    m_freeListHead = nullptr;
+    m_initializedBlockCount = 0u;
 }
 
 }   // namespace gp::memory
