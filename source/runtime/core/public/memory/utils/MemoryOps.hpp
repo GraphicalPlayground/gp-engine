@@ -25,6 +25,11 @@ GP_FORCEINLINE_HINT constexpr void defaultConstructItems(void* address, const In
 {
     if constexpr (!concepts::IsTriviallyConstructible<InElementType>)
     {
+        if (count <= 0 || address == nullptr) [[unlikely]]
+        {
+            return;
+        }
+
         InElementType* element = static_cast<InElementType*>(address);
         for (InSizeType i = 0; i < count; ++i)
         {
@@ -171,9 +176,20 @@ GP_FORCEINLINE_HINT void moveConstructItems(void* destination, InElementType* so
     else
     {
         InElementType* destElement = static_cast<InElementType*>(destination);
-        for (InSizeType i = 0; i < count; ++i)
+        if (destElement > source && destElement < (source + count)) [[unlikely]]
         {
-            ::new (static_cast<void*>(destElement + i)) InElementType(std::move(source[i]));
+            for (InSizeType i = count; i > 0; --i)
+            {
+                const InSizeType index = i - static_cast<InSizeType>(1);
+                ::new (static_cast<void*>(destElement + index)) InElementType(std::move(source[index]));
+            }
+        }
+        else
+        {
+            for (InSizeType i = 0; i < count; ++i)
+            {
+                ::new (static_cast<void*>(destElement + i)) InElementType(std::move(source[i]));
+            }
         }
     }
 }
@@ -207,6 +223,20 @@ GP_FORCEINLINE_HINT void
     {
         using SourceTypeAlias = InSourceType;
         InDestinationType* destElement = static_cast<InDestinationType*>(destination);
+        if constexpr (concepts::IsSameAs<InDestinationType, InSourceType>)
+        {
+            if (destElement > source && destElement < (source + count)) [[unlikely]]
+            {
+                for (InSizeType i = count; i > 0; --i)
+                {
+                    const InSizeType index = i - static_cast<InSizeType>(1);
+                    ::new (static_cast<void*>(destElement + index)) InDestinationType(std::move(source[index]));
+                    source[index].SourceTypeAlias::~SourceTypeAlias();
+                }
+                return;
+            }
+        }
+
         for (InSizeType i = 0; i < count; ++i)
         {
             ::new (static_cast<void*>(destElement + i)) InDestinationType(std::move(source[i]));
