@@ -100,10 +100,17 @@ TEST(AlignedHeapAllocatorTest, CanonicalSimdAndCacheLineAliases)
     EXPECT_EQ(a16, b16);
 
     // Verify owns() rejects misaligned addresses
-    alignas(64) gp::UInt8 rawBuffer[128]{};
+    alignas(CacheAlignedHeapAllocator::kGuaranteedAlignment)
+        gp::UInt8 rawBuffer[CacheAlignedHeapAllocator::kGuaranteedAlignment * 2u]{};
     CacheAlignedHeapAllocator cacheAlloc{};
     EXPECT_TRUE(cacheAlloc.owns(&rawBuffer[0]));
     EXPECT_FALSE(cacheAlloc.owns(&rawBuffer[1]));
+    EXPECT_FALSE(cacheAlloc.owns(nullptr));
+
+    if constexpr (CacheAlignedHeapAllocator::kGuaranteedAlignment > 64u)
+    {
+        EXPECT_FALSE(cacheAlloc.owns(&rawBuffer[64]));
+    }
 }
 
 }   // namespace gp::memory::tests
