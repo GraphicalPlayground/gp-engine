@@ -3,6 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "platforms/apple/system/ApplePaths.hpp"
+#include "threading/atomics/Atomic.hpp"
 #include <cstdlib>
 #include <limits.h>
 #include <mach-o/dyld.h>
@@ -33,21 +34,30 @@ gp::StringView Paths::executablePath() noexcept
     }
 
     static PathBuffer s_exePathCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_exePathCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
+        PathBuffer computed{};
         char rawExecBuf[kMaxPathLength + 1u]{};
         gp::UInt32 bufSize = static_cast<gp::UInt32>(kMaxPathLength);
         if (::_NSGetExecutablePath(rawExecBuf, &bufSize) == 0 && rawExecBuf[0] != '\0')
         {
             char realPathBuf[PATH_MAX]{};
             const char* const canonical = ::realpath(rawExecBuf, realPathBuf);
-            s_exePathCache.assign((canonical != nullptr) ? canonical : rawExecBuf);
-            makeStandardFilename(s_exePathCache);
+            const gp::StringView chosenView((canonical != nullptr) ? canonical : rawExecBuf);
+            const gp::USize clampedLen = (chosenView.size() <= kMaxPathLength) ? chosenView.size() : kMaxPathLength;
+            computed.assign(chosenView.substr(0u, clampedLen));
+            makeStandardFilename(computed);
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_exePathCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_exePathCache.view();
@@ -67,24 +77,32 @@ gp::StringView Paths::executableName(const bool removeExtension) noexcept
 gp::StringView Paths::executableDir() noexcept
 {
     static PathBuffer s_exeDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    const gp::StringView exePath = executablePath();
-    if (s_exeDirCache.isEmpty() || s_cachedGen != currentGen || !tryGetExecutablePathOverride().isEmpty())
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
+        const gp::StringView exePath = executablePath();
         const gp::StringView dirPart = getPath(exePath);
+        PathBuffer computed{};
         if (!dirPart.isEmpty())
         {
-            s_exeDirCache.assign(dirPart);
-            makeStandardFilename(s_exeDirCache);
-            ensureTrailingSeparator(s_exeDirCache);
+            const gp::USize clampedLen = (dirPart.size() <= kMaxPathLength) ? dirPart.size() : kMaxPathLength;
+            computed.assign(dirPart.substr(0u, clampedLen));
+            makeStandardFilename(computed);
+            ensureTrailingSeparator(computed);
         }
         else
         {
-            s_exeDirCache = workingDir();
+            computed = workingDir();
         }
-        s_cachedGen = currentGen;
+
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_exeDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_exeDirCache.view();
@@ -101,6 +119,32 @@ gp::StringView Paths::baseDir() noexcept
     return executableDir();
 }
 
+gp::StringView Paths::appResourcesDir() noexcept
+{
+    const gp::StringView overrideDir = tryGetBaseDirOverride();
+    if (!overrideDir.isEmpty())
+    {
+        return overrideDir;
+    }
+
+    static PathBuffer s_resourcesDirCache{};
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
+    const gp::UInt32 currentGen = getCacheGeneration();
+
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
+    {
+        const PathBuffer computed = resolveMacOsBundleResourcesDir(executableDir());
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_resourcesDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
+    }
+
+    return s_resourcesDirCache.view();
+}
+
 gp::StringView Paths::appDataDir() noexcept
 {
     const gp::StringView overrideDir = tryGetAppDataDirOverride();
@@ -110,14 +154,19 @@ gp::StringView Paths::appDataDir() noexcept
     }
 
     static PathBuffer s_appDataDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_appDataDirCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
-        s_appDataDirCache =
+        const PathBuffer computed =
             resolveXdgDirectory(detail::getEnvView("XDG_DATA_HOME"), homeDir(), "Library/Application Support");
-        s_cachedGen = currentGen;
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_appDataDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_appDataDirCache.view();
@@ -126,13 +175,19 @@ gp::StringView Paths::appDataDir() noexcept
 gp::StringView Paths::localAppDataDir() noexcept
 {
     static PathBuffer s_localAppDataDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_localAppDataDirCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
-        s_localAppDataDirCache = resolveXdgDirectory(detail::getEnvView("XDG_CACHE_HOME"), homeDir(), "Library/Caches");
-        s_cachedGen = currentGen;
+        const PathBuffer computed =
+            resolveXdgDirectory(detail::getEnvView("XDG_CACHE_HOME"), homeDir(), "Library/Caches");
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_localAppDataDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_localAppDataDirCache.view();
@@ -141,14 +196,19 @@ gp::StringView Paths::localAppDataDir() noexcept
 gp::StringView Paths::userConfigDir() noexcept
 {
     static PathBuffer s_userConfigDirCache{};
-    static gp::UInt32 s_cachedGen = 0u;
+    static gp::thread::Atomic<gp::UInt32> s_cachedGen(0u);
     const gp::UInt32 currentGen = getCacheGeneration();
 
-    if (s_userConfigDirCache.isEmpty() || s_cachedGen != currentGen) [[unlikely]]
+    if (s_cachedGen.load(gp::memory::MemoryOrder::Acquire) != currentGen) [[unlikely]]
     {
-        s_userConfigDirCache =
+        const PathBuffer computed =
             resolveXdgDirectory(detail::getEnvView("XDG_CONFIG_HOME"), homeDir(), "Library/Preferences");
-        s_cachedGen = currentGen;
+        const ScopedCacheLock lock;
+        if (s_cachedGen.load(gp::memory::MemoryOrder::Relaxed) != currentGen)
+        {
+            s_userConfigDirCache = computed;
+            s_cachedGen.store(currentGen, gp::memory::MemoryOrder::Release);
+        }
     }
 
     return s_userConfigDirCache.view();
