@@ -40,6 +40,11 @@ public:
     /// @return Non-owning `StringView` pointing to the static `.bss` base directory cache (guaranteed trailing `'/'`).
     [[nodiscard]] static gp::StringView baseDir() noexcept;
 
+    /// @brief Queries the read-only `.app` bundle `Contents/Resources/` directory (or `baseDir()` if not in a bundle).
+    /// @return Non-owning `StringView` pointing to the static `.bss` resources directory cache (guaranteed trailing
+    ///         `'/'`).
+    [[nodiscard]] static gp::StringView appResourcesDir() noexcept;
+
     /// @brief Queries the Apple application support directory (`$XDG_DATA_HOME` if set, else
     ///        `$HOME/Library/Application Support/`).
     /// @return Non-owning `StringView` pointing to the static `.bss` AppData directory cache (guaranteed trailing
