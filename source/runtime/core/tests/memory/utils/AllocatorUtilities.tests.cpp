@@ -23,8 +23,7 @@ constexpr bool testConstexprSlackCalculations() noexcept
     // Regression: Large Int32 values (> INT32_MAX / 2) must not trigger signed 32-bit multiplication overflow UB!
     const gp::Int32 largeCurrent = 1'200'000'000;
     const gp::Int32 largeNew = 1'199'999'960;
-    const gp::Int32 shrinkLarge =
-        detail::defaultCalculateSlackShrink<gp::Int32>(largeNew, largeCurrent, 1u, false, 8u);
+    const gp::Int32 shrinkLarge = detail::defaultCalculateSlackShrink<gp::Int32>(largeNew, largeCurrent, 1u, false, 8u);
     if (shrinkLarge != largeCurrent)
     {
         return false;
@@ -188,14 +187,12 @@ TEST(AllocatorUtilitiesTest, AllocatorAwareSlackFunctionsRespectBoundAllocatorQu
 {
     FixedBufferAllocator<60u, 16u> fixedArena{};
     // 13 elements of 4 bytes = 52 bytes -> FixedBufferAllocator does not overround past 60 bytes
-    const gp::USize reservedInFixed =
-        calculateSlackReserve<gp::USize>(fixedArena, 13u, sizeof(gp::UInt32), true, 16u);
+    const gp::USize reservedInFixed = calculateSlackReserve<gp::USize>(fixedArena, 13u, sizeof(gp::UInt32), true, 16u);
     EXPECT_EQ(reservedInFixed, 13u);
 
     PoolAllocator pool(64u, 8u, 16u, nullptr, "Test.SlackPool");
     // 5 elements of 4 bytes = 20 bytes -> PoolAllocator has 64-byte fixed blocks, so quantized capacity is 64 / 4 = 16!
-    const gp::USize reservedInPool =
-        calculateSlackReserve<gp::USize>(pool, 5u, sizeof(gp::UInt32), true, 16u);
+    const gp::USize reservedInPool = calculateSlackReserve<gp::USize>(pool, 5u, sizeof(gp::UInt32), true, 16u);
     EXPECT_EQ(reservedInPool, 16u);
 }
 
