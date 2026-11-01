@@ -258,6 +258,7 @@ TEST_F(MemoryOpsTest, HeterogeneousConstructItemsFromConvertibleSource)
 TEST_F(MemoryOpsTest, NullPointerAndZeroCountEdgeCasesAreSafeNoOps)
 {
     LifecycleTracker* nullTracker = nullptr;
+    defaultConstructItems<LifecycleTracker>(nullptr, 5u);
     valueConstructItems<LifecycleTracker>(nullptr, 5u);
     destructItem<LifecycleTracker>(nullTracker);
     destructItems<LifecycleTracker>(nullTracker, 5u);
@@ -268,12 +269,37 @@ TEST_F(MemoryOpsTest, NullPointerAndZeroCountEdgeCasesAreSafeNoOps)
     alignas(LifecycleTracker) gp::UInt8 dummy[sizeof(LifecycleTracker)];
     LifecycleTracker* validPtr = reinterpret_cast<LifecycleTracker*>(dummy);
     defaultConstructItems<LifecycleTracker>(validPtr, 0);
+    defaultConstructItems<LifecycleTracker>(validPtr, -3);
     valueConstructItems<LifecycleTracker>(validPtr, 0);
     destructItems<LifecycleTracker>(validPtr, 0);
     constructItems<LifecycleTracker>(validPtr, validPtr, 0);
     moveConstructItems<LifecycleTracker>(validPtr, validPtr, 0);
     relocateConstructItems<LifecycleTracker>(validPtr, validPtr, 0);
 
+    EXPECT_EQ(LifecycleTracker::s_activeInstances, 0);
+}
+
+TEST_F(MemoryOpsTest, OverlappingForwardShiftMoveAndRelocateNonTrivialItemsPreservesOrderWithoutCorruption)
+{
+    constexpr gp::USize kCapacity = 6u;
+    alignas(LifecycleTracker) gp::UInt8 rawBuffer[sizeof(LifecycleTracker) * kCapacity];
+    LifecycleTracker* items = reinterpret_cast<LifecycleTracker*>(rawBuffer);
+
+    for (gp::USize i = 0u; i < 4u; ++i)
+    {
+        ::new (static_cast<void*>(items + i)) LifecycleTracker(static_cast<gp::Int32>((i + 1u) * 10u));
+    }
+    EXPECT_EQ(LifecycleTracker::s_activeInstances, 4);
+
+    // Relocate [0..3] (10, 20, 30, 40) upward into overlapping [2..5]!
+    relocateConstructItems<LifecycleTracker>(items + 2u, items, 4u);
+    EXPECT_EQ(LifecycleTracker::s_activeInstances, 4);
+    EXPECT_EQ(items[2].id, 10);
+    EXPECT_EQ(items[3].id, 20);
+    EXPECT_EQ(items[4].id, 30);
+    EXPECT_EQ(items[5].id, 40);
+
+    destructItems(items + 2u, 4u);
     EXPECT_EQ(LifecycleTracker::s_activeInstances, 0);
 }
 
