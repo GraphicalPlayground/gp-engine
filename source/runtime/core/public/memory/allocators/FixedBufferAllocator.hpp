@@ -88,7 +88,7 @@ public:
         }
 
         m_offset += totalRequired;
-        m_stats.allocatedBytes = m_offset;
+        m_stats.allocatedBytes += sizeInBytes;
         m_stats.peakAllocatedBytes = math::max(m_stats.peakAllocatedBytes, m_offset);
         ++m_stats.activeAllocations;
         ++m_stats.totalAllocations;
@@ -122,6 +122,10 @@ public:
         }
 
         GP_ASSERT(owns(ptr), "FixedBufferAllocator::reallocate called with a pointer outside this allocator's buffer.");
+        if (!owns(ptr)) [[unlikely]]
+        {
+            return nullptr;
+        }
 
         const gp::UInt32 effectiveAlignment = math::max<gp::UInt32>(kMinimumAlignment, alignment);
         const gp::UIntPtr baseAddress = reinterpret_cast<gp::UIntPtr>(m_buffer);
@@ -133,8 +137,9 @@ public:
         {
             if (newSizeInBytes <= oldSizeInBytes)
             {
+                const gp::USize delta = oldSizeInBytes - newSizeInBytes;
                 m_offset = ptrOffset + newSizeInBytes;
-                m_stats.allocatedBytes = m_offset;
+                m_stats.allocatedBytes = m_stats.allocatedBytes >= delta ? (m_stats.allocatedBytes - delta) : 0u;
                 return ptr;
             }
 
@@ -142,7 +147,7 @@ public:
             if (additionalBytes <= (InCapacityBytes - m_offset))
             {
                 m_offset += additionalBytes;
-                m_stats.allocatedBytes = m_offset;
+                m_stats.allocatedBytes += additionalBytes;
                 m_stats.peakAllocatedBytes = math::max(m_stats.peakAllocatedBytes, m_offset);
                 return ptr;
             }
@@ -152,14 +157,26 @@ public:
 
         if (newSizeInBytes <= oldSizeInBytes && memory::isAligned(ptr, static_cast<gp::UInt64>(effectiveAlignment)))
         {
+            const gp::USize delta = oldSizeInBytes - newSizeInBytes;
+            m_stats.allocatedBytes = m_stats.allocatedBytes >= delta ? (m_stats.allocatedBytes - delta) : 0u;
             return ptr;
         }
 
         void* newPtr = allocate(newSizeInBytes, alignment);
-        if (newPtr != nullptr && oldSizeInBytes > 0u)
+        if (newPtr != nullptr)
         {
-            const gp::USize bytesToCopy = math::min(oldSizeInBytes, newSizeInBytes);
-            memory::copyMemory(newPtr, ptr, bytesToCopy);
+            if (oldSizeInBytes > 0u)
+            {
+                const gp::USize bytesToCopy = math::min(oldSizeInBytes, newSizeInBytes);
+                memory::copyMemory(newPtr, ptr, bytesToCopy);
+                m_stats.allocatedBytes =
+                    m_stats.allocatedBytes >= oldSizeInBytes ? (m_stats.allocatedBytes - oldSizeInBytes) : 0u;
+            }
+
+            if (m_stats.activeAllocations > 0ull)
+            {
+                --m_stats.activeAllocations;
+            }
         }
 
         return newPtr;
@@ -179,8 +196,16 @@ public:
         }
 
         GP_ASSERT(owns(ptr), "FixedBufferAllocator::deallocate called with a pointer outside this allocator's buffer.");
+        if (!owns(ptr)) [[unlikely]]
+        {
+            return;
+        }
 
         ++m_stats.totalDeallocations;
+        if (m_stats.activeAllocations > 0ull)
+        {
+            --m_stats.activeAllocations;
+        }
 
         if (oldSizeInBytes > 0u)
         {
@@ -188,13 +213,15 @@ public:
             const gp::UIntPtr ptrAddress = reinterpret_cast<gp::UIntPtr>(ptr);
             const gp::USize ptrOffset = static_cast<gp::USize>(ptrAddress - baseAddress);
 
+            m_stats.allocatedBytes =
+                m_stats.allocatedBytes >= oldSizeInBytes ? (m_stats.allocatedBytes - oldSizeInBytes) : 0u;
+
             if ((ptrOffset + oldSizeInBytes) == m_offset)
             {
                 m_offset = ptrOffset;
-                m_stats.allocatedBytes = m_offset;
-                if (m_stats.activeAllocations > 0ull)
+                if (m_offset == 0u)
                 {
-                    --m_stats.activeAllocations;
+                    m_stats.allocatedBytes = 0u;
                 }
             }
         }
@@ -203,9 +230,9 @@ public:
     /// @brief Computes the usable allocation size for `requestedSize` and `alignment`.
     /// @param[in] requestedSize Requested byte count.
     /// @param[in] alignment Requested byte alignment.
-    /// @return Aligned byte count, or `0` if `requestedSize == 0` or exceeds `InCapacityBytes`.
+    /// @return `requestedSize` if it fits within `InCapacityBytes`, or `0` if `requestedSize == 0` or exceeds capacity.
     [[nodiscard]] constexpr gp::USize getActualAllocationSize(
-        const gp::USize requestedSize, const gp::UInt32 alignment = kDefaultAlignment
+        const gp::USize requestedSize, [[maybe_unused]] const gp::UInt32 alignment = kDefaultAlignment
     ) const noexcept
     {
         if (requestedSize == 0u || requestedSize > InCapacityBytes)
@@ -213,10 +240,7 @@ public:
             return 0u;
         }
 
-        const gp::UInt32 effectiveAlignment = math::max<gp::UInt32>(kMinimumAlignment, alignment);
-        return static_cast<gp::USize>(
-            memory::align(static_cast<gp::UInt64>(requestedSize), static_cast<gp::UInt64>(effectiveAlignment))
-        );
+        return requestedSize;
     }
 
     /// @brief Checks whether `ptr` points within the embedded `m_buffer`.
@@ -297,6 +321,14 @@ public:
     [[nodiscard]] constexpr const gp::UInt8* getData() const noexcept
     {
         return m_buffer;
+    }
+
+    /// @brief Compares two `FixedBufferAllocator` instances for identity equality.
+    /// @param[in] rhs Other `FixedBufferAllocator` instance.
+    /// @return True if both references refer to the exact same embedded buffer instance.
+    [[nodiscard]] constexpr bool operator==(const FixedBufferAllocator& rhs) const noexcept
+    {
+        return this == &rhs;
     }
 };
 
