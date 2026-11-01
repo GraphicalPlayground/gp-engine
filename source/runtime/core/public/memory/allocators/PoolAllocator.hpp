@@ -39,6 +39,7 @@ private:
     gp::USize m_stride{ 0u };
     gp::USize m_blockCount{ 0u };
     gp::USize m_usedBlockCount{ 0u };
+    gp::USize m_initializedBlockCount{ 0u };
     gp::UInt32 m_blockAlignment{ kMinimumAlignment };
     AllocatorStats m_stats{};
     bool m_ownsBuffer{ false };
@@ -222,8 +223,16 @@ public:
         return m_alignedStart != nullptr && m_blockCount > 0u && m_stride > 0u;
     }
 
+    /// @brief Compares two `PoolAllocator` instances for identity equality.
+    /// @param[in] rhs Other `PoolAllocator` instance.
+    /// @return True if both references refer to the exact same pool instance.
+    [[nodiscard]] constexpr bool operator==(const PoolAllocator& rhs) const noexcept
+    {
+        return this == &rhs;
+    }
+
 private:
-    /// @brief Rebuilds the singly-linked free list across `[0, m_blockCount)` in sequential address order.
+    /// @brief Resets the intrusive free list and lazy carving watermark in O(1) time.
     void rebuildFreeList() noexcept;
 };
 

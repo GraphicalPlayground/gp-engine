@@ -216,11 +216,16 @@ inline void systemDeallocate(void* ptr)
 /// and shrink containers to optimal sizes.
 GP_FORCEINLINE gp::USize getActualAllocationSize(gp::USize requestedSize, gp::UInt32 alignment = kDefaultAlignment)
 {
-    if (!gp::memory::getInlineMalloc()) [[unlikely]]
+    Malloc* activeMalloc = gp::memory::getInlineMalloc();
+    if (activeMalloc == nullptr) [[unlikely]]
+    {
+        activeMalloc = gp::memory::getGlobalMalloc();
+    }
+    if (activeMalloc == nullptr) [[unlikely]]
     {
         return requestedSize;
     }
-    return gp::memory::getInlineMalloc()->getActualAllocationSize(requestedSize, alignment);
+    return activeMalloc->getActualAllocationSize(requestedSize, alignment);
 }
 
 /// @brief Rounds an unsigned integer up to the next power of two.

@@ -50,4 +50,10 @@ LinearAllocator& ThreadScratchArena::get() noexcept
     return arena;
 }
 
+LinearAllocator* ThreadScratchArena::tryGet() noexcept
+{
+    LinearAllocator& arena = detail::getThreadLocalScratchInstance();
+    return arena.isValid() ? &arena : nullptr;
+}
+
 }   // namespace gp::memory

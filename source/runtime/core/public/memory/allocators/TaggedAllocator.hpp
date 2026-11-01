@@ -101,8 +101,6 @@ public:
             return allocate(newSizeInBytes, alignment);
         }
 
-        GP_MEM_FREE_N(ptr, m_poolName);
-
         void* newPtr = m_innerAllocator.reallocate(ptr, oldSizeInBytes, newSizeInBytes, alignment);
         if (newPtr != nullptr)
         {
@@ -111,12 +109,9 @@ public:
             m_stats.peakAllocatedBytes = math::max(m_stats.peakAllocatedBytes, m_stats.allocatedBytes);
             ++m_stats.totalAllocations;
 
+            GP_MEM_FREE_N(ptr, m_poolName);
             GP_MEM_ALLOC_N(newPtr, newSizeInBytes, m_poolName);
             GP_PLOT(m_poolName, static_cast<gp::Int64>(m_stats.allocatedBytes));
-        }
-        else
-        {
-            GP_MEM_ALLOC_N(ptr, oldSizeInBytes, m_poolName);
         }
 
         return newPtr;
@@ -194,6 +189,14 @@ public:
     [[nodiscard]] constexpr const InInnerAllocator& getInnerAllocator() const noexcept
     {
         return m_innerAllocator;
+    }
+
+    /// @brief Compares two `TaggedAllocator` instances by comparing their underlying inner allocators.
+    /// @param[in] rhs Other `TaggedAllocator` instance.
+    /// @return True if the wrapped `m_innerAllocator` instances compare equal.
+    [[nodiscard]] constexpr bool operator==(const TaggedAllocator& rhs) const noexcept
+    {
+        return m_innerAllocator == rhs.m_innerAllocator;
     }
 };
 

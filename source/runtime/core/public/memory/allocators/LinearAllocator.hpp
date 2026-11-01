@@ -176,6 +176,14 @@ public:
     {
         return m_buffer != nullptr && m_capacity > 0u;
     }
+
+    /// @brief Compares two `LinearAllocator` instances for identity equality.
+    /// @param[in] rhs Other `LinearAllocator` instance.
+    /// @return True if both references refer to the exact same arena instance.
+    [[nodiscard]] constexpr bool operator==(const LinearAllocator& rhs) const noexcept
+    {
+        return this == &rhs;
+    }
 };
 
 static_assert(

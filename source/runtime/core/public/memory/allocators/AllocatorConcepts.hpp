@@ -45,6 +45,9 @@ concept IsAllocator = requires(
     {
         constAllocator.owns(constPtr)
     } noexcept -> IsSameAs<bool>;
+    {
+        constAllocator == constAllocator
+    } noexcept -> IsSameAs<bool>;
 };
 
 /// @brief Concept verifying that an allocator is stateless and occupies zero bytes when stored with

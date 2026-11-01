@@ -44,6 +44,11 @@ public:
     /// @brief Retrieves a reference to the calling thread's `LinearAllocator`, lazily initializing it if needed.
     /// @return Reference to the calling thread's `thread_local LinearAllocator`.
     [[nodiscard]] static LinearAllocator& get() noexcept;
+
+    /// @brief Retrieves a pointer to the calling thread's `LinearAllocator` if already initialized, or `nullptr`
+    ///        without triggering a lazy heap slab allocation.
+    /// @return Pointer to the calling thread's `LinearAllocator`, or `nullptr` if uninitialized.
+    [[nodiscard]] static LinearAllocator* tryGet() noexcept;
 };
 
 /// @brief Zero-byte stateless allocator proxy that routes all allocations to the calling thread's `ThreadScratchArena`.
@@ -63,6 +68,11 @@ public:
     /// @return Pointer to the allocated scratch memory, or `nullptr` if capacity is exhausted.
     [[nodiscard]] void* allocate(const gp::USize sizeInBytes, const gp::UInt32 alignment = kDefaultAlignment) noexcept
     {
+        if (sizeInBytes == 0u) [[unlikely]]
+        {
+            return nullptr;
+        }
+
         return ThreadScratchArena::get().allocate(sizeInBytes, alignment);
     }
 
@@ -80,6 +90,12 @@ public:
         const gp::UInt32 alignment = kDefaultAlignment
     ) noexcept
     {
+        if (newSizeInBytes == 0u)
+        {
+            deallocate(ptr, oldSizeInBytes, alignment);
+            return nullptr;
+        }
+
         return ThreadScratchArena::get().reallocate(ptr, oldSizeInBytes, newSizeInBytes, alignment);
     }
 
@@ -91,10 +107,18 @@ public:
         void* ptr, const gp::USize oldSizeInBytes = 0u, const gp::UInt32 alignment = kDefaultAlignment
     ) noexcept
     {
-        ThreadScratchArena::get().deallocate(ptr, oldSizeInBytes, alignment);
+        if (ptr == nullptr)
+        {
+            return;
+        }
+
+        if (LinearAllocator* const arena = ThreadScratchArena::tryGet(); arena != nullptr)
+        {
+            arena->deallocate(ptr, oldSizeInBytes, alignment);
+        }
     }
 
-    /// @brief Queries the aligned allocation size from the calling thread's `ThreadScratchArena`.
+    /// @brief Queries the aligned allocation size from the calling thread's `ThreadScratchArena` without lazy init.
     /// @param[in] requestedSize Requested byte count.
     /// @param[in] alignment Requested byte alignment.
     /// @return Aligned byte count.
@@ -102,35 +126,56 @@ public:
         const gp::USize requestedSize, const gp::UInt32 alignment = kDefaultAlignment
     ) const noexcept
     {
-        return ThreadScratchArena::get().getActualAllocationSize(requestedSize, alignment);
+        if (const LinearAllocator* const arena = ThreadScratchArena::tryGet(); arena != nullptr)
+        {
+            return arena->getActualAllocationSize(requestedSize, alignment);
+        }
+
+        return requestedSize;
     }
 
-    /// @brief Checks whether `ptr` belongs to the calling thread's `ThreadScratchArena`.
+    /// @brief Checks whether `ptr` belongs to the calling thread's `ThreadScratchArena` without lazy init.
     /// @param[in] ptr Pointer to test.
     /// @return True if `ptr` lies within the calling thread's scratch slab.
     [[nodiscard]] bool owns(const void* ptr) const noexcept
     {
-        return ThreadScratchArena::get().owns(ptr);
+        if (const LinearAllocator* const arena = ThreadScratchArena::tryGet(); arena != nullptr)
+        {
+            return arena->owns(ptr);
+        }
+
+        return false;
     }
 
-    /// @brief Captures a checkpoint of the calling thread's scratch cursor.
+    /// @brief Captures a checkpoint of the calling thread's scratch cursor without forcing lazy initialization.
     /// @return `MemoryMark` for the calling thread's scratch arena.
     [[nodiscard]] MemoryMark mark() const noexcept
     {
-        return ThreadScratchArena::get().mark();
+        if (const LinearAllocator* const arena = ThreadScratchArena::tryGet(); arena != nullptr)
+        {
+            return arena->mark();
+        }
+
+        return MemoryMark{};
     }
 
-    /// @brief Rewinds the calling thread's scratch cursor back to `savedMark`.
+    /// @brief Rewinds the calling thread's scratch cursor back to `savedMark` if the arena is active.
     /// @param[in] savedMark Checkpoint previously captured on the calling thread.
     void rewind(const MemoryMark& savedMark) noexcept
     {
-        ThreadScratchArena::get().rewind(savedMark);
+        if (LinearAllocator* const arena = ThreadScratchArena::tryGet(); arena != nullptr)
+        {
+            arena->rewind(savedMark);
+        }
     }
 
-    /// @brief Resets the calling thread's scratch cursor back to `0`.
+    /// @brief Resets the calling thread's scratch cursor back to `0` if the arena is active.
     void reset() noexcept
     {
-        ThreadScratchArena::get().reset();
+        if (LinearAllocator* const arena = ThreadScratchArena::tryGet(); arena != nullptr)
+        {
+            arena->reset();
+        }
     }
 
     /// @brief Stateless equality comparison; always returns true for allocations on the same thread.
@@ -145,21 +190,26 @@ public:
 /// @details Place `ScopedScratchMark scratchScope;` at the top of any function or job that uses
 /// `ThreadScratchAllocator`
 ///          so all temporary allocations are automatically reclaimed in O(1) time when the scope exits.
+///          Entering and exiting a `ScopedScratchMark` scope that makes zero allocations does not lazily allocate the
+///          thread-local slab.
 class GP_CORE_API ScopedScratchMark final
 {
 private:
     MemoryMark m_mark{};
 
 public:
-    /// @brief Captures the current cursor mark of the calling thread's `ThreadScratchArena`.
+    /// @brief Captures the current cursor mark of the calling thread's `ThreadScratchArena` without lazy allocation.
     ScopedScratchMark() noexcept
-        : m_mark(ThreadScratchArena::get().mark())
+        : m_mark(ThreadScratchArena::tryGet() != nullptr ? ThreadScratchArena::tryGet()->mark() : MemoryMark{})
     {}
 
-    /// @brief Rewinds the calling thread's `ThreadScratchArena` back to the mark captured on construction.
+    /// @brief Rewinds the calling thread's `ThreadScratchArena` back to the mark captured on construction if active.
     ~ScopedScratchMark() noexcept
     {
-        ThreadScratchArena::get().rewind(m_mark);
+        if (LinearAllocator* const arena = ThreadScratchArena::tryGet(); arena != nullptr)
+        {
+            arena->rewind(m_mark);
+        }
     }
 
     ScopedScratchMark(const ScopedScratchMark&) = delete;

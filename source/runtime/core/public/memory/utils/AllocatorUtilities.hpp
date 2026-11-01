@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "memory/allocators/AllocatorConcepts.hpp"
 #include "memory/Memory.hpp"
 #include "memory/MemoryBase.hpp"
 #include "platforms/base/Platform.hpp"
@@ -39,25 +40,36 @@ template <typename InSizeType>
     const gp::UInt32 alignment = gp::memory::kDefaultAlignment
 ) noexcept
 {
+    if (newSize <= static_cast<InSizeType>(0))
+    {
+        return static_cast<InSizeType>(0);
+    }
+
+    if (currentSize <= newSize || bytesPerElement == 0u) [[unlikely]]
+    {
+        return currentSize;
+    }
+
     InSizeType result{ 0 };
 
-    const InSizeType currentSlackElements = currentSize - newSize;
-    const gp::USize currentSlackBytes = static_cast<gp::USize>(currentSlackElements) * bytesPerElement;
+    const gp::USize newElements = static_cast<gp::USize>(newSize);
+    const gp::USize currentElements = static_cast<gp::USize>(currentSize);
+    const gp::USize currentSlackElements = currentElements - newElements;
+    const gp::USize currentSlackBytes = currentSlackElements * bytesPerElement;
     const bool hasTooManySlackBytes = currentSlackBytes >= 16'384u;
-    const bool hasTooManySlackElements = (3 * newSize) < (2 * currentSize);
+    const bool hasTooManySlackElements = (3u * newElements) < (2u * currentElements);
 
-    if ((hasTooManySlackBytes || hasTooManySlackElements) && (currentSlackElements > 64 || !newSize))
+    if ((hasTooManySlackBytes || hasTooManySlackElements) && (currentSlackElements > 64u))
     {
         result = newSize;
-        if (result > 0)
+        if (allowQuantize)
         {
-            if (allowQuantize)
-            {
-                result = static_cast<InSizeType>(
-                    gp::memory::getActualAllocationSize(static_cast<gp::USize>(result) * bytesPerElement, alignment) /
-                    bytesPerElement
-                );
-            }
+            const gp::USize quantizedBytes =
+                gp::memory::getActualAllocationSize(newElements * bytesPerElement, alignment);
+            const gp::USize quantizedElements = quantizedBytes / bytesPerElement;
+            const gp::USize maxElements = static_cast<gp::USize>(std::numeric_limits<InSizeType>::max());
+            result = (quantizedElements > maxElements) ? std::numeric_limits<InSizeType>::max()
+                                                       : static_cast<InSizeType>(quantizedElements);
         }
     }
     else
@@ -83,21 +95,28 @@ template <typename InSizeType>
     const gp::UInt32 alignment = kDefaultAlignment
 ) noexcept
 {
-    InSizeType result = newSize;
-
-    if (allowQuantize && result > 0)
+    if (newSize <= static_cast<InSizeType>(0)) [[unlikely]]
     {
-        result = static_cast<InSizeType>(
-            gp::memory::getActualAllocationSize(static_cast<gp::USize>(result) * bytesPerElement, alignment) /
-            bytesPerElement
-        );
-        if (newSize > result)
-        {
-            result = std::numeric_limits<InSizeType>::max();
-        }
+        return static_cast<InSizeType>(0);
     }
 
-    return result;
+    if (allowQuantize && bytesPerElement > 0u)
+    {
+        const gp::USize requestedElements = static_cast<gp::USize>(newSize);
+        const gp::USize quantizedBytes =
+            gp::memory::getActualAllocationSize(requestedElements * bytesPerElement, alignment);
+        const gp::USize quantizedElements = quantizedBytes / bytesPerElement;
+        const gp::USize maxElements = static_cast<gp::USize>(std::numeric_limits<InSizeType>::max());
+
+        if (quantizedElements > maxElements || quantizedElements < requestedElements)
+        {
+            return std::numeric_limits<InSizeType>::max();
+        }
+
+        return static_cast<InSizeType>(quantizedElements);
+    }
+
+    return newSize;
 }
 
 #ifndef GP_CONTAINER_INITIAL_ALLOC_ZERO_SLACK
@@ -163,50 +182,163 @@ template <typename InSizeType>
     const gp::USize constantGrow = 16u;
 #endif
 
-    InSizeType result{ 0 };
+    if (newSize <= static_cast<InSizeType>(0)) [[unlikely]]
+    {
+        return static_cast<InSizeType>(0);
+    }
+
+    const gp::USize requestedElements = static_cast<gp::USize>(newSize);
     gp::USize grow = firstGrow;
 
 #if GP_CONTAINER_INITIAL_ALLOC_ZERO_SLACK
     if (currentSize)
     {
-        grow = static_cast<gp::USize>(newSize) +
-               (GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR * static_cast<gp::USize>(newSize)) /
-                   GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR +
-               constantGrow;
+        const gp::USize proportionalSlack = (requestedElements / GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
+                                                GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR +
+                                            ((requestedElements % GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
+                                             GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR) /
+                                                GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR;
+        grow = requestedElements + proportionalSlack + constantGrow;
     }
-    else if (static_cast<gp::USize>(newSize) > grow)
+    else if (requestedElements > grow)
     {
-        grow = static_cast<gp::USize>(newSize);
+        grow = requestedElements;
     }
 #else
-    if (currentSize || static_cast<gp::USize>(newSize) > grow)
+    if (currentSize || requestedElements > grow)
     {
-        grow = static_cast<gp::USize>(newSize) +
-               (GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR * static_cast<gp::USize>(newSize)) /
-                   GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR +
-               constantGrow;
+        const gp::USize proportionalSlack = (requestedElements / GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
+                                                GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR +
+                                            ((requestedElements % GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR) *
+                                             GP_CONTAINER_SLACK_GROWTH_FACTOR_NUMERATOR) /
+                                                GP_CONTAINER_SLACK_GROWTH_FACTOR_DENOMINATOR;
+        grow = requestedElements + proportionalSlack + constantGrow;
     }
 #endif
 
-    if (allowQuantize)
+    if (allowQuantize && bytesPerElement > 0u)
     {
-        result = static_cast<InSizeType>(
-            gp::memory::getActualAllocationSize(grow * bytesPerElement, alignment) / bytesPerElement
-        );
-    }
-    else
-    {
-        result = static_cast<InSizeType>(grow);
+        grow = gp::memory::getActualAllocationSize(grow * bytesPerElement, alignment) / bytesPerElement;
     }
 
-    if (newSize > result)
+    const gp::USize maxElements = static_cast<gp::USize>(std::numeric_limits<InSizeType>::max());
+    if (grow > maxElements || grow < requestedElements)
     {
-        result = std::numeric_limits<InSizeType>::max();
+        return std::numeric_limits<InSizeType>::max();
     }
 
-    return result;
+    return static_cast<InSizeType>(grow);
 }
 
 }   // namespace memory::detail
+
+namespace memory
+{
+
+/// @brief Allocator-aware reservation slack calculator that quantizes capacity using the bound `allocator` instance.
+/// @tparam InSizeType Container size type.
+/// @tparam InAllocatorType Engine allocator satisfying `gp::concepts::IsAllocator`.
+/// @param[in] allocator Bound container allocator instance.
+/// @param[in] newSize Minimum required capacity in elements.
+/// @param[in] bytesPerElement Size of a single element in bytes.
+/// @param[in] allowQuantize If true, queries `allocator.getActualAllocationSize(...)`.
+/// @param[in] alignment Memory alignment requirement in bytes.
+/// @return Optimal capacity in elements.
+template <typename InSizeType, gp::concepts::IsAllocator InAllocatorType>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr InSizeType calculateSlackReserve(
+    const InAllocatorType& allocator,
+    const InSizeType newSize,
+    const gp::USize bytesPerElement,
+    const bool allowQuantize,
+    const gp::UInt32 alignment = kDefaultAlignment
+) noexcept
+{
+    if (newSize <= static_cast<InSizeType>(0)) [[unlikely]]
+    {
+        return static_cast<InSizeType>(0);
+    }
+
+    if (allowQuantize && bytesPerElement > 0u)
+    {
+        const gp::USize requestedElements = static_cast<gp::USize>(newSize);
+        const gp::USize requestedBytes = requestedElements * bytesPerElement;
+        const gp::USize actualBytes = allocator.getActualAllocationSize(requestedBytes, alignment);
+        const gp::USize quantizedBytes = actualBytes >= requestedBytes ? actualBytes : requestedBytes;
+        const gp::USize quantizedElements = quantizedBytes / bytesPerElement;
+        const gp::USize maxElements = static_cast<gp::USize>(std::numeric_limits<InSizeType>::max());
+
+        if (quantizedElements > maxElements || quantizedElements < requestedElements)
+        {
+            return std::numeric_limits<InSizeType>::max();
+        }
+
+        return static_cast<InSizeType>(quantizedElements);
+    }
+
+    return newSize;
+}
+
+/// @brief Allocator-aware geometric growth calculator that quantizes capacity using the bound `allocator` instance.
+/// @tparam InSizeType Container size type.
+/// @tparam InAllocatorType Engine allocator satisfying `gp::concepts::IsAllocator`.
+/// @param[in] allocator Bound container allocator instance.
+/// @param[in] newSize Minimum required capacity in elements.
+/// @param[in] currentSize Current capacity in elements.
+/// @param[in] bytesPerElement Size of a single element in bytes.
+/// @param[in] allowQuantize If true, queries `allocator.getActualAllocationSize(...)`.
+/// @param[in] alignment Memory alignment requirement in bytes.
+/// @return Grown capacity in elements.
+template <typename InSizeType, gp::concepts::IsAllocator InAllocatorType>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr InSizeType calculateSlackGrow(
+    const InAllocatorType& allocator,
+    const InSizeType newSize,
+    const InSizeType currentSize,
+    const gp::USize bytesPerElement,
+    const bool allowQuantize,
+    const gp::UInt32 alignment = kDefaultAlignment
+) noexcept
+{
+    const InSizeType unquantizedGrow =
+        detail::defaultCalculateSlackGrow<InSizeType>(newSize, currentSize, bytesPerElement, false, alignment);
+    if (!allowQuantize || bytesPerElement == 0u || unquantizedGrow <= static_cast<InSizeType>(0))
+    {
+        return unquantizedGrow;
+    }
+
+    return calculateSlackReserve<InSizeType>(allocator, unquantizedGrow, bytesPerElement, true, alignment);
+}
+
+/// @brief Allocator-aware shrink slack calculator that quantizes capacity using the bound `allocator` instance.
+/// @tparam InSizeType Container size type.
+/// @tparam InAllocatorType Engine allocator satisfying `gp::concepts::IsAllocator`.
+/// @param[in] allocator Bound container allocator instance.
+/// @param[in] newSize Requested new size in elements.
+/// @param[in] currentSize Current capacity in elements.
+/// @param[in] bytesPerElement Size of a single element in bytes.
+/// @param[in] allowQuantize If true, queries `allocator.getActualAllocationSize(...)`.
+/// @param[in] alignment Memory alignment requirement in bytes.
+/// @return Shrunk or retained capacity in elements.
+template <typename InSizeType, gp::concepts::IsAllocator InAllocatorType>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr InSizeType calculateSlackShrink(
+    const InAllocatorType& allocator,
+    const InSizeType newSize,
+    const InSizeType currentSize,
+    const gp::USize bytesPerElement,
+    const bool allowQuantize,
+    const gp::UInt32 alignment = kDefaultAlignment
+) noexcept
+{
+    const InSizeType unquantizedShrink =
+        detail::defaultCalculateSlackShrink<InSizeType>(newSize, currentSize, bytesPerElement, false, alignment);
+    if (unquantizedShrink == currentSize || unquantizedShrink <= static_cast<InSizeType>(0) || !allowQuantize ||
+        bytesPerElement == 0u)
+    {
+        return unquantizedShrink;
+    }
+
+    return calculateSlackReserve<InSizeType>(allocator, unquantizedShrink, bytesPerElement, true, alignment);
+}
+
+}   // namespace memory
 
 }   // namespace gp
