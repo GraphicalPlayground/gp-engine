@@ -5,6 +5,7 @@
 #include "memory/allocators/PoolAllocator.hpp"
 #include "memory/Memory.hpp"   // IWYU pragma: keep
 #include <gtest/gtest.h>
+#include <limits>
 #include <utility>
 
 namespace gp::memory::tests
@@ -119,6 +120,36 @@ TEST(PoolAllocatorTest, ExternalBufferResetAndMoveSemantics)
     movedPool.reset();
     EXPECT_EQ(movedPool.getUsedBlockCount(), 0u);
     EXPECT_EQ(movedPool.getFreeBlockCount(), 7u);
+    EXPECT_TRUE(movedPool == movedPool);
+    EXPECT_FALSE(movedPool == pool);
+}
+
+TEST(PoolAllocatorTest, RejectsMultiplicationOverflowOnInitializeAndSupportsLazyResetCarving)
+{
+    PoolAllocator overflowPool(1024u, (std::numeric_limits<gp::USize>::max() / 512u) + 10u, 16u);
+    EXPECT_FALSE(overflowPool.isValid());
+
+    // Verify lazy bump + freelist hybrid: allocate 2 blocks, free first block, allocate 2 more, then reset
+    PoolAllocator pool(64u, 6u, 32u, nullptr, "Test.PoolLazy");
+    ASSERT_TRUE(pool.isValid());
+
+    void* b0 = pool.allocate(64u, 32u);
+    void* b1 = pool.allocate(64u, 32u);
+    ASSERT_NE(b0, nullptr);
+    ASSERT_NE(b1, nullptr);
+    EXPECT_EQ(reinterpret_cast<gp::UIntPtr>(b1) - reinterpret_cast<gp::UIntPtr>(b0), 64u);
+
+    pool.deallocate(b0, 64u, 32u);
+    // Next allocation pops b0 from freelist; the one after carves b2 from lazy watermark
+    EXPECT_EQ(pool.allocate(64u, 32u), b0);
+    void* b2 = pool.allocate(64u, 32u);
+    ASSERT_NE(b2, nullptr);
+    EXPECT_EQ(reinterpret_cast<gp::UIntPtr>(b2) - reinterpret_cast<gp::UIntPtr>(b1), 64u);
+
+    pool.reset();
+    EXPECT_EQ(pool.getUsedBlockCount(), 0u);
+    EXPECT_EQ(pool.getFreeBlockCount(), 6u);
+    EXPECT_EQ(pool.allocate(64u, 32u), b0);
 }
 
 }   // namespace gp::memory::tests
