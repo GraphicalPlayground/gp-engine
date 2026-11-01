@@ -199,9 +199,12 @@ public:
             const gp::UIntPtr ptrAddress = reinterpret_cast<gp::UIntPtr>(ptr);
             const gp::USize ptrOffset = static_cast<gp::USize>(ptrAddress - baseAddress);
 
-            if (oldSizeInBytes > 0u && (ptrOffset + oldSizeInBytes) == m_inlineOffset)
+            if (oldSizeInBytes > 0u)
             {
-                m_inlineOffset = ptrOffset;
+                if ((ptrOffset + oldSizeInBytes) == m_inlineOffset)
+                {
+                    m_inlineOffset = ptrOffset;
+                }
             }
             else if (ptrOffset == 0u)
             {
@@ -227,11 +230,15 @@ public:
         }
 
         const gp::UInt32 effectiveAlignment = math::max<gp::UInt32>(kMinimumAlignment, alignment);
-        if (requestedSize <= (InCapacityBytes - m_inlineOffset) && effectiveAlignment <= InAlignment)
+        const gp::UInt64 baseAddress = reinterpret_cast<gp::UInt64>(m_inlineBuffer);
+        const gp::UInt64 currentAddress = baseAddress + static_cast<gp::UInt64>(m_inlineOffset);
+        const gp::UInt64 alignedAddress = memory::align(currentAddress, static_cast<gp::UInt64>(effectiveAlignment));
+        const gp::USize padding = static_cast<gp::USize>(alignedAddress - currentAddress);
+
+        if (padding <= (InCapacityBytes - m_inlineOffset) &&
+            requestedSize <= (InCapacityBytes - m_inlineOffset - padding))
         {
-            return static_cast<gp::USize>(
-                memory::align(static_cast<gp::UInt64>(requestedSize), static_cast<gp::UInt64>(effectiveAlignment))
-            );
+            return requestedSize;
         }
 
         return m_fallbackAllocator.getActualAllocationSize(requestedSize, alignment);
@@ -292,6 +299,14 @@ public:
     [[nodiscard]] constexpr const InFallbackAllocator& getFallbackAllocator() const noexcept
     {
         return m_fallbackAllocator;
+    }
+
+    /// @brief Compares two `InlineAllocator` instances for identity equality (inline pointers are bound to `this`).
+    /// @param[in] rhs Other `InlineAllocator` instance.
+    /// @return True if both references refer to the exact same `InlineAllocator` instance.
+    [[nodiscard]] constexpr bool operator==(const InlineAllocator& rhs) const noexcept
+    {
+        return this == &rhs;
     }
 };
 
