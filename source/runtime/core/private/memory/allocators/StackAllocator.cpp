@@ -147,7 +147,11 @@ void* StackAllocator::allocate(const gp::USize sizeInBytes, const gp::UInt32 ali
         return nullptr;
     }
 
-    const gp::UInt32 effectiveAlignment = math::max<gp::UInt32>(alignment, static_cast<gp::UInt32>(alignof(Header)));
+    static_assert(kMinimumAlignment >= alignof(Header), "kMinimumAlignment must be at least alignof(Header).");
+    const gp::UInt32 effectiveAlignment = math::max<gp::UInt32>(alignment, kMinimumAlignment);
+    GP_ASSERT(
+        math::isPowerOfTwo(effectiveAlignment), "StackAllocator::allocate requires a power-of-two byte alignment."
+    );
     const gp::UInt64 baseAddress = reinterpret_cast<gp::UInt64>(m_buffer);
     const gp::UInt64 unalignedPayloadAddress = baseAddress + static_cast<gp::UInt64>(m_offset) + sizeof(Header);
     const gp::UInt64 alignedPayloadAddress =
@@ -194,11 +198,16 @@ void* StackAllocator::reallocate(
         return nullptr;
     }
 
-    const gp::UInt32 effectiveAlignment = math::max<gp::UInt32>(alignment, static_cast<gp::UInt32>(alignof(Header)));
+    const gp::UInt32 effectiveAlignment = math::max<gp::UInt32>(alignment, kMinimumAlignment);
+    GP_ASSERT(
+        math::isPowerOfTwo(effectiveAlignment), "StackAllocator::reallocate requires a power-of-two byte alignment."
+    );
     gp::UInt8* const bytePtr = static_cast<gp::UInt8*>(ptr);
     const gp::USize payloadOffset = static_cast<gp::USize>(bytePtr - m_buffer);
     Header* const header = reinterpret_cast<Header*>(bytePtr - sizeof(Header));
     const gp::USize recordedOldSize = static_cast<gp::USize>(header->allocationSize);
+    const gp::USize effectiveOldSize =
+        oldSizeInBytes > 0u ? math::min(oldSizeInBytes, recordedOldSize) : recordedOldSize;
 
     // Top-of-stack fast-path: resize in place if `ptr` is the active top allocation and satisfies alignment.
     if ((payloadOffset + recordedOldSize == m_offset) &&
@@ -209,13 +218,13 @@ void* StackAllocator::reallocate(
             header->allocationSize = static_cast<gp::UInt32>(newSizeInBytes);
             m_offset = payloadOffset + newSizeInBytes;
 
-            if (newSizeInBytes >= recordedOldSize)
+            if (newSizeInBytes >= effectiveOldSize)
             {
-                m_stats.allocatedBytes += (newSizeInBytes - recordedOldSize);
+                m_stats.allocatedBytes += (newSizeInBytes - effectiveOldSize);
             }
             else
             {
-                const gp::USize delta = recordedOldSize - newSizeInBytes;
+                const gp::USize delta = effectiveOldSize - newSizeInBytes;
                 m_stats.allocatedBytes = m_stats.allocatedBytes >= delta ? (m_stats.allocatedBytes - delta) : 0u;
             }
 
@@ -227,15 +236,32 @@ void* StackAllocator::reallocate(
         return nullptr;
     }
 
+    // Non-top shrink fast-path: keep the existing block in place without disturbing header->allocationSize
+    // so subsequent LIFO deallocations still unwind the exact physical gap.
+    if (newSizeInBytes <= recordedOldSize && memory::isAligned(ptr, static_cast<gp::UInt64>(effectiveAlignment)))
+    {
+        if (newSizeInBytes < effectiveOldSize)
+        {
+            const gp::USize delta = effectiveOldSize - newSizeInBytes;
+            m_stats.allocatedBytes = m_stats.allocatedBytes >= delta ? (m_stats.allocatedBytes - delta) : 0u;
+        }
+        return ptr;
+    }
+
     void* const newPtr = allocate(newSizeInBytes, effectiveAlignment);
     if (newPtr != nullptr) [[likely]]
     {
-        const gp::USize bytesToCopy = math::min(
-            oldSizeInBytes > 0u ? math::min(oldSizeInBytes, recordedOldSize) : recordedOldSize, newSizeInBytes
-        );
+        const gp::USize bytesToCopy = math::min(effectiveOldSize, newSizeInBytes);
         if (bytesToCopy > 0u)
         {
             memory::copyMemory(newPtr, ptr, bytesToCopy);
+        }
+
+        m_stats.allocatedBytes =
+            m_stats.allocatedBytes >= effectiveOldSize ? (m_stats.allocatedBytes - effectiveOldSize) : 0u;
+        if (m_stats.activeAllocations > 0ull)
+        {
+            --m_stats.activeAllocations;
         }
     }
 
@@ -244,7 +270,6 @@ void* StackAllocator::reallocate(
 
 void StackAllocator::deallocate(void* ptr, const gp::USize oldSizeInBytes, const gp::UInt32 alignment) noexcept
 {
-    (void)oldSizeInBytes;
     (void)alignment;
 
     if (ptr == nullptr || !owns(ptr))
@@ -261,6 +286,7 @@ void StackAllocator::deallocate(void* ptr, const gp::USize oldSizeInBytes, const
 
     const Header* const header = reinterpret_cast<const Header*>(bytePtr - sizeof(Header));
     const gp::USize recordedSize = static_cast<gp::USize>(header->allocationSize);
+    const gp::USize retiredBytes = oldSizeInBytes > 0u ? math::min(oldSizeInBytes, recordedSize) : recordedSize;
 
     ++m_stats.totalDeallocations;
     if (m_stats.activeAllocations > 0ull)
@@ -268,12 +294,16 @@ void StackAllocator::deallocate(void* ptr, const gp::USize oldSizeInBytes, const
         --m_stats.activeAllocations;
     }
 
-    m_stats.allocatedBytes = m_stats.allocatedBytes >= recordedSize ? (m_stats.allocatedBytes - recordedSize) : 0u;
+    m_stats.allocatedBytes = m_stats.allocatedBytes >= retiredBytes ? (m_stats.allocatedBytes - retiredBytes) : 0u;
 
     // Pop stack cursor if this block is at the top of the LIFO stack.
     if (payloadOffset + recordedSize == m_offset && header->previousOffset <= payloadOffset)
     {
         m_offset = static_cast<gp::USize>(header->previousOffset);
+        if (m_offset == 0u)
+        {
+            m_stats.allocatedBytes = 0u;
+        }
         GP_PLOT(m_poolName, static_cast<gp::Int64>(m_offset));
     }
 }

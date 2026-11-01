@@ -180,6 +180,14 @@ public:
     {
         return m_buffer != nullptr && m_capacity > sizeof(Header);
     }
+
+    /// @brief Compares two `StackAllocator` instances for identity equality.
+    /// @param[in] rhs Other `StackAllocator` instance.
+    /// @return True if both references refer to the exact same stack arena instance.
+    [[nodiscard]] constexpr bool operator==(const StackAllocator& rhs) const noexcept
+    {
+        return this == &rhs;
+    }
 };
 
 static_assert(
