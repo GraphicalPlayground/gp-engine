@@ -227,6 +227,20 @@ Hardware Abstraction Layer (HAL).
   > token array (`128` slots), providing non-dangling lifetime guarantees, last-wins override
   > semantics, `-no-<flag>` boolean negation, and `<charconv>` typed value extraction before dynamic
   > memory allocators initialize.
+- [**ADR-0043**: Zero-Allocation `.bss` Known-Folder Discovery and Stack `PathBuffer` Normalization in `gp::platform::Paths`](./ADR-0043.md)
+  > Establishes `gp::platform::Paths` in `gp::core` as a unified, zero-heap-allocation OS directory
+  > discovery and lexical path normalization subsystem backed by translation-unit `.bss` caches and
+  > stack-allocated `gp::PathBuffer` (`gp::FixedString<1024>`), abstracting Windows Known Folders
+  > (`SHGetKnownFolderPath`), Linux XDG Base Directories (`$XDG_DATA_HOME`, `$XDG_CONFIG_HOME`,
+  > `$HOME`), and macOS Application Support / bundle paths alongside `constexpr`-capable path
+  > slicing, relative directory collapsing, and path resolution.
+- [**ADR-0044**: Layered Virtual File System (VFS) Mount-Point and Logical URI Routing Architecture](./ADR-0044.md)
+  > Defines the future I/O Virtual File System (`gp::vfs`) architecture as a priority-layered mount
+  > table that consumes physical OS directory roots from `gp::platform::Paths` ([ADR-0043](./ADR-0043.md))
+  > and binds them—alongside read-only compressed archive/pak backends and mod override layers—to
+  > logical URI schemes (`engine://`, `game://`, `user://`, `appdata://`, `cache://`, `temp://`),
+  > isolating gameplay, shader, and asset streaming code from physical disk layouts and console
+  > sandbox partitions.
 
 ### Concurrency & Event Routing
 
