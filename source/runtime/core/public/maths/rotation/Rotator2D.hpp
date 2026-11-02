@@ -3,3 +3,34 @@
 // mailto:support AT graphical-playground DOT com
 
 #pragma once
+
+#include "concepts/Concepts.hpp"
+
+namespace gp::math
+{
+
+/// @brief A structure representing a rotation in 2D space.
+/// @tparam T The floating-point type for the rotation component.
+template <concepts::IsFloatingPoint T>
+struct Rotator2D
+{
+public:
+    T angle;  // Rotation angle in radians
+
+public:
+    /// @brief Default constructor initializes to 0.
+    /// @return A Rotator2D with the angle set to 0.
+    [[nodiscard]] static inline constexpr Rotator2D<T> zero()
+    {
+        return { T{ 0 } };
+    }
+
+public:
+    /// @brief Constructor with a specific angle.
+    /// @param[in] inAngle The angle of the rotation.
+    [[nodiscard]] constexpr Rotator2D(const T inAngle) noexcept
+        : angle(inAngle)
+    {}
+};
+
+}   // namespace gp::math
