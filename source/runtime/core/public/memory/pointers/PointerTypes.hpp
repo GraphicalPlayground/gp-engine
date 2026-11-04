@@ -304,31 +304,24 @@ public:
 
 /// @brief Default intrusive reference-counting policy forwarding operations to `T::addRef()`, `T::release()`, and
 ///        `T::getRefCount()`.
-/// @details Each static method is concept-constrained on `InElementType` so `gp::concepts::IsRefCounted<T>` accurately
-///          rejects non-intrusive types at compile time. May be specialized or replaced per-type to wrap external
-///          intrusive objects such as Direct3D 12 / DXGI COM interfaces (`IUnknown::AddRef()` / `IUnknown::Release()`).
+/// @details Each static method forwards operations directly to the managed object. Concept satisfaction is validated
+///          by `gp::concepts::IsRefCountPolicy` and `gp::concepts::IsRefCounted`. May be specialized or replaced
+///          per-type to wrap external intrusive objects such as Direct3D 12 / DXGI COM interfaces
+///          (`IUnknown::AddRef()` / `IUnknown::Release()`).
 /// @tparam InElementType Intrusive object type managed by `RefCountedPtr`.
 template <typename InElementType>
 struct DefaultRefCountPolicy
 {
     /// @brief Increments the intrusive reference count on `ptr`.
     /// @param[in] ptr Non-null pointer to the managed object.
-    static GP_FORCEINLINE_HINT constexpr void addRef(InElementType* ptr) noexcept requires requires(InElementType* p) {
-        {
-            p->addRef()
-        } noexcept;
-    }
+    static GP_FORCEINLINE_HINT constexpr void addRef(InElementType* ptr) noexcept
     {
         ptr->addRef();
     }
 
     /// @brief Decrements the intrusive reference count on `ptr`, triggering destruction or deferred deletion at zero.
     /// @param[in] ptr Non-null pointer to the managed object.
-    static GP_FORCEINLINE_HINT constexpr void release(InElementType* ptr) noexcept requires requires(InElementType* p) {
-        {
-            p->release()
-        } noexcept;
-    }
+    static GP_FORCEINLINE_HINT constexpr void release(InElementType* ptr) noexcept
     {
         ptr->release();
     }
@@ -337,11 +330,6 @@ struct DefaultRefCountPolicy
     /// @param[in] ptr Non-null pointer to the managed object.
     /// @return Current reference count.
     [[nodiscard]] static GP_FORCEINLINE_HINT constexpr gp::UInt32 getRefCount(const InElementType* ptr) noexcept
-        requires requires(const InElementType* p) {
-            {
-                p->getRefCount()
-            } noexcept -> concepts::IsConvertibleTo<gp::UInt32>;
-        }
     {
         return static_cast<gp::UInt32>(ptr->getRefCount());
     }
