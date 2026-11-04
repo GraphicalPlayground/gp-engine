@@ -11,8 +11,11 @@
 #include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
 #include "memory/allocators/HeapAllocator.hpp"
-#include "memory/MemoryBase.hpp"   // IWYU pragma: keep
+#include "memory/Memory.hpp"
+#include "memory/MemoryBase.hpp"
 #include "memory/MemoryOrder.hpp"
+#include "memory/utils/MemoryOps.hpp"   // IWYU pragma: keep
+#include "platforms/base/system/Thread.hpp"
 #include "threading/atomics/AtomicFlag.hpp"
 #include <charconv>
 
@@ -22,7 +25,7 @@ namespace gp::container
 namespace
 {
 
-/// @brief TTAS (Test-and-Test-and-Set) spinlock guard for a single `NamePool` shard (ADR-0025, ADR-0046).
+/// @brief TTAS (Test-and-Test-and-Set) spinlock guard for a single `NamePool` shard (ADR-0025, ADR-0047).
 class ScopedShardLock final
 {
 public:
@@ -33,7 +36,7 @@ public:
         {
             while (m_flag.test(gp::memory::MemoryOrder::Relaxed))
             {
-                // Spin with relaxed read to prevent MESI cache-line invalidation traffic.
+                gp::platform::Thread::spinWait();
             }
         }
     }
@@ -54,12 +57,6 @@ private:
 
 /// @brief Canonical static `"None"` C-string returned when resolving `kNameNoneId`.
 inline constexpr const char kNoneLiteral[] = "None";
-
-/// @brief Aligns `value` upward to the next multiple of 8 bytes.
-[[nodiscard]] constexpr gp::USize alignUp8(const gp::USize value) noexcept
-{
-    return (value + 7u) & ~gp::USize{ 7u };
-}
 
 }   // namespace
 
@@ -279,10 +276,7 @@ void NamePool::growShardTable(Shard& shard, const gp::USize newCapacity) noexcep
     );
     GP_ASSERT(newSlots != nullptr, "NamePool::growShardTable failed to allocate hash slots.");
 
-    for (gp::USize i = 0u; i < newCapacity; ++i)
-    {
-        newSlots[i] = kNameNoneId;
-    }
+    gp::memory::zeroMemory(newSlots, newCapacity * sizeof(NameEntryId));
 
     const gp::USize newMask = newCapacity - 1u;
     if (shard.slots != nullptr)
@@ -315,7 +309,7 @@ NameEntryId NamePool::allocateEntryInShard(
     Shard& shard, const gp::UInt32 shardIdx, const BasicStringView<char> baseStr, const gp::UInt64 caseInsensitiveHash
 ) noexcept
 {
-    const gp::USize requiredBytes = alignUp8(sizeof(NameEntryHeader) + baseStr.size() + 1u);
+    const gp::USize requiredBytes = gp::memory::align(sizeof(NameEntryHeader) + baseStr.size() + 1u, 8u);
     GP_ASSERT(requiredBytes <= kSlabSizeBytes, "NamePool entry exceeds slab size.");
 
     gp::memory::DefaultAllocator allocator{};
