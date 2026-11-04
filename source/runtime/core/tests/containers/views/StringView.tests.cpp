@@ -615,4 +615,133 @@ TEST(StringViewTests, ConstexprCompare)
     static_assert(sv1 < sv3);
 }
 
+TEST(StringViewTests, CaseInsensitiveSearchAndComparison)
+{
+    constexpr StringView sv("Assets/Meshes/SM_Hero_LOD0.gpasset");
+
+    static_assert(sv.equals("assets/meshes/sm_hero_lod0.gpasset", SearchCase::IgnoreCase));
+    static_assert(sv.equalsIgnoreCase("ASSETS/MESHES/SM_HERO_LOD0.GPASSET"));
+    static_assert(!sv.equals("assets/meshes/sm_hero_lod0.gpasset", SearchCase::CaseSensitive));
+
+    static_assert(sv.startsWith("assets/", SearchCase::IgnoreCase));
+    static_assert(sv.endsWith(".GPASSET", SearchCase::IgnoreCase));
+    static_assert(sv.contains("sm_hero", SearchCase::IgnoreCase));
+    static_assert(sv.find("lod0", 0u, SearchCase::IgnoreCase) == 22u);
+    static_assert(sv.rfind("meshes", StringView::npos, SearchCase::IgnoreCase) == 7u);
+}
+
+TEST(StringViewTests, SlicingAndTrimming)
+{
+    constexpr StringView sv("0123456789");
+    static_assert(sv.left(4u) == "0123");
+    static_assert(sv.right(3u) == "789");
+    static_assert(sv.mid(3u, 4u) == "3456");
+    static_assert(sv.leftChop(3u) == "0123456");
+    static_assert(sv.rightChop(3u) == "3456789");
+
+    constexpr StringView padded(" \t\r\n  EngineCore \t\n ");
+    static_assert(padded.trimStart() == "EngineCore \t\n ");
+    static_assert(padded.trimEnd() == " \t\r\n  EngineCore");
+    static_assert(padded.trim() == "EngineCore");
+}
+
+TEST(StringViewTests, WildcardMatchingAndOccurrences)
+{
+    constexpr StringView assetPath("textures/characters/hero_albedo_bc7.dds");
+    static_assert(assetPath.matchesWildcard("textures/*/hero_*.dds"));
+    static_assert(assetPath.matchesWildcard("TEXTURES/*/HERO_??????_BC7.DDS", SearchCase::IgnoreCase));
+    static_assert(!assetPath.matchesWildcard("textures/*/villain_*.dds"));
+
+    constexpr StringView repeated("aa_bb_aa_cc_aa");
+    static_assert(repeated.countOccurrences("aa") == 3u);
+    static_assert(repeated.countOccurrences('_') == 4u);
+}
+
+TEST(StringViewTests, ZeroAllocationSplitViewAndSplitLines)
+{
+    const StringView csv("  alpha , , beta , gamma  ");
+    StringView tokens[4]{};
+    gp::USize count = 0u;
+
+    const gp::USize returnedCount = csv.splitView(
+        ',',
+        StringSplitOptions::CullEmptyAndTrim,
+        [&tokens, &count](const StringView token)
+    {
+        if (count < 4u)
+        {
+            tokens[count++] = token;
+        }
+    }
+    );
+
+    EXPECT_EQ(returnedCount, 3u);
+    EXPECT_EQ(count, 3u);
+    EXPECT_EQ(tokens[0], "alpha");
+    EXPECT_EQ(tokens[1], "beta");
+    EXPECT_EQ(tokens[2], "gamma");
+
+    const StringView linesText("Line1\r\nLine2\n\nLine3\rLine4");
+    StringView lines[4]{};
+    gp::USize lineIdx = 0u;
+    const gp::USize lineCount = linesText.splitLines(
+        StringSplitOptions::CullEmpty,
+        [&lines, &lineIdx](const StringView line)
+    {
+        if (lineIdx < 4u)
+        {
+            lines[lineIdx++] = line;
+        }
+    }
+    );
+
+    EXPECT_EQ(lineCount, 4u);
+    EXPECT_EQ(lines[0], "Line1");
+    EXPECT_EQ(lines[1], "Line2");
+    EXPECT_EQ(lines[2], "Line3");
+    EXPECT_EQ(lines[3], "Line4");
+}
+
+TEST(StringViewTests, NumericAndBoolParsing)
+{
+    gp::Int32 i32 = 0;
+    EXPECT_TRUE(StringView(" -42 ").tryParseInt32(i32));
+    EXPECT_EQ(i32, -42);
+    EXPECT_FALSE(StringView("42abc").tryParseInt32(i32));
+
+    gp::UInt64 u64 = 0u;
+    EXPECT_TRUE(StringView("FF").tryParseUInt64(u64, 16));
+    EXPECT_EQ(u64, 255u);
+
+    gp::Float32 f32 = 0.0f;
+    EXPECT_TRUE(StringView("3.14159").tryParseFloat32(f32));
+    EXPECT_NEAR(f32, 3.14159f, 1e-5f);
+
+    bool flag = false;
+    EXPECT_TRUE(StringView("true").tryParseBool(flag));
+    EXPECT_TRUE(flag);
+    EXPECT_TRUE(StringView("OFF").tryParseBool(flag));
+    EXPECT_FALSE(flag);
+    EXPECT_TRUE(StringView("1").tryParseBool(flag));
+    EXPECT_TRUE(flag);
+    EXPECT_FALSE(StringView("maybe").tryParseBool(flag));
+}
+
+TEST(StringViewTests, CaseInsensitiveCharacterSetSearchesAndIndexOf)
+{
+    constexpr StringView sv("Hello_World_HELLO");
+
+    static_assert(sv.findFirstOf("aeiou", 0u, SearchCase::IgnoreCase) == 1u);
+    static_assert(sv.findFirstOf('E', 0u, SearchCase::IgnoreCase) == 1u);
+    static_assert(sv.findLastOf("aeiou", StringView::npos, SearchCase::IgnoreCase) == 16u);
+    static_assert(sv.findLastOf('o', StringView::npos, SearchCase::IgnoreCase) == 16u);
+    static_assert(sv.findFirstNotOf("hel_", 0u, SearchCase::IgnoreCase) == 4u);
+    static_assert(sv.findLastNotOf("helo_", StringView::npos, SearchCase::IgnoreCase) == 10u);
+
+    static_assert(sv.indexOf("hello", SearchCase::IgnoreCase, SearchDir::FromStart) == 0u);
+    static_assert(sv.indexOf("hello", SearchCase::IgnoreCase, SearchDir::FromEnd) == 12u);
+    static_assert(sv.indexOf('l', SearchCase::IgnoreCase, SearchDir::FromStart) == 2u);
+    static_assert(sv.indexOf('l', SearchCase::IgnoreCase, SearchDir::FromEnd) == 15u);
+}
+
 }   // namespace gp::testing
