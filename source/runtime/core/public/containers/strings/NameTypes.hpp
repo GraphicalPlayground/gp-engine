@@ -14,7 +14,7 @@
 namespace gp::container
 {
 
-/// @brief 32-bit packed handle identifying a deduplicated string entry inside `gp::NamePool` (ADR-0046).
+/// @brief 32-bit packed handle identifying a deduplicated string entry inside `gp::NamePool` (ADR-0047).
 /// @details Bit layout for valid non-zero entries:
 ///          - Bit  31      (`1 bit`) : Valid entry marker (`kNameValidIdBit = 0x80000000u`).
 ///          - Bits 25..30 (`6 bits`) : Shard index (`0..63`).
@@ -70,7 +70,7 @@ struct alignas(8) NameEntryHeader
 static_assert(sizeof(NameEntryHeader) == 16u, "NameEntryHeader must be exactly 16 bytes.");
 static_assert(alignof(NameEntryHeader) == 8u, "NameEntryHeader must be 8-byte aligned.");
 
-/// @brief Compile-time and runtime 64-bit FNV-1a string hash identifier for `switch` dispatch (ADR-0046).
+/// @brief Compile-time and runtime 64-bit FNV-1a string hash identifier for `switch` dispatch (ADR-0047).
 /// @details Computes the exact same ASCII case-insensitive (or case-sensitive) 64-bit FNV-1a hash used by
 ///          `gp::NamePool`. Can be evaluated in `constexpr` contexts and `switch (hash.value())` statements via
 ///          the `gp::literals::operator""_nh` literal without touching the runtime `NamePool`.
