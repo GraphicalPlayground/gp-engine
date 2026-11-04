@@ -26,7 +26,7 @@
 namespace gp::container
 {
 
-/// @brief 64-shard, cache-line-isolated global string intern pool backing `gp::Name` (ADR-0046).
+/// @brief 64-shard, cache-line-isolated global string intern pool backing `gp::Name` (ADR-0047).
 /// @details Partitions interned base strings across 64 independent shards selected by the upper 6 bits of the 64-bit
 ///          FNV-1a case-insensitive hash. Each shard bump-allocates `NameEntryHeader` + null-terminated UTF-8 strings
 ///          inside permanent `16 KiB` slabs so `resolveView()` and `resolveCString()` are $O(1)$, lock-free, and never
@@ -216,7 +216,7 @@ private:
     Shard m_shards[kShardCount]{};
 };
 
-/// @brief 8-byte, trivially copyable, $O(1)$-comparable interned string identifier (ADR-0046).
+/// @brief 8-byte, trivially copyable, $O(1)$-comparable interned string identifier (ADR-0047).
 /// @details Combines a 32-bit `NameEntryId` handle into `gp::NamePool` with a 32-bit Unreal-style split numeric
 ///          instance suffix (`m_number`). Equality (`==`, `!=`) and fast table ordering (`<=>`) execute in a single
 ///          64-bit register comparison without dereferencing character memory.
@@ -235,6 +235,28 @@ public:
     /// @param[in] str Null-terminated C-string (`nullptr` or `""` produces `Name()`).
     /// @param[in] findMode `NameFindMode::Add` to intern if new, `NameFindMode::Find` for non-inserting lookup.
     [[nodiscard]] explicit(false) Name(const char* str, NameFindMode findMode = NameFindMode::Add) noexcept;
+
+    /// @brief Constructs a `Name` from an owning `BasicString`, automatically splitting any canonical `_N` suffix.
+    /// @tparam InAllocator Source string's allocator type.
+    /// @param[in] str Source string.
+    /// @param[in] findMode `NameFindMode::Add` to intern if new, `NameFindMode::Find` for non-inserting lookup.
+    template <concepts::IsAllocator InAllocator>
+    [[nodiscard]] explicit(false) Name(
+        const BasicString<char, InAllocator>& str, NameFindMode findMode = NameFindMode::Add
+    ) noexcept
+        : Name(str.view(), findMode)
+    {}
+
+    /// @brief Constructs a `Name` from a stack-allocated `BasicFixedString`, splitting any canonical `_N` suffix.
+    /// @tparam N Capacity of the source `BasicFixedString`.
+    /// @param[in] str Source fixed string.
+    /// @param[in] findMode `NameFindMode::Add` to intern if new, `NameFindMode::Find` for non-inserting lookup.
+    template <gp::USize N>
+    [[nodiscard]] explicit(false) Name(
+        const BasicFixedString<char, N>& str, NameFindMode findMode = NameFindMode::Add
+    ) noexcept
+        : Name(str.view(), findMode)
+    {}
 
     /// @brief Constructs a `Name` from an explicit base string and non-negative instance number (`"Base_number"`).
     /// @param[in] baseStr Unsplit base string (e.g., `"Enemy"`).
@@ -362,6 +384,13 @@ public:
         return NameHash(NamePool::instance().resolveHash(m_comparisonId));
     }
 
+    /// @brief Implicit conversion to `NameHash` returning `baseNameHash()`.
+    /// @return Precomputed 64-bit case-insensitive FNV-1a `NameHash` of the base string.
+    [[nodiscard]] operator NameHash() const noexcept
+    {
+        return baseNameHash();
+    }
+
     /// @brief Formats the full identifier (including `_N` suffix if `hasNumber()`) into a `gp::String`.
     /// @note Fits inside `gp::String`'s 22-byte inline SSO buffer with zero heap allocations for typical identifiers!
     /// @return Formatted `gp::String` (e.g., `"None"`, `"Pelvis"`, or `"Enemy_42"`).
@@ -393,6 +422,35 @@ public:
     /// @param[in,out] outStr Destination string to append into.
     void appendTo(String& outStr) const noexcept;
 
+    /// @brief Appends the full identifier (including `_N` suffix if `hasNumber()`) to any allocator-backed
+    ///        `BasicString<char, InAllocator>`.
+    /// @tparam InAllocator Destination string's allocator type.
+    /// @param[in,out] outStr Destination string to append into.
+    template <concepts::IsAllocator InAllocator>
+    requires(!std::is_same_v<InAllocator, gp::memory::DefaultAllocator>)
+    void appendTo(BasicString<char, InAllocator>& outStr) const noexcept
+    {
+        const BasicStringView<char> base = baseView();
+        if (!hasNumber())
+        {
+            outStr.append(base);
+            return;
+        }
+
+        char numBuf[16]{};
+        numBuf[0] = '_';
+        const gp::Int32 externalNum = getNumber();
+        const std::to_chars_result res = std::to_chars(numBuf + 1, numBuf + sizeof(numBuf), externalNum, 10);
+        const gp::USize numLen = (res.ec == std::errc{}) ? static_cast<gp::USize>(res.ptr - numBuf) : 0u;
+
+        outStr.reserve(outStr.size() + base.size() + numLen);
+        outStr.append(base);
+        if (numLen > 0u)
+        {
+            outStr.append(numBuf, numLen);
+        }
+    }
+
     /// @brief Computes a fast 64-bit hash combining `m_comparisonId` and `m_number` in $O(1)$ time.
     /// @return 64-bit hash value suitable for hash maps (`gp::Map`, `gp::Set`).
     [[nodiscard]] constexpr gp::UInt64 hash() const noexcept
@@ -423,7 +481,7 @@ public:
     /// @return `std::strong_ordering` of the packed `(m_comparisonId, m_number)` pair.
     [[nodiscard]] constexpr std::strong_ordering operator<=>(const Name& other) const noexcept
     {
-        if (const auto cmp = m_comparisonId <=> other.m_comparisonId; cmp != 0)
+        if (const std::strong_ordering cmp = m_comparisonId <=> other.m_comparisonId; cmp != 0)
         {
             return cmp;
         }
@@ -468,8 +526,19 @@ static_assert(gp::concepts::IsRelocatable<Name>, "gp::Name must satisfy gp::conc
 /// @return Reference to `os`.
 inline std::ostream& operator<<(std::ostream& os, const Name& name)
 {
-    const String str = name.toString();
-    return os.write(str.data(), static_cast<std::streamsize>(str.size()));
+    const BasicStringView<char> base = name.baseView();
+    os.write(base.data(), static_cast<std::streamsize>(base.size()));
+    if (name.hasNumber())
+    {
+        char numBuf[16]{};
+        numBuf[0] = '_';
+        const std::to_chars_result res = std::to_chars(numBuf + 1, numBuf + sizeof(numBuf), name.getNumber(), 10);
+        if (res.ec == std::errc{})
+        {
+            os.write(numBuf, static_cast<std::streamsize>(res.ptr - numBuf));
+        }
+    }
+    return os;
 }
 
 }   // namespace gp::container
@@ -497,6 +566,11 @@ struct formatter<gp::container::Name, char> : formatter<string_view, char>
     template <typename InFormatContext>
     auto format(const gp::container::Name& name, InFormatContext& ctx) const
     {
+        if (!name.hasNumber())
+        {
+            const gp::StringView base = name.baseView();
+            return formatter<string_view, char>::format(string_view(base.data(), base.size()), ctx);
+        }
         const gp::String str = name.toString();
         return formatter<string_view, char>::format(string_view(str.data(), str.size()), ctx);
     }
