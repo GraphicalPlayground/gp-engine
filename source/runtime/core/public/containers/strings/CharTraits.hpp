@@ -12,7 +12,7 @@
 namespace gp::container
 {
 
-/// @brief Engine-native, `constexpr`, locale-independent character traits and buffer primitives (ADR-0045).
+/// @brief Engine-native, `constexpr`, locale-independent character traits and buffer primitives (ADR-0046).
 /// @details Replaces `std::char_traits<CharT>` (`<string>`) and `<cctype>` across all `gp-engine` string and view
 ///          containers. All character classification, case-folding, comparison, search, and 64-bit FNV-1a hashing
 ///          operations are deterministic, lock-free, and immune to OS locale mutations (such as the Turkish-I problem).
