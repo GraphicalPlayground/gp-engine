@@ -14,28 +14,45 @@ namespace gp::concepts
 
 /// @brief Concept verifying that `InPolicyType` provides valid `noexcept` intrusive `addRef` and `release` hooks for
 ///        `InElementType*`.
+/// @details For `DefaultRefCountPolicy`, verifies that `InElementType` directly exposes `addRef()` and `release()`.
+///          For custom policies, verifies that `InPolicyType::addRef(ptr)` and `InPolicyType::release(ptr)` are valid.
 /// @tparam InPolicyType Policy struct offering static `addRef` and `release` functions.
 /// @tparam InElementType Pointee type managed by the policy.
 template <typename InPolicyType, typename InElementType>
-concept IsRefCountPolicy = !IsVoid<InElementType> && requires(InElementType* ptr) {
-    {
-        InPolicyType::addRef(ptr)
-    } noexcept;
-    {
-        InPolicyType::release(ptr)
-    } noexcept;
-};
+concept IsRefCountPolicy =
+    !IsVoid<InElementType> &&
+    (IsSameAs<InPolicyType, gp::DefaultRefCountPolicy<InElementType>> ? requires(InElementType* ptr) {
+        {
+            ptr->addRef()
+        } noexcept;
+        {
+            ptr->release()
+        } noexcept;
+    } : requires(InElementType* ptr) {
+        {
+            InPolicyType::addRef(ptr)
+        } noexcept;
+        {
+            InPolicyType::release(ptr)
+        } noexcept;
+    });
 
 /// @brief Concept verifying that `InPolicyType` additionally supports querying the live reference count of
 ///        `const InElementType*`.
 /// @tparam InPolicyType Policy struct to inspect.
 /// @tparam InElementType Pointee type managed by the policy.
 template <typename InPolicyType, typename InElementType>
-concept HasRefCountQuery = IsRefCountPolicy<InPolicyType, InElementType> && requires(const InElementType* constPtr) {
-    {
-        InPolicyType::getRefCount(constPtr)
-    } noexcept -> IsConvertibleTo<gp::UInt32>;
-};
+concept HasRefCountQuery =
+    !IsVoid<InElementType> && IsRefCountPolicy<InPolicyType, InElementType> &&
+    (IsSameAs<InPolicyType, gp::DefaultRefCountPolicy<InElementType>> ? requires(const InElementType* constPtr) {
+        {
+            constPtr->getRefCount()
+        } noexcept -> IsConvertibleTo<gp::UInt32>;
+    } : requires(const InElementType* constPtr) {
+        {
+            InPolicyType::getRefCount(constPtr)
+        } noexcept -> IsConvertibleTo<gp::UInt32>;
+    });
 
 /// @brief Concept verifying that `InElementType` can be managed intrusively by `RefCountedPtr<InElementType,
 ///        InPolicyType>`.

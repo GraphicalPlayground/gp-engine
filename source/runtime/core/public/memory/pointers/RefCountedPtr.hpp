@@ -77,9 +77,14 @@ public:
     template <concepts::IsPointerConvertibleTo<InElementType> InOtherType>
     constexpr explicit(false) RefCountedPtr(
         InOtherType* ptr, [[maybe_unused]] const RetainRefTag tag = kRetainRef
-    ) noexcept requires concepts::IsRefCounted<InElementType, InPolicy>
+    ) noexcept
         : m_ptr(ptr)
     {
+        static_assert(
+            concepts::IsRefCounted<InElementType, InPolicy>,
+            "RefCountedPtr requires InElementType and InPolicy to satisfy gp::concepts::IsRefCounted."
+        );
+
         if (m_ptr != nullptr)
         {
             InPolicy::addRef(m_ptr);
@@ -94,9 +99,13 @@ public:
     /// @param[in] tag Adopt tag (`kAdoptRef`).
     template <concepts::IsPointerConvertibleTo<InElementType> InOtherType>
     constexpr RefCountedPtr(InOtherType* ptr, [[maybe_unused]] const AdoptRefTag tag) noexcept
-        requires concepts::IsRefCounted<InElementType, InPolicy>
         : m_ptr(ptr)
-    {}
+    {
+        static_assert(
+            concepts::IsRefCounted<InElementType, InPolicy>,
+            "RefCountedPtr requires InElementType and InPolicy to satisfy gp::concepts::IsRefCounted."
+        );
+    }
 
     /// @brief Copy constructor; retains a new reference to the object managed by `other`.
     /// @param[in] other Source `RefCountedPtr` to copy.
@@ -120,9 +129,13 @@ public:
     /// @param[in] other Source `RefCountedPtr` to copy.
     template <concepts::IsPointerConvertibleTo<InElementType> InOtherType, typename InOtherPolicy>
     constexpr explicit(false) RefCountedPtr(const RefCountedPtr<InOtherType, InOtherPolicy>& other) noexcept
-        requires concepts::IsRefCounted<InElementType, InPolicy>
         : m_ptr(other.m_ptr)
     {
+        static_assert(
+            concepts::IsRefCounted<InElementType, InPolicy>,
+            "RefCountedPtr requires InElementType and InPolicy to satisfy gp::concepts::IsRefCounted."
+        );
+
         if (m_ptr != nullptr)
         {
             InPolicy::addRef(m_ptr);
@@ -202,8 +215,12 @@ public:
     /// @return Reference to `*this`.
     template <concepts::IsPointerConvertibleTo<InElementType> InOtherType, typename InOtherPolicy>
     constexpr RefCountedPtr& operator=(const RefCountedPtr<InOtherType, InOtherPolicy>& rhs) noexcept
-        requires concepts::IsRefCounted<InElementType, InPolicy>
     {
+        static_assert(
+            concepts::IsRefCounted<InElementType, InPolicy>,
+            "RefCountedPtr requires InElementType and InPolicy to satisfy gp::concepts::IsRefCounted."
+        );
+
         PointerType newPtr = rhs.m_ptr;
         if (newPtr != nullptr)
         {
@@ -250,8 +267,12 @@ public:
     /// @return Reference to `*this`.
     template <concepts::IsPointerConvertibleTo<InElementType> InOtherType, typename InOtherPolicy>
     constexpr RefCountedPtr& operator=(RefCountedPtr<InOtherType, InOtherPolicy>&& rhs) noexcept
-        requires concepts::IsRefCounted<InElementType, InPolicy>
     {
+        static_assert(
+            concepts::IsRefCounted<InElementType, InPolicy>,
+            "RefCountedPtr requires InElementType and InPolicy to satisfy gp::concepts::IsRefCounted."
+        );
+
         if (static_cast<const void*>(this) != static_cast<const void*>(&rhs))
         {
             PointerType oldPtr = m_ptr;
@@ -271,8 +292,12 @@ public:
     /// @return Reference to `*this`.
     template <concepts::IsPointerConvertibleTo<InElementType> InOtherType>
     constexpr RefCountedPtr& operator=(InOtherType* ptr) noexcept
-        requires concepts::IsRefCounted<InElementType, InPolicy>
     {
+        static_assert(
+            concepts::IsRefCounted<InElementType, InPolicy>,
+            "RefCountedPtr requires InElementType and InPolicy to satisfy gp::concepts::IsRefCounted."
+        );
+
         reset(ptr);
         return *this;
     }
