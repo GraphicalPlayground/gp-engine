@@ -313,24 +313,22 @@ struct DefaultRefCountPolicy
 {
     /// @brief Increments the intrusive reference count on `ptr`.
     /// @param[in] ptr Non-null pointer to the managed object.
-    static GP_FORCEINLINE_HINT constexpr void addRef(InElementType* ptr) noexcept
-        requires requires(InElementType* p) {
-            {
-                p->addRef()
-            } noexcept;
-        }
+    static GP_FORCEINLINE_HINT constexpr void addRef(InElementType* ptr) noexcept requires requires(InElementType* p) {
+        {
+            p->addRef()
+        } noexcept;
+    }
     {
         ptr->addRef();
     }
 
     /// @brief Decrements the intrusive reference count on `ptr`, triggering destruction or deferred deletion at zero.
     /// @param[in] ptr Non-null pointer to the managed object.
-    static GP_FORCEINLINE_HINT constexpr void release(InElementType* ptr) noexcept
-        requires requires(InElementType* p) {
-            {
-                p->release()
-            } noexcept;
-        }
+    static GP_FORCEINLINE_HINT constexpr void release(InElementType* ptr) noexcept requires requires(InElementType* p) {
+        {
+            p->release()
+        } noexcept;
+    }
     {
         ptr->release();
     }
