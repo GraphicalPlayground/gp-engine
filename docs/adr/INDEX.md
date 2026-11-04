@@ -160,6 +160,14 @@ lock-free architectures.
   > (`gp::concepts::IsAllocator`) that passes `oldSizeInBytes` on reallocation and deallocation to
   > enable headerless $O(1)$ arena operations and named pool telemetry (`GP_MEM_ALLOC_N`,
   > `GP_MEM_FREE_N`) in the Tracy profiler.
+- [**ADR-0045**: Intrusive Reference-Counted Smart Pointers and Bit-Packed Atomic RHI Lifecycle State](./ADR-0045.md)
+  > Establishes `gp::RefCountedPtr<T, Policy>` as an 8-byte, zero-control-block intrusive smart
+  > pointer paired with `IntrusiveRefCounted<Derived, ThreadSafety>` and a 32-bit bit-packed atomic
+  > lifecycle counter (`AtomicRefStateCounter`: 30-bit reference count + `MarkedForDelete` and
+  > `Deleting` state flags). This architecture eliminates external control-block heap allocations,
+  > guarantees single-register passing across dynamic RHI module boundaries, prevents ABA resurrection
+  > races during multi-threaded deferred GPU resource deletion, and supports custom policy binding for
+  > native COM interfaces (`ID3D12Resource`, `IDXGISwapChain`).
 - [**ADR-0046**: Hybrid 24-Byte SSO String Container, Engine-Native `CharTraits`, and Zero-Allocation UTF Codec](./ADR-0046.md)
   > Establishes `gp::container::BasicString<CharT, Allocator>` (`gp::String`, `gp::WString`,
   > `gp::U8String`, `gp::U16String`, `gp::U32String`, `gp::InlineString<N>`, `gp::ScratchString`) as
