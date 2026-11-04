@@ -9,7 +9,7 @@
 namespace gp::container
 {
 
-/// @brief Lookup policy when constructing or querying a `gp::Name` in `gp::NamePool` (ADR-0046).
+/// @brief Lookup policy when constructing or querying a `gp::Name` in `gp::NamePool` (ADR-0047).
 enum class NameFindMode : gp::UInt8
 {
     /// @brief Finds an existing entry or inserts a new entry into the global `NamePool` if not yet registered.
