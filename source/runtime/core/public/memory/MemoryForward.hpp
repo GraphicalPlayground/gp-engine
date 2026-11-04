@@ -58,6 +58,22 @@ namespace gp
 
 /// @section Pointers forward declarations
 
+enum class RefCountThreadSafety : gp::UInt8;
+enum class RefStateFlags : gp::UInt32;
+
+struct AdoptRefTag;
+struct RetainRefTag;
+
+template <typename InElementType>
+struct DefaultRefCountPolicy;
+
+class AtomicRefStateCounter;
+
+template <typename InDerivedType, RefCountThreadSafety InThreadSafety>
+class IntrusiveRefCounted;
+
+class IRefCounted;
+
 template <typename T, typename Deleter>
 class UniquePtr;
 
@@ -67,7 +83,7 @@ class SharedPtr;
 template <typename T>
 class WeakPtr;
 
-template <typename T>
+template <typename InElementType, typename InPolicy>
 class RefCountedPtr;
 
 }   // namespace gp
