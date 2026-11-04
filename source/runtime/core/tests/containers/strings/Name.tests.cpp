@@ -190,12 +190,12 @@ TEST(NameTests, ConstexprNameHashAndSwitchDispatch)
     EXPECT_EQ(bone.baseNameHash(), "SPINE_01"_nh);
 
     gp::Int32 matchedBranch = 0;
-    switch (bone.baseNameHash().value())
+    switch (bone.baseNameHash())
     {
-    case "root"_nh.value():
+    case "root"_nh:
         matchedBranch = 1;
         break;
-    case "spine_01"_nh.value():
+    case "spine_01"_nh:
         matchedBranch = 2;
         break;
     default:
@@ -203,6 +203,21 @@ TEST(NameTests, ConstexprNameHashAndSwitchDispatch)
         break;
     }
     EXPECT_EQ(matchedBranch, 2);
+
+    // Single-step conversion from gp::String, gp::InlineString, and gp::FixedString
+    const gp::String dynamicStr("Spine_01_5");
+    const gp::InlineString<64> inlineStr("spine_01_5");
+    const gp::FixedString<64> fixedStr("SPINE_01_5");
+    const gp::Name fromDynamic = dynamicStr;
+    const gp::Name fromInline = inlineStr;
+    const gp::Name fromFixed = fixedStr;
+    EXPECT_EQ(fromDynamic, bone);
+    EXPECT_EQ(fromInline, bone);
+    EXPECT_EQ(fromFixed, bone);
+
+    gp::InlineString<64> outInline("Bone=");
+    bone.appendTo(outInline);
+    EXPECT_EQ(outInline, "Bone=spine_01_5");
 }
 
 TEST(NameTests, LexicographicalComparisonFormattingAndStringEquality)
