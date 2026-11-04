@@ -160,6 +160,19 @@ lock-free architectures.
   > (`gp::concepts::IsAllocator`) that passes `oldSizeInBytes` on reallocation and deallocation to
   > enable headerless $O(1)$ arena operations and named pool telemetry (`GP_MEM_ALLOC_N`,
   > `GP_MEM_FREE_N`) in the Tracy profiler.
+- [**ADR-0045**: Hybrid 24-Byte SSO String Container, Engine-Native `CharTraits`, and Zero-Allocation UTF Codec](./ADR-0045.md)
+  > Establishes `gp::container::BasicString<CharT, Allocator>` (`gp::String`, `gp::WString`,
+  > `gp::U8String`, `gp::U16String`, `gp::U32String`, `gp::InlineString<N>`, `gp::ScratchString`) as
+  > a 24-byte owning string container combining in-situ Small String Optimization (`22` `char`
+  > capacity with zero heap allocations) and first-class `gp::concepts::IsAllocator` arena
+  > integration ([ADR-0042](./ADR-0042.md)), backed by an STL-free `constexpr`
+  > `gp::container::CharTraits<CharT>` and a zero-allocation `gp::unicode` UTF-8/16/32 transcoding
+  > and codepoint iteration subsystem.
+- [**ADR-0046**: Sharded Global Interned String Pool (`gp::Name`), Split Numeric Instance Suffixes, and `constexpr` Hash Literals](./ADR-0046.md)
+  > Establishes `gp::container::Name` (`gp::Name`) as an 8-byte, trivially copyable, $O(1)$-comparable
+  > interned identifier combining a 32-bit `NameEntryId` handle into a 64-shard, cache-line-isolated
+  > global `NamePool` with an Unreal-inspired 32-bit split numeric instance suffix (`m_number`),
+  > paired with `constexpr` 64-bit FNV-1a `gp::NameHash` (`_nh`) compile-time string literals.
 
 ### Math & Core Types
 
