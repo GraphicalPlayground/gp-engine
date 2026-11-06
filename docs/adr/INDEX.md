@@ -168,6 +168,19 @@ lock-free architectures.
   > guarantees single-register passing across dynamic RHI module boundaries, prevents ABA resurrection
   > races during multi-threaded deferred GPU resource deletion, and supports custom policy binding for
   > native COM interfaces (`ID3D12Resource`, `IDXGISwapChain`).
+- [**ADR-0046**: Hybrid 24-Byte SSO String Container, Engine-Native `CharTraits`, and Zero-Allocation UTF Codec](./ADR-0046.md)
+  > Establishes `gp::container::BasicString<CharT, Allocator>` (`gp::String`, `gp::WString`,
+  > `gp::U8String`, `gp::U16String`, `gp::U32String`, `gp::InlineString<N>`, `gp::ScratchString`) as
+  > a 24-byte owning string container combining in-situ Small String Optimization (`22` `char`
+  > capacity with zero heap allocations) and first-class `gp::concepts::IsAllocator` arena
+  > integration ([ADR-0042](./ADR-0042.md)), backed by an STL-free `constexpr`
+  > `gp::container::CharTraits<CharT>` and a zero-allocation `gp::unicode` UTF-8/16/32 transcoding
+  > and codepoint iteration subsystem.
+- [**ADR-0047**: Sharded Global Interned String Pool (`gp::Name`), Split Numeric Instance Suffixes, and `constexpr` Hash Literals](./ADR-0047.md)
+  > Establishes `gp::container::Name` (`gp::Name`) as an 8-byte, trivially copyable, $O(1)$-comparable
+  > interned identifier combining a 32-bit `NameEntryId` handle into a 64-shard, cache-line-isolated
+  > global `NamePool` with an Unreal-inspired 32-bit split numeric instance suffix (`m_number`),
+  > paired with `constexpr` 64-bit FNV-1a `gp::NameHash` (`_nh`) compile-time string literals.
 
 ### Math & Core Types
 
