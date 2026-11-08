@@ -214,6 +214,15 @@ lock-free architectures.
   > **`gp::thread::JobWaitNode`** entries, a 64-bit bit-packed **`gp::thread::JobCounter`**
   > (`CacheAlignedJobCounter`), a binary **`gp::thread::JobFence`**, and a hardware-enforced
   > **`Fiber::m_isStackActive`** post-switch release latch in `gp::core`.
+- [**ADR-0051**: Bounded Lock-Free Chase-Lev Work-Stealing Deques and Vyukov Sequence MPMC Job Queues](./ADR-0051.md)
+  > Centralized job queues bottleneck across 16–64 hardware threads due to MESI cache-line bouncing
+  > and FIFO cache thrashing, while dynamic Chase-Lev deques violate deterministic frame budgets by
+  > allocating and garbage-collecting ring buffers on the hot path. `gp-engine` introduces a hybrid,
+  > zero-allocation Layer 2 queue architecture in `gp::core`: a per-worker bounded lock-free
+  > Single-Producer Multi-Consumer (SPMC) **`gp::thread::WorkStealingDeque<T>`** (Chase-Lev with
+  > Lê et al. C11 memory ordering), a bounded Multi-Producer Multi-Consumer (MPMC)
+  > **`gp::thread::MPMCRingQueue<T>`** (Vyukov per-slot sequence-stamp ring), and 32-byte POD
+  > **`gp::thread::JobDecl`** and **`gp::thread::JobQueueItem`** descriptors.
 
 ### Math & Core Types
 
