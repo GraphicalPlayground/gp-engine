@@ -13,17 +13,37 @@ namespace gp::container
 
 /// @section Details forward declarations
 
-template <typename T, bool AllowDuplicateKeys = false>
+template <typename InT, bool InAllowDuplicateKeys = false>
 struct DefaultKeyFunctions;
-template <typename KeyType, typename ValueType, bool AllowDuplicateKeys>
+template <typename InKeyType, typename InValueType, bool InAllowDuplicateKeys>
 struct DefaultMapHashtableKeyFunctions;
-template <typename T = void>
+template <typename InT = void>
 struct Less;
 
 /// @section String related forward declarations
 
-template <concepts::IsCharacter CharType>
+enum class SearchCase : gp::UInt8;
+enum class SearchDir : gp::UInt8;
+enum class StringSplitOptions : gp::UInt8;
+enum class NameFindMode : gp::UInt8;
+
+using NameEntryId = gp::UInt32;
+struct NameEntryHeader;
+class NameHash;
+class NamePool;
+class Name;
+
+template <concepts::IsCharacter InCharT>
+struct CharTraits;
+
+template <concepts::IsCharacter InCharT>
 class BasicStringView;
+
+template <concepts::IsCharacter InCharT, gp::USize InN>
+class BasicFixedString;
+
+template <concepts::IsCharacter InCharT, typename InAllocator = gp::memory::DefaultAllocator>
+class BasicString;
 
 }   // namespace gp::container
 
@@ -34,94 +54,136 @@ namespace gp
 template <typename>
 struct TypeTraits;
 
+/// @section String aliases forward declarations
+
+using StringView = container::BasicStringView<char>;
+using WStringView = container::BasicStringView<wchar_t>;
+using U8StringView = container::BasicStringView<char8_t>;
+using U16StringView = container::BasicStringView<char16_t>;
+using U32StringView = container::BasicStringView<char32_t>;
+
+template <gp::USize InN>
+using FixedString = container::BasicFixedString<char, InN>;
+template <gp::USize InN>
+using FixedWString = container::BasicFixedString<wchar_t, InN>;
+template <gp::USize InN>
+using FixedU8String = container::BasicFixedString<char8_t, InN>;
+template <gp::USize InN>
+using FixedU16String = container::BasicFixedString<char16_t, InN>;
+template <gp::USize InN>
+using FixedU32String = container::BasicFixedString<char32_t, InN>;
+
+using String = container::BasicString<char, gp::memory::DefaultAllocator>;
+using WString = container::BasicString<wchar_t, gp::memory::DefaultAllocator>;
+using U8String = container::BasicString<char8_t, gp::memory::DefaultAllocator>;
+using U16String = container::BasicString<char16_t, gp::memory::DefaultAllocator>;
+using U32String = container::BasicString<char32_t, gp::memory::DefaultAllocator>;
+
+using ScratchString = container::BasicString<char, gp::memory::ThreadScratchAllocator>;
+using PolymorphicString = container::BasicString<char, gp::memory::PolymorphicAllocator>;
+
+template <
+    gp::USize InCapacityBytes,
+    gp::UInt32 InAlignment = 8u,
+    typename InFallbackAllocator = gp::memory::DefaultAllocator>
+using InlineString =
+    container::BasicString<char, gp::memory::InlineAllocator<InCapacityBytes, InAlignment, InFallbackAllocator>>;
+
+using NameFindMode = container::NameFindMode;
+using NameEntryId = container::NameEntryId;
+using NameEntryHeader = container::NameEntryHeader;
+using NameHash = container::NameHash;
+using NamePool = container::NamePool;
+using Name = container::Name;
+
 /// @section Array related forward declarations
 
-template <typename T, USize N, USize Alignment = alignof(T)>
+template <typename InT, USize InN, USize InAlignment = alignof(InT)>
 class Array;
 
 /// @section Vector related forward declarations
 
-template <typename T, typename Allocator = gp::memory::DefaultAllocator>
+template <typename InT, typename InAllocator = gp::memory::DefaultAllocator>
 class Vector;
-template <typename T>
-using Vector64 = Vector<T, gp::memory::DefaultAllocator>;
-template <typename T, typename SizeType = Int32>
+template <typename InT>
+using Vector64 = Vector<InT, gp::memory::DefaultAllocator>;
+template <typename InT, typename InSizeType = Int32>
 class VectorView;
-template <typename T>
-using VectorView64 = VectorView<T, Int64>;
-template <typename T, typename SizeType = Int32>
-using ConstVectorView = VectorView<const T, SizeType>;
-template <typename T>
-using ConstVectorView64 = VectorView<const T, Int64>;
+template <typename InT>
+using VectorView64 = VectorView<InT, Int64>;
+template <typename InT, typename InSizeType = Int32>
+using ConstVectorView = VectorView<const InT, InSizeType>;
+template <typename InT>
+using ConstVectorView64 = VectorView<const InT, Int64>;
 
 /// @section Map related forward declarations
 
 template <
-    typename KeyType,
-    typename ValueType,
-    typename SetAllocator = gp::memory::DefaultAllocator,
-    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
+    typename InKeyType,
+    typename InValueType,
+    typename InSetAllocator = gp::memory::DefaultAllocator,
+    typename InKeyFunctions = container::DefaultMapHashtableKeyFunctions<InKeyType, InValueType, false>>
 class SparseMap;
 template <
-    typename KeyType,
-    typename ValueType,
-    typename SetAllocator = gp::memory::DefaultAllocator,
-    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
+    typename InKeyType,
+    typename InValueType,
+    typename InSetAllocator = gp::memory::DefaultAllocator,
+    typename InKeyFunctions = container::DefaultMapHashtableKeyFunctions<InKeyType, InValueType, false>>
 class CompactMap;
 template <
-    typename KeyType,
-    typename ValueType,
-    typename SetAllocator = gp::memory::DefaultAllocator,
-    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, false>>
+    typename InKeyType,
+    typename InValueType,
+    typename InSetAllocator = gp::memory::DefaultAllocator,
+    typename InKeyFunctions = container::DefaultMapHashtableKeyFunctions<InKeyType, InValueType, false>>
 class Map;
 template <
-    typename KeyType,
-    typename ValueType,
-    typename SetAllocator = gp::memory::DefaultAllocator,
-    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
+    typename InKeyType,
+    typename InValueType,
+    typename InSetAllocator = gp::memory::DefaultAllocator,
+    typename InKeyFunctions = container::DefaultMapHashtableKeyFunctions<InKeyType, InValueType, true>>
 class SparseMultiMap;
 template <
-    typename KeyType,
-    typename ValueType,
-    typename SetAllocator = gp::memory::DefaultAllocator,
-    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
+    typename InKeyType,
+    typename InValueType,
+    typename InSetAllocator = gp::memory::DefaultAllocator,
+    typename InKeyFunctions = container::DefaultMapHashtableKeyFunctions<InKeyType, InValueType, true>>
 class CompactMultiMap;
 template <
-    typename KeyType,
-    typename ValueType,
-    typename SetAllocator = gp::memory::DefaultAllocator,
-    typename KeyFunctions = container::DefaultMapHashtableKeyFunctions<KeyType, ValueType, true>>
+    typename InKeyType,
+    typename InValueType,
+    typename InSetAllocator = gp::memory::DefaultAllocator,
+    typename InKeyFunctions = container::DefaultMapHashtableKeyFunctions<InKeyType, InValueType, true>>
 class MultiMap;
 
 template <
-    typename KeyType,
-    typename ValueType,
-    typename ArrayAllocator = gp::memory::DefaultAllocator,
-    typename SortPredicate = container::Less<typename TypeTraits<KeyType>::ConstPointerType>>
+    typename InKeyType,
+    typename InValueType,
+    typename InArrayAllocator = gp::memory::DefaultAllocator,
+    typename InSortPredicate = container::Less<typename TypeTraits<InKeyType>::ConstPointerType>>
 class SortedMap;
 template <
-    typename T,
-    typename ArrayAllocator = gp::memory::DefaultAllocator,
-    typename SortPredicate = container::Less<T>>
+    typename InT,
+    typename InArrayAllocator = gp::memory::DefaultAllocator,
+    typename InSortPredicate = container::Less<InT>>
 class SortedSet;
 template <
-    typename T,
-    typename KeyFunctions = container::DefaultKeyFunctions<T>,
-    typename Allocator = gp::memory::DefaultAllocator>
+    typename InT,
+    typename InKeyFunctions = container::DefaultKeyFunctions<InT>,
+    typename InAllocator = gp::memory::DefaultAllocator>
 class SparseSet;
 template <
-    typename T,
-    typename KeyFunctions = container::DefaultKeyFunctions<T>,
-    typename Allocator = gp::memory::DefaultAllocator>
+    typename InT,
+    typename InKeyFunctions = container::DefaultKeyFunctions<InT>,
+    typename InAllocator = gp::memory::DefaultAllocator>
 class CompactSet;
 template <
-    typename T,
-    typename KeyFunctions = container::DefaultKeyFunctions<T>,
-    typename Allocator = gp::memory::DefaultAllocator>
+    typename InT,
+    typename InKeyFunctions = container::DefaultKeyFunctions<InT>,
+    typename InAllocator = gp::memory::DefaultAllocator>
 class Set;
-template <typename T, typename InSizeType = Int32>
+template <typename InT, typename InSizeType = Int32>
 class StridedView;
-template <typename T, typename SizeType = Int32>
-using ConstStridedView = StridedView<const T, SizeType>;
+template <typename InT, typename InSizeType = Int32>
+using ConstStridedView = StridedView<const InT, InSizeType>;
 
 }   // namespace gp

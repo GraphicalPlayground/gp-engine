@@ -149,4 +149,37 @@ TEST(FixedStringTests, TypeAliases)
     EXPECT_EQ(u32str.size(), 6u);
 }
 
+TEST(FixedStringTests, CaseFoldingTrimmingAndSearch)
+{
+    FixedString<32> str("  Mesh_LOD0_Hero  ");
+    str.trimInPlace();
+    EXPECT_EQ(str.view(), "Mesh_LOD0_Hero");
+
+    EXPECT_TRUE(str.startsWith("mesh", SearchCase::IgnoreCase));
+    EXPECT_TRUE(str.endsWith("HERO", SearchCase::IgnoreCase));
+    EXPECT_TRUE(str.contains("lod0", SearchCase::IgnoreCase));
+    EXPECT_EQ(str.find("lod0", 0u, SearchCase::IgnoreCase), 5u);
+    EXPECT_TRUE(str.equalsIgnoreCase("mesh_lod0_hero"));
+
+    str.toLowerInPlace();
+    EXPECT_EQ(str.view(), "mesh_lod0_hero");
+    str.toUpperInPlace();
+    EXPECT_EQ(str.view(), "MESH_LOD0_HERO");
+}
+
+TEST(FixedStringTests, SelfAliasingAndHashing)
+{
+    FixedString<32> str("0123456789");
+    str.assign(str.subview(2u, 5u));
+    EXPECT_EQ(str.view(), "23456");
+
+    str.append(str.view());
+    EXPECT_EQ(str.view(), "2345623456");
+
+    FixedString<32> a("ShaderPass");
+    FixedString<32> b("SHADERPASS");
+    EXPECT_NE(a.hash(), b.hash());
+    EXPECT_EQ(a.hashIgnoreCase(), b.hashIgnoreCase());
+}
+
 }   // namespace gp::tests
