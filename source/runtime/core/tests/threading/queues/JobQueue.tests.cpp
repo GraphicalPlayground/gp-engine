@@ -198,7 +198,8 @@ static gp::UInt32 integrationThiefWorkerEntry(void* const rawData) noexcept
 
 TEST(JobQueueTypesAndEnumsTest, ConstantsAndEnumValues)
 {
-    EXPECT_EQ(kJobQueueCacheLineSize, 64u);
+    EXPECT_EQ(kJobQueueCacheLineSize, gp::memory::HardwareConstants::cacheLineSize);
+    EXPECT_TRUE(kJobQueueCacheLineSize == 64u || kJobQueueCacheLineSize == 128u);
     EXPECT_EQ(kMinJobQueueCapacity, 2u);
     EXPECT_EQ(kDefaultWorkStealingCapacity, 1024u);
     EXPECT_EQ(kDefaultMPMCQueueCapacity, 4096u);
