@@ -6,7 +6,10 @@
 
 #include "CoreMinimal.hpp"
 #include "memory/allocators/PagedLinearAllocator.hpp"
+#include "memory/MemoryOrder.hpp"
 #include "platforms/base/system/FiberContext.hpp"
+#include "platforms/base/system/Thread.hpp"    // IWYU pragma: keep
+#include "threading/atomics/Atomic.hpp"
 #include "threading/fibers/FiberDesc.hpp"      // IWYU pragma: export
 #include "threading/fibers/FiberEnums.hpp"     // IWYU pragma: export
 #include "threading/fibers/FiberForward.hpp"   // IWYU pragma: export
@@ -38,10 +41,12 @@ private:
     Fiber* m_returnFiber{ nullptr };
     const char* m_name{ "gp::Fiber" };
     gp::UInt64 m_completedTaskCount{ 0ULL };
+    gp::platform::ThreadId m_anchorThreadId{ 0ULL };
     FiberId m_id{ kInvalidFiberId };
     FiberState m_state{ FiberState::Uninitialized };
     FiberStackTier m_stackTier{ FiberStackTier::Standard64KiB };
     bool m_resetScratchOnCompletion{ true };
+    Atomic<gp::UInt8> m_isStackActive{ 0u };
 
 public:
     /// @brief Constructs an uninitialized fiber (`FiberState::Uninitialized`, 0 bytes of leased memory).
@@ -229,6 +234,16 @@ public:
     /// @brief Checks whether this fiber is the actively executing fiber on the calling OS worker thread.
     /// @return True if `getCurrentFiber() == this` and the underlying platform context is active.
     [[nodiscard]] bool isCurrentlyExecuting() const noexcept;
+
+    /// @brief Checks whether this fiber's hardware call stack is currently occupied by a CPU core ([ADR-0050]).
+    /// @details Remains true throughout task execution and during the outgoing register save inside `switchTo()`,
+    ///          transitioning to false with `MemoryOrder::Release` only after the outgoing CPU core has switched onto
+    ///          its target fiber's stack.
+    /// @return True if a CPU core is currently executing on or vacating this fiber's stack.
+    [[nodiscard]] constexpr bool isStackActive() const noexcept
+    {
+        return m_isStackActive.load(gp::MemoryOrder::Acquire) != 0u;
+    }
 
     /// @brief Queries the current lifecycle state of the fiber.
     /// @return Current `FiberState`.

@@ -4,6 +4,7 @@
 
 #include "threading/fibers/Fiber.hpp"
 #include "memory/allocators/FiberScratchAllocator.hpp"
+#include "platforms/base/system/Thread.hpp"
 #include <utility>
 
 namespace gp::thread
@@ -13,6 +14,7 @@ namespace detail
 {
 
 static thread_local Fiber* tl_currentFiber{ nullptr };
+static thread_local Fiber* tl_outgoingFiber{ nullptr };
 
 static GP_FORCEINLINE void compilerMemoryBarrier() noexcept
 {
@@ -41,6 +43,27 @@ static GP_FORCENOINLINE void setCurrentFiberTLS(Fiber* const fiber) noexcept
     compilerMemoryBarrier();
     tl_currentFiber = fiber;
     compilerMemoryBarrier();
+}
+
+/// @brief Records the child `Fiber*` whose stack is currently being vacated on the calling OS thread ([ADR-0050]).
+/// @param[in] outgoing Pointer to the outgoing child fiber, or `nullptr` if switching from a `ThreadAnchor`.
+static GP_FORCENOINLINE void setOutgoingFiberTLS(Fiber* const outgoing) noexcept
+{
+    compilerMemoryBarrier();
+    tl_outgoingFiber = outgoing;
+    compilerMemoryBarrier();
+}
+
+/// @brief Retrieves and clears the calling OS thread's outgoing child `Fiber*` slot after `m_context.switchTo()`
+///        completes on the incoming stack ([ADR-0050]).
+/// @return Pointer to the outgoing child fiber that just vacated the CPU core, or `nullptr`.
+[[nodiscard]] static GP_FORCENOINLINE Fiber* consumeOutgoingFiberTLS() noexcept
+{
+    compilerMemoryBarrier();
+    Fiber* const outgoing = tl_outgoingFiber;
+    tl_outgoingFiber = nullptr;
+    compilerMemoryBarrier();
+    return outgoing;
 }
 
 [[nodiscard]] static constexpr FiberResult mapContextError(const gp::platform::FiberContextResult contextRes) noexcept
@@ -96,10 +119,12 @@ Fiber::Fiber(Fiber&& other) noexcept
     , m_returnFiber(other.m_returnFiber)
     , m_name(other.m_name)
     , m_completedTaskCount(other.m_completedTaskCount)
+    , m_anchorThreadId(other.m_anchorThreadId)
     , m_id(other.m_id)
     , m_state(other.m_state)
     , m_stackTier(other.m_stackTier)
     , m_resetScratchOnCompletion(other.m_resetScratchOnCompletion)
+    , m_isStackActive(other.m_isStackActive.load(gp::MemoryOrder::Relaxed))
 {
     if (detail::getCurrentFiberTLS() == &other)
     {
@@ -116,10 +141,12 @@ Fiber::Fiber(Fiber&& other) noexcept
     other.m_returnFiber = nullptr;
     other.m_name = "gp::Fiber";
     other.m_completedTaskCount = 0ULL;
+    other.m_anchorThreadId = 0ULL;
     other.m_id = kInvalidFiberId;
     other.m_state = FiberState::Uninitialized;
     other.m_stackTier = FiberStackTier::Standard64KiB;
     other.m_resetScratchOnCompletion = true;
+    other.m_isStackActive.store(0u, gp::MemoryOrder::Relaxed);
 }
 
 Fiber& Fiber::operator=(Fiber&& other) noexcept
@@ -141,10 +168,12 @@ Fiber& Fiber::operator=(Fiber&& other) noexcept
         m_returnFiber = other.m_returnFiber;
         m_name = other.m_name;
         m_completedTaskCount = other.m_completedTaskCount;
+        m_anchorThreadId = other.m_anchorThreadId;
         m_id = other.m_id;
         m_state = other.m_state;
         m_stackTier = other.m_stackTier;
         m_resetScratchOnCompletion = other.m_resetScratchOnCompletion;
+        m_isStackActive.store(other.m_isStackActive.load(gp::MemoryOrder::Relaxed), gp::MemoryOrder::Relaxed);
 
         if (wasCurrentFiber)
         {
@@ -161,10 +190,12 @@ Fiber& Fiber::operator=(Fiber&& other) noexcept
         other.m_returnFiber = nullptr;
         other.m_name = "gp::Fiber";
         other.m_completedTaskCount = 0ULL;
+        other.m_anchorThreadId = 0ULL;
         other.m_id = kInvalidFiberId;
         other.m_state = FiberState::Uninitialized;
         other.m_stackTier = FiberStackTier::Standard64KiB;
         other.m_resetScratchOnCompletion = true;
+        other.m_isStackActive.store(0u, gp::MemoryOrder::Relaxed);
     }
 
     return *this;
@@ -223,10 +254,12 @@ FiberResult Fiber::create(const FiberDesc& desc) noexcept
     m_returnFiber = desc.returnFiber;
     m_name = resolvedName;
     m_completedTaskCount = 0ULL;
+    m_anchorThreadId = 0ULL;
     m_id = desc.id;
     m_state = (desc.entry != nullptr) ? FiberState::Ready : FiberState::Idle;
     m_stackTier = desc.stackTier;
     m_resetScratchOnCompletion = desc.resetScratchOnTaskCompletion;
+    m_isStackActive.store(0u, gp::MemoryOrder::Relaxed);
 
     return FiberResult::Success;
 }
@@ -248,7 +281,7 @@ FiberResult Fiber::destroy() noexcept
         return FiberResult::CannotDestroyActiveFiber;
     }
 
-    if (m_state == FiberState::Running)
+    if (m_state == FiberState::Running || isStackActive())
     {
         return FiberResult::BusyRunningOrSuspended;
     }
@@ -271,10 +304,12 @@ FiberResult Fiber::destroy() noexcept
     m_returnFiber = nullptr;
     m_name = "gp::Fiber";
     m_completedTaskCount = 0ULL;
+    m_anchorThreadId = 0ULL;
     m_id = kInvalidFiberId;
     m_state = FiberState::Uninitialized;
     m_stackTier = FiberStackTier::Standard64KiB;
     m_resetScratchOnCompletion = true;
+    m_isStackActive.store(0u, gp::MemoryOrder::Relaxed);
 
     return FiberResult::Success;
 }
@@ -309,10 +344,12 @@ FiberResult Fiber::convertCurrentThread(const FiberId id, const char* const name
     m_returnFiber = nullptr;
     m_name = (name != nullptr && name[0] != '\0') ? name : "gp::ThreadAnchorFiber";
     m_completedTaskCount = 0ULL;
+    m_anchorThreadId = gp::platform::Thread::currentThreadId();
     m_id = id;
     m_state = FiberState::ThreadAnchor;
     m_stackTier = FiberStackTier::Custom;
     m_resetScratchOnCompletion = false;
+    m_isStackActive.store(0u, gp::MemoryOrder::Relaxed);
 
     detail::setCurrentFiberTLS(this);
     return FiberResult::Success;
@@ -358,10 +395,12 @@ FiberResult Fiber::restoreCurrentThread() noexcept
     m_returnFiber = nullptr;
     m_name = "gp::Fiber";
     m_completedTaskCount = 0ULL;
+    m_anchorThreadId = 0ULL;
     m_id = kInvalidFiberId;
     m_state = FiberState::Uninitialized;
     m_stackTier = FiberStackTier::Standard64KiB;
     m_resetScratchOnCompletion = true;
+    m_isStackActive.store(0u, gp::MemoryOrder::Relaxed);
 
     return FiberResult::Success;
 }
@@ -378,7 +417,7 @@ FiberResult Fiber::bindTask(const FiberEntryFunction entry, void* const userData
         return FiberResult::InvalidArguments;
     }
 
-    if (m_state == FiberState::Running || m_state == FiberState::Suspended)
+    if (m_state == FiberState::Running || m_state == FiberState::Suspended || isStackActive())
     {
         return FiberResult::BusyRunningOrSuspended;
     }
@@ -416,14 +455,44 @@ FiberResult Fiber::switchTo(Fiber& target) noexcept
         return FiberResult::CallerNotInFiber;
     }
 
+    if (target.isThreadAnchor())
+    {
+        GP_ASSERT(
+            target.m_anchorThreadId == gp::platform::Thread::currentThreadId(),
+            "gp::thread::Fiber::switchTo attempted to switch into a ThreadAnchor belonging to a different OS thread."
+        );
+    }
+    else
+    {
+        // Acquire exclusive stack occupancy on a target child fiber ([ADR-0050]). If the target fiber was just woken
+        // from a JobCounter or JobFence wait list on another CPU core, spin for the ~10-20 ns required for the
+        // outgoing core to finish saving registers in m_context.switchTo() and release m_isStackActive.
+        gp::UInt8 expectedActive = 0u;
+        while (!target.m_isStackActive.compareExchangeWeak(
+            expectedActive, 1u, gp::MemoryOrder::Acquire, gp::MemoryOrder::Relaxed
+        ))
+        {
+            expectedActive = 0u;
+            gp::platform::Thread::spinWait();
+        }
+    }
+
     if (target.m_state == FiberState::Running)
     {
+        if (!target.isThreadAnchor())
+        {
+            target.m_isStackActive.store(0u, gp::MemoryOrder::Release);
+        }
         return FiberResult::BusyRunningOrSuspended;
     }
 
     if (target.m_state != FiberState::ThreadAnchor && target.m_state != FiberState::Ready &&
         target.m_state != FiberState::Suspended)
     {
+        if (!target.isThreadAnchor())
+        {
+            target.m_isStackActive.store(0u, gp::MemoryOrder::Release);
+        }
         return FiberResult::NoTaskBound;
     }
 
@@ -435,12 +504,19 @@ FiberResult Fiber::switchTo(Fiber& target) noexcept
     if (target.m_state != FiberState::ThreadAnchor)
     {
         target.m_state = FiberState::Running;
+        if (isThreadAnchor())
+        {
+            // Automatically bind the child fiber's return target to the active worker thread's ThreadAnchor under the
+            // protection of m_isStackActive so cross-thread fiber migrations never return to a stale thread's anchor.
+            target.m_returnFiber = this;
+        }
     }
 
     // Update the calling OS worker thread's active fiber pointer and bind the target fiber's PagedLinearAllocator
     // (or unbind to nullptr when returning to a root ThreadAnchor). bindFiberArena also advances the worker thread's
     // switch epoch so any illegal ScopedScratchMark (ThreadScratchAllocator) spanning this switch asserts.
     detail::setCurrentFiberTLS(&target);
+    detail::setOutgoingFiberTLS(isThreadAnchor() ? nullptr : this);
     gp::memory::PagedLinearAllocator* const targetArena = target.isThreadAnchor() ? nullptr : &target.m_scratchArena;
     (void)gp::memory::FiberScratchArena::bindFiberArena(targetArena);
 
@@ -448,13 +524,25 @@ FiberResult Fiber::switchTo(Fiber& target) noexcept
     if (switchRes != gp::platform::FiberContextResult::Success) [[unlikely]]
     {
         // Roll back state and thread-local bindings if the underlying platform switch rejected the transition.
+        detail::setOutgoingFiberTLS(nullptr);
         detail::setCurrentFiberTLS(this);
         (void)gp::memory::FiberScratchArena::bindFiberArena(isThreadAnchor() ? nullptr : &m_scratchArena);
         if (m_state == FiberState::Suspended)
         {
             m_state = FiberState::Running;
         }
+        if (!target.isThreadAnchor())
+        {
+            target.m_isStackActive.store(0u, gp::MemoryOrder::Release);
+        }
         return detail::mapContextError(switchRes);
+    }
+
+    // Now executing on this fiber's stack after being switched into; release the outgoing child fiber's stack latch.
+    Fiber* const outgoing = detail::consumeOutgoingFiberTLS();
+    if (outgoing != nullptr)
+    {
+        outgoing->m_isStackActive.store(0u, gp::MemoryOrder::Release);
     }
 
     return FiberResult::Success;
@@ -501,6 +589,13 @@ void Fiber::fiberLoopTrampoline([[maybe_unused]] void* const unusedUserData) noe
 {
     for (;;)
     {
+        // Release the outgoing child fiber's stack latch when entering a newly started child fiber ([ADR-0050]).
+        Fiber* const outgoing = detail::consumeOutgoingFiberTLS();
+        if (outgoing != nullptr)
+        {
+            outgoing->m_isStackActive.store(0u, gp::MemoryOrder::Release);
+        }
+
         Fiber* const startingSelf = detail::getCurrentFiberTLS();
         GP_ASSERT(
             startingSelf != nullptr,
