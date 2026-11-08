@@ -207,7 +207,8 @@
       "threading": "app",
       "atomics": "atom",
       "time": "temp",
-      "fibers": "tasks"
+      "fibers": "tasks",
+      "sync": "ci"
     },
     /* File Associations */
     "files.associations": {
