@@ -96,7 +96,7 @@ public:
     /// @copydoc gp::platform::generic::FiberContext::getNativeHandle()
     [[nodiscard]] constexpr NativeHandle getNativeHandle() const noexcept
     {
-        return m_stackPointer;
+        return (m_allocationBase != nullptr) ? m_allocationBase : m_stackPointer;
     }
 
     /// @copydoc gp::platform::generic::FiberContext::isCurrentThreadConverted()
