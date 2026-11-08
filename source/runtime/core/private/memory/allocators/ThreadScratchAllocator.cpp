@@ -16,6 +16,12 @@ namespace detail
     return s_threadScratchArena;
 }
 
+[[nodiscard]] static gp::UInt64& getThreadLocalEpochInstance() noexcept
+{
+    thread_local gp::UInt64 s_threadFiberSwitchEpoch{ 0ull };
+    return s_threadFiberSwitchEpoch;
+}
+
 }   // namespace detail
 
 bool ThreadScratchArena::initializeThreadScratch(const gp::USize capacityInBytes, Malloc* backingMalloc) noexcept
@@ -54,6 +60,23 @@ LinearAllocator* ThreadScratchArena::tryGet() noexcept
 {
     LinearAllocator& arena = detail::getThreadLocalScratchInstance();
     return arena.isValid() ? &arena : nullptr;
+}
+
+LinearAllocator& ThreadScratchArena::getUnchecked() noexcept
+{
+    return detail::getThreadLocalScratchInstance();
+}
+
+gp::UInt64 ThreadScratchArena::getCurrentThreadEpoch() noexcept
+{
+    return detail::getThreadLocalEpochInstance();
+}
+
+gp::UInt64 ThreadScratchArena::advanceCurrentThreadEpoch() noexcept
+{
+    gp::UInt64& epoch = detail::getThreadLocalEpochInstance();
+    ++epoch;
+    return epoch;
 }
 
 }   // namespace gp::memory
