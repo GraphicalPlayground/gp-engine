@@ -68,6 +68,8 @@ TEST(AllocatorTypesTest, MemoryMarkDefaultInitialization)
     EXPECT_EQ(mark.offset, 0u);
     EXPECT_EQ(mark.activeAllocations, 0ull);
     EXPECT_EQ(mark.allocatedBytes, 0u);
+    EXPECT_EQ(mark.pageCookie, nullptr);
+    EXPECT_EQ(mark.contextEpoch, 0ull);
 }
 
 TEST(AllocatorTypesTest, AllocatorStatsDefaultInitialization)
