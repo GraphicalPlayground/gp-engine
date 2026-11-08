@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "CoreMinimal.hpp"
 #include "concepts/Memory.hpp"
+#include "CoreMinimal.hpp"
 #include "threading/fibers/FiberEnums.hpp"
 #include "threading/fibers/FiberForward.hpp"
 #include "threading/queues/JobQueueEnums.hpp"
@@ -156,9 +156,8 @@ struct alignas(16) JobQueueItem
     /// @param[in] fiber Pointer to the unblocked child `Fiber` to resume.
     /// @param[in] inPriority Scheduling priority for the resumed fiber (defaults to `JobPriority::High`).
     /// @return Populated `JobQueueItem` with `kind == JobQueueItemKind::ResumedFiber`.
-    [[nodiscard]] GP_FORCEINLINE_HINT static constexpr JobQueueItem fromResumedFiber(
-        Fiber* const fiber, const JobPriority inPriority = JobPriority::High
-    ) noexcept
+    [[nodiscard]] GP_FORCEINLINE_HINT static constexpr JobQueueItem
+        fromResumedFiber(Fiber* const fiber, const JobPriority inPriority = JobPriority::High) noexcept
     {
         JobQueueItem item{};
         item.entry = nullptr;
