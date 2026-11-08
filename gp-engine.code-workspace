@@ -206,7 +206,8 @@
       "device": "connection",
       "threading": "app",
       "atomics": "atom",
-      "time": "temp"
+      "time": "temp",
+      "fibers": "tasks"
     },
     /* File Associations */
     "files.associations": {
