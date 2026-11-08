@@ -194,6 +194,18 @@ lock-free architectures.
   > interned identifier combining a 32-bit `NameEntryId` handle into a 64-shard, cache-line-isolated
   > global `NamePool` with an Unreal-inspired 32-bit split numeric instance suffix (`m_number`),
   > paired with `constexpr` 64-bit FNV-1a `gp::NameHash` (`_nh`) compile-time string literals.
+- [**ADR-0049**: Dual-Tier Platform Execution Contexts and Scratch-Bound Cooperative Fibers](./ADR-0049.md)
+  > OS kernel thread context switches incur 1–10 microsecond scheduler transitions, TLB flushes, and
+  > kernel lock contention when worker threads block on job dependencies, while C++20 stackless
+  > coroutines infect entire engine call trees with "colored" return types that cannot yield from
+  > deep C++ helper routines. `gp-engine` introduces a dual-tier cooperative execution architecture
+  > in `gp::core`: a low-level **`gp::platform::FiberContext`** abstracting Windows CET/TEB-safe
+  > Win32 Fibers (`CreateFiberEx` / `SwitchToFiber`) and POSIX zero-syscall `x86_64`/`ARM64` ABI
+  > register-frame switches with `PROT_NONE` hardware guard pages, paired with a high-level
+  > **`gp::thread::Fiber`** that owns an elastic [`PagedLinearAllocator`](./ADR-0048.md), supports
+  > two-tier stack sizing (`64 KiB` standard / `512 KiB` large), re-arms completed tasks without
+  > stack reallocation, and automatically swaps [`FiberScratchArena`](./ADR-0048.md) bindings across
+  > cooperative yields and cross-core work-stealing migrations.
 
 ### Math & Core Types
 
