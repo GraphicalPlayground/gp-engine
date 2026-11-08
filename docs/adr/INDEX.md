@@ -168,6 +168,19 @@ lock-free architectures.
   > guarantees single-register passing across dynamic RHI module boundaries, prevents ABA resurrection
   > races during multi-threaded deferred GPU resource deletion, and supports custom policy binding for
   > native COM interfaces (`ID3D12Resource`, `IDXGISwapChain`).
+- [**ADR-0048**: Elastic Page-Chunked Linear Arenas and Context-Swapped Fiber Scratch Allocators](./ADR-0048.md)
+  > OS thread-local scratchpad allocators (`ThreadScratchAllocator`) corrupt memory and trigger
+  > silent cross-thread data races when cooperative fibers yield at dependency counters
+  > (`waitForCounter`) and migrate across worker threads via work stealing, while pre-allocating
+  > fixed worst-case contiguous slabs for every fiber in a large pool ($M \gg N$) wastes tens of
+  > megabytes of idle RAM. `gp-engine` introduces a two-tier fiber-safe scratch architecture in
+  > `gp::memory`: a lock-free, ABA-safe **`PagePool`** that leases fixed-size memory pages
+  > (`64 KiB` default) on demand, an elastic **`PagedLinearAllocator`** that chains pages
+  > intrusively with $O(1)$ cross-page `MemoryMark` unwinding and zero idle memory footprint, and a
+  > context-swapped **`FiberScratchArena`** / **`FiberScratchAllocator`** /
+  > **`ScopedFiberScratchMark`** suite paired with fiber-switch epoch assertions in
+  > `ScopedScratchMark` to mechanically catch illegal fiber yields inside thread-local scratch
+  > scopes.
 
 ### Math & Core Types
 
