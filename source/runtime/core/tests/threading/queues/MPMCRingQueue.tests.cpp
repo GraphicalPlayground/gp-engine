@@ -257,7 +257,7 @@ TEST(MPMCRingQueueTest, LifecycleValidationFifoBatchOperationsAndMultiLapWrapAro
     EXPECT_EQ(queue.initialize(~static_cast<gp::USize>(0u)), JobQueueResult::InvalidArguments);
 
     using SlotType = MPMCRingQueue<gp::UInt32>::SlotType;
-    alignas(64) gp::UInt8 rawSlotBytes[sizeof(SlotType) * 8u]{};
+    alignas(alignof(SlotType)) gp::UInt8 rawSlotBytes[sizeof(SlotType) * 8u]{};
     SlotType* const alignedSlots = reinterpret_cast<SlotType*>(rawSlotBytes);
     SlotType* const misalignedSlots = reinterpret_cast<SlotType*>(rawSlotBytes + 1u);
 
