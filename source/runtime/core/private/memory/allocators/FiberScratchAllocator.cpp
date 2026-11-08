@@ -58,14 +58,36 @@ static gp::thread::Atomic<gp::UInt32> s_sharedPoolState{ kPoolStateUninitialized
     return pool.isValid() ? &pool : nullptr;
 }
 
-[[nodiscard]] static PagedLinearAllocator*& getThreadLocalBoundFiberArena() noexcept
+static thread_local PagedLinearAllocator* tl_boundFiberArena{ nullptr };
+
+static GP_FORCEINLINE void compilerMemoryBarrier() noexcept
 {
-    thread_local PagedLinearAllocator* s_boundFiberArena{ nullptr };
-    return s_boundFiberArena;
+#if defined(__clang__) || defined(__GNUC__)
+    __asm__ volatile("" ::: "memory");
+#else
+    _ReadWriteBarrier();
+#endif
 }
 
-[[nodiscard]] static PagedLinearAllocator& getThreadLocalFallbackFiberArena() noexcept
+[[nodiscard]] static GP_FORCENOINLINE PagedLinearAllocator* getThreadLocalBoundFiberArena() noexcept
 {
+    compilerMemoryBarrier();
+    return tl_boundFiberArena;
+}
+
+static GP_FORCENOINLINE PagedLinearAllocator*
+    exchangeThreadLocalBoundFiberArena(PagedLinearAllocator* const newArena) noexcept
+{
+    compilerMemoryBarrier();
+    PagedLinearAllocator* const previousArena = tl_boundFiberArena;
+    tl_boundFiberArena = newArena;
+    compilerMemoryBarrier();
+    return previousArena;
+}
+
+[[nodiscard]] static GP_FORCENOINLINE PagedLinearAllocator& getThreadLocalFallbackFiberArena() noexcept
+{
+    compilerMemoryBarrier();
     thread_local PagedLinearAllocator s_fallbackFiberArena{
         &resolveSharedPagePool, nullptr, true, "FiberScratchArena.Fallback"
     };
@@ -135,9 +157,7 @@ PagedLinearAllocator* FiberScratchArena::bindFiberArena(PagedLinearAllocator* fi
         (void)fiberArena->initialize(&detail::resolveSharedPagePool, nullptr, true, "FiberScratchArena.Fiber");
     }
 
-    PagedLinearAllocator*& boundSlot = detail::getThreadLocalBoundFiberArena();
-    PagedLinearAllocator* const previousArena = boundSlot;
-    boundSlot = fiberArena;
+    PagedLinearAllocator* const previousArena = detail::exchangeThreadLocalBoundFiberArena(fiberArena);
 
     (void)ThreadScratchArena::advanceCurrentThreadEpoch();
 
