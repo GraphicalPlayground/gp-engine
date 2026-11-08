@@ -14,7 +14,8 @@ namespace gp::thread
 /// @param[in] userData Opaque caller-managed task payload pointer.
 using JobEntryFunction = void (*)(void* userData);
 
-/// @brief Hardware L1 data cache-line size in bytes (64 bytes) used to isolate queue cursors ([ADR-0025], [ADR-0051]).
+/// @brief Hardware L1 data cache-line size in bytes (64B on x86/ARM, 128B on Apple Silicon) used to isolate
+///        queue cursors and ring slots ([ADR-0025], [ADR-0051]).
 inline constexpr gp::USize kJobQueueCacheLineSize = gp::memory::HardwareConstants::cacheLineSize;
 
 /// @brief Minimum valid power-of-two capacity in elements for any lock-free job queue.
