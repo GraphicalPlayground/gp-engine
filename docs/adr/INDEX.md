@@ -206,6 +206,14 @@ lock-free architectures.
   > two-tier stack sizing (`64 KiB` standard / `512 KiB` large), re-arms completed tasks without
   > stack reallocation, and automatically swaps [`FiberScratchArena`](./ADR-0048.md) bindings across
   > cooperative yields and cross-core work-stealing migrations.
+- [**ADR-0050**: Intrusive Stack Wait-Nodes, 64-Bit Packed Job Counters, and Post-Switch Stack Latches](./ADR-0050.md)
+  > Global fixed-capacity fiber wait tables incur $O(M)$ cross-core cache-line invalidations on
+  > every job completion, while naive check-then-park counters suffer from lost wakeups or
+  > dual-core stack clobbering when a waker resumes a fiber before the yielding core finishes saving
+  > its registers. `gp-engine` introduces zero-allocation, stack-resident
+  > **`gp::thread::JobWaitNode`** entries, a 64-bit bit-packed **`gp::thread::JobCounter`**
+  > (`CacheAlignedJobCounter`), a binary **`gp::thread::JobFence`**, and a hardware-enforced
+  > **`Fiber::m_isStackActive`** post-switch release latch in `gp::core`.
 
 ### Math & Core Types
 
