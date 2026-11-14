@@ -48,6 +48,7 @@ Application::Application(
     , m_backend(std::move(customBackend))
     , m_inputSystem(std::move(customInput))
     , m_clock(desc.clock)
+    , m_consoleSink(desc.consoleSink)
 {}
 
 Application::~Application() noexcept
@@ -97,6 +98,96 @@ void Application::applyCommandLineOverrides() noexcept
     if (optAffinity.hasValue())
     {
         m_desc.jobSystem.enableCoreAffinity = *optAffinity;
+    }
+
+    const Optional<bool> optLog = CommandLine::tryGetBool("log");
+    if (optLog.hasValue())
+    {
+        m_desc.enableLogging = *optLog;
+    }
+
+    const Optional<bool> optConsoleLog = CommandLine::tryGetBool("console-log");
+    if (optConsoleLog.hasValue())
+    {
+        m_desc.enableConsoleLogSink = *optConsoleLog;
+    }
+
+    const Optional<bool> optFileLog = CommandLine::tryGetBool("file-log");
+    if (optFileLog.hasValue())
+    {
+        m_desc.enableFileLogSink = *optFileLog;
+    }
+
+    if (CommandLine::hasArgument("log-file"))
+    {
+        m_desc.enableFileLogSink = true;
+        const Optional<StringView> customLogPath = CommandLine::tryGetString("log-file");
+        if (customLogPath.hasValue() && !customLogPath->isEmpty())
+        {
+            m_desc.fileSink.filePath = *customLogPath;
+        }
+    }
+}
+
+void Application::initializeLoggingInternal() noexcept
+{
+    if (!m_desc.enableLogging)
+    {
+        return;
+    }
+
+    log::Logger& logger = log::Logger::instance();
+
+    m_consoleSink.setMinLevel(m_desc.consoleSink.minLevel);
+    m_consoleSink.setFlags(m_desc.consoleSink.flags);
+
+    if (m_desc.enableConsoleLogSink)
+    {
+        (void)logger.addSink(&m_consoleSink);
+    }
+
+    if (m_desc.enableDebugOutputLogSink)
+    {
+        (void)logger.addSink(&m_debugOutputSink);
+    }
+
+    if (m_desc.enableTracyLogSink)
+    {
+        (void)logger.addSink(&m_tracySink);
+    }
+
+    if (m_desc.enableFileLogSink)
+    {
+        if (m_fileSink.open(m_desc.fileSink) == log::LogResult::Success)
+        {
+            (void)logger.addSink(&m_fileSink);
+        }
+    }
+
+    if (!logger.isInitialized())
+    {
+        if (logger.initialize(m_desc.logger) == log::LogResult::Success)
+        {
+            m_ownsLoggerInitialization = true;
+        }
+    }
+}
+
+void Application::shutdownLoggingInternal() noexcept
+{
+    log::Logger& logger = log::Logger::instance();
+    logger.flush();
+
+    (void)logger.removeSink(&m_consoleSink);
+    (void)logger.removeSink(&m_debugOutputSink);
+    (void)logger.removeSink(&m_tracySink);
+    (void)logger.removeSink(&m_fileSink);
+    m_fileSink.close();
+
+    if (m_ownsLoggerInitialization)
+    {
+        logger.shutdown();
+        m_ownsLoggerInitialization = false;
     }
 }
 
@@ -151,9 +242,23 @@ bool Application::initializeInternal() noexcept
         return true;
     }
 
+    applyCommandLineOverrides();
+    initializeLoggingInternal();
+
+    GP_LOG_DEBUG(
+        LogApplication,
+        "Bootstrapping Application '{}' (version {})...",
+        m_desc.backend.appName,
+        m_desc.backend.appVersion
+    );
+
     // Allocate the lock-free SPSC byte ring buffer.
     if (!m_eventStream.initialize(m_desc.eventRingBufferBytes)) [[unlikely]]
     {
+        GP_LOG_ERROR(
+            LogApplication, "Failed to initialize SPSC event ring buffer ({} bytes).", m_desc.eventRingBufferBytes
+        );
+        shutdownLoggingInternal();
         return false;
     }
 
@@ -163,7 +268,9 @@ bool Application::initializeInternal() noexcept
         m_backend = gp::makeUnique<hal::generic::ApplicationBackend>();
         if (!m_backend.isValid()) [[unlikely]]
         {
+            GP_LOG_ERROR(LogApplication, "Failed to allocate fallback GenericApplicationBackend.");
             m_eventStream.shutdown();
+            shutdownLoggingInternal();
             return false;
         }
     }
@@ -171,7 +278,9 @@ bool Application::initializeInternal() noexcept
     // Initialize the backend and enumerate display topology.
     if (m_backend->initialize(m_desc.backend) != hal::BackendResult::Success) [[unlikely]]
     {
+        GP_LOG_ERROR(LogApplication, "HAL ApplicationBackend initialization failed.");
         m_eventStream.shutdown();
+        shutdownLoggingInternal();
         return false;
     }
 
@@ -185,8 +294,10 @@ bool Application::initializeInternal() noexcept
         }
         if (!m_inputSystem.isValid()) [[unlikely]]
         {
+            GP_LOG_ERROR(LogApplication, "Failed to create HAL IInputSystem.");
             m_backend->shutdown();
             m_eventStream.shutdown();
+            shutdownLoggingInternal();
             return false;
         }
     }
@@ -202,14 +313,20 @@ bool Application::initializeInternal() noexcept
         m_mainWindow = m_backend->createWindow(m_desc.mainWindow);
         if (!m_mainWindow.isValid() || !m_mainWindow->isValid()) [[unlikely]]
         {
+            GP_LOG_ERROR(
+                LogApplication,
+                "Failed to create primary window '{}' ({}x{}).",
+                m_desc.mainWindow.title,
+                m_desc.mainWindow.size.width,
+                m_desc.mainWindow.size.height
+            );
             m_inputSystem.reset();
             m_backend->shutdown();
             m_eventStream.shutdown();
+            shutdownLoggingInternal();
             return false;
         }
     }
-
-    applyCommandLineOverrides();
 
     // Compute the minimum required arena size so m_frameGraph plus transient frame allocations always fit.
     const gp::UInt32 maxNodes = (m_desc.maxFrameGraphNodes == 0u) ? 1u : m_desc.maxFrameGraphNodes;
@@ -226,6 +343,9 @@ bool Application::initializeInternal() noexcept
         !m_frameArenas[1].initialize(arenaCapacityBytes, m_desc.jobSystem.backingMalloc, "gp::FrameArena_1"))
         [[unlikely]]
     {
+        GP_LOG_ERROR(
+            LogApplication, "Failed to allocate double-buffered frame arenas ({} bytes each).", arenaCapacityBytes
+        );
         m_frameArenas[1].shutdown();
         m_frameArenas[0].shutdown();
         if (m_mainWindow.isValid())
@@ -236,12 +356,14 @@ bool Application::initializeInternal() noexcept
         m_inputSystem.reset();
         m_backend->shutdown();
         m_eventStream.shutdown();
+        shutdownLoggingInternal();
         return false;
     }
 
     m_activeFrameArenaIndex = 0u;
     if (!rebindFrameGraphToCurrentArena()) [[unlikely]]
     {
+        GP_LOG_ERROR(LogApplication, "Failed to bind initial per-frame JobGraph to FrameArena_0.");
         m_frameArenas[1].shutdown();
         m_frameArenas[0].shutdown();
         if (m_mainWindow.isValid())
@@ -252,6 +374,7 @@ bool Application::initializeInternal() noexcept
         m_inputSystem.reset();
         m_backend->shutdown();
         m_eventStream.shutdown();
+        shutdownLoggingInternal();
         return false;
     }
 
@@ -259,6 +382,7 @@ bool Application::initializeInternal() noexcept
     {
         if (m_jobSystem.initialize(m_desc.jobSystem) != thread::JobSystemResult::Success) [[unlikely]]
         {
+            GP_LOG_ERROR(LogApplication, "Failed to initialize fiber JobSystem.");
             m_frameGraph.shutdown();
             m_frameArenas[1].shutdown();
             m_frameArenas[0].shutdown();
@@ -270,12 +394,14 @@ bool Application::initializeInternal() noexcept
             m_inputSystem.reset();
             m_backend->shutdown();
             m_eventStream.shutdown();
+            shutdownLoggingInternal();
             return false;
         }
     }
 
     m_clock.reset();
     m_isInitialized = true;
+    GP_LOG_DEBUG(LogApplication, "Application core subsystems initialized.");
     return true;
 }
 
@@ -285,6 +411,8 @@ void Application::shutdownInternal() noexcept
     {
         return;
     }
+
+    GP_LOG_DEBUG(LogApplication, "Shutting down Application core subsystems...");
 
     m_frameGraph.shutdown();
 
@@ -315,6 +443,7 @@ void Application::shutdownInternal() noexcept
     }
 
     m_eventStream.shutdown();
+    shutdownLoggingInternal();
     m_isInitialized = false;
 }
 
