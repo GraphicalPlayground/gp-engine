@@ -12,6 +12,7 @@
 #include "logging/LogFormatter.hpp"
 #include "logging/LogForward.hpp"
 #include "logging/LogTypes.hpp"
+#include "memory/HardwareConstants.hpp"
 #include "memory/MemoryOrder.hpp"
 #include "platforms/base/system/Thread.hpp"
 #include "threading/atomics/Atomic.hpp"
@@ -31,13 +32,14 @@ namespace gp::log
 ///             `MPMCRingQueue<LogEntry>` (`256` slots, zero heap allocations). A background consumer thread drains the
 ///             queue and dispatches records to all registered sinks without stalling worker fibers or the Render
 ///             Thread.
-class GP_CORE_API alignas(64) Logger final
+class GP_CORE_API alignas(gp::memory::HardwareConstants::cacheLineSize) Logger final
 {
 private:
     using AsyncQueueType = gp::thread::MPMCRingQueue<LogEntry>;
     using QueueSlotType = AsyncQueueType::SlotType;
 
-    alignas(64) QueueSlotType m_ringSlots[kDefaultAsyncLogQueueCapacity]{};
+    alignas(gp::memory::HardwareConstants::cacheLineSize) QueueSlotType
+        m_ringSlots[kDefaultAsyncLogQueueCapacity]{};
     AsyncQueueType m_asyncQueue{};
     gp::platform::Thread m_workerThread{};
     ILogSink* m_sinks[kMaxLogSinks]{};
