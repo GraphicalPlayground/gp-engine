@@ -35,6 +35,8 @@ class AlignedHeapAllocator;
 class LinearAllocator;
 class StackAllocator;
 class PoolAllocator;
+class PagePool;
+class PagedLinearAllocator;
 
 template <gp::USize InCapacityBytes, gp::UInt32 InAlignment>
 class FixedBufferAllocator;
@@ -45,6 +47,11 @@ class InlineAllocator;
 class ThreadScratchArena;
 class ThreadScratchAllocator;
 class ScopedScratchMark;
+
+class FiberScratchArena;
+class FiberScratchAllocator;
+class ScopedFiberScratchMark;
+class ScopedFiberArenaBind;
 
 template <typename InInnerAllocator>
 class TaggedAllocator;

@@ -4,10 +4,12 @@
 
 #include "memory/allocators/AllocatorConcepts.hpp"
 #include "memory/allocators/AlignedHeapAllocator.hpp"
+#include "memory/allocators/FiberScratchAllocator.hpp"
 #include "memory/allocators/FixedBufferAllocator.hpp"
 #include "memory/allocators/HeapAllocator.hpp"
 #include "memory/allocators/InlineAllocator.hpp"
 #include "memory/allocators/LinearAllocator.hpp"
+#include "memory/allocators/PagedLinearAllocator.hpp"
 #include "memory/allocators/PolymorphicAllocator.hpp"
 #include "memory/allocators/PoolAllocator.hpp"
 #include "memory/allocators/StackAllocator.hpp"
@@ -85,11 +87,13 @@ TEST(AllocatorConceptsTest, IsAllocatorAcceptsValidEngineAllocatorsAndRejectsInv
     EXPECT_TRUE(gp::concepts::IsAllocator<Simd32HeapAllocator>);
     EXPECT_TRUE(gp::concepts::IsAllocator<CacheAlignedHeapAllocator>);
     EXPECT_TRUE(gp::concepts::IsAllocator<LinearAllocator>);
+    EXPECT_TRUE(gp::concepts::IsAllocator<PagedLinearAllocator>);
     EXPECT_TRUE(gp::concepts::IsAllocator<StackAllocator>);
     EXPECT_TRUE(gp::concepts::IsAllocator<PoolAllocator>);
     EXPECT_TRUE((gp::concepts::IsAllocator<FixedBufferAllocator<128u, 16u>>));
     EXPECT_TRUE((gp::concepts::IsAllocator<InlineAllocator<128u, 16u, HeapAllocator>>));
     EXPECT_TRUE(gp::concepts::IsAllocator<ThreadScratchAllocator>);
+    EXPECT_TRUE(gp::concepts::IsAllocator<FiberScratchAllocator>);
     EXPECT_TRUE(gp::concepts::IsAllocator<TaggedAllocator<HeapAllocator>>);
     EXPECT_TRUE(gp::concepts::IsAllocator<PolymorphicAllocator>);
 
@@ -107,8 +111,10 @@ TEST(AllocatorConceptsTest, IsStatelessAllocatorDistinguishesEmptyFromStatefulAl
     EXPECT_TRUE(gp::concepts::IsStatelessAllocator<Simd32HeapAllocator>);
     EXPECT_TRUE(gp::concepts::IsStatelessAllocator<CacheAlignedHeapAllocator>);
     EXPECT_TRUE(gp::concepts::IsStatelessAllocator<ThreadScratchAllocator>);
+    EXPECT_TRUE(gp::concepts::IsStatelessAllocator<FiberScratchAllocator>);
 
     EXPECT_FALSE(gp::concepts::IsStatelessAllocator<LinearAllocator>);
+    EXPECT_FALSE(gp::concepts::IsStatelessAllocator<PagedLinearAllocator>);
     EXPECT_FALSE(gp::concepts::IsStatelessAllocator<StackAllocator>);
     EXPECT_FALSE(gp::concepts::IsStatelessAllocator<PoolAllocator>);
     EXPECT_FALSE(gp::concepts::IsStatelessAllocator<FixedBufferAllocator<64u>>);
@@ -120,9 +126,11 @@ TEST(AllocatorConceptsTest, IsStatelessAllocatorDistinguishesEmptyFromStatefulAl
 TEST(AllocatorConceptsTest, IsMarkableAllocatorDistinguishesBookmarkableArenas)
 {
     EXPECT_TRUE(gp::concepts::IsMarkableAllocator<LinearAllocator>);
+    EXPECT_TRUE(gp::concepts::IsMarkableAllocator<PagedLinearAllocator>);
     EXPECT_TRUE(gp::concepts::IsMarkableAllocator<StackAllocator>);
     EXPECT_TRUE(gp::concepts::IsMarkableAllocator<FixedBufferAllocator<256u>>);
     EXPECT_TRUE(gp::concepts::IsMarkableAllocator<ThreadScratchAllocator>);
+    EXPECT_TRUE(gp::concepts::IsMarkableAllocator<FiberScratchAllocator>);
 
     EXPECT_FALSE(gp::concepts::IsMarkableAllocator<HeapAllocator>);
     EXPECT_FALSE(gp::concepts::IsMarkableAllocator<Simd16HeapAllocator>);

@@ -9,12 +9,13 @@
 namespace gp::memory
 {
 
-/// @brief Lightweight checkpoint capturing the state of a linear or stack arena at a specific point in time.
-/// @details Used with `LinearAllocator`, `StackAllocator`, `FixedBufferAllocator`, and `ScopedMemoryMark` to unwind
-///          transient allocations in O(1) time without freeing blocks individually.
+/// @brief Lightweight checkpoint capturing the state of a linear, stack, or page-chained arena at a specific point in
+///        time.
+/// @details Used with `LinearAllocator`, `StackAllocator`, `FixedBufferAllocator`, `PagedLinearAllocator`, and
+///          `ScopedMemoryMark` to unwind transient allocations in O(1) time without freeing blocks individually.
 struct MemoryMark
 {
-    /// @brief Byte offset from the base of the arena buffer at the time the mark was taken.
+    /// @brief Byte offset from the base of the arena buffer or active page at the time the mark was taken.
     gp::USize offset{ 0u };
 
     /// @brief Number of active allocations in the arena when the mark was recorded.
@@ -22,6 +23,14 @@ struct MemoryMark
 
     /// @brief Cumulative bytes tracked as allocated when the mark was recorded.
     gp::USize allocatedBytes{ 0u };
+
+    /// @brief Opaque pointer identifying the active page header (for `PagedLinearAllocator`) or originating arena
+    ///        instance. Defaults to `nullptr` for contiguous single-slab arenas.
+    void* pageCookie{ nullptr };
+
+    /// @brief Execution-context switch epoch captured when the mark was taken. Used by `ScopedScratchMark` and
+    ///        `ScopedFiberScratchMark` to verify context integrity across scope lifetimes.
+    gp::UInt64 contextEpoch{ 0ull };
 };
 
 /// @brief Telemetry snapshot reporting live and historical memory consumption for an allocator or arena.

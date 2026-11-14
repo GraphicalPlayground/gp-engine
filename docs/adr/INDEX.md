@@ -168,6 +168,19 @@ lock-free architectures.
   > guarantees single-register passing across dynamic RHI module boundaries, prevents ABA resurrection
   > races during multi-threaded deferred GPU resource deletion, and supports custom policy binding for
   > native COM interfaces (`ID3D12Resource`, `IDXGISwapChain`).
+- [**ADR-0048**: Elastic Page-Chunked Linear Arenas and Context-Swapped Fiber Scratch Allocators](./ADR-0048.md)
+  > OS thread-local scratchpad allocators (`ThreadScratchAllocator`) corrupt memory and trigger
+  > silent cross-thread data races when cooperative fibers yield at dependency counters
+  > (`waitForCounter`) and migrate across worker threads via work stealing, while pre-allocating
+  > fixed worst-case contiguous slabs for every fiber in a large pool ($M \gg N$) wastes tens of
+  > megabytes of idle RAM. `gp-engine` introduces a two-tier fiber-safe scratch architecture in
+  > `gp::memory`: a lock-free, ABA-safe **`PagePool`** that leases fixed-size memory pages
+  > (`64 KiB` default) on demand, an elastic **`PagedLinearAllocator`** that chains pages
+  > intrusively with $O(1)$ cross-page `MemoryMark` unwinding and zero idle memory footprint, and a
+  > context-swapped **`FiberScratchArena`** / **`FiberScratchAllocator`** /
+  > **`ScopedFiberScratchMark`** suite paired with fiber-switch epoch assertions in
+  > `ScopedScratchMark` to mechanically catch illegal fiber yields inside thread-local scratch
+  > scopes.
 - [**ADR-0046**: Hybrid 24-Byte SSO String Container, Engine-Native `CharTraits`, and Zero-Allocation UTF Codec](./ADR-0046.md)
   > Establishes `gp::container::BasicString<CharT, Allocator>` (`gp::String`, `gp::WString`,
   > `gp::U8String`, `gp::U16String`, `gp::U32String`, `gp::InlineString<N>`, `gp::ScratchString`) as
@@ -181,6 +194,45 @@ lock-free architectures.
   > interned identifier combining a 32-bit `NameEntryId` handle into a 64-shard, cache-line-isolated
   > global `NamePool` with an Unreal-inspired 32-bit split numeric instance suffix (`m_number`),
   > paired with `constexpr` 64-bit FNV-1a `gp::NameHash` (`_nh`) compile-time string literals.
+- [**ADR-0049**: Dual-Tier Platform Execution Contexts and Scratch-Bound Cooperative Fibers](./ADR-0049.md)
+  > OS kernel thread context switches incur 1–10 microsecond scheduler transitions, TLB flushes, and
+  > kernel lock contention when worker threads block on job dependencies, while C++20 stackless
+  > coroutines infect entire engine call trees with "colored" return types that cannot yield from
+  > deep C++ helper routines. `gp-engine` introduces a dual-tier cooperative execution architecture
+  > in `gp::core`: a low-level **`gp::platform::FiberContext`** abstracting Windows CET/TEB-safe
+  > Win32 Fibers (`CreateFiberEx` / `SwitchToFiber`) and POSIX zero-syscall `x86_64`/`ARM64` ABI
+  > register-frame switches with `PROT_NONE` hardware guard pages, paired with a high-level
+  > **`gp::thread::Fiber`** that owns an elastic [`PagedLinearAllocator`](./ADR-0048.md), supports
+  > two-tier stack sizing (`64 KiB` standard / `512 KiB` large), re-arms completed tasks without
+  > stack reallocation, and automatically swaps [`FiberScratchArena`](./ADR-0048.md) bindings across
+  > cooperative yields and cross-core work-stealing migrations.
+- [**ADR-0050**: Intrusive Stack Wait-Nodes, 64-Bit Packed Job Counters, and Post-Switch Stack Latches](./ADR-0050.md)
+  > Global fixed-capacity fiber wait tables incur $O(M)$ cross-core cache-line invalidations on
+  > every job completion, while naive check-then-park counters suffer from lost wakeups or
+  > dual-core stack clobbering when a waker resumes a fiber before the yielding core finishes saving
+  > its registers. `gp-engine` introduces zero-allocation, stack-resident
+  > **`gp::thread::JobWaitNode`** entries, a 64-bit bit-packed **`gp::thread::JobCounter`**
+  > (`CacheAlignedJobCounter`), a binary **`gp::thread::JobFence`**, and a hardware-enforced
+  > **`Fiber::m_isStackActive`** post-switch release latch in `gp::core`.
+- [**ADR-0051**: Bounded Lock-Free Chase-Lev Work-Stealing Deques and Vyukov Sequence MPMC Job Queues](./ADR-0051.md)
+  > Centralized job queues bottleneck across 16–64 hardware threads due to MESI cache-line bouncing
+  > and FIFO cache thrashing, while dynamic Chase-Lev deques violate deterministic frame budgets by
+  > allocating and garbage-collecting ring buffers on the hot path. `gp-engine` introduces a hybrid,
+  > zero-allocation Layer 2 queue architecture in `gp::core`: a per-worker bounded lock-free
+  > Single-Producer Multi-Consumer (SPMC) **`gp::thread::WorkStealingDeque<T>`** (Chase-Lev with
+  > Lê et al. C11 memory ordering), a bounded Multi-Producer Multi-Consumer (MPMC)
+  > **`gp::thread::MPMCRingQueue<T>`** (Vyukov per-slot sequence-stamp ring), and 32-byte POD
+  > **`gp::thread::JobDecl`** and **`gp::thread::JobQueueItem`** descriptors.
+- [**ADR-0052**: M:N Cooperative Fiber Job System, Zero-Allocation RDG Task Graphs, and Context-Aware Parallel-For](./ADR-0052.md)
+  > Scheduling hundreds of Render Dependency Graph (RDG) passes purely by parking imperative fibers on
+  > `JobCounter` barriers exhausts fixed fiber pools and introduces frame-level wave bubbles, while
+  > stackless continuation graphs destroy sequential C++ control flow and lacks per-worker RHI command
+  > context indexing. `gp-engine` introduces the Layer 3 **`gp::thread::JobSystem`** in `gp::core`: an
+  > $M:N$ cooperative fiber work-stealing scheduler combining lazy two-tier fiber pool acquisition
+  > (`64 KiB` / `512 KiB`), priority MPMC and Chase-Lev SPMC queues, a zero-allocation declarative DAG
+  > continuation subsystem (**`gp::thread::JobGraphNode`** / **`gp::thread::JobGraph`**) tailored for
+  > RDG pass compilation, and a worker-index-aware **`parallelFor`** splitter (**`JobContext`**) for
+  > lock-free per-worker RHI command-list recording.
 
 ### Math & Core Types
 
@@ -214,6 +266,12 @@ Hardware Abstraction Layer (HAL).
   > Defines the `gp::application::Application` class as the central manager that owns the injected
   > backend, tracks active windows, and acts as the orchestrator between OS events and engine
   > subsystems.
+- [**ADR-0053**: Job System Lifecycle Integration, Double-Buffered Frame Arenas, and Phased Frame Task Graphs in `gp::Application`](./ADR-0053.md)
+  > Amends and extends [ADR-0012](./ADR-0012.md) by integrating `gp::thread::JobSystem`
+  > ([ADR-0052](./ADR-0052.md)), command-line thread count overrides ([ADR-0040](./ADR-0040.md)),
+  > double-buffered per-frame `gp::memory::LinearAllocator` arenas ([ADR-0042](./ADR-0042.md)), and
+  > zero-allocation arena-backed `gp::thread::JobGraph` execution phases (`onBuildFrameGraph` and
+  > `onBuildRenderGraph`) directly into the `gp::Application` host loop.
 - [**ADR-0028**: Zero-Allocation Cached Display Topology and Shadow Mode Tables](./ADR-0028.md)
   > Querying OS display managers (`EnumDisplaySettings`, `SDL_GetFullscreenDisplayModes`) at runtime
   > triggers synchronous EDID/driver calls and heap allocations that stall the calling thread. To
