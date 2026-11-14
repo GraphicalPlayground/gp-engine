@@ -57,7 +57,7 @@ namespace gp
 {
 
 /// @brief Built-in log category for `gp::Application` lifecycle, windowing, arena, and event diagnostics ([ADR-0054]).
-GP_DEFINE_LOG_CATEGORY_INLINE(LogApplication, gp::log::LogLevel::Info, gp::log::LogLevel::Trace);
+GP_DECLARE_EXPORTED_LOG_CATEGORY_EXTERN(GP_APPLICATION_API, LogApplication);
 
 /// @brief Backend-agnostic engine application host orchestrating HAL interfaces, time, input, event routing,
 ///        logging, double-buffered frame arenas, and the $M:N$ cooperative fiber `JobSystem` ([ADR-0012], [ADR-0053],

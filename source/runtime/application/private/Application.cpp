@@ -11,6 +11,8 @@
 namespace gp
 {
 
+GP_DEFINE_LOG_CATEGORY(LogApplication, gp::log::LogLevel::Info, gp::log::LogLevel::Trace);
+
 namespace detail
 {
 
@@ -245,7 +247,7 @@ bool Application::initializeInternal() noexcept
     applyCommandLineOverrides();
     initializeLoggingInternal();
 
-    GP_LOG_DEBUG(
+    GP_LOG_INFO(
         LogApplication,
         "Bootstrapping Application '{}' (version {})...",
         m_desc.backend.appName,
@@ -401,7 +403,7 @@ bool Application::initializeInternal() noexcept
 
     m_clock.reset();
     m_isInitialized = true;
-    GP_LOG_DEBUG(LogApplication, "Application core subsystems initialized.");
+    GP_LOG_INFO(LogApplication, "Application core subsystems initialized.");
     return true;
 }
 
@@ -412,7 +414,7 @@ void Application::shutdownInternal() noexcept
         return;
     }
 
-    GP_LOG_DEBUG(LogApplication, "Shutting down Application core subsystems...");
+    GP_LOG_INFO(LogApplication, "Shutting down Application core subsystems...");
 
     m_frameGraph.shutdown();
 
