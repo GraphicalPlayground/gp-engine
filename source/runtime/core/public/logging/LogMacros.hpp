@@ -15,6 +15,12 @@
 /// @param CategoryName Identifier of the category variable (e.g., `LogRHI`).
 #define GP_DECLARE_LOG_CATEGORY_EXTERN(CategoryName) extern ::gp::log::LogCategory CategoryName
 
+/// @brief Declares a DLL-exported/imported `extern` `gp::log::LogCategory` in a module public header.
+/// @param ApiMacro Module visibility macro (e.g., `GP_CORE_API`, `GP_APPLICATION_API`).
+/// @param CategoryName Identifier of the category variable (e.g., `LogApplication`).
+#define GP_DECLARE_EXPORTED_LOG_CATEGORY_EXTERN(ApiMacro, CategoryName) \
+    extern ApiMacro ::gp::log::LogCategory CategoryName
+
 /// @brief Defines a `gp::log::LogCategory` in a `.cpp` file matching a prior `GP_DECLARE_LOG_CATEGORY_EXTERN`.
 /// @param CategoryName Identifier of the category variable.
 /// @param DefaultLevel Initial runtime `gp::log::LogLevel`.
