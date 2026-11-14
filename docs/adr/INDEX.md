@@ -266,6 +266,12 @@ Hardware Abstraction Layer (HAL).
   > Defines the `gp::application::Application` class as the central manager that owns the injected
   > backend, tracks active windows, and acts as the orchestrator between OS events and engine
   > subsystems.
+- [**ADR-0053**: Job System Lifecycle Integration, Double-Buffered Frame Arenas, and Phased Frame Task Graphs in `gp::Application`](./ADR-0053.md)
+  > Amends and extends [ADR-0012](./ADR-0012.md) by integrating `gp::thread::JobSystem`
+  > ([ADR-0052](./ADR-0052.md)), command-line thread count overrides ([ADR-0040](./ADR-0040.md)),
+  > double-buffered per-frame `gp::memory::LinearAllocator` arenas ([ADR-0042](./ADR-0042.md)), and
+  > zero-allocation arena-backed `gp::thread::JobGraph` execution phases (`onBuildFrameGraph` and
+  > `onBuildRenderGraph`) directly into the `gp::Application` host loop.
 - [**ADR-0028**: Zero-Allocation Cached Display Topology and Shadow Mode Tables](./ADR-0028.md)
   > Querying OS display managers (`EnumDisplaySettings`, `SDL_GetFullscreenDisplayModes`) at runtime
   > triggers synchronous EDID/driver calls and heap allocations that stall the calling thread. To
