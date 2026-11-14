@@ -20,7 +20,7 @@
 namespace gp::thread
 {
 
-/// @brief 64-byte cache-line-isolated Directed Acyclic Graph (DAG) node for Render Dependency Graph (RDG) pass
+/// @brief Cache-line-isolated Directed Acyclic Graph (DAG) node for Render Dependency Graph (RDG) pass
 ///        scheduling ([ADR-0025], [ADR-0052]).
 /// @details A waiting `JobGraphNode` resides in arena memory and holds no pooled fiber or queue slot while its
 ///          upstream prerequisites are running. When the last prerequisite finishes and decrements
@@ -78,7 +78,7 @@ struct alignas(gp::memory::HardwareConstants::cacheLineSize) GP_CORE_API JobGrap
 
 static_assert(
     sizeof(JobGraphNode) == gp::memory::HardwareConstants::cacheLineSize,
-    "JobGraphNode must occupy one 64-byte hardware cache line to avoid MESI false sharing."
+    "JobGraphNode must occupy one hardware cache line to avoid MESI false sharing."
 );
 
 /// @brief Declarative Directed Acyclic Graph (DAG) builder and executor for RDG passes and multi-stage simulation
@@ -131,7 +131,7 @@ public:
     ) noexcept;
 
     /// @brief Initializes the graph over caller-supplied node and edge pointer buffers without allocator calls.
-    /// @param[in] nodeBuffer Pointer to an array of at least `maxNodes` `JobGraphNode` elements (64-byte aligned).
+    /// @param[in] nodeBuffer Pointer to an array of at least `maxNodes` `JobGraphNode` elements (cache-line aligned).
     /// @param[in] maxNodes Capacity of `nodeBuffer` (`>= 1`).
     /// @param[in] edgePoolBuffer Pointer to an array of at least `maxNodes * maxDependentsPerNode` `JobGraphNode*`
     ///                           entries.

@@ -4,6 +4,7 @@
 
 #include "threading/jobs/JobGraph.hpp"
 #include "memory/allocators/LinearAllocator.hpp"
+#include "memory/HardwareConstants.hpp"
 #include "memory/MemoryOrder.hpp"
 #include "threading/atomics/Atomic.hpp"
 #include "threading/jobs/JobSystem.hpp"
@@ -200,7 +201,7 @@ TEST(JobGraphLifecycleTest, ArenaAndBufferInitializationMoveAndValidation)
 
 TEST(JobGraphCycleDetectionTest, DetectsDirectedCyclesBeforeExecution)
 {
-    alignas(64) JobGraphNode nodeStorage[8]{};
+    alignas(gp::memory::HardwareConstants::cacheLineSize) JobGraphNode nodeStorage[8]{};
     JobGraphNode* edgeStorage[8 * 4]{};
 
     JobGraph graph{};
