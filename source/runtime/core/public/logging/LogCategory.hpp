@@ -140,9 +140,9 @@ public:
 };
 
 /// @brief Built-in fallback engine log category (`"LogTemp"`) for quick diagnostics and general logging.
-inline LogCategory LogTemp("LogTemp", LogLevel::Trace, LogLevel::Trace);
+extern GP_CORE_API LogCategory LogTemp;
 
 /// @brief Built-in core module log category (`"LogCore"`).
-inline LogCategory LogCore("LogCore", LogLevel::Info, LogLevel::Trace);
+extern GP_CORE_API LogCategory LogCore;
 
 }   // namespace gp::log
