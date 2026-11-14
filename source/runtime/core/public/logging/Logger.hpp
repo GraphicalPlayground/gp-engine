@@ -38,8 +38,7 @@ private:
     using AsyncQueueType = gp::thread::MPMCRingQueue<LogEntry>;
     using QueueSlotType = AsyncQueueType::SlotType;
 
-    alignas(gp::memory::HardwareConstants::cacheLineSize) QueueSlotType
-        m_ringSlots[kDefaultAsyncLogQueueCapacity]{};
+    alignas(gp::memory::HardwareConstants::cacheLineSize) QueueSlotType m_ringSlots[kDefaultAsyncLogQueueCapacity]{};
     AsyncQueueType m_asyncQueue{};
     gp::platform::Thread m_workerThread{};
     ILogSink* m_sinks[kMaxLogSinks]{};
