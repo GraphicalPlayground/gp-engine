@@ -223,6 +223,16 @@ lock-free architectures.
   > Lê et al. C11 memory ordering), a bounded Multi-Producer Multi-Consumer (MPMC)
   > **`gp::thread::MPMCRingQueue<T>`** (Vyukov per-slot sequence-stamp ring), and 32-byte POD
   > **`gp::thread::JobDecl`** and **`gp::thread::JobQueueItem`** descriptors.
+- [**ADR-0052**: M:N Cooperative Fiber Job System, Zero-Allocation RDG Task Graphs, and Context-Aware Parallel-For](./ADR-0052.md)
+  > Scheduling hundreds of Render Dependency Graph (RDG) passes purely by parking imperative fibers on
+  > `JobCounter` barriers exhausts fixed fiber pools and introduces frame-level wave bubbles, while
+  > stackless continuation graphs destroy sequential C++ control flow and lacks per-worker RHI command
+  > context indexing. `gp-engine` introduces the Layer 3 **`gp::thread::JobSystem`** in `gp::core`: an
+  > $M:N$ cooperative fiber work-stealing scheduler combining lazy two-tier fiber pool acquisition
+  > (`64 KiB` / `512 KiB`), priority MPMC and Chase-Lev SPMC queues, a zero-allocation declarative DAG
+  > continuation subsystem (**`gp::thread::JobGraphNode`** / **`gp::thread::JobGraph`**) tailored for
+  > RDG pass compilation, and a worker-index-aware **`parallelFor`** splitter (**`JobContext`**) for
+  > lock-free per-worker RHI command-list recording.
 
 ### Math & Core Types
 
