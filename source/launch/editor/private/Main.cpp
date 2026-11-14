@@ -29,11 +29,19 @@ protected:
         std::cout << "  GP Engine: EditorApplication Initialized Successfully \n";
         std::cout << "========================================================\n";
 
-        if (const auto* primary = getBackend()->getPrimaryDisplay())
+        if (const gp::hal::IDisplay* const primary = getBackend()->getPrimaryDisplay())
         {
-            const auto& mode = primary->getCurrentMode();
+            const gp::hal::DisplayMode& mode = primary->getCurrentMode();
             std::cout << "[DISPLAY] Primary Monitor: " << primary->getName().data() << " (" << mode.resolution.width
                       << "x" << mode.resolution.height << " @ " << mode.refreshRate << " Hz)\n";
+        }
+
+        if (getJobSystem().isInitialized())
+        {
+            std::cout << "[JOB SYSTEM] Workers: " << getJobSystem().getWorkerThreadCount()
+                      << " (Total Slots: " << getJobSystem().getTotalWorkerSlotCount()
+                      << " | Standard Fibers: " << getJobSystem().getStandardFiberCapacity()
+                      << " | Large Fibers: " << getJobSystem().getLargeFiberCapacity() << ")\n";
         }
 
         std::cout << "\nControls:\n"
