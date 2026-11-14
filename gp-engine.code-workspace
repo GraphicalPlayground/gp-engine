@@ -208,7 +208,8 @@
       "atomics": "atom",
       "time": "temp",
       "fibers": "tasks",
-      "sync": "ci"
+      "sync": "ci",
+      "sinks": "filter"
     },
     /* File Associations */
     "files.associations": {

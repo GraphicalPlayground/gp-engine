@@ -233,6 +233,11 @@ lock-free architectures.
   > continuation subsystem (**`gp::thread::JobGraphNode`** / **`gp::thread::JobGraph`**) tailored for
   > RDG pass compilation, and a worker-index-aware **`parallelFor`** splitter (**`JobContext`**) for
   > lock-free per-worker RHI command-list recording.
+- [**ADR-0054**: Zero-Allocation Lock-Free Multi-Sink Logger and Hybrid `GP_LOG` Architecture](./ADR-0054.md)
+  > Establishes `gp::log` in `gp::core` as a zero-heap-allocation, multi-sink logging subsystem
+  > combining `<charconv>` stack formatting, `consteval` format string verification, atomic
+  > `LogCategory` filtering, dual synchronous/lock-free MPMC ring execution, and a hybrid C++23
+  > function plus short-circuiting `GP_LOG` macro front-end.
 
 ### Math & Core Types
 
