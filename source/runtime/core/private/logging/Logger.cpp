@@ -12,6 +12,9 @@
 namespace gp::log
 {
 
+LogCategory LogTemp("LogTemp", LogLevel::Trace, LogLevel::Trace);
+LogCategory LogCore("LogCore", LogLevel::Info, LogLevel::Trace);
+
 namespace detail
 {
 
