@@ -5,6 +5,7 @@
 #include "Application.hpp"
 #include "ApplicationDesc.hpp"
 #include "ApplicationTypes.hpp"
+#include "logging/sinks/MemoryRingSink.hpp"
 #include "memory/MemoryOrder.hpp"
 #include "miscellaneous/CommandLine.hpp"
 #include "threading/atomics/Atomic.hpp"   // IWYU pragma: keep
@@ -537,6 +538,45 @@ TEST(ApplicationLifecycleTest, AbortOnInitializeReturnsNegativeExitCodeAndCleans
     EXPECT_FALSE(app.getJobSystem().isInitialized());
     EXPECT_FALSE(app.getCurrentFrameArena().isValid());
     EXPECT_FALSE(app.getPreviousFrameArena().isValid());
+}
+
+TEST(ApplicationLoggingTest, InitializesLoggerRoutesLifecycleLogsAndCleansUpSinks)
+{
+    CommandLine::shutdown();
+    log::Logger& logger = Application::getLogger();
+    logger.shutdown();
+    logger.clearSinks();
+
+    log::MemoryRingSink ringSink(log::LogLevel::Trace);
+    ASSERT_EQ(logger.addSink(&ringSink), log::LogResult::Success);
+
+    LogApplication.setActiveLevel(log::LogLevel::Debug);
+
+    ApplicationDesc desc{};
+    desc.backend.appName = "TestLoggingHost";
+    desc.backend.appVersion = "2.0.0";
+    desc.createMainWindow = false;
+    desc.enableJobSystem = false;
+    desc.enableConsoleLogSink = false;
+    desc.enableFileLogSink = false;
+    desc.enableDebugOutputLogSink = false;
+    desc.enableTracyLogSink = false;
+    desc.logger.mode = log::LogExecutionMode::Synchronous;
+
+    detail::CommandLineProbeApp app(desc);
+    EXPECT_EQ(app.run(), 0);
+
+    // Verify lifecycle log messages were emitted under LogApplication and captured by ringSink.
+    EXPECT_GE(ringSink.getSize(), 2u);
+    EXPECT_EQ(ringSink.getEntry(0u).toView().categoryName, "LogApplication");
+    EXPECT_TRUE(ringSink.getEntry(0u).toView().message.contains("TestLoggingHost"));
+
+    // Verify Application shut down the Logger it initialized and left only our test sink registered.
+    EXPECT_FALSE(logger.isInitialized());
+    EXPECT_EQ(logger.getSinkCount(), 1u);
+
+    LogApplication.resetToDefaultLevel();
+    logger.clearSinks();
 }
 
 }   // namespace gp::tests

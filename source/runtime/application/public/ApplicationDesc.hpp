@@ -7,6 +7,7 @@
 #include "ApplicationTypes.hpp"
 #include "backend/ApplicationBackendDesc.hpp"
 #include "CoreMinimal.hpp"
+#include "logging/LogDesc.hpp"
 #include "threading/jobs/JobSystemDesc.hpp"
 #include "time/EngineClock.hpp"
 #include "window/WindowDesc.hpp"
@@ -14,7 +15,8 @@
 namespace gp
 {
 
-/// @brief Configuration parameters for bootstrapping a `gp::Application` instance ([ADR-0012], [ADR-0053]).
+/// @brief Configuration parameters for bootstrapping a `gp::Application` instance ([ADR-0012], [ADR-0053],
+///        [ADR-0054]).
 struct ApplicationDesc
 {
     /// @brief OS backend and hardware subsystem initialization parameters.
@@ -29,6 +31,15 @@ struct ApplicationDesc
     /// @brief Configuration for the `gp::thread::JobSystem` fiber pool, queues, and worker threads ([ADR-0052],
     ///        [ADR-0053]).
     thread::JobSystemDesc jobSystem{};
+
+    /// @brief Configuration for the central `gp::log::Logger` router ([ADR-0054]).
+    log::LoggerDesc logger{};
+
+    /// @brief Configuration for the built-in ANSI terminal `ConsoleSink` ([ADR-0054]).
+    log::ConsoleSinkDesc consoleSink{};
+
+    /// @brief Configuration for the built-in buffered `FileSink` ([ADR-0054]).
+    log::FileSinkDesc fileSink{};
 
     /// @brief Byte capacity of the lock-free SPSC event stream (automatically rounded up to a power of two).
     gp::USize eventRingBufferBytes{ 16384u };
@@ -58,6 +69,24 @@ struct ApplicationDesc
     /// @brief If true, initializes `Application::getJobSystem()` during startup (can be overridden by
     ///        `-no-jobsystem` on the command line).
     bool enableJobSystem{ true };
+
+    /// @brief If true, initializes `gp::log::Logger::instance()` during startup and shuts it down on exit (can be
+    ///        overridden by `-no-log` on the command line).
+    bool enableLogging{ true };
+
+    /// @brief If true, registers the application's `ConsoleSink` with `Logger::instance()` (can be overridden by
+    ///        `-no-console-log` on the command line).
+    bool enableConsoleLogSink{ true };
+
+    /// @brief If true, opens and registers the application's `FileSink` with `Logger::instance()` (can be overridden
+    ///        by `-log-file` or `-no-file-log` on the command line).
+    bool enableFileLogSink{ false };
+
+    /// @brief If true, registers the application's OS debugger `DebugOutputSink` with `Logger::instance()`.
+    bool enableDebugOutputLogSink{ true };
+
+    /// @brief If true, registers the application's `TracySink` with `Logger::instance()`.
+    bool enableTracyLogSink{ true };
 };
 
 }   // namespace gp

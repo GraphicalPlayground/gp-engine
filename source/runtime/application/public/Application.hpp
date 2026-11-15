@@ -28,6 +28,12 @@
 #include "event/system/DisplayEvent.hpp"
 #include "event/system/WindowEvent.hpp"
 #include "input/IInputSystem.hpp"
+#include "logging/Logger.hpp"
+#include "logging/LogMacros.hpp"
+#include "logging/sinks/ConsoleSink.hpp"
+#include "logging/sinks/DebugOutputSink.hpp"
+#include "logging/sinks/FileSink.hpp"
+#include "logging/sinks/TracySink.hpp"
 #include "memory/allocators/LinearAllocator.hpp"
 #include "memory/pointers/UniquePtr.hpp"
 #include "threading/Atomic.hpp"
@@ -50,12 +56,16 @@
 namespace gp
 {
 
+/// @brief Built-in log category for `gp::Application` lifecycle, windowing, arena, and event diagnostics ([ADR-0054]).
+GP_DECLARE_EXPORTED_LOG_CATEGORY_EXTERN(GP_APPLICATION_API, LogApplication);
+
 /// @brief Backend-agnostic engine application host orchestrating HAL interfaces, time, input, event routing,
-///        double-buffered frame arenas, and the $M:N$ cooperative fiber `JobSystem` ([ADR-0012], [ADR-0053]).
+///        logging, double-buffered frame arenas, and the $M:N$ cooperative fiber `JobSystem` ([ADR-0012], [ADR-0053],
+///        [ADR-0054]).
 /// @details Decoupled from concrete platform libraries (such as SDL3). Concrete backends are injected at construction
 ///          time, falling back to `gp::hal::generic::ApplicationBackend` if omitted. Owns the engine's primary
 ///          `gp::thread::JobSystem`, two rotating per-frame `gp::memory::LinearAllocator` arenas (`Frame N` and
-///          `Frame N-1`), and a zero-allocation per-frame `gp::thread::JobGraph`.
+///          `Frame N-1`), a zero-allocation per-frame `gp::thread::JobGraph`, and default multi-sink logging targets.
 class GP_APPLICATION_API Application
 {
 private:
@@ -68,12 +78,17 @@ private:
     gp::thread::JobSystem m_jobSystem{};
     gp::memory::LinearAllocator m_frameArenas[kFrameArenaBufferCount]{};
     gp::thread::JobGraph m_frameGraph{};
+    log::ConsoleSink m_consoleSink{};
+    log::FileSink m_fileSink{};
+    log::DebugOutputSink m_debugOutputSink{};
+    log::TracySink m_tracySink{};
     hal::EventPumpStats m_lastPumpStats{};
 
     gp::UInt32 m_activeFrameArenaIndex{ 0u };
     gp::Atomic<bool> m_isRunning{ false };
     bool m_isInitialized{ false };
     bool m_isSuspended{ false };
+    bool m_ownsLoggerInitialization{ false };
 
 public:
     /// @brief Constructs the application with injected HAL backend and optional custom input system.
@@ -238,6 +253,41 @@ public:
         return m_lastPumpStats;
     }
 
+    /// @brief Retrieves a reference to the process-wide `gp::log::Logger` router ([ADR-0054]).
+    /// @return Reference to `gp::log::Logger::instance()`.
+    [[nodiscard]] static log::Logger& getLogger() noexcept
+    {
+        return log::Logger::instance();
+    }
+
+    /// @brief Retrieves a mutable reference to the application's built-in `ConsoleSink`.
+    /// @return Reference to `gp::log::ConsoleSink`.
+    [[nodiscard]] constexpr log::ConsoleSink& getConsoleSink() noexcept
+    {
+        return m_consoleSink;
+    }
+
+    /// @brief Retrieves a const reference to the application's built-in `ConsoleSink`.
+    /// @return Const reference to `gp::log::ConsoleSink`.
+    [[nodiscard]] constexpr const log::ConsoleSink& getConsoleSink() const noexcept
+    {
+        return m_consoleSink;
+    }
+
+    /// @brief Retrieves a mutable reference to the application's built-in `FileSink`.
+    /// @return Reference to `gp::log::FileSink`.
+    [[nodiscard]] constexpr log::FileSink& getFileSink() noexcept
+    {
+        return m_fileSink;
+    }
+
+    /// @brief Retrieves a const reference to the application's built-in `FileSink`.
+    /// @return Const reference to `gp::log::FileSink`.
+    [[nodiscard]] constexpr const log::FileSink& getFileSink() const noexcept
+    {
+        return m_fileSink;
+    }
+
 protected:
     /// @section Frame Lifecycle & Task Graph Specialization Hooks
 
@@ -372,9 +422,17 @@ protected:
     {}
 
 private:
-    /// @brief Applies command-line concurrency overrides (`-threads`, `-workers`, `-no-jobsystem`, `-core-affinity`)
-    ///        from `gp::CommandLine` to `m_desc` prior to initializing `m_jobSystem`.
+    /// @brief Applies command-line concurrency and logging overrides (`-threads`, `-workers`, `-no-jobsystem`,
+    ///        `-core-affinity`, `-no-log`, `-no-console-log`, `-log-file`) from `gp::CommandLine` to `m_desc`.
     void applyCommandLineOverrides() noexcept;
+
+    /// @brief Configures, attaches, and initializes the logging subsystem and built-in sinks (`m_consoleSink`,
+    ///        `m_fileSink`, `m_debugOutputSink`, `m_tracySink`).
+    void initializeLoggingInternal() noexcept;
+
+    /// @brief Flushes pending log records, detaches the application's built-in sinks, closes `m_fileSink`, and shuts
+    ///        down `Logger::instance()` if initialized by this `Application`.
+    void shutdownLoggingInternal() noexcept;
 
     /// @brief Rotates `m_activeFrameArenaIndex` to `frameIndex & 1u`, resets the new current frame arena in $O(1)$
     ///        time, and rebinds `m_frameGraph` over the reset arena.

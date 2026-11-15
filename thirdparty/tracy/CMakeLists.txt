@@ -4,6 +4,12 @@
 
 include(gp-build-tool)
 
+if(GPBT_IS_MONOLITHIC)
+  set(_gpTracyStatic "ON")
+else()
+  set(_gpTracyStatic "OFF")
+endif()
+
 gpStartThirdparty("tracy" VERSION "0.14.1")
   gpThirdpartyRequiresPlatforms(Windows Linux macOS iOS Android)
 
@@ -17,6 +23,6 @@ gpStartThirdparty("tracy" VERSION "0.14.1")
     NO_CCACHE=ON
     CCACHE=OFF
     TRACY_ENABLE=ON
-    TRACY_STATIC=ON
+    TRACY_STATIC=${_gpTracyStatic}
   )
 gpEndThirdparty()
