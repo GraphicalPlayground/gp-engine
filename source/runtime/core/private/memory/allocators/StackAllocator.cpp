@@ -16,12 +16,12 @@ namespace gp::memory
 
 StackAllocator::StackAllocator(const gp::USize capacityInBytes, Malloc* backingMalloc, const char* poolName) noexcept
 {
-    (void)initialize(capacityInBytes, backingMalloc, poolName);
+    initialize(capacityInBytes, backingMalloc, poolName);
 }
 
 StackAllocator::StackAllocator(void* externalBuffer, const gp::USize capacityInBytes, const char* poolName) noexcept
 {
-    (void)initialize(externalBuffer, capacityInBytes, poolName);
+    initialize(externalBuffer, capacityInBytes, poolName);
 }
 
 StackAllocator::StackAllocator(StackAllocator&& other) noexcept

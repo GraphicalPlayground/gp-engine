@@ -241,8 +241,8 @@ TEST(LoggerTest, FileSinkWritesAndFlushesToDisk)
 
     char readBuf[512]{};
     const gp::USize bytesRead = std::fread(readBuf, sizeof(char), sizeof(readBuf) - 1u, readHandle);
-    (void)std::fclose(readHandle);
-    (void)std::remove(logFilePath.cString());
+    std::fclose(readHandle);
+    std::remove(logFilePath.cString());
 
     const gp::StringView fileContents(readBuf, bytesRead);
     EXPECT_TRUE(fileContents.contains("[INFO][LogTestSubsystem] First disk line 100"));

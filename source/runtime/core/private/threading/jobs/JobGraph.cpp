@@ -526,7 +526,7 @@ void JobGraph::executeNodeTrampoline(void* const rawNode) noexcept
     JobCounter* const graphCounter = node->completionCounter;
 
     // Run the pass callback and decrement any per-pass completion counter.
-    (void)node->decl.invoke();
+    node->decl.invoke();
     if (node->decl.counter != nullptr)
     {
         (void)node->decl.counter->decrement(1u);

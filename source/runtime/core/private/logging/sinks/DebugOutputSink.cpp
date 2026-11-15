@@ -26,7 +26,7 @@ void DebugOutputSink::write(const LogRecordView& record) noexcept
     }
 
     gp::FixedString<640> lineBuffer{};
-    (void)formatLogRecordLine(lineBuffer, record, m_flags);
+    formatLogRecordLine(lineBuffer, record, m_flags);
 
 #if GP_PLATFORM_WINDOWS
     ::OutputDebugStringA(lineBuffer.cString());

@@ -381,7 +381,7 @@ void CommandLine::initialize(const StringView rawCommandLine) noexcept
         return;
     }
 
-    (void)detail::tokenizeRawStringIntoArena(rawCommandLine);
+    detail::tokenizeRawStringIntoArena(rawCommandLine);
     detail::rebuildReconstructedCommandLine();
 }
 
@@ -395,7 +395,7 @@ UInt32 CommandLine::append(const StringView additionalArgs) noexcept
     // If CommandLine was never initialized, reserve slot 0 for a placeholder executable name
     if (detail::s_argCount == 0u)
     {
-        (void)detail::pushTokenToArena(StringView("gp-engine"));
+        detail::pushTokenToArena(StringView("gp-engine"));
     }
 
     const UInt32 added = detail::tokenizeRawStringIntoArena(additionalArgs);

@@ -1140,7 +1140,7 @@ public:
     /// @param[in,out] inOutPath Path buffer to standardize in-place.
     static constexpr void makeStandardFilename(PathBuffer& inOutPath) noexcept
     {
-        (void)collapseRelativeDirectories(inOutPath, true);
+        collapseRelativeDirectories(inOutPath, true);
         while (hasRedundantTerminatingSeparator(inOutPath.view()))
         {
             inOutPath.popBack();

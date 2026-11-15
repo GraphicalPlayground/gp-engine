@@ -43,7 +43,7 @@ void MemoryRingSink::write(const LogRecordView& record) noexcept
         (record.message.size() <= kMaxLogMessageLength) ? record.message.size() : kMaxLogMessageLength;
     if (msgLen > 0u)
     {
-        (void)gp::memory::copyMemory(dst.message, record.message.data(), msgLen);
+        gp::memory::copyMemory(dst.message, record.message.data(), msgLen);
     }
     dst.message[msgLen] = '\0';
     dst.messageLength = static_cast<gp::UInt16>(msgLen);

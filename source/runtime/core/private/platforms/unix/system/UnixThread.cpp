@@ -113,7 +113,7 @@ struct ThreadStartPayload
     if (name != nullptr && name[0] != '\0')
     {
 #if defined(__APPLE__)
-        (void)::pthread_setname_np(name);
+        ::pthread_setname_np(name);
 #elif defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
         char shortName[16] = {};
         gp::UInt32 i = 0u;
@@ -122,7 +122,7 @@ struct ThreadStartPayload
             shortName[i] = name[i];
         }
         shortName[i] = '\0';
-        (void)::pthread_setname_np(::pthread_self(), shortName);
+        ::pthread_setname_np(::pthread_self(), shortName);
 #endif
     }
     return Thread::currentThreadId();
@@ -164,22 +164,22 @@ void* threadTrampoline(void* const rawPayload) noexcept
     const ThreadId resolvedId = (initChildFn != nullptr) ? initChildFn(localName) : defaultInitializeChild(localName);
 
     // Notify parent that child metadata is ready and wait for parent configuration (affinity/priority)
-    (void)::pthread_mutex_lock(&payload->mutex);
+    ::pthread_mutex_lock(&payload->mutex);
     payload->childThreadId = resolvedId;
     payload->stage = HandoffStage::ChildReady;
-    (void)::pthread_cond_signal(&payload->cond);
+    ::pthread_cond_signal(&payload->cond);
 
     while (payload->stage == HandoffStage::ChildReady)
     {
-        (void)::pthread_cond_wait(&payload->cond, &payload->mutex);
+        ::pthread_cond_wait(&payload->cond, &payload->mutex);
     }
 
     const bool shouldAbort = (payload->stage == HandoffStage::ParentAbort);
 
     // Acknowledge completion so the parent can safely destroy the stack mutex and condvar
     payload->stage = HandoffStage::ChildAcknowledged;
-    (void)::pthread_cond_signal(&payload->cond);
-    (void)::pthread_mutex_unlock(&payload->mutex);
+    ::pthread_cond_signal(&payload->cond);
+    ::pthread_mutex_unlock(&payload->mutex);
 
     if (shouldAbort)
     {
@@ -272,7 +272,7 @@ ThreadResult Thread::startWithHooks(const ThreadDesc& desc, const StartupHooks& 
         return ThreadResult::CreationFailed;
     }
 
-    (void)::pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    ::pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
     if (desc.stackSize != kDefaultStackSize)
     {
@@ -282,7 +282,7 @@ ThreadResult Thread::startWithHooks(const ThreadDesc& desc, const StartupHooks& 
 
         if (::pthread_attr_setstacksize(&attr, effectiveStack) != 0)
         {
-            (void)::pthread_attr_destroy(&attr);
+            ::pthread_attr_destroy(&attr);
             return ThreadResult::StackSizeOverflow;
         }
     }
@@ -292,7 +292,7 @@ ThreadResult Thread::startWithHooks(const ThreadDesc& desc, const StartupHooks& 
         const ThreadResult attrRes = hooks.configureAttributes(&attr, desc);
         if (attrRes != ThreadResult::Success && desc.failOnConfigError)
         {
-            (void)::pthread_attr_destroy(&attr);
+            ::pthread_attr_destroy(&attr);
             return attrRes;
         }
     }
@@ -300,14 +300,14 @@ ThreadResult Thread::startWithHooks(const ThreadDesc& desc, const StartupHooks& 
     detail::ThreadStartPayload payload{};
     if (::pthread_mutex_init(&payload.mutex, nullptr) != 0)
     {
-        (void)::pthread_attr_destroy(&attr);
+        ::pthread_attr_destroy(&attr);
         return ThreadResult::CreationFailed;
     }
 
     if (::pthread_cond_init(&payload.cond, nullptr) != 0)
     {
-        (void)::pthread_mutex_destroy(&payload.mutex);
-        (void)::pthread_attr_destroy(&attr);
+        ::pthread_mutex_destroy(&payload.mutex);
+        ::pthread_attr_destroy(&attr);
         return ThreadResult::CreationFailed;
     }
 
@@ -319,20 +319,20 @@ ThreadResult Thread::startWithHooks(const ThreadDesc& desc, const StartupHooks& 
 
     pthread_t nativeThread{};
     const int createErr = ::pthread_create(&nativeThread, &attr, &detail::threadTrampoline, &payload);
-    (void)::pthread_attr_destroy(&attr);
+    ::pthread_attr_destroy(&attr);
 
     if (createErr != 0)
     {
-        (void)::pthread_cond_destroy(&payload.cond);
-        (void)::pthread_mutex_destroy(&payload.mutex);
+        ::pthread_cond_destroy(&payload.cond);
+        ::pthread_mutex_destroy(&payload.mutex);
         return ThreadResult::CreationFailed;
     }
 
     // Wait for child thread to copy startup payload and publish its kernel ThreadId
-    (void)::pthread_mutex_lock(&payload.mutex);
+    ::pthread_mutex_lock(&payload.mutex);
     while (payload.stage == detail::HandoffStage::WaitingForChild)
     {
-        (void)::pthread_cond_wait(&payload.cond, &payload.mutex);
+        ::pthread_cond_wait(&payload.cond, &payload.mutex);
     }
 
     m_handle = detail::toNativeHandle(nativeThread);
@@ -365,21 +365,21 @@ ThreadResult Thread::startWithHooks(const ThreadDesc& desc, const StartupHooks& 
     // Signal child to either resume into user entry or abort immediately
     payload.stage = (configFailure == ThreadResult::Success) ? detail::HandoffStage::ParentResume
                                                              : detail::HandoffStage::ParentAbort;
-    (void)::pthread_cond_signal(&payload.cond);
+    ::pthread_cond_signal(&payload.cond);
 
     // Wait for child to acknowledge before destroying stack synchronization primitives
     while (payload.stage != detail::HandoffStage::ChildAcknowledged)
     {
-        (void)::pthread_cond_wait(&payload.cond, &payload.mutex);
+        ::pthread_cond_wait(&payload.cond, &payload.mutex);
     }
-    (void)::pthread_mutex_unlock(&payload.mutex);
+    ::pthread_mutex_unlock(&payload.mutex);
 
-    (void)::pthread_cond_destroy(&payload.cond);
-    (void)::pthread_mutex_destroy(&payload.mutex);
+    ::pthread_cond_destroy(&payload.cond);
+    ::pthread_mutex_destroy(&payload.mutex);
 
     if (configFailure != ThreadResult::Success)
     {
-        (void)::pthread_join(nativeThread, nullptr);
+        ::pthread_join(nativeThread, nullptr);
         m_handle = nullptr;
         m_threadId = 0ULL;
         m_isJoinable = false;
@@ -524,7 +524,7 @@ void Thread::sleep(const gp::UInt32 milliseconds) noexcept
 
 void Thread::yieldExecution() noexcept
 {
-    (void)::sched_yield();
+    ::sched_yield();
 }
 
 void Thread::spinWait() noexcept
@@ -552,7 +552,7 @@ ThreadId Thread::currentThreadId() noexcept
     if (s_cachedTid == 0ULL) [[unlikely]]
     {
         gp::UInt64 tid = 0ULL;
-        (void)::pthread_threadid_np(nullptr, &tid);
+        ::pthread_threadid_np(nullptr, &tid);
         s_cachedTid = static_cast<ThreadId>(tid);
     }
     return s_cachedTid;

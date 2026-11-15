@@ -128,7 +128,7 @@ static void middleChildForkJoinJobEntry(void* const rawData) noexcept
     );
 
     // Help one local item directly before waiting on the remaining grandchildren.
-    (void)ctx->jobSystem->helpOneWorkItem();
+    ctx->jobSystem->helpOneWorkItem();
     EXPECT_EQ(ctx->jobSystem->waitForCounter(grandchildCounter, 0u), JobSystemResult::Success);
 
     if (*childCanary == expectedCanary)
@@ -297,7 +297,7 @@ TEST(JobSystemDispatchTest, SingleAndBatchDispatchAcrossPrioritiesAndStackTiers)
     }
 
     ASSERT_EQ(jobSystem.dispatchBatch(batchDecls, kJobCount, true), JobSystemResult::Success);
-    (void)jobSystem.helpOneWorkItem();
+    jobSystem.helpOneWorkItem();
     ASSERT_EQ(jobSystem.waitForCounter(counter, 0u), JobSystemResult::Success);
 
     constexpr gp::UInt64 kExpectedSum = (static_cast<gp::UInt64>(kJobCount) * (kJobCount + 1ULL)) / 2ULL;

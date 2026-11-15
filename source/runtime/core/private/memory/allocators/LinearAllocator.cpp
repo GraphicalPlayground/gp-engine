@@ -15,12 +15,12 @@ namespace gp::memory
 
 LinearAllocator::LinearAllocator(const gp::USize capacityInBytes, Malloc* backingMalloc, const char* poolName) noexcept
 {
-    (void)initialize(capacityInBytes, backingMalloc, poolName);
+    initialize(capacityInBytes, backingMalloc, poolName);
 }
 
 LinearAllocator::LinearAllocator(void* externalBuffer, const gp::USize capacityInBytes, const char* poolName) noexcept
 {
-    (void)initialize(externalBuffer, capacityInBytes, poolName);
+    initialize(externalBuffer, capacityInBytes, poolName);
 }
 
 LinearAllocator::LinearAllocator(LinearAllocator&& other) noexcept

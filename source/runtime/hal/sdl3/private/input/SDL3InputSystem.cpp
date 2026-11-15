@@ -19,7 +19,7 @@ void InputSystem::onBackendGamepadConnected(gp::UInt32 slotIndex, gp::hal::input
 {
     if (slotIndex < gp::hal::input::kMaxGamepads) [[likely]]
     {
-        (void)m_sdlGamepads[slotIndex].openSdlGamepad(deviceId, static_cast<gp::hal::input::GamepadSlot>(slotIndex));
+        m_sdlGamepads[slotIndex].openSdlGamepad(deviceId, static_cast<gp::hal::input::GamepadSlot>(slotIndex));
     }
 }
 

@@ -93,7 +93,7 @@ static GP_FORCENOINLINE PagedLinearAllocator*
     };
     if (!s_fallbackFiberArena.isValid()) [[unlikely]]
     {
-        (void)s_fallbackFiberArena.initialize(&resolveSharedPagePool, nullptr, true, "FiberScratchArena.Fallback");
+        s_fallbackFiberArena.initialize(&resolveSharedPagePool, nullptr, true, "FiberScratchArena.Fallback");
     }
 
     return s_fallbackFiberArena;
@@ -154,12 +154,12 @@ PagedLinearAllocator* FiberScratchArena::bindFiberArena(PagedLinearAllocator* fi
 {
     if (fiberArena != nullptr && !fiberArena->isValid())
     {
-        (void)fiberArena->initialize(&detail::resolveSharedPagePool, nullptr, true, "FiberScratchArena.Fiber");
+        fiberArena->initialize(&detail::resolveSharedPagePool, nullptr, true, "FiberScratchArena.Fiber");
     }
 
     PagedLinearAllocator* const previousArena = detail::exchangeThreadLocalBoundFiberArena(fiberArena);
 
-    (void)ThreadScratchArena::advanceCurrentThreadEpoch();
+    ThreadScratchArena::advanceCurrentThreadEpoch();
 
     return previousArena;
 }

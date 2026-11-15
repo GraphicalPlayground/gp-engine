@@ -254,7 +254,7 @@ bool Application::initializeInternal() noexcept
 
     {
         gp::FixedString<256> appInfo{};
-        (void)log::formatTo(appInfo, "{} v{}", m_desc.backend.appName, m_desc.backend.appVersion);
+        log::formatTo(appInfo, "{} v{}", m_desc.backend.appName, m_desc.backend.appVersion);
         GP_APP_INFO(appInfo.cString(), appInfo.size());
     }
 

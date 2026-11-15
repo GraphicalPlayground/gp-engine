@@ -405,7 +405,7 @@ JobSystemResult JobSystem::initialize(const JobSystemDesc& desc) noexcept
         if (gp::memory::PagePool* const sharedPool = gp::memory::FiberScratchArena::tryGetSharedPagePool();
             sharedPool != nullptr)
         {
-            (void)m_workerSlots[s].emergencyScratchArena.initialize(
+            m_workerSlots[s].emergencyScratchArena.initialize(
                 sharedPool, m_allocator, true, "gp::WorkerEmergencyScratch"
             );
         }
@@ -538,7 +538,7 @@ void JobSystem::executeInlineJobItem(const JobDecl& decl) noexcept
     detail::setActiveJobMetaTLS(decl.priority, decl.stackTier);
 
     gp::memory::ScopedFiberScratchMark inlineScratchScope;
-    (void)decl.invoke();
+    decl.invoke();
 
     detail::setActiveJobMetaTLS(savedPriority, savedTier);
     m_totalJobsExecuted.fetchAdd(1ULL, gp::MemoryOrder::Relaxed);
@@ -980,7 +980,7 @@ void JobSystem::executeWorkItem(WorkerSlot& slot, Fiber& anchorFiber, const JobQ
         GP_ASSERT(switchRes == FiberResult::Success, "Worker anchor failed to switch into resumed child fiber.");
         if (savedArena != nullptr)
         {
-            (void)gp::memory::FiberScratchArena::bindFiberArena(savedArena);
+            gp::memory::FiberScratchArena::bindFiberArena(savedArena);
         }
         detail::setActiveJobMetaTLS(savedPriority, savedTier);
 
@@ -1022,7 +1022,7 @@ void JobSystem::executeWorkItem(WorkerSlot& slot, Fiber& anchorFiber, const JobQ
         GP_ASSERT(switchRes == FiberResult::Success, "Worker anchor failed to switch into newly bound child fiber.");
         if (savedArena != nullptr)
         {
-            (void)gp::memory::FiberScratchArena::bindFiberArena(savedArena);
+            gp::memory::FiberScratchArena::bindFiberArena(savedArena);
         }
         detail::setActiveJobMetaTLS(savedPriority, savedTier);
 
@@ -1042,14 +1042,14 @@ void JobSystem::executeWorkItem(WorkerSlot& slot, Fiber& anchorFiber, const JobQ
     ++slot.emergencyExecutionDepth;
     {
         gp::memory::ScopedFiberScratchMark emergencyMark;
-        (void)decl.invoke();
+        decl.invoke();
     }
     --slot.emergencyExecutionDepth;
     if (slot.emergencyExecutionDepth == 0u)
     {
         slot.emergencyScratchArena.reset();
     }
-    (void)gp::memory::FiberScratchArena::bindFiberArena(prevArena);
+    gp::memory::FiberScratchArena::bindFiberArena(prevArena);
     detail::setActiveJobMetaTLS(savedPriority, savedTier);
 
     m_totalJobsExecuted.fetchAdd(1ULL, gp::MemoryOrder::Relaxed);
@@ -1067,7 +1067,7 @@ void JobSystem::fiberTaskEntryPoint(void* const rawFiberPoolSlot) noexcept
     const JobDecl decl = fiberSlot->activeDecl;
     detail::setActiveJobMetaTLS(decl.priority, fiberSlot->tier);
 
-    (void)decl.invoke();
+    decl.invoke();
 
     fiberSlot->owner->m_totalJobsExecuted.fetchAdd(1ULL, gp::MemoryOrder::Relaxed);
 
@@ -1427,13 +1427,13 @@ void JobSystem::workerThreadLoop(WorkerSlot& slot) noexcept
         else
         {
             const gp::UInt64 observedEpoch = m_workAvailableEpoch.load(gp::MemoryOrder::Acquire);
-            (void)m_sleepingWorkerMask.fetchOr(workerBit, gp::MemoryOrder::AcqRel);
+            m_sleepingWorkerMask.fetchOr(workerBit, gp::MemoryOrder::AcqRel);
             atomicThreadFence(gp::MemoryOrder::SeqCst);
 
             if (m_shouldShutdown.load(gp::MemoryOrder::Acquire) != 0u ||
                 m_workAvailableEpoch.load(gp::MemoryOrder::Acquire) != observedEpoch || hasAnyPendingWorkApprox())
             {
-                (void)m_sleepingWorkerMask.fetchAnd(~workerBit, gp::MemoryOrder::Release);
+                m_sleepingWorkerMask.fetchAnd(~workerBit, gp::MemoryOrder::Release);
                 idleIterations = 0u;
                 continue;
             }
@@ -1443,11 +1443,11 @@ void JobSystem::workerThreadLoop(WorkerSlot& slot) noexcept
                 gp::platform::Time::sleepNanoseconds(m_idleSleepNanoseconds);
             }
 
-            (void)m_sleepingWorkerMask.fetchAnd(~workerBit, gp::MemoryOrder::Release);
+            m_sleepingWorkerMask.fetchAnd(~workerBit, gp::MemoryOrder::Release);
         }
     }
 
-    (void)m_sleepingWorkerMask.fetchAnd(~workerBit, gp::MemoryOrder::Release);
+    m_sleepingWorkerMask.fetchAnd(~workerBit, gp::MemoryOrder::Release);
     detail::bindWorkerThreadTLS(nullptr, kInvalidWorkerIndex, nullptr);
     (void)slot.anchorFiber.restoreCurrentThread();
 }

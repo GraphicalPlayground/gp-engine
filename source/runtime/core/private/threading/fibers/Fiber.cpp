@@ -133,7 +133,7 @@ Fiber::Fiber(Fiber&& other) noexcept
 
     if (gp::memory::FiberScratchArena::getBoundFiberArena() == &other.m_scratchArena)
     {
-        (void)gp::memory::FiberScratchArena::bindFiberArena(&m_scratchArena);
+        gp::memory::FiberScratchArena::bindFiberArena(&m_scratchArena);
     }
 
     other.m_entry = nullptr;
@@ -182,7 +182,7 @@ Fiber& Fiber::operator=(Fiber&& other) noexcept
 
         if (wasBoundArena)
         {
-            (void)gp::memory::FiberScratchArena::bindFiberArena(&m_scratchArena);
+            gp::memory::FiberScratchArena::bindFiberArena(&m_scratchArena);
         }
 
         other.m_entry = nullptr;
@@ -242,7 +242,7 @@ FiberResult Fiber::create(const FiberDesc& desc) noexcept
 
     if (desc.scratchPagePool != nullptr)
     {
-        (void)m_scratchArena.initialize(desc.scratchPagePool, nullptr, true, resolvedName);
+        m_scratchArena.initialize(desc.scratchPagePool, nullptr, true, resolvedName);
     }
     else
     {
@@ -288,7 +288,7 @@ FiberResult Fiber::destroy() noexcept
 
     if (gp::memory::FiberScratchArena::getBoundFiberArena() == &m_scratchArena)
     {
-        (void)gp::memory::FiberScratchArena::bindFiberArena(nullptr);
+        gp::memory::FiberScratchArena::bindFiberArena(nullptr);
     }
 
     m_scratchArena.shutdown();
@@ -374,7 +374,7 @@ FiberResult Fiber::restoreCurrentThread() noexcept
 
     if (gp::memory::FiberScratchArena::getBoundFiberArena() != nullptr)
     {
-        (void)gp::memory::FiberScratchArena::bindFiberArena(nullptr);
+        gp::memory::FiberScratchArena::bindFiberArena(nullptr);
     }
 
     m_scratchArena.shutdown();
@@ -518,7 +518,7 @@ FiberResult Fiber::switchTo(Fiber& target) noexcept
     detail::setCurrentFiberTLS(&target);
     detail::setOutgoingFiberTLS(isThreadAnchor() ? nullptr : this);
     gp::memory::PagedLinearAllocator* const targetArena = target.isThreadAnchor() ? nullptr : &target.m_scratchArena;
-    (void)gp::memory::FiberScratchArena::bindFiberArena(targetArena);
+    gp::memory::FiberScratchArena::bindFiberArena(targetArena);
 
     const gp::platform::FiberContextResult switchRes = m_context.switchTo(target.m_context);
     if (switchRes != gp::platform::FiberContextResult::Success) [[unlikely]]
@@ -526,7 +526,7 @@ FiberResult Fiber::switchTo(Fiber& target) noexcept
         // Roll back state and thread-local bindings if the underlying platform switch rejected the transition.
         detail::setOutgoingFiberTLS(nullptr);
         detail::setCurrentFiberTLS(this);
-        (void)gp::memory::FiberScratchArena::bindFiberArena(isThreadAnchor() ? nullptr : &m_scratchArena);
+        gp::memory::FiberScratchArena::bindFiberArena(isThreadAnchor() ? nullptr : &m_scratchArena);
         if (m_state == FiberState::Suspended)
         {
             m_state = FiberState::Running;

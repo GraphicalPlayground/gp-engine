@@ -72,7 +72,7 @@ TEST(LogFormatterTest, EvaluatesAtCompileTimeAndPreservesCStringAndEnums)
     constexpr auto buildCompileTimeString = []() consteval -> gp::FixedString<64>
     {
         gp::FixedString<64> out{};
-        (void)formatTo(out, "Code={:#06x} Level={}", 0x2Au, LogLevel::Error);
+        formatTo(out, "Code={:#06x} Level={}", 0x2Au, LogLevel::Error);
         return out;
     };
 

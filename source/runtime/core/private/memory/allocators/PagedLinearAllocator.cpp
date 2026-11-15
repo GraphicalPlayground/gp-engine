@@ -18,14 +18,14 @@ PagedLinearAllocator::PagedLinearAllocator(
     PagePool* pagePool, Malloc* backingMalloc, const bool allowOversizedMalloc, const char* poolName
 ) noexcept
 {
-    (void)initialize(pagePool, backingMalloc, allowOversizedMalloc, poolName);
+    initialize(pagePool, backingMalloc, allowOversizedMalloc, poolName);
 }
 
 PagedLinearAllocator::PagedLinearAllocator(
     PagePoolProviderFn poolProvider, Malloc* backingMalloc, const bool allowOversizedMalloc, const char* poolName
 ) noexcept
 {
-    (void)initialize(poolProvider, backingMalloc, allowOversizedMalloc, poolName);
+    initialize(poolProvider, backingMalloc, allowOversizedMalloc, poolName);
 }
 
 PagedLinearAllocator::PagedLinearAllocator(PagedLinearAllocator&& other) noexcept

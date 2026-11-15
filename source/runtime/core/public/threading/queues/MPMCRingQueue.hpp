@@ -82,7 +82,7 @@ public:
     /// @param[in] allocator Optional custom memory allocator (`nullptr` uses `gp::memory::getGlobalMalloc()`).
     explicit MPMCRingQueue(const SizeType minCapacity, gp::memory::Malloc* const allocator = nullptr) noexcept
     {
-        (void)initialize(minCapacity, allocator);
+        initialize(minCapacity, allocator);
     }
 
     /// @brief Constructs an MPMC ring queue backed by caller-provided external `SlotType` storage.

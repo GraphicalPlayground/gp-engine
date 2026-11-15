@@ -69,7 +69,7 @@ void setCurrentThreadDebuggerName(const char* name) noexcept
     if (converted > 0)
     {
         // Best-effort debugger metadata for PIX, Tracy, RenderDoc, and Visual Studio
-        (void)::SetThreadDescription(::GetCurrentThread(), wideName);
+        ::SetThreadDescription(::GetCurrentThread(), wideName);
     }
 }
 
@@ -368,7 +368,7 @@ void Thread::sleep(gp::UInt32 milliseconds) noexcept
 
 void Thread::yieldExecution() noexcept
 {
-    (void)::SwitchToThread();
+    ::SwitchToThread();
 }
 
 void Thread::spinWait() noexcept

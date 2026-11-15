@@ -95,7 +95,7 @@ JobSyncResult JobFence::reset() noexcept
     const gp::UIntPtr prev = detail::acquireFenceLock(m_state);
     if ((prev & kJobFencePointerMask) != 0ULL)
     {
-        (void)m_state.fetchAnd(~kJobFenceLockBit, gp::MemoryOrder::Release);
+        m_state.fetchAnd(~kJobFenceLockBit, gp::MemoryOrder::Release);
         return JobSyncResult::BusyWaiting;
     }
 
@@ -130,7 +130,7 @@ JobSyncResult JobFence::wait(const JobWaitMode mode) noexcept
     const gp::UIntPtr prev = detail::acquireFenceLock(m_state);
     if ((prev & kJobFenceSignaledBit) != 0ULL)
     {
-        (void)m_state.fetchAnd(~kJobFenceLockBit, gp::MemoryOrder::Release);
+        m_state.fetchAnd(~kJobFenceLockBit, gp::MemoryOrder::Release);
         return JobSyncResult::Success;
     }
 

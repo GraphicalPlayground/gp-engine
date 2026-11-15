@@ -110,7 +110,7 @@ public:
     /// @brief Restores the calling OS thread's previous `JobFiberParker` binding.
     ~ScopedJobFiberParker() noexcept
     {
-        (void)JobFiberParker::bindThreadParker(m_previousParker);
+        JobFiberParker::bindThreadParker(m_previousParker);
     }
 
     ScopedJobFiberParker(const ScopedJobFiberParker&) = delete;

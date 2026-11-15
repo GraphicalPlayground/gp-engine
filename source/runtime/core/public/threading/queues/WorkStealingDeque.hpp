@@ -70,7 +70,7 @@ public:
     /// @param[in] allocator Optional custom memory allocator (`nullptr` uses `gp::memory::getGlobalMalloc()`).
     explicit WorkStealingDeque(const SizeType minCapacity, gp::memory::Malloc* const allocator = nullptr) noexcept
     {
-        (void)initialize(minCapacity, allocator);
+        initialize(minCapacity, allocator);
     }
 
     /// @brief Constructs a work-stealing deque backed by caller-provided external storage.

@@ -245,7 +245,7 @@ protected:
                 }
             };
 
-            (void)getBackend()->getDialog().showOpenFileDialog(fileDesc);
+            getBackend()->getDialog().showOpenFileDialog(fileDesc);
         }
     }
 

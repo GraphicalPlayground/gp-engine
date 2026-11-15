@@ -220,7 +220,7 @@ ClipboardResult Clipboard::readData(StringView mimeType, ClipboardDataCallback c
 
 bool Clipboard::clear() noexcept
 {
-    (void)gp::hal::generic::Clipboard::clear();
+    gp::hal::generic::Clipboard::clear();
     return SDL_ClearClipboardData();
 }
 

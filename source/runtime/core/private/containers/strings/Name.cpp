@@ -361,7 +361,7 @@ Name::Name(const BasicStringView<char> str, const NameFindMode findMode) noexcep
 
     BasicStringView<char> baseStr{};
     gp::Int32 internalNumber = kNameNoNumber;
-    (void)NamePool::splitNameWithCheck(str, baseStr, internalNumber);
+    NamePool::splitNameWithCheck(str, baseStr, internalNumber);
 
     if (NamePool::isCanonicalNone(baseStr))
     {
@@ -479,7 +479,7 @@ bool Name::equalsString(const BasicStringView<char> str, const SearchCase search
 
     BasicStringView<char> rhsBase{};
     gp::Int32 rhsInternalNumber = kNameNoNumber;
-    (void)NamePool::splitNameWithCheck(str, rhsBase, rhsInternalNumber);
+    NamePool::splitNameWithCheck(str, rhsBase, rhsInternalNumber);
 
     if (m_number != rhsInternalNumber)
     {
