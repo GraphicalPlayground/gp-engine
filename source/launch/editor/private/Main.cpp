@@ -8,6 +8,7 @@
 #include "Launch.hpp"
 #include "logging/LogMacros.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "profiling/Profiler.hpp"
 
 namespace gp
 {
@@ -36,6 +37,8 @@ protected:
     /// @return True to proceed into the main loop.
     [[nodiscard]] bool onInitialize() noexcept override
     {
+        GP_PROFILE_SCOPE_NC("EditorApplication::OnInitialize", GP_U32_COLOR_PURPLE);
+
         const gp::UInt32 argumentCount = CommandLine::getArgumentCount();
         for (gp::UInt32 i = 0u; i < argumentCount; ++i)
         {
@@ -90,6 +93,8 @@ protected:
     /// @param[in] timeStats Comprehensive per-frame timing snapshot.
     void onUpdate(const gp::time::FrameTimeStats& timeStats) noexcept override
     {
+        GP_PROFILE_SCOPE_NC("EditorApplication::OnUpdate", GP_U32_COLOR_GREEN);
+
         const gp::hal::input::IInputSystem& input = getInput();
 
         // Check for exit commands using keyboard Scancodes or Keycodes
@@ -248,6 +253,8 @@ protected:
     /// @param[in] timeStats Frame metrics including render interpolation alpha ($\alpha$).
     void onRender(const gp::time::FrameTimeStats& timeStats) noexcept override
     {
+        GP_PROFILE_SCOPE_NC("EditorApplication::OnRender", GP_U32_COLOR_BLUE);
+
         // Use timeStats.fixedStep.interpolationAlpha ($\alpha \in [0.0, 1.0)$)
         // to lerp visual transform matrices between previous and current physics ticks!
         [[maybe_unused]] const gp::Float32 alpha = timeStats.fixedStep.interpolationAlpha;
@@ -256,6 +263,7 @@ protected:
     /// @brief Invoked upon application shutdown.
     void onShutdown() noexcept override
     {
+        GP_PROFILE_SCOPE_NC("EditorApplication::OnShutdown", GP_U32_COLOR_RED);
         GP_LOG_INFO(LogEditor, "Application shut down cleanly.");
     }
 };
