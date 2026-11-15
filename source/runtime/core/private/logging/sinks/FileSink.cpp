@@ -88,7 +88,7 @@ void FileSink::close() noexcept
     {
         flush();
         std::FILE* const rawFile = static_cast<std::FILE*>(m_fileHandle);
-        (void)std::fclose(rawFile);
+        std::fclose(rawFile);
         m_fileHandle = nullptr;
     }
 }
@@ -117,7 +117,7 @@ void FileSink::write(const LogRecordView& record) noexcept
 
     if (lineLen <= kWriteBufferCapacity)
     {
-        (void)gp::memory::copyMemory(m_writeBuffer + m_bufferedBytes, formattedLine.data(), lineLen);
+        gp::memory::copyMemory(m_writeBuffer + m_bufferedBytes, formattedLine.data(), lineLen);
         m_bufferedBytes += lineLen;
     }
     else
@@ -143,7 +143,7 @@ void FileSink::flush() noexcept
 
     flushInternalBuffer();
     std::FILE* const rawFile = static_cast<std::FILE*>(m_fileHandle);
-    (void)std::fflush(rawFile);
+    std::fflush(rawFile);
 }
 
 void FileSink::flushInternalBuffer() noexcept

@@ -164,7 +164,7 @@ static void rdgRecordDrawsParallelForCallback(
         cmdList.recordedVertexHashSum += static_cast<gp::UInt64>(drawIdx + 1u);
     }
 
-    (void)cmdList.activeRecorderCount.fetchSub(1u, gp::MemoryOrder::Release);
+    cmdList.activeRecorderCount.fetchSub(1u, gp::MemoryOrder::Release);
 }
 
 /// @brief Shared context for nested `parallelFor` inside `parallelFor` execution tests.

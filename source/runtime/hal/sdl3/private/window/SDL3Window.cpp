@@ -103,11 +103,11 @@ void Window::open() noexcept
     const SDL_PropertiesID props = SDL_CreateProperties();
 
     // m_titleBuffer is guaranteed null-terminated by GenericWindow::cacheTitleString()
-    (void)SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, m_titleBuffer);
-    (void)SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, static_cast<Sint64>(m_desc.size.width));
-    (void)SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, static_cast<Sint64>(m_desc.size.height));
-    (void)SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, static_cast<Sint64>(m_desc.position.x));
-    (void)SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, static_cast<Sint64>(m_desc.position.y));
+    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, m_titleBuffer);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, static_cast<Sint64>(m_desc.size.width));
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, static_cast<Sint64>(m_desc.size.height));
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, static_cast<Sint64>(m_desc.position.x));
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, static_cast<Sint64>(m_desc.position.y));
 
     SDL_WindowFlags flags = SDL_WINDOW_HIDDEN;   // Visibility is applied explicitly after configuration.
 
@@ -158,7 +158,7 @@ void Window::open() noexcept
         flags |= SDL_WINDOW_NOT_FOCUSABLE;
     }
 
-    (void)SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, static_cast<Sint64>(flags));
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, static_cast<Sint64>(flags));
 
     // Support embedding the engine viewport inside an external editor/tool parent window
     switch (m_desc.nativeParentHandle.backend)
@@ -166,7 +166,7 @@ void Window::open() noexcept
     case NativeWindowBackend::Win32:
         if (m_desc.nativeParentHandle.win32.hwnd != nullptr)
         {
-            (void)SDL_SetPointerProperty(
+            SDL_SetPointerProperty(
                 props, SDL_PROP_WINDOW_CREATE_WIN32_HWND_POINTER, m_desc.nativeParentHandle.win32.hwnd
             );
         }
@@ -174,7 +174,7 @@ void Window::open() noexcept
     case NativeWindowBackend::Cocoa:
         if (m_desc.nativeParentHandle.cocoa.nsWindow != nullptr)
         {
-            (void)SDL_SetPointerProperty(
+            SDL_SetPointerProperty(
                 props, SDL_PROP_WINDOW_CREATE_COCOA_WINDOW_POINTER, m_desc.nativeParentHandle.cocoa.nsWindow
             );
         }
@@ -182,7 +182,7 @@ void Window::open() noexcept
     case NativeWindowBackend::X11:
         if (m_desc.nativeParentHandle.x11.window != 0u)
         {
-            (void)SDL_SetNumberProperty(
+            SDL_SetNumberProperty(
                 props,
                 SDL_PROP_WINDOW_CREATE_X11_WINDOW_NUMBER,
                 static_cast<Sint64>(m_desc.nativeParentHandle.x11.window)
@@ -192,7 +192,7 @@ void Window::open() noexcept
     case NativeWindowBackend::Wayland:
         if (m_desc.nativeParentHandle.wayland.surface != nullptr)
         {
-            (void)SDL_SetPointerProperty(
+            SDL_SetPointerProperty(
                 props, SDL_PROP_WINDOW_CREATE_WAYLAND_WL_SURFACE_POINTER, m_desc.nativeParentHandle.wayland.surface
             );
         }
@@ -219,21 +219,21 @@ void Window::open() noexcept
 
     if (m_desc.minimumSize.width > 0u || m_desc.minimumSize.height > 0u)
     {
-        (void)SDL_SetWindowMinimumSize(
+        SDL_SetWindowMinimumSize(
             m_window, static_cast<int>(m_desc.minimumSize.width), static_cast<int>(m_desc.minimumSize.height)
         );
     }
 
     if (m_desc.maximumSize.width > 0u || m_desc.maximumSize.height > 0u)
     {
-        (void)SDL_SetWindowMaximumSize(
+        SDL_SetWindowMaximumSize(
             m_window, static_cast<int>(m_desc.maximumSize.width), static_cast<int>(m_desc.maximumSize.height)
         );
     }
 
     if (m_desc.opacity >= 0.0f && m_desc.opacity < 1.0f)
     {
-        (void)SDL_SetWindowOpacity(m_window, m_desc.opacity);
+        SDL_SetWindowOpacity(m_window, m_desc.opacity);
     }
 
     setCursorShape(m_desc.cursorShape);
@@ -241,28 +241,28 @@ void Window::open() noexcept
 
     if (m_desc.grabMouse)
     {
-        (void)SDL_SetWindowMouseGrab(m_window, true);
+        SDL_SetWindowMouseGrab(m_window, true);
     }
     if (m_desc.grabKeyboard)
     {
-        (void)SDL_SetWindowKeyboardGrab(m_window, true);
+        SDL_SetWindowKeyboardGrab(m_window, true);
     }
 
     if (!m_desc.useHeadless && m_desc.startVisible && m_desc.initialState != WindowState::Hidden)
     {
         if (m_desc.startFocused)
         {
-            (void)SDL_ShowWindow(m_window);
-            (void)SDL_RaiseWindow(m_window);
+            SDL_ShowWindow(m_window);
+            SDL_RaiseWindow(m_window);
             m_isFocused = true;
         }
         else
         {
-            (void)SDL_SetWindowFocusable(m_window, false);
-            (void)SDL_ShowWindow(m_window);
+            SDL_SetWindowFocusable(m_window, false);
+            SDL_ShowWindow(m_window);
             if (m_desc.focusOnShow)
             {
-                (void)SDL_SetWindowFocusable(m_window, true);
+                SDL_SetWindowFocusable(m_window, true);
             }
             m_isFocused = false;
         }
@@ -295,7 +295,7 @@ void Window::show() noexcept
         return;
     }
 
-    (void)SDL_ShowWindow(m_window);
+    SDL_ShowWindow(m_window);
     gp::hal::generic::Window::show();
 }
 
@@ -306,7 +306,7 @@ void Window::hide() noexcept
         return;
     }
 
-    (void)SDL_HideWindow(m_window);
+    SDL_HideWindow(m_window);
     gp::hal::generic::Window::hide();
 }
 
@@ -317,7 +317,7 @@ void Window::minimize() noexcept
         return;
     }
 
-    (void)SDL_MinimizeWindow(m_window);
+    SDL_MinimizeWindow(m_window);
     gp::hal::generic::Window::minimize();
 }
 
@@ -328,7 +328,7 @@ void Window::maximize() noexcept
         return;
     }
 
-    (void)SDL_MaximizeWindow(m_window);
+    SDL_MaximizeWindow(m_window);
     gp::hal::generic::Window::maximize();
 }
 
@@ -339,7 +339,7 @@ void Window::restore() noexcept
         return;
     }
 
-    (void)SDL_RestoreWindow(m_window);
+    SDL_RestoreWindow(m_window);
     gp::hal::generic::Window::restore();
 }
 
@@ -350,7 +350,7 @@ void Window::focus() noexcept
         return;
     }
 
-    (void)SDL_RaiseWindow(m_window);
+    SDL_RaiseWindow(m_window);
     gp::hal::generic::Window::focus();
 }
 
@@ -361,7 +361,7 @@ void Window::requestAttention(WindowFlashMode mode) noexcept
         return;
     }
 
-    (void)SDL_FlashWindow(m_window, toSdlFlashOperation(mode));
+    SDL_FlashWindow(m_window, toSdlFlashOperation(mode));
 }
 
 void Window::centerOnDisplay([[maybe_unused]] const IDisplay* display) noexcept
@@ -373,7 +373,7 @@ void Window::centerOnDisplay([[maybe_unused]] const IDisplay* display) noexcept
 
     const SDL_DisplayID displayId = (m_currentDisplayId != 0u) ? m_currentDisplayId : SDL_GetDisplayForWindow(m_window);
     const int centeredPos = static_cast<int>(SDL_WINDOWPOS_CENTERED_DISPLAY(displayId));
-    (void)SDL_SetWindowPosition(m_window, centeredPos, centeredPos);
+    SDL_SetWindowPosition(m_window, centeredPos, centeredPos);
 
     int actualX = 0;
     int actualY = 0;
@@ -389,7 +389,7 @@ void Window::setPosition(const Point2D& position) noexcept
 
     if (m_window != nullptr)
     {
-        (void)SDL_SetWindowPosition(m_window, position.x, position.y);
+        SDL_SetWindowPosition(m_window, position.x, position.y);
     }
 }
 
@@ -404,7 +404,7 @@ void Window::setSize(const Extent2D& size) noexcept
 
     if (m_window != nullptr)
     {
-        (void)SDL_SetWindowSize(m_window, static_cast<int>(size.width), static_cast<int>(size.height));
+        SDL_SetWindowSize(m_window, static_cast<int>(size.width), static_cast<int>(size.height));
         refreshShadowMetrics();
     }
 }
@@ -418,7 +418,7 @@ void Window::setFullSize(const Extent2D& size) noexcept
 {
     if (m_window != nullptr)
     {
-        (void)SDL_GetWindowBordersSize(m_window, &m_borderTop, &m_borderLeft, &m_borderBottom, &m_borderRight);
+        SDL_GetWindowBordersSize(m_window, &m_borderTop, &m_borderLeft, &m_borderBottom, &m_borderRight);
     }
 
     gp::hal::generic::Window::setFullSize(size);
@@ -441,7 +441,7 @@ void Window::setMinimumSize(const Extent2D& size) noexcept
 
     if (m_window != nullptr)
     {
-        (void)SDL_SetWindowMinimumSize(m_window, static_cast<int>(size.width), static_cast<int>(size.height));
+        SDL_SetWindowMinimumSize(m_window, static_cast<int>(size.width), static_cast<int>(size.height));
     }
 }
 
@@ -456,7 +456,7 @@ void Window::setMaximumSize(const Extent2D& size) noexcept
 
     if (m_window != nullptr)
     {
-        (void)SDL_SetWindowMaximumSize(m_window, static_cast<int>(size.width), static_cast<int>(size.height));
+        SDL_SetWindowMaximumSize(m_window, static_cast<int>(size.width), static_cast<int>(size.height));
     }
 }
 
@@ -471,7 +471,7 @@ void Window::setTitle(StringView title) noexcept
 
     if (m_window != nullptr)
     {
-        (void)SDL_SetWindowTitle(m_window, m_titleBuffer);
+        SDL_SetWindowTitle(m_window, m_titleBuffer);
     }
 }
 
@@ -481,7 +481,7 @@ void Window::setOpacity(Float32 opacity) noexcept
 
     if (m_window != nullptr && !m_desc.useHeadless)
     {
-        (void)SDL_SetWindowOpacity(m_window, m_desc.opacity);
+        SDL_SetWindowOpacity(m_window, m_desc.opacity);
     }
 }
 
@@ -491,7 +491,7 @@ void Window::setResizable(bool resizable) noexcept
 
     if (m_window != nullptr)
     {
-        (void)SDL_SetWindowResizable(m_window, resizable);
+        SDL_SetWindowResizable(m_window, resizable);
     }
 }
 
@@ -501,7 +501,7 @@ void Window::setAlwaysOnTop(bool alwaysOnTop) noexcept
 
     if (m_window != nullptr)
     {
-        (void)SDL_SetWindowAlwaysOnTop(m_window, alwaysOnTop);
+        SDL_SetWindowAlwaysOnTop(m_window, alwaysOnTop);
     }
 }
 
@@ -517,18 +517,18 @@ void Window::setWindowMode(WindowMode mode, const IDisplay* targetDisplay) noexc
     switch (mode)
     {
     case WindowMode::Windowed:
-        (void)SDL_SetWindowFullscreen(m_window, false);
-        (void)SDL_SetWindowBordered(m_window, gp::enums::hasAllFlags(m_desc.style, WindowStyle::TitleBar));
+        SDL_SetWindowFullscreen(m_window, false);
+        SDL_SetWindowBordered(m_window, gp::enums::hasAllFlags(m_desc.style, WindowStyle::TitleBar));
         break;
 
     case WindowMode::Borderless:
-        (void)SDL_SetWindowFullscreen(m_window, false);
-        (void)SDL_SetWindowBordered(m_window, false);
+        SDL_SetWindowFullscreen(m_window, false);
+        SDL_SetWindowBordered(m_window, false);
         break;
 
     case WindowMode::Fullscreen:
     case WindowMode::FullscreenDesktop:
-        (void)SDL_SetWindowFullscreen(m_window, true);
+        SDL_SetWindowFullscreen(m_window, true);
         break;
 
     default:
@@ -550,26 +550,26 @@ void Window::setCursorMode(CursorMode mode) noexcept
     switch (mode)
     {
     case CursorMode::Normal:
-        (void)SDL_SetWindowRelativeMouseMode(m_window, false);
-        (void)SDL_SetWindowMouseGrab(m_window, m_desc.grabMouse);
-        (void)SDL_ShowCursor();
+        SDL_SetWindowRelativeMouseMode(m_window, false);
+        SDL_SetWindowMouseGrab(m_window, m_desc.grabMouse);
+        SDL_ShowCursor();
         break;
 
     case CursorMode::Hidden:
-        (void)SDL_SetWindowRelativeMouseMode(m_window, false);
-        (void)SDL_SetWindowMouseGrab(m_window, m_desc.grabMouse);
-        (void)SDL_HideCursor();
+        SDL_SetWindowRelativeMouseMode(m_window, false);
+        SDL_SetWindowMouseGrab(m_window, m_desc.grabMouse);
+        SDL_HideCursor();
         break;
 
     case CursorMode::Locked:
         // SDL3 relative mouse mode hides the cursor, locks it to the window, and emits raw relative deltas.
-        (void)SDL_SetWindowRelativeMouseMode(m_window, true);
+        SDL_SetWindowRelativeMouseMode(m_window, true);
         break;
 
     case CursorMode::Confined:
-        (void)SDL_SetWindowRelativeMouseMode(m_window, false);
-        (void)SDL_SetWindowMouseGrab(m_window, true);
-        (void)SDL_ShowCursor();
+        SDL_SetWindowRelativeMouseMode(m_window, false);
+        SDL_SetWindowMouseGrab(m_window, true);
+        SDL_ShowCursor();
         break;
 
     default:
@@ -583,7 +583,7 @@ void Window::setMouseGrabbed(bool grabbed) noexcept
 
     if (m_window != nullptr && m_desc.cursorMode != CursorMode::Confined && m_desc.cursorMode != CursorMode::Locked)
     {
-        (void)SDL_SetWindowMouseGrab(m_window, grabbed);
+        SDL_SetWindowMouseGrab(m_window, grabbed);
     }
 }
 
@@ -593,7 +593,7 @@ void Window::setKeyboardGrabbed(bool grabbed) noexcept
 
     if (m_window != nullptr)
     {
-        (void)SDL_SetWindowKeyboardGrab(m_window, grabbed);
+        SDL_SetWindowKeyboardGrab(m_window, grabbed);
     }
 }
 
@@ -609,7 +609,7 @@ void Window::setCursorShape(CursorShape shape) noexcept
     SDL_Cursor* newCursor = SDL_CreateSystemCursor(toSdlSystemCursor(shape));
     if (newCursor != nullptr)
     {
-        (void)SDL_SetCursor(newCursor);
+        SDL_SetCursor(newCursor);
         if (m_cursor != nullptr)
         {
             SDL_DestroyCursor(m_cursor);
@@ -661,7 +661,7 @@ void Window::refreshShadowMetrics() noexcept
         m_framebufferSize = m_desc.size;
     }
 
-    (void)SDL_GetWindowBordersSize(m_window, &m_borderTop, &m_borderLeft, &m_borderBottom, &m_borderRight);
+    SDL_GetWindowBordersSize(m_window, &m_borderTop, &m_borderLeft, &m_borderBottom, &m_borderRight);
 
     const float scale = SDL_GetWindowDisplayScale(m_window);
     m_contentScale = (scale > 0.0f) ? scale : 1.0f;

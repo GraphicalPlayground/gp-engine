@@ -90,7 +90,7 @@ public:
     /// @param[in] capacityInElements Exact capacity in elements (must be a power of two).
     SPSCRingBuffer(PointerType externalBuffer, SizeType capacityInElements) noexcept
     {
-        (void)initializeWithExternalBuffer(externalBuffer, capacityInElements);
+        initializeWithExternalBuffer(externalBuffer, capacityInElements);
     }
 
     /// @brief Deleted copy constructor enforcing single ownership of lock-free state.

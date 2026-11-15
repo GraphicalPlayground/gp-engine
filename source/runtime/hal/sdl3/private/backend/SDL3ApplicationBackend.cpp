@@ -301,7 +301,7 @@ BackendResult ApplicationBackend::initialize(const ApplicationBackendDesc& desc)
     m_config = desc;
 
     // Register application metadata with the OS prior to initializing subsystems
-    (void)SDL_SetAppMetadata(
+    SDL_SetAppMetadata(
         desc.appName != nullptr ? desc.appName.data() : "GP-Engine",
         desc.appVersion != nullptr ? desc.appVersion.data() : "1.0.0",
         desc.appIdentifier != nullptr ? desc.appIdentifier.data() : "com.graphical-playground.engine"
@@ -361,7 +361,7 @@ void ApplicationBackend::wakeEventLoop() noexcept
 
     SDL_Event wakeEvent{};
     wakeEvent.type = m_wakeEventType;
-    (void)SDL_PushEvent(&wakeEvent);
+    SDL_PushEvent(&wakeEvent);
 }
 
 template <typename PayloadT>
@@ -1267,7 +1267,7 @@ void ApplicationBackend::refreshDisplays() noexcept
         {
             const DisplayId currentId = static_cast<DisplayId>(ids[i]);
             m_sdlDisplays[i].initialize(currentId, currentId == primaryId);
-            (void)registerDisplay(&m_sdlDisplays[i]);
+            registerDisplay(&m_sdlDisplays[i]);
         }
     }
 
@@ -1294,7 +1294,7 @@ void ApplicationBackend::onBackendDisplayConnected(DisplayId displayId) noexcept
         if (m_sdlDisplays[i].getId() == displayId)
         {
             m_sdlDisplays[i].initialize(displayId, displayId == primaryId);
-            (void)registerDisplay(&m_sdlDisplays[i]);
+            registerDisplay(&m_sdlDisplays[i]);
             return;
         }
     }
@@ -1305,7 +1305,7 @@ void ApplicationBackend::onBackendDisplayConnected(DisplayId displayId) noexcept
         if (!m_sdlDisplays[i].isValid())
         {
             m_sdlDisplays[i].initialize(displayId, displayId == primaryId);
-            (void)registerDisplay(&m_sdlDisplays[i]);
+            registerDisplay(&m_sdlDisplays[i]);
             return;
         }
     }

@@ -297,7 +297,7 @@ struct LogFormatString
         : format(inStr)
         , location(LogSourceLocation::current(inLoc))
     {
-        (void)detail::validateFormatString(format, sizeof...(InArgs));
+        detail::validateFormatString(format, sizeof...(InArgs));
     }
 };
 

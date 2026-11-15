@@ -113,7 +113,7 @@ TEST(FiberScratchAllocatorTest, SameThreadCooperativeFiberYieldOutOfOrderUnwindP
     FiberScratchAllocator scratch{};
 
     // 1. Fiber 1 begins executing on Worker Thread 0
-    (void)FiberScratchArena::bindFiberArena(&fiber1Arena);
+    FiberScratchArena::bindFiberArena(&fiber1Arena);
     EXPECT_EQ(FiberScratchArena::getBoundFiberArena(), &fiber1Arena);
 
     ScopedFiberScratchMark fiber1Scope{};
@@ -125,7 +125,7 @@ TEST(FiberScratchAllocatorTest, SameThreadCooperativeFiberYieldOutOfOrderUnwindP
     }
 
     // 2. Fiber 1 yields at `waitForCounter()`; Worker Thread 0 switches to Fiber 2
-    (void)FiberScratchArena::bindFiberArena(&fiber2Arena);
+    FiberScratchArena::bindFiberArena(&fiber2Arena);
     EXPECT_EQ(FiberScratchArena::getBoundFiberArena(), &fiber2Arena);
     EXPECT_FALSE(fiber1Scope.isArenaBoundToCurrentContext());
 
@@ -141,7 +141,7 @@ TEST(FiberScratchAllocatorTest, SameThreadCooperativeFiberYieldOutOfOrderUnwindP
     EXPECT_EQ(FiberScratchArena::getSharedPagePool().getLeasedPageCount(), 2u);
 
     // 3. Fiber 2 yields; Worker Thread 0 switches back to Fiber 1 first (out-of-order completion!)
-    (void)FiberScratchArena::bindFiberArena(&fiber1Arena);
+    FiberScratchArena::bindFiberArena(&fiber1Arena);
     EXPECT_TRUE(fiber1Scope.isArenaBoundToCurrentContext());
 
     // Fiber 1 grows its allocation in-place and rewinds its scope BEFORE Fiber 2 finishes
@@ -157,7 +157,7 @@ TEST(FiberScratchAllocatorTest, SameThreadCooperativeFiberYieldOutOfOrderUnwindP
     EXPECT_EQ(FiberScratchArena::getSharedPagePool().getLeasedPageCount(), 1u);
 
     // 4. Worker Thread 0 switches back to Fiber 2; Fiber 2's allocation must be 100% intact and uncorrupted!
-    (void)FiberScratchArena::bindFiberArena(&fiber2Arena);
+    FiberScratchArena::bindFiberArena(&fiber2Arena);
     EXPECT_TRUE(scratch.owns(fiber2Data));
     for (gp::USize i = 0u; i < 1024u; ++i)
     {
@@ -168,7 +168,7 @@ TEST(FiberScratchAllocatorTest, SameThreadCooperativeFiberYieldOutOfOrderUnwindP
     EXPECT_EQ(fiber2Arena.getLeasedPageCount(), 0u);
     EXPECT_EQ(FiberScratchArena::getSharedPagePool().getLeasedPageCount(), 0u);
 
-    (void)FiberScratchArena::bindFiberArena(nullptr);
+    FiberScratchArena::bindFiberArena(nullptr);
     FiberScratchArena::shutdownPool();
 }
 
@@ -342,7 +342,7 @@ TEST(FiberScratchAllocatorTest, ThreadScratchEpochCounterAdvancesOnFiberBindAndY
         ScopedFiberArenaBind bind(fiberArena);
         EXPECT_EQ(FiberScratchArena::getThreadSwitchEpoch(), initialEpoch + 1ull);
 
-        (void)FiberScratchArena::notifyFiberYield();
+        FiberScratchArena::notifyFiberYield();
         EXPECT_EQ(FiberScratchArena::getThreadSwitchEpoch(), initialEpoch + 2ull);
     }
 

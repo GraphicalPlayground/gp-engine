@@ -793,7 +793,7 @@ constexpr void convert(const container::BasicStringView<InSrcCharT> src, InDstSt
     if constexpr (requires(InDstStringT& s, gp::USize n) { s.resizeUninitialized(n); })
     {
         outDst.resizeUninitialized(requiredLen);
-        (void)transcodeToBuffer<DstCharT>(src, outDst.data(), requiredLen);
+        transcodeToBuffer<DstCharT>(src, outDst.data(), requiredLen);
     }
     else
     {

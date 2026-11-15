@@ -75,7 +75,7 @@ constexpr gp::UInt32 kLinuxTaskCommLimit = 16u;
             commName[i] = name[i];
         }
         commName[i] = '\0';
-        (void)::pthread_setname_np(::pthread_self(), commName);
+        ::pthread_setname_np(::pthread_self(), commName);
     }
 
     return Thread::currentThreadId();
@@ -177,7 +177,7 @@ ThreadResult Thread::setPriority(const ThreadPriority priority) noexcept
         if (::pthread_getschedparam(nativeThread, &currentPolicy, &currentParam) == 0 && currentPolicy != SCHED_OTHER)
         {
             currentParam.sched_priority = 0;
-            (void)::pthread_setschedparam(nativeThread, SCHED_OTHER, &currentParam);
+            ::pthread_setschedparam(nativeThread, SCHED_OTHER, &currentParam);
         }
     }
 

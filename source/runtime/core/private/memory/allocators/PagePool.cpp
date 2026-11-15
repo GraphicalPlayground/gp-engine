@@ -17,14 +17,14 @@ PagePool::PagePool(
     const gp::USize pageSizeInBytes, const gp::UInt32 pageCount, Malloc* backingMalloc, const char* poolName
 ) noexcept
 {
-    (void)initialize(pageSizeInBytes, pageCount, backingMalloc, poolName);
+    initialize(pageSizeInBytes, pageCount, backingMalloc, poolName);
 }
 
 PagePool::PagePool(
     void* externalBuffer, const gp::USize capacityInBytes, const gp::USize pageSizeInBytes, const char* poolName
 ) noexcept
 {
-    (void)initialize(externalBuffer, capacityInBytes, pageSizeInBytes, poolName);
+    initialize(externalBuffer, capacityInBytes, pageSizeInBytes, poolName);
 }
 
 PagePool::~PagePool() noexcept

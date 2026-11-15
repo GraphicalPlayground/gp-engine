@@ -271,7 +271,7 @@ void Logger::submit(
     const gp::USize clampedLen = (message.size() <= kMaxLogMessageLength) ? message.size() : kMaxLogMessageLength;
     if (clampedLen > 0u)
     {
-        (void)gp::memory::copyMemory(entry.message, message.data(), clampedLen);
+        gp::memory::copyMemory(entry.message, message.data(), clampedLen);
     }
     entry.message[clampedLen] = '\0';
     entry.messageLength = static_cast<gp::UInt16>(clampedLen);

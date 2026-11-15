@@ -115,7 +115,7 @@ void JobCounter::notifyWaiters() noexcept
     const gp::UInt64 unlockAndSubDelta = (static_cast<gp::UInt64>(wokenCount) << kJobCounterWaiterShift) |
                                          (clearThresholdBit ? kJobCounterHasThresholdWaiterBit : 0ULL) |
                                          kJobCounterLockBit;
-    (void)m_state.fetchSub(unlockAndSubDelta, gp::MemoryOrder::Release);
+    m_state.fetchSub(unlockAndSubDelta, gp::MemoryOrder::Release);
 
     // Notify all detached waiters outside the wait-list lock. Copy node fields into registers before storing
     // JobWaitNodeState::Signaled because the waiter's stack frame may unwind immediately upon observing Signaled.
@@ -188,7 +188,7 @@ JobSyncResult JobCounter::decrement(const JobCounterValue delta, JobCounterValue
     if (prevCount < delta) [[unlikely]]
     {
         // Roll back concurrent underflow without leaving borrowed upper bits in m_state.
-        (void)m_state.fetchAdd(static_cast<gp::UInt64>(delta), gp::MemoryOrder::Relaxed);
+        m_state.fetchAdd(static_cast<gp::UInt64>(delta), gp::MemoryOrder::Relaxed);
         return JobSyncResult::CounterUnderflow;
     }
 
@@ -220,7 +220,7 @@ JobSyncResult JobCounter::reset(const JobCounterValue newCount) noexcept
     const gp::UInt64 lockedState = m_state.load(gp::MemoryOrder::Acquire);
     if (unpackWaiterCount(lockedState) != 0u || m_waitListHead != nullptr)
     {
-        (void)m_state.fetchAnd(~kJobCounterLockBit, gp::MemoryOrder::Release);
+        m_state.fetchAnd(~kJobCounterLockBit, gp::MemoryOrder::Release);
         return JobSyncResult::BusyWaiting;
     }
 
@@ -258,7 +258,7 @@ JobSyncResult JobCounter::wait(const JobCounterValue targetCount, const JobWaitM
     const gp::UInt64 lockedState = m_state.load(gp::MemoryOrder::Acquire);
     if (unpackCount(lockedState) <= targetCount)
     {
-        (void)m_state.fetchAnd(~kJobCounterLockBit, gp::MemoryOrder::Release);
+        m_state.fetchAnd(~kJobCounterLockBit, gp::MemoryOrder::Release);
         return JobSyncResult::Success;
     }
 
@@ -275,7 +275,7 @@ JobSyncResult JobCounter::wait(const JobCounterValue targetCount, const JobWaitM
     const bool setThresholdBit = (targetCount > 0u) && ((lockedState & kJobCounterHasThresholdWaiterBit) == 0ULL);
     const gp::UInt64 unlockAndAddDelta =
         kJobCounterAddWaiterAndUnlockDelta | (setThresholdBit ? kJobCounterHasThresholdWaiterBit : 0ULL);
-    (void)m_state.fetchAdd(unlockAndAddDelta, gp::MemoryOrder::Release);
+    m_state.fetchAdd(unlockAndAddDelta, gp::MemoryOrder::Release);
 
     if (canYieldFiber)
     {
@@ -338,12 +338,12 @@ JobSyncResult JobCounter::wait(const JobCounterValue targetCount, const JobWaitM
                     const gp::UInt64 unlinkSubDelta = kJobCounterOneWaiter |
                                                       (clearThresholdBit ? kJobCounterHasThresholdWaiterBit : 0ULL) |
                                                       kJobCounterLockBit;
-                    (void)m_state.fetchSub(unlinkSubDelta, gp::MemoryOrder::Release);
+                    m_state.fetchSub(unlinkSubDelta, gp::MemoryOrder::Release);
                     waitNode.state.store(JobWaitNodeState::Signaled, gp::MemoryOrder::Release);
                 }
                 else
                 {
-                    (void)m_state.fetchAnd(~kJobCounterLockBit, gp::MemoryOrder::Release);
+                    m_state.fetchAnd(~kJobCounterLockBit, gp::MemoryOrder::Release);
                     while (!waitNode.isSignaled(gp::MemoryOrder::Acquire))
                     {
                         gp::platform::Thread::spinWait();

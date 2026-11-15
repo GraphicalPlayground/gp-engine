@@ -21,7 +21,7 @@ PoolAllocator::PoolAllocator(
     const char* poolName
 ) noexcept
 {
-    (void)initialize(blockSize, blockCount, blockAlignment, backingMalloc, poolName);
+    initialize(blockSize, blockCount, blockAlignment, backingMalloc, poolName);
 }
 
 PoolAllocator::PoolAllocator(
@@ -32,7 +32,7 @@ PoolAllocator::PoolAllocator(
     const char* poolName
 ) noexcept
 {
-    (void)initialize(externalBuffer, capacityInBytes, blockSize, blockAlignment, poolName);
+    initialize(externalBuffer, capacityInBytes, blockSize, blockAlignment, poolName);
 }
 
 PoolAllocator::PoolAllocator(PoolAllocator&& other) noexcept

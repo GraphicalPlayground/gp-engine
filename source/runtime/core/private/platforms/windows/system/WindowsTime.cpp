@@ -84,7 +84,7 @@ gp::UInt64 Time::performanceFrequency() noexcept
     if (s_frequency == 0ULL) [[unlikely]]
     {
         LARGE_INTEGER freq{};
-        (void)::QueryPerformanceFrequency(&freq);
+        ::QueryPerformanceFrequency(&freq);
         s_frequency = (freq.QuadPart > 0) ? static_cast<gp::UInt64>(freq.QuadPart) : detail::kStandardWin32QpcFrequency;
     }
     return s_frequency;
@@ -93,7 +93,7 @@ gp::UInt64 Time::performanceFrequency() noexcept
 gp::UInt64 Time::rawPerformanceCounter() noexcept
 {
     LARGE_INTEGER counter{};
-    (void)::QueryPerformanceCounter(&counter);
+    ::QueryPerformanceCounter(&counter);
     return static_cast<gp::UInt64>(counter.QuadPart);
 }
 
@@ -179,7 +179,7 @@ void Time::sleepNanoseconds(gp::UInt64 nanoseconds) noexcept
 
         if (::SetWaitableTimerEx(s_tlsTimer.timerHandle, &dueTime, 0, nullptr, nullptr, nullptr, 0) != FALSE)
         {
-            (void)::WaitForSingleObject(s_tlsTimer.timerHandle, INFINITE);
+            ::WaitForSingleObject(s_tlsTimer.timerHandle, INFINITE);
             return;
         }
     }

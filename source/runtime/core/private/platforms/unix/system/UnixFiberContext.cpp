@@ -346,7 +346,7 @@ FiberContextResult FiberContext::create(const FiberContextDesc& desc) noexcept
     {
         if (::mprotect(mappedBase, pageSize, PROT_NONE) != 0)
         {
-            (void)::munmap(mappedBase, totalMappedBytes);
+            ::munmap(mappedBase, totalMappedBytes);
             return FiberContextResult::GuardPageFailed;
         }
     }
@@ -384,7 +384,7 @@ FiberContextResult FiberContext::destroy() noexcept
 
     if (m_allocationBase != nullptr && m_allocationSize > 0u)
     {
-        (void)::munmap(m_allocationBase, m_allocationSize);
+        ::munmap(m_allocationBase, m_allocationSize);
     }
 
     m_stackPointer = nullptr;

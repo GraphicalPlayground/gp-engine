@@ -34,19 +34,19 @@ void ConsoleSink::write(const LogRecordView& record) noexcept
     std::FILE* const targetStream =
         (static_cast<gp::UInt8>(record.level) >= static_cast<gp::UInt8>(m_stderrThreshold)) ? stderr : stdout;
 
-    (void)std::fwrite(formattedLine.data(), sizeof(char), formattedLine.size(), targetStream);
+    std::fwrite(formattedLine.data(), sizeof(char), formattedLine.size(), targetStream);
 
     const bool flushEvery = (m_flags & LogSinkFlags::FlushEveryRecord) != LogSinkFlags::None;
     if (flushEvery || static_cast<gp::UInt8>(record.level) >= static_cast<gp::UInt8>(LogLevel::Warning))
     {
-        (void)std::fflush(targetStream);
+        std::fflush(targetStream);
     }
 }
 
 void ConsoleSink::flush() noexcept
 {
-    (void)std::fflush(stdout);
-    (void)std::fflush(stderr);
+    std::fflush(stdout);
+    std::fflush(stderr);
 }
 
 }   // namespace gp::log

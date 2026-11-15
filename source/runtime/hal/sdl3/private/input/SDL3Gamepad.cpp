@@ -69,7 +69,7 @@ bool Gamepad::openSdlGamepad(gp::hal::input::InputDeviceId deviceId, gp::hal::in
         m_supportsLED = SDL_GetBooleanProperty(props, SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN, false);
     }
 
-    (void)setPlayerLED(slot);
+    setPlayerLED(slot);
     return true;
 }
 
@@ -122,8 +122,8 @@ void Gamepad::stopHaptics() noexcept
 {
     if (m_sdlGamepad != nullptr)
     {
-        (void)SDL_RumbleGamepad(m_sdlGamepad, 0u, 0u, 0u);
-        (void)SDL_RumbleGamepadTriggers(m_sdlGamepad, 0u, 0u, 0u);
+        SDL_RumbleGamepad(m_sdlGamepad, 0u, 0u, 0u);
+        SDL_RumbleGamepadTriggers(m_sdlGamepad, 0u, 0u, 0u);
     }
 }
 

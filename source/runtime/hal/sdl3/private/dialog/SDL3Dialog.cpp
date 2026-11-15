@@ -192,19 +192,19 @@ void SDLCALL onSdlFileDialogComplete(void* userdata, const char* const* filelist
 
     if (SDL_Window* sdlParent = extractSdlParentWindow(desc.parentWindow))
     {
-        (void)SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, sdlParent);
+        SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, sdlParent);
     }
 
     if (ctx->filterCount > 0u)
     {
-        (void)SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_FILTERS_POINTER, ctx->sdlFilters);
-        (void)SDL_SetNumberProperty(props, SDL_PROP_FILE_DIALOG_NFILTERS_NUMBER, static_cast<Sint64>(ctx->filterCount));
+        SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_FILTERS_POINTER, ctx->sdlFilters);
+        SDL_SetNumberProperty(props, SDL_PROP_FILE_DIALOG_NFILTERS_NUMBER, static_cast<Sint64>(ctx->filterCount));
     }
 
     char locationBuf[kMaxPathBytes]{};
     if (!desc.defaultLocation.isEmpty())
     {
-        (void)SDL_SetStringProperty(
+        SDL_SetStringProperty(
             props, SDL_PROP_FILE_DIALOG_LOCATION_STRING, copyStringViewToNullTerm(desc.defaultLocation, locationBuf)
         );
     }
@@ -212,15 +212,13 @@ void SDLCALL onSdlFileDialogComplete(void* userdata, const char* const* filelist
     char titleBuf[kMaxTitleBytes]{};
     if (!desc.title.isEmpty())
     {
-        (void)SDL_SetStringProperty(
-            props, SDL_PROP_FILE_DIALOG_TITLE_STRING, copyStringViewToNullTerm(desc.title, titleBuf)
-        );
+        SDL_SetStringProperty(props, SDL_PROP_FILE_DIALOG_TITLE_STRING, copyStringViewToNullTerm(desc.title, titleBuf));
     }
 
     char acceptBuf[kMaxButtonLabelBytes]{};
     if (!desc.acceptLabel.isEmpty())
     {
-        (void)SDL_SetStringProperty(
+        SDL_SetStringProperty(
             props, SDL_PROP_FILE_DIALOG_ACCEPT_STRING, copyStringViewToNullTerm(desc.acceptLabel, acceptBuf)
         );
     }
@@ -228,14 +226,14 @@ void SDLCALL onSdlFileDialogComplete(void* userdata, const char* const* filelist
     char cancelBuf[kMaxButtonLabelBytes]{};
     if (!desc.cancelLabel.isEmpty())
     {
-        (void)SDL_SetStringProperty(
+        SDL_SetStringProperty(
             props, SDL_PROP_FILE_DIALOG_CANCEL_STRING, copyStringViewToNullTerm(desc.cancelLabel, cancelBuf)
         );
     }
 
     if (dialogType != SDL_FILEDIALOG_SAVEFILE && desc.allowMultiple)
     {
-        (void)SDL_SetBooleanProperty(props, SDL_PROP_FILE_DIALOG_MANY_BOOLEAN, true);
+        SDL_SetBooleanProperty(props, SDL_PROP_FILE_DIALOG_MANY_BOOLEAN, true);
     }
 
     SDL_ShowFileDialogWithProperties(dialogType, onSdlFileDialogComplete, ctx, props);

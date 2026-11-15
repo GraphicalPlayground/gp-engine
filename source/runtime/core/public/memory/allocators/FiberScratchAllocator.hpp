@@ -121,7 +121,7 @@ public:
     /// @brief Restores the previously bound fiber arena (or `nullptr`) on the calling OS thread.
     ~ScopedFiberArenaBind() noexcept
     {
-        (void)FiberScratchArena::bindFiberArena(m_previousArena);
+        FiberScratchArena::bindFiberArena(m_previousArena);
     }
 
     ScopedFiberArenaBind(const ScopedFiberArenaBind&) = delete;

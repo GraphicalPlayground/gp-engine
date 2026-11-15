@@ -40,7 +40,7 @@ constexpr gp::UInt64 kNanosecondsPerMicrosecond = 1'000ULL;
 gp::UInt64 Time::nowNanoseconds() noexcept
 {
     struct timespec ts{};
-    (void)::clock_gettime(CLOCK_MONOTONIC, &ts);
+    ::clock_gettime(CLOCK_MONOTONIC, &ts);
     return (static_cast<gp::UInt64>(ts.tv_sec) * detail::kNanosecondsPerSecond) + static_cast<gp::UInt64>(ts.tv_nsec);
 }
 
@@ -80,20 +80,20 @@ gp::UInt64 Time::utcTimestampMicroseconds() noexcept
 DateTime Time::localDateTime() noexcept
 {
     struct timespec ts{};
-    (void)::clock_gettime(CLOCK_REALTIME, &ts);
+    ::clock_gettime(CLOCK_REALTIME, &ts);
 
     struct tm localTm{};
-    (void)::localtime_r(&ts.tv_sec, &localTm);
+    ::localtime_r(&ts.tv_sec, &localTm);
     return detail::fromPosixTm(localTm, ts.tv_nsec);
 }
 
 DateTime Time::utcDateTime() noexcept
 {
     struct timespec ts{};
-    (void)::clock_gettime(CLOCK_REALTIME, &ts);
+    ::clock_gettime(CLOCK_REALTIME, &ts);
 
     struct tm utcTm{};
-    (void)::gmtime_r(&ts.tv_sec, &utcTm);
+    ::gmtime_r(&ts.tv_sec, &utcTm);
     return detail::fromPosixTm(utcTm, ts.tv_nsec);
 }
 
