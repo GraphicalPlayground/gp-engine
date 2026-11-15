@@ -7,6 +7,7 @@
 #include "miscellaneous/CommandLine.hpp"
 #include "platforms/base/system/Thread.hpp"
 #include "platforms/base/system/Time.hpp"
+#include "profiling/Profiler.hpp"
 #include "threading/fibers/Fiber.hpp"
 
 namespace gp::log
@@ -322,6 +323,8 @@ gp::UInt32 Logger::workerThreadEntry(void* const userData) noexcept
 
 void Logger::workerThreadLoop() noexcept
 {
+    GP_SET_THREAD_NAME("GP_LogFlushWorker");
+
     const gp::UInt64 sleepNs = static_cast<gp::UInt64>(m_asyncFlushIntervalMicroseconds) * 1000ULL;
     const gp::platform::ThreadId workerTid = gp::platform::Thread::currentThreadId();
 
@@ -329,6 +332,7 @@ void Logger::workerThreadLoop() noexcept
     {
         if (!m_asyncQueue.isEmptyApprox())
         {
+            GP_PROFILE_SCOPE_NC("Logger::FlushBatch", GP_U32_COLOR_GRAY);
             acquireDispatchLock(workerTid);
             drainAsyncQueueLocked();
             releaseDispatchLock();
