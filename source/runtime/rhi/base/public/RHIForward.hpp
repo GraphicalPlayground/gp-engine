@@ -9,6 +9,18 @@
 namespace gp::rhi
 {
 
+/// @brief Defines the RHI feature level tiers supported by the engine.
+enum class FeatureLevel : gp::Int32;
+
+/// @brief Identifies a target shader compilation platform.
+enum class ShaderPlatform : gp::UInt16;
+
+/// @brief Defines pixel formats for textures, render targets, and typed views.
+enum class PixelFormat : gp::UInt8;
+
+/// @brief Bitmask flags describing the active color/depth/stencil channels of a PixelFormat.
+enum class PixelFormatChannelFlags : gp::UInt8;
+
 namespace command
 {
 
@@ -30,6 +42,15 @@ class SubCommandList;
 namespace resource
 {
 
+/// @brief Bitmask flags specifying buffer allocation, access, and binding usage.
+enum class BufferUsageFlags : gp::UInt32;
+
+/// @brief Bitmask flags specifying texture creation, usage, and memory properties.
+enum class TextureCreateFlags : gp::UInt64;
+
+/// @brief Identifies one of the six faces of a cubemap texture.
+enum class CubeFace : gp::UInt32;
+
 class Resource;
 class ViewableResource;
 class ResourceCollection;
@@ -40,9 +61,6 @@ class UniformBuffer;
 
 class Texture;
 class TextureReference;
-
-class Viewport;
-class CustomPresent;
 
 // Resource Management / Streaming
 class ResourceReplaceInfo;
@@ -127,5 +145,13 @@ class RenderQuery;
 class RenderQueryPool;
 
 }   // namespace sync
+
+namespace system
+{
+
+class Viewport;
+class CustomPresent;
+
+}   // namespace system
 
 }   // namespace gp::rhi
