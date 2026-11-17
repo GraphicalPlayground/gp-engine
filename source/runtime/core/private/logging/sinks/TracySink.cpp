@@ -3,8 +3,8 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "logging/sinks/TracySink.hpp"
-#include "containers/strings/FixedString.hpp"
-#include "logging/LogFormatter.hpp"   // IWYU pragma: keep
+#include "containers/strings/FixedString.hpp"   // IWYU pragma: keep
+#include "logging/LogFormatter.hpp"             // IWYU pragma: keep
 #include "profiling/Profiler.hpp"
 
 namespace gp::log
@@ -22,7 +22,7 @@ void TracySink::write(const LogRecordView& record) noexcept
     }
 
 #if GP_USE_TRACY_PROFILER
-    gp::FixedString<512> tracyBuffer{};
+    LogLineBuffer tracyBuffer{};
     tracyBuffer.pushBack('[');
     if (!record.categoryName.isEmpty())
     {
