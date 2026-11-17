@@ -45,6 +45,17 @@ class BasicFixedString;
 template <concepts::IsCharacter InCharT, typename InAllocator = gp::memory::DefaultAllocator>
 class BasicString;
 
+/// @section Vector & View related forward declarations
+
+template <typename InT, typename InAllocator = gp::memory::DefaultAllocator>
+class Vector;
+
+template <typename InT>
+class VectorView;
+
+template <typename InT>
+class StridedView;
+
 }   // namespace gp::container
 
 namespace gp
@@ -103,18 +114,50 @@ class Array;
 
 /// @section Vector related forward declarations
 
-template <typename InT, typename InAllocator = gp::memory::DefaultAllocator>
-class Vector;
+using container::Vector;
+
 template <typename InT>
-using Vector64 = Vector<InT, gp::memory::DefaultAllocator>;
-template <typename InT, typename InSizeType = Int32>
-class VectorView;
+using Vector64 = container::Vector<InT, gp::memory::DefaultAllocator>;
+
 template <typename InT>
-using VectorView64 = VectorView<InT, Int64>;
-template <typename InT, typename InSizeType = Int32>
-using ConstVectorView = VectorView<const InT, InSizeType>;
+using ScratchVector = container::Vector<InT, gp::memory::ThreadScratchAllocator>;
+
 template <typename InT>
-using ConstVectorView64 = VectorView<const InT, Int64>;
+using PolymorphicVector = container::Vector<InT, gp::memory::PolymorphicAllocator>;
+
+template <typename InT, gp::UInt32 InAlignment = static_cast<gp::UInt32>(alignof(InT))>
+using AlignedVector = container::Vector<
+    InT,
+    gp::memory::AlignedHeapAllocator<(InAlignment > 8u ? InAlignment : 8u)>>;
+
+template <
+    typename InT,
+    gp::USize InElementCount,
+    typename InFallbackAllocator = gp::memory::DefaultAllocator>
+using InlineVector = container::Vector<
+    InT,
+    gp::memory::InlineAllocator<
+        (InElementCount > 0u ? InElementCount * sizeof(InT) : sizeof(InT)),
+        static_cast<gp::UInt32>(alignof(InT) > 8u ? alignof(InT) : 8u),
+        InFallbackAllocator>>;
+
+template <typename InT, gp::USize InElementCount>
+using FixedVector = container::Vector<
+    InT,
+    gp::memory::FixedBufferAllocator<
+        (InElementCount > 0u ? InElementCount * sizeof(InT) : sizeof(InT)),
+        static_cast<gp::UInt32>(alignof(InT) > 8u ? alignof(InT) : 8u)>>;
+
+using container::VectorView;
+
+template <typename InT>
+using VectorView64 = container::VectorView<InT>;
+
+template <typename InT>
+using ConstVectorView = container::VectorView<const InT>;
+
+template <typename InT>
+using ConstVectorView64 = container::VectorView<const InT>;
 
 /// @section Map related forward declarations
 
@@ -181,9 +224,15 @@ template <
     typename InKeyFunctions = container::DefaultKeyFunctions<InT>,
     typename InAllocator = gp::memory::DefaultAllocator>
 class Set;
-template <typename InT, typename InSizeType = Int32>
-class StridedView;
-template <typename InT, typename InSizeType = Int32>
-using ConstStridedView = StridedView<const InT, InSizeType>;
+using container::StridedView;
+
+template <typename InT>
+using StridedView64 = container::StridedView<InT>;
+
+template <typename InT>
+using ConstStridedView = container::StridedView<const InT>;
+
+template <typename InT>
+using ConstStridedView64 = container::StridedView<const InT>;
 
 }   // namespace gp
