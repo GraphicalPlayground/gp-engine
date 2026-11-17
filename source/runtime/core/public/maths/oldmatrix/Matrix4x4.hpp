@@ -7,7 +7,7 @@
 #include "concepts/Concepts.hpp"
 #include "CoreMinimal.hpp"
 #include "maths/MathForward.hpp"
-#include <xmmintrin.h>  // SSE
+#include <xmmintrin.h>  //
 #include <immintrin.h>  // if you go AVX later
 
 namespace gp::math
