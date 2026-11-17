@@ -254,29 +254,47 @@ requires(sizeof(InIntT) <= 8u)
 
 /// @brief Maps a uniform 32-bit hash into `[0, bucketCount)` without integer division (Lemire `fastrange`).
 /// @details Replaces `hash % bucketCount` with `(UInt64(hash) * bucketCount) >> 32`. Assumes the upper bits of @p hash
-///          have good dispersion (true for Murmur3, XXHash, SplitMix, and `avalancheMix`).
+///          have good dispersion (true for Murmur3, XXHash, SplitMix, and `avalancheMix`). Constraining by width
+///          prevents 64-bit `unsigned long` vs `unsigned long long` overload ambiguity across Windows and Linux LP64.
+/// @tparam InHashT 32-bit unsigned integral hash type.
+/// @tparam InBucketT Unsigned integral bucket count type.
 /// @param[in] hash Uniform 32-bit hash value.
 /// @param[in] bucketCount Number of target buckets (`0` safely returns `0`).
 /// @return Bucket index in `[0, bucketCount)`.
-[[nodiscard]] GP_FORCEINLINE_HINT constexpr gp::UInt32
-    mapToBucket(const gp::UInt32 hash, const gp::UInt32 bucketCount) noexcept
+template <gp::concepts::IsUnsignedIntegral InHashT, gp::concepts::IsUnsignedIntegral InBucketT>
+requires(sizeof(InHashT) == 4u) [[nodiscard]] GP_FORCEINLINE_HINT constexpr gp::UInt32
+    mapToBucket(const InHashT hash, const InBucketT bucketCount) noexcept
 {
     if (bucketCount == 0u)
     {
         return 0u;
+    }
+    if constexpr (sizeof(InBucketT) > 4u)
+    {
+        if (static_cast<gp::UInt64>(bucketCount) > 0xFFFFFFFFULL)
+        {
+            return static_cast<gp::UInt32>(hash);
+        }
     }
     return static_cast<gp::UInt32>((static_cast<gp::UInt64>(hash) * static_cast<gp::UInt64>(bucketCount)) >> 32u);
 }
 
 /// @brief Maps a uniform 64-bit hash into `[0, bucketCount)` without integer division (64-bit Lemire `fastrange`).
 /// @details Computes the high 64 bits of the unsigned 128-bit product `hash * bucketCount`, using compiler 128-bit
-///          intrinsics at runtime and portable 32-bit limbs during `constexpr` evaluation.
+///          intrinsics at runtime and portable 32-bit limbs during `constexpr` evaluation. Accepts any 64-bit unsigned
+///          type (`gp::UInt64`, `gp::USize`, `unsigned long long`) identically on Windows, Linux, and macOS.
+/// @tparam InHashT 64-bit unsigned integral hash type.
+/// @tparam InBucketT Unsigned integral bucket count type.
 /// @param[in] hash Uniform 64-bit hash value.
 /// @param[in] bucketCount Number of target buckets (`0` safely returns `0`).
 /// @return Bucket index in `[0, bucketCount)`.
-[[nodiscard]] constexpr gp::UInt64 mapToBucket(const gp::UInt64 hash, const gp::UInt64 bucketCount) noexcept
+template <gp::concepts::IsUnsignedIntegral InHashT, gp::concepts::IsUnsignedIntegral InBucketT>
+requires(sizeof(InHashT) == 8u)
+[[nodiscard]] constexpr gp::UInt64 mapToBucket(const InHashT hash, const InBucketT bucketCount) noexcept
 {
-    if (bucketCount == 0ULL)
+    const gp::UInt64 h = static_cast<gp::UInt64>(hash);
+    const gp::UInt64 n = static_cast<gp::UInt64>(bucketCount);
+    if (n == 0ULL)
     {
         return 0ULL;
     }
@@ -284,20 +302,18 @@ requires(sizeof(InIntT) <= 8u)
     if (!std::is_constant_evaluated())
     {
 #if defined(__SIZEOF_INT128__)
-        return static_cast<gp::UInt64>(
-            (static_cast<unsigned __int128>(hash) * static_cast<unsigned __int128>(bucketCount)) >> 64u
-        );
+        return static_cast<gp::UInt64>((static_cast<unsigned __int128>(h) * static_cast<unsigned __int128>(n)) >> 64u);
 #elif GP_COMPILER_MSVC && GP_ARCHITECTURE_64BIT
         gp::UInt64 high = 0ULL;
-        (void)_umul128(hash, bucketCount, &high);
+        (void)_umul128(h, n, &high);
         return high;
 #endif
     }
 
-    const gp::UInt64 aLo = hash & 0xFFFFFFFFULL;
-    const gp::UInt64 aHi = hash >> 32u;
-    const gp::UInt64 bLo = bucketCount & 0xFFFFFFFFULL;
-    const gp::UInt64 bHi = bucketCount >> 32u;
+    const gp::UInt64 aLo = h & 0xFFFFFFFFULL;
+    const gp::UInt64 aHi = h >> 32u;
+    const gp::UInt64 bLo = n & 0xFFFFFFFFULL;
+    const gp::UInt64 bHi = n >> 32u;
 
     const gp::UInt64 loLo = aLo * bLo;
     const gp::UInt64 loHi = aLo * bHi;
