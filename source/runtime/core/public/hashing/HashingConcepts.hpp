@@ -12,12 +12,13 @@
 namespace gp::hashing::concepts
 {
 
-/// @brief Concept satisfied by valid digest output types (`gp::UInt32`, `gp::UInt64`, or `Hash128`).
+/// @brief Concept satisfied by valid digest output types (`gp::UInt32`, `gp::UInt64`, `Hash128`, or `Hash256`).
 /// @tparam InT Candidate digest type.
 template <typename InT>
 concept IsHashDigest = gp::concepts::IsSameAs<std::remove_cvref_t<InT>, gp::UInt32> ||
                        gp::concepts::IsSameAs<std::remove_cvref_t<InT>, gp::UInt64> ||
-                       gp::concepts::IsSameAs<std::remove_cvref_t<InT>, Hash128>;
+                       gp::concepts::IsSameAs<std::remove_cvref_t<InT>, Hash128> ||
+                       gp::concepts::IsSameAs<std::remove_cvref_t<InT>, Hash256>;
 
 /// @brief Concept satisfied by raw byte-like elements (`gp::UInt8`, `gp::Byte`, `char`, `char8_t`, `gp::Int8`).
 /// @tparam InT Candidate element type.
@@ -117,6 +118,16 @@ concept IsStreamingHasher64 = IsStreamingHasher<InT> && gp::concepts::IsSameAs<t
 /// @tparam InT Candidate hasher type.
 template <typename InT>
 concept IsStreamingHasher128 = IsStreamingHasher<InT> && gp::concepts::IsSameAs<typename InT::DigestType, Hash128>;
+
+/// @brief Concept matching streaming hashers that produce a 256-bit digest (`Hash256`).
+/// @tparam InT Candidate hasher type.
+template <typename InT>
+concept IsStreamingHasher256 = IsStreamingHasher<InT> && gp::concepts::IsSameAs<typename InT::DigestType, Hash256>;
+
+/// @brief Concept matching trivially copyable types with zero padding bits, safe for raw byte-range hashing.
+/// @tparam InT Candidate POD or descriptor type.
+template <typename InT>
+concept IsUniqueRepresentation = std::has_unique_object_representations_v<std::remove_cvref_t<InT>>;
 
 /// @brief Concept satisfied by types implementing a member `hashAppend(hasher)` hook.
 /// @tparam InT Candidate value type.
