@@ -43,6 +43,7 @@
 #include "threading/Atomic.hpp"
 #include "threading/jobs/JobGraph.hpp"
 #include "threading/jobs/JobSystem.hpp"
+#include "threading/roles/NamedThreadDispatcher.hpp"
 #include "time/EngineClock.hpp"
 #include "window/IWindow.hpp"
 #include "window/WindowDesc.hpp"   // IWYU pragma: keep
@@ -96,6 +97,7 @@ private:
     gp::SPSCByteRingBuffer m_eventStream{};
     gp::time::EngineClock m_clock{};
     gp::thread::JobSystem m_jobSystem{};
+    gp::thread::NamedThreadDispatcher m_namedThreadDispatcher{};
     gp::memory::LinearAllocator m_frameArenas[kFrameArenaBufferCount]{};
     gp::thread::JobGraph m_frameGraph{};
     log::ConsoleSink m_consoleSink{};
@@ -110,6 +112,9 @@ private:
     bool m_isInitialized{ false };
     bool m_isSuspended{ false };
     bool m_ownsLoggerInitialization{ false };
+    bool m_ownsGameThreadRole{ false };
+    bool m_ownsRenderThreadRole{ false };
+    bool m_ownsRHIThreadRole{ false };
 
 public:
     /// @brief Constructs the application with injected HAL backend and optional custom input system.
@@ -213,6 +218,20 @@ public:
     [[nodiscard]] constexpr const gp::thread::JobSystem& getJobSystem() const noexcept
     {
         return m_jobSystem;
+    }
+
+    /// @brief Retrieves a mutable reference to the application's per-named-thread task dispatcher.
+    /// @return Reference to `gp::thread::NamedThreadDispatcher`.
+    [[nodiscard]] constexpr gp::thread::NamedThreadDispatcher& getNamedThreadDispatcher() noexcept
+    {
+        return m_namedThreadDispatcher;
+    }
+
+    /// @brief Retrieves a const reference to the application's per-named-thread task dispatcher.
+    /// @return Const reference to `gp::thread::NamedThreadDispatcher`.
+    [[nodiscard]] constexpr const gp::thread::NamedThreadDispatcher& getNamedThreadDispatcher() const noexcept
+    {
+        return m_namedThreadDispatcher;
     }
 
     /// @brief Retrieves a mutable reference to the current frame's `LinearAllocator` (`Frame N` arena).
@@ -457,6 +476,18 @@ private:
     /// @brief Applies command-line concurrency and logging overrides (`-threads`, `-workers`, `-no-jobsystem`,
     ///        `-core-affinity`, `-no-log`, `-no-console-log`, `-log-file`) from `gp::CommandLine` to `m_desc`.
     void applyCommandLineOverrides() noexcept;
+
+    /// @brief Claims `NamedThread::Game` (and `Render` / `RHI` when `singleThreadedRenderAndRHI` is set) for the
+    ///        calling thread.
+    /// @return True if all requested roles were attached or already held by the caller, false if another thread owns
+    ///         one of them.
+    [[nodiscard]] bool attachThreadRolesInternal() noexcept;
+
+    /// @brief Detaches whichever `NamedThread` roles this `Application` claimed in `attachThreadRolesInternal()`.
+    void detachThreadRolesInternal() noexcept;
+
+    /// @brief Pumps any remaining tasks from the named-thread queues owned by this `Application`.
+    void pumpOwnedNamedThreadQueuesInternal() noexcept;
 
     /// @brief Configures, attaches, and initializes the logging subsystem and built-in sinks (`m_consoleSink`,
     ///        `m_fileSink`, `m_debugOutputSink`, `m_tracySink`).

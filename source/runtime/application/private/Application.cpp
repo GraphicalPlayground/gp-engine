@@ -16,6 +16,9 @@
 #include "profiling/Profiler.hpp"
 #include "profiling/ProfilingControl.hpp"
 #include "templates/Optional.hpp"
+#include "threading/roles/ThreadRole.hpp"
+#include "threading/roles/ThreadRoleEnums.hpp"
+#include "threading/roles/ThreadRoleTypes.hpp"
 
 namespace gp
 {
@@ -192,6 +195,90 @@ void Application::applyCommandLineOverrides() noexcept
         {
             m_desc.fileSink.filePath = *customLogPath;
         }
+    }
+}
+
+bool Application::attachThreadRolesInternal() noexcept
+{
+    auto tryAttachRole = [](const thread::NamedThread role, bool& outOwned) noexcept -> bool
+    {
+        const thread::ThreadRoleResult res = thread::ThreadRoleRegistry::attachCurrentThread(role);
+        if (res == thread::ThreadRoleResult::Success)
+        {
+            outOwned = true;
+            return true;
+        }
+        if (res == thread::ThreadRoleResult::AlreadyAttached)
+        {
+            outOwned = false;
+            return true;
+        }
+        GP_LOG_ERROR(
+            LogApplication,
+            "Failed to claim NamedThread::{} for main thread (already claimed by another OS thread).",
+            thread::getNamedThreadName(role)
+        );
+        return false;
+    };
+
+    if (!tryAttachRole(thread::NamedThread::Game, m_ownsGameThreadRole))
+    {
+        return false;
+    }
+
+    if (m_desc.singleThreadedRenderAndRHI)
+    {
+        if (!tryAttachRole(thread::NamedThread::Render, m_ownsRenderThreadRole) ||
+            !tryAttachRole(thread::NamedThread::RHI, m_ownsRHIThreadRole))
+        {
+            detachThreadRolesInternal();
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void Application::detachThreadRolesInternal() noexcept
+{
+    if (m_ownsRHIThreadRole)
+    {
+        (void)thread::ThreadRoleRegistry::detachCurrentThread(thread::NamedThread::RHI);
+        m_ownsRHIThreadRole = false;
+    }
+
+    if (m_ownsRenderThreadRole)
+    {
+        (void)thread::ThreadRoleRegistry::detachCurrentThread(thread::NamedThread::Render);
+        m_ownsRenderThreadRole = false;
+    }
+
+    if (m_ownsGameThreadRole)
+    {
+        (void)thread::ThreadRoleRegistry::detachCurrentThread(thread::NamedThread::Game);
+        m_ownsGameThreadRole = false;
+    }
+}
+
+void Application::pumpOwnedNamedThreadQueuesInternal() noexcept
+{
+    if (!m_namedThreadDispatcher.isInitialized())
+    {
+        return;
+    }
+
+    gp::UInt32 executedCount = 0u;
+    if (thread::isInGameThread())
+    {
+        (void)m_namedThreadDispatcher.pumpUntilIdle(thread::NamedThread::Game, executedCount);
+    }
+    if (thread::isInRenderThread())
+    {
+        (void)m_namedThreadDispatcher.pumpUntilIdle(thread::NamedThread::Render, executedCount);
+    }
+    if (thread::isInRHIThread())
+    {
+        (void)m_namedThreadDispatcher.pumpUntilIdle(thread::NamedThread::RHI, executedCount);
     }
 }
 
@@ -549,6 +636,12 @@ bool Application::initializeInternal() noexcept
     initializeLoggingInternal();
     (void)console::IConsoleManager::get();
 
+    if (!attachThreadRolesInternal()) [[unlikely]]
+    {
+        shutdownLoggingInternal();
+        return false;
+    }
+
     {
         gp::FixedString<256> appInfo{};
         log::formatTo(appInfo, "{} v{}", m_desc.backend.appName, m_desc.backend.appVersion);
@@ -568,6 +661,7 @@ bool Application::initializeInternal() noexcept
         GP_LOG_ERROR(
             LogApplication, "Failed to initialize SPSC event ring buffer ({} bytes).", m_desc.eventRingBufferBytes
         );
+        detachThreadRolesInternal();
         shutdownLoggingInternal();
         return false;
     }
@@ -580,6 +674,7 @@ bool Application::initializeInternal() noexcept
         {
             GP_LOG_ERROR(LogApplication, "Failed to allocate fallback GenericApplicationBackend.");
             m_eventStream.shutdown();
+            detachThreadRolesInternal();
             shutdownLoggingInternal();
             return false;
         }
@@ -590,6 +685,7 @@ bool Application::initializeInternal() noexcept
     {
         GP_LOG_ERROR(LogApplication, "HAL ApplicationBackend initialization failed.");
         m_eventStream.shutdown();
+        detachThreadRolesInternal();
         shutdownLoggingInternal();
         return false;
     }
@@ -607,6 +703,7 @@ bool Application::initializeInternal() noexcept
             GP_LOG_ERROR(LogApplication, "Failed to create HAL IInputSystem.");
             m_backend->shutdown();
             m_eventStream.shutdown();
+            detachThreadRolesInternal();
             shutdownLoggingInternal();
             return false;
         }
@@ -633,6 +730,7 @@ bool Application::initializeInternal() noexcept
             m_inputSystem.reset();
             m_backend->shutdown();
             m_eventStream.shutdown();
+            detachThreadRolesInternal();
             shutdownLoggingInternal();
             return false;
         }
@@ -666,6 +764,7 @@ bool Application::initializeInternal() noexcept
         m_inputSystem.reset();
         m_backend->shutdown();
         m_eventStream.shutdown();
+        detachThreadRolesInternal();
         shutdownLoggingInternal();
         return false;
     }
@@ -684,6 +783,27 @@ bool Application::initializeInternal() noexcept
         m_inputSystem.reset();
         m_backend->shutdown();
         m_eventStream.shutdown();
+        detachThreadRolesInternal();
+        shutdownLoggingInternal();
+        return false;
+    }
+
+    if (m_namedThreadDispatcher.initialize(m_desc.namedThreadDispatcher) != thread::ThreadRoleResult::Success)
+        [[unlikely]]
+    {
+        GP_LOG_ERROR(LogApplication, "Failed to initialize NamedThreadDispatcher queues.");
+        m_frameGraph.shutdown();
+        m_frameArenas[1].shutdown();
+        m_frameArenas[0].shutdown();
+        if (m_mainWindow.isValid())
+        {
+            m_mainWindow->close();
+            m_mainWindow.reset();
+        }
+        m_inputSystem.reset();
+        m_backend->shutdown();
+        m_eventStream.shutdown();
+        detachThreadRolesInternal();
         shutdownLoggingInternal();
         return false;
     }
@@ -693,6 +813,7 @@ bool Application::initializeInternal() noexcept
         if (m_jobSystem.initialize(m_desc.jobSystem) != thread::JobSystemResult::Success) [[unlikely]]
         {
             GP_LOG_ERROR(LogApplication, "Failed to initialize fiber JobSystem.");
+            m_namedThreadDispatcher.shutdown();
             m_frameGraph.shutdown();
             m_frameArenas[1].shutdown();
             m_frameArenas[0].shutdown();
@@ -704,6 +825,7 @@ bool Application::initializeInternal() noexcept
             m_inputSystem.reset();
             m_backend->shutdown();
             m_eventStream.shutdown();
+            detachThreadRolesInternal();
             shutdownLoggingInternal();
             return false;
         }
@@ -736,6 +858,9 @@ void Application::shutdownInternal() noexcept
         m_jobSystem.shutdown();
     }
 
+    pumpOwnedNamedThreadQueuesInternal();
+    m_namedThreadDispatcher.shutdown();
+
     m_frameArenas[1].shutdown();
     m_frameArenas[0].shutdown();
     m_activeFrameArenaIndex = 0u;
@@ -758,6 +883,7 @@ void Application::shutdownInternal() noexcept
     }
 
     m_eventStream.shutdown();
+    detachThreadRolesInternal();
     shutdownLoggingInternal();
     m_isInitialized = false;
 }
@@ -839,9 +965,17 @@ gp::Int32 Application::run() noexcept
 
         const ApplicationFrameContext frameContext{ .timeStats = timeStats,
                                                     .jobSystem = m_jobSystem,
+                                                    .namedThreadDispatcher = m_namedThreadDispatcher,
                                                     .frameGraph = m_frameGraph,
                                                     .currentFrameArena = getCurrentFrameArena(),
                                                     .previousFrameArena = getPreviousFrameArena() };
+
+        // Pump tasks dispatched to the Game thread before simulation updates run.
+        {
+            GP_PROFILE_SCOPE_NC_ACTIVE("Application::PumpGameThreadTasks", GP_U32_COLOR_GREEN, profZones);
+            gp::UInt32 executedGameTasks = 0u;
+            (void)m_namedThreadDispatcher.pumpUntilIdle(thread::NamedThread::Game, executedGameTasks);
+        }
 
         // Execute deterministic fixed-timestep simulation sub-steps.
         if (timeStats.fixedStep.stepCount > 0u)
@@ -882,6 +1016,11 @@ gp::Int32 Application::run() noexcept
         if (!m_isSuspended && (!m_mainWindow.isValid() || !m_mainWindow->isMinimized()))
         {
             GP_PROFILE_SCOPE_NC_ACTIVE("Application::RenderPhase", GP_U32_COLOR_BLUE, profZones);
+            if (thread::isInRenderThread())
+            {
+                gp::UInt32 executedRenderTasks = 0u;
+                (void)m_namedThreadDispatcher.pumpUntilIdle(thread::NamedThread::Render, executedRenderTasks);
+            }
             m_frameGraph.clear();
             {
                 GP_PROFILE_SCOPE_NC_ACTIVE("Application::OnRender", GP_U32_COLOR_BLUE, profZones);
@@ -895,6 +1034,24 @@ gp::Int32 Application::run() noexcept
             {
                 GP_PROFILE_SCOPE_NC_ACTIVE("Application::ExecuteRenderGraph", GP_U32_COLOR_BLUE, profZones);
                 (void)m_frameGraph.executeAndWait(m_jobSystem);
+            }
+            if (thread::isInRHIThread())
+            {
+                gp::UInt32 executedRHITasks = 0u;
+                (void)m_namedThreadDispatcher.pumpUntilIdle(thread::NamedThread::RHI, executedRHITasks);
+            }
+        }
+        else if (m_desc.singleThreadedRenderAndRHI)
+        {
+            // Keep single-threaded Render/RHI queues draining while minimized so deferred releases do not accumulate.
+            gp::UInt32 executedDeferred = 0u;
+            if (thread::isInRenderThread())
+            {
+                (void)m_namedThreadDispatcher.pumpUntilIdle(thread::NamedThread::Render, executedDeferred);
+            }
+            if (thread::isInRHIThread())
+            {
+                (void)m_namedThreadDispatcher.pumpUntilIdle(thread::NamedThread::RHI, executedDeferred);
             }
         }
 
