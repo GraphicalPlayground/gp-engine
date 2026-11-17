@@ -38,6 +38,9 @@ TEST(StringHashTest, CompileTimeLiteralsAndSwitchDispatch)
     static_assert("Entity"_murmur32 == Murmur3_32::hash("Entity"));
     static_assert("Packet"_xxh32 == XxHash32::hash("Packet"));
     static_assert("ShaderCache"_xxh64 == XxHash64::hash("ShaderCache"));
+    static_assert("MaterialParam"_wy64 == Wyhash64::hash("MaterialParam"));
+    static_assert("NetworkCmd"_sip64 == SipHash24::hash("NetworkCmd"));
+    static_assert("ShaderSource"_sha256 == Sha256::hash("ShaderSource"));
 
     const gp::String runtimeStr("Roughness");
     const StringHash64 runtimeHash(runtimeStr);

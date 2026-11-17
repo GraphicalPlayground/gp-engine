@@ -14,7 +14,10 @@
 #include "hashing/HashingForward.hpp"   // IWYU pragma: keep
 #include "hashing/HashMix.hpp"
 #include "hashing/Murmur3.hpp"
+#include "hashing/Sha256.hpp"
+#include "hashing/SipHash.hpp"
 #include "hashing/StreamingHasher.hpp"
+#include "hashing/Wyhash.hpp"
 #include "hashing/XxHash.hpp"
 #include <compare>
 #include <type_traits>   // IWYU pragma: keep
@@ -107,7 +110,7 @@ public:
     /// @return 64-bit representation of the stored digest.
     [[nodiscard]] constexpr gp::UInt64 hash() const noexcept
     {
-        if constexpr (gp::concepts::IsSameAs<DigestType, Hash128>)
+        if constexpr (gp::concepts::IsSameAs<DigestType, Hash256> || gp::concepts::IsSameAs<DigestType, Hash128>)
         {
             return m_hash.foldTo64();
         }
@@ -335,6 +338,9 @@ using Crc32CStringHash = BasicStringHash<Crc32C, HashCase::CaseSensitive>;
 using MurmurStringHash32 = BasicStringHash<Murmur3_32, HashCase::CaseSensitive>;
 using XxStringHash32 = BasicStringHash<XxHash32, HashCase::CaseSensitive>;
 using XxStringHash64 = BasicStringHash<XxHash64, HashCase::CaseSensitive>;
+using WyStringHash64 = BasicStringHash<Wyhash64, HashCase::CaseSensitive>;
+using SipStringHash64 = BasicStringHash<SipHash24, HashCase::CaseSensitive>;
+using Sha256StringHash = BasicStringHash<Sha256, HashCase::CaseSensitive>;
 
 using HashedStringView64 = HashedStringView<Fnv1a64, HashCase::CaseSensitive>;
 using HashedStringView64IgnoreCase = HashedStringView<Fnv1a64, HashCase::IgnoreCase>;
@@ -444,6 +450,35 @@ namespace gp::literals
     operator""_xxh64(const char* const str, const gp::USize len) noexcept
 {
     return gp::hashing::XxStringHash64(str, len);
+}
+
+/// @brief Compile-time Wyhash64 string literal (`"MaterialParam"_wy64`).
+/// @param[in] str Literal character array.
+/// @param[in] len Byte length excluding null terminator.
+/// @return Compile-time `WyStringHash64`.
+[[nodiscard]] consteval gp::hashing::WyStringHash64 operator""_wy64(const char* const str, const gp::USize len) noexcept
+{
+    return gp::hashing::WyStringHash64(str, len);
+}
+
+/// @brief Compile-time SipHash-2-4 string literal (`"NetworkCmd"_sip64`).
+/// @param[in] str Literal character array.
+/// @param[in] len Byte length excluding null terminator.
+/// @return Compile-time `SipStringHash64`.
+[[nodiscard]] consteval gp::hashing::SipStringHash64
+    operator""_sip64(const char* const str, const gp::USize len) noexcept
+{
+    return gp::hashing::SipStringHash64(str, len);
+}
+
+/// @brief Compile-time SHA-256 string literal (`"ShaderSource"_sha256`).
+/// @param[in] str Literal character array.
+/// @param[in] len Byte length excluding null terminator.
+/// @return Compile-time `Sha256StringHash`.
+[[nodiscard]] consteval gp::hashing::Sha256StringHash
+    operator""_sha256(const char* const str, const gp::USize len) noexcept
+{
+    return gp::hashing::Sha256StringHash(str, len);
 }
 
 /// @brief Compile-time cached `HashedStringView64` literal (`"AlbedoMap"_hs`).
