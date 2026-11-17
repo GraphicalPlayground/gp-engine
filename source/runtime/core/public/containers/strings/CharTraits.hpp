@@ -7,6 +7,8 @@
 #include "concepts/Concepts.hpp"
 #include "containers/strings/StringEnums.hpp"
 #include "CoreMinimal.hpp"
+#include "hashing/Fnv1a.hpp"
+#include "hashing/HashingEnums.hpp"
 #include <type_traits>
 
 namespace gp::container
@@ -32,10 +34,10 @@ public:
     static constexpr SizeType npos = kNpos;
 
     /// @brief 64-bit FNV-1a offset basis constant (`0xcbf29ce484222325`).
-    static constexpr gp::UInt64 kFnv1a64OffsetBasis = 14695981039346656037ULL;
+    static constexpr gp::UInt64 kFnv1a64OffsetBasis = gp::hashing::Fnv1a64::kOffsetBasis;
 
     /// @brief 64-bit FNV-1a prime multiplier (`0x100000001b3`).
-    static constexpr gp::UInt64 kFnv1a64Prime = 1099511628211ULL;
+    static constexpr gp::UInt64 kFnv1a64Prime = gp::hashing::Fnv1a64::kPrime;
 
 public:
     /// @section ASCII Classification & Case Folding (`constexpr`)
@@ -725,7 +727,7 @@ public:
 public:
     /// @section 64-Bit FNV-1a Deterministic Hashing (`constexpr`)
 
-    /// @brief Computes a 64-bit FNV-1a case-sensitive hash over `[data, data + count)`.
+    /// @brief Computes a 64-bit FNV-1a case-sensitive hash over `[data, data + count)` via `gp::hashing::Fnv1a64`.
     /// @param[in] data Character sequence pointer.
     /// @param[in] count Number of characters to hash.
     /// @param[in] seed Initial 64-bit hash state (defaults to `kFnv1a64OffsetBasis`).
@@ -733,35 +735,11 @@ public:
     [[nodiscard]] static constexpr gp::UInt64
         hash(const CharType* const data, const SizeType count, const gp::UInt64 seed = kFnv1a64OffsetBasis) noexcept
     {
-        gp::UInt64 h = seed;
-        if (data == nullptr || count == 0u)
-        {
-            return h;
-        }
-
-        for (SizeType i = 0u; i < count; ++i)
-        {
-            const UnsignedType u = static_cast<UnsignedType>(data[i]);
-            if constexpr (sizeof(CharType) == 1u)
-            {
-                h ^= static_cast<gp::UInt64>(u);
-                h *= kFnv1a64Prime;
-            }
-            else
-            {
-                for (SizeType b = 0u; b < sizeof(CharType); ++b)
-                {
-                    const gp::UInt8 byteVal =
-                        static_cast<gp::UInt8>((u >> (b * 8u)) & static_cast<UnsignedType>(0xFFu));
-                    h ^= static_cast<gp::UInt64>(byteVal);
-                    h *= kFnv1a64Prime;
-                }
-            }
-        }
-        return h;
+        return gp::hashing::Fnv1a64::hash(data, count, seed);
     }
 
-    /// @brief Computes a 64-bit FNV-1a ASCII case-insensitive hash over `[data, data + count)`.
+    /// @brief Computes a 64-bit FNV-1a ASCII case-insensitive hash over `[data, data + count)` via
+    ///        `gp::hashing::Fnv1a64`.
     /// @param[in] data Character sequence pointer.
     /// @param[in] count Number of characters to hash.
     /// @param[in] seed Initial 64-bit hash state (defaults to `kFnv1a64OffsetBasis`).
@@ -770,35 +748,10 @@ public:
         const CharType* const data, const SizeType count, const gp::UInt64 seed = kFnv1a64OffsetBasis
     ) noexcept
     {
-        gp::UInt64 h = seed;
-        if (data == nullptr || count == 0u)
-        {
-            return h;
-        }
-
-        for (SizeType i = 0u; i < count; ++i)
-        {
-            const UnsignedType u = static_cast<UnsignedType>(toLower(data[i]));
-            if constexpr (sizeof(CharType) == 1u)
-            {
-                h ^= static_cast<gp::UInt64>(u);
-                h *= kFnv1a64Prime;
-            }
-            else
-            {
-                for (SizeType b = 0u; b < sizeof(CharType); ++b)
-                {
-                    const gp::UInt8 byteVal =
-                        static_cast<gp::UInt8>((u >> (b * 8u)) & static_cast<UnsignedType>(0xFFu));
-                    h ^= static_cast<gp::UInt64>(byteVal);
-                    h *= kFnv1a64Prime;
-                }
-            }
-        }
-        return h;
+        return gp::hashing::Fnv1a64::hashIgnoreCase(data, count, seed);
     }
 
-    /// @brief Computes a 64-bit FNV-1a hash over `[data, data + count)` under `searchCase`.
+    /// @brief Computes a 64-bit FNV-1a hash over `[data, data + count)` under @p searchCase.
     /// @param[in] data Character sequence pointer.
     /// @param[in] count Number of characters to hash.
     /// @param[in] searchCase Case sensitivity mode.
@@ -811,7 +764,10 @@ public:
         const gp::UInt64 seed = kFnv1a64OffsetBasis
     ) noexcept
     {
-        return (searchCase == SearchCase::CaseSensitive) ? hash(data, count, seed) : hashIgnoreCase(data, count, seed);
+        const gp::hashing::HashCase mode = (searchCase == SearchCase::CaseSensitive)
+                                               ? gp::hashing::HashCase::CaseSensitive
+                                               : gp::hashing::HashCase::IgnoreCase;
+        return gp::hashing::Fnv1a64::hash(data, count, mode, seed);
     }
 };
 
