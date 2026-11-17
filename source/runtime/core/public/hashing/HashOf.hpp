@@ -5,6 +5,7 @@
 #pragma once
 
 #include "concepts/Concepts.hpp"
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "hashing/Fnv1a.hpp"
 #include "hashing/HashCombine.hpp"
@@ -13,6 +14,7 @@
 #include "hashing/HashingForward.hpp"   // IWYU pragma: keep
 #include "hashing/HashingTypes.hpp"
 #include "hashing/HashMix.hpp"
+#include "hashing/RuntimeHash.hpp"
 #include "hashing/StreamingHasher.hpp"
 #include <ranges>
 #include <type_traits>
@@ -107,6 +109,32 @@ struct HashTraits<Hash128>
     {
         hasher.append(value.low);
         hasher.append(value.high);
+    }
+};
+
+/// @brief `HashTraits` specialization for 256-bit `Hash256` digests.
+template <>
+struct HashTraits<Hash256>
+{
+    /// @brief Folds @p value into a 64-bit hash key via `Hash256::foldTo64()`.
+    /// @param[in] value Source 256-bit digest.
+    /// @return 64-bit mixed hash.
+    [[nodiscard]] static constexpr gp::UInt64 hash(const Hash256& value) noexcept
+    {
+        return value.foldTo64();
+    }
+
+    /// @brief Streams all four 64-bit words of @p value into @p hasher.
+    /// @tparam InHasher Streaming hasher type.
+    /// @param[in,out] hasher Target accumulator.
+    /// @param[in] value Source 256-bit digest.
+    template <typename InHasher>
+    static constexpr void append(InHasher& hasher, const Hash256& value) noexcept
+    {
+        for (gp::USize i = 0u; i < 4u; ++i)
+        {
+            hasher.append(value.words[i]);
+        }
     }
 };
 
@@ -381,6 +409,54 @@ template <concepts::IsStreamingHasher InHasher = Fnv1a64, typename... InArgs>
 [[nodiscard]] constexpr typename InHasher::DigestType hashValues(const InArgs&... args) noexcept
 {
     InHasher hasher;
+    hasher.appendAll(args...);
+    return hasher.finalize();
+}
+
+/// @brief Streams a pack of heterogeneous values through @p InHasher starting from an explicit @p seed.
+/// @tparam InHasher Concrete hasher type satisfying `concepts::IsStreamingHasher` (defaults to `Fnv1a64`).
+/// @tparam InArgs Types of the input fields.
+/// @param[in] seed Initial seed for @p InHasher.
+/// @param[in] args Input values appended sequentially.
+/// @return Combined digest of type `typename InHasher::DigestType`.
+template <concepts::IsStreamingHasher InHasher = Fnv1a64, typename... InArgs>
+[[nodiscard]] constexpr typename InHasher::DigestType
+    hashValuesSeeded(const typename InHasher::DigestType seed, const InArgs&... args) noexcept
+{
+    InHasher hasher(seed);
+    hasher.appendAll(args...);
+    return hasher.finalize();
+}
+
+/// @brief Hashes a padding-free trivially copyable struct directly as raw object bytes.
+/// @details Enforces `std::has_unique_object_representations_v<InPodT>` at compile time so structs with uninitialized
+///          alignment holes are rejected cleanly rather than producing nondeterministic PSO or state-cache hashes.
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher` (defaults to `Fnv1a64`).
+/// @tparam InPodT Padding-free value type satisfying `concepts::IsUniqueRepresentation`.
+/// @param[in] value Input POD structure.
+/// @param[in] seed Optional initial seed.
+/// @return Digest over the exact object representation bytes.
+template <concepts::IsStreamingHasher InHasher = Fnv1a64, concepts::IsUniqueRepresentation InPodT>
+requires(!std::is_pointer_v<std::remove_cvref_t<InPodT>>) [[nodiscard]] inline typename InHasher::DigestType
+    hashUniqueBytes(const InPodT& value, const typename InHasher::DigestType seed = InHasher::kDefaultSeed) noexcept
+{
+    return InHasher::hash(static_cast<const void*>(&value), sizeof(InPodT), seed);
+}
+
+/// @brief Computes a domain-separated digest so identical values across distinct subsystems never collide.
+/// @details Modeled after Decima and Anvil subsystem tags (for example `"ShaderPSO"`, `"AssetPath"`, `"Material"`).
+///          Feeds @p domainTag with length framing before appending @p args.
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher` (defaults to `Fnv1a64`).
+/// @tparam InArgs Types of the payload fields.
+/// @param[in] domainTag Subsystem or usage domain label.
+/// @param[in] args Payload fields appended after @p domainTag.
+/// @return Domain-separated digest.
+template <concepts::IsStreamingHasher InHasher = Fnv1a64, typename... InArgs>
+[[nodiscard]] constexpr typename InHasher::DigestType
+    hashDomain(const gp::StringView domainTag, const InArgs&... args) noexcept
+{
+    InHasher hasher;
+    hasher.append(domainTag);
     hasher.appendAll(args...);
     return hasher.finalize();
 }
@@ -721,5 +797,314 @@ struct HashTraits<InRangeT>
         }
     }
 };
+
+namespace detail
+{
+
+template <typename InT>
+concept IsCharacterPointerArg = gp::concepts::IsPointer<std::decay_t<InT>> &&
+                                gp::concepts::IsCharacter<std::remove_cv_t<std::remove_pointer_t<std::decay_t<InT>>>>;
+
+template <typename InT>
+concept IsRawPointerOrNullArg =
+    gp::concepts::IsNullPointer<std::decay_t<InT>> ||
+    (gp::concepts::IsPointer<std::decay_t<InT>> &&
+     (gp::concepts::IsSameAs<std::remove_cv_t<std::remove_pointer_t<std::decay_t<InT>>>, void> ||
+      gp::concepts::IsSameAs<std::remove_cv_t<std::remove_pointer_t<std::decay_t<InT>>>, gp::UInt8> ||
+      gp::concepts::IsSameAs<std::remove_cv_t<std::remove_pointer_t<std::decay_t<InT>>>, gp::Byte> ||
+      gp::concepts::IsCharacter<std::remove_cv_t<std::remove_pointer_t<std::decay_t<InT>>>>));
+
+template <typename... InTypes>
+struct PackHead
+{
+    using Type = void;
+};
+
+template <typename InFirst, typename... InRest>
+struct PackHead<InFirst, InRest...>
+{
+    using Type = InFirst;
+};
+
+template <typename InHasher, typename InFirstT, typename InSecondT, typename... InRestT>
+consteval bool isDedicatedTwoOrThreeArgHashOverload() noexcept
+{
+    using FirstT = std::remove_cvref_t<InFirstT>;
+    using SecondT = std::remove_cvref_t<InSecondT>;
+
+    if constexpr (sizeof...(InRestT) == 0u)
+    {
+        if constexpr (IsRawPointerOrNullArg<FirstT> && gp::concepts::IsIntegral<SecondT>)
+        {
+            return true;
+        }
+        if constexpr (
+            (concepts::IsCharacterSequence<FirstT> || IsCharacterPointerArg<FirstT>) &&
+            gp::concepts::IsSameAs<SecondT, HashCase>
+        )
+        {
+            return true;
+        }
+        return false;
+    }
+    else if constexpr (sizeof...(InRestT) == 1u)
+    {
+        using ThirdT = std::remove_cvref_t<typename PackHead<InRestT...>::Type>;
+        if constexpr (
+            IsRawPointerOrNullArg<FirstT> && gp::concepts::IsIntegral<SecondT> &&
+            gp::concepts::IsSameAs<ThirdT, typename InHasher::DigestType>
+        )
+        {
+            return true;
+        }
+        if constexpr (
+            (concepts::IsCharacterSequence<FirstT> || IsCharacterPointerArg<FirstT>) &&
+            gp::concepts::IsSameAs<SecondT, HashCase> && gp::concepts::IsSameAs<ThirdT, typename InHasher::DigestType>
+        )
+        {
+            return true;
+        }
+        return false;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+}   // namespace detail
+
+/// @section Unified Hashing Entry Points (`gp::hashing::hash` and `gp::hashing::makeHasher`)
+
+/// @brief Unified default 64-bit hash entry point for any hashable value (`gp::hashing::hash(value)`).
+/// @tparam InT Value type to hash (excludes `HashAlgorithm` so runtime dispatch stays distinct).
+/// @param[in] value Input value.
+/// @return 64-bit hash digest.
+template <typename InT>
+requires(!gp::concepts::IsSameAs<std::remove_cvref_t<InT>, HashAlgorithm>)
+[[nodiscard]] constexpr gp::UInt64 hash(const InT& value) noexcept
+{
+    return hashOf(value);
+}
+
+/// @brief Unified single-value hash parameterized by a concrete streaming hasher (`hash<XxHash64>(value)`).
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher`.
+/// @tparam InT Value type to hash.
+/// @param[in] value Input value.
+/// @return Digest of type `typename InHasher::DigestType`.
+template <concepts::IsStreamingHasher InHasher, typename InT>
+[[nodiscard]] constexpr typename InHasher::DigestType hash(const InT& value) noexcept
+{
+    return hashOf<InHasher>(value);
+}
+
+/// @brief Unified string-like hash with explicit case mode and optional seed (`hash<Fnv1a64>(str,
+/// HashCase::IgnoreCase)`).
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher`.
+/// @tparam InStrT String type satisfying `concepts::IsCharacterSequence`.
+/// @param[in] str Character sequence to hash.
+/// @param[in] hashCase ASCII case-sensitivity mode.
+/// @param[in] seed Optional initial seed.
+/// @return Computed digest.
+template <concepts::IsStreamingHasher InHasher, concepts::IsCharacterSequence InStrT>
+[[nodiscard]] constexpr typename InHasher::DigestType hash(
+    const InStrT& str, const HashCase hashCase, const typename InHasher::DigestType seed = InHasher::kDefaultSeed
+) noexcept
+{
+    return InHasher::hash(str, hashCase, seed);
+}
+
+/// @brief Unified C-string hash with explicit case mode and optional seed (`hash<Crc32>("Asset",
+/// HashCase::IgnoreCase)`).
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher`.
+/// @tparam InCharT Character code-unit type.
+/// @param[in] str Null-terminated character pointer.
+/// @param[in] hashCase ASCII case-sensitivity mode.
+/// @param[in] seed Optional initial seed.
+/// @return Computed digest.
+template <concepts::IsStreamingHasher InHasher, gp::concepts::IsCharacter InCharT>
+[[nodiscard]] constexpr typename InHasher::DigestType hash(
+    const InCharT* const str, const HashCase hashCase, const typename InHasher::DigestType seed = InHasher::kDefaultSeed
+) noexcept
+{
+    return hashString<InHasher>(str, hashCase, seed);
+}
+
+/// @brief Unified byte-buffer hash over `gp::UInt8*` (`hash<Sha256>(bytes, len)`).
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher`.
+/// @param[in] data Byte pointer.
+/// @param[in] sizeInBytes Number of bytes to hash.
+/// @param[in] seed Optional initial seed.
+/// @return Computed digest.
+template <concepts::IsStreamingHasher InHasher>
+[[nodiscard]] constexpr typename InHasher::DigestType hash(
+    const gp::UInt8* const data,
+    const gp::USize sizeInBytes,
+    const typename InHasher::DigestType seed = InHasher::kDefaultSeed
+) noexcept
+{
+    return InHasher::hash(data, sizeInBytes, seed);
+}
+
+/// @brief Unified byte-buffer hash over `gp::Byte*` (`std::byte`).
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher`.
+/// @param[in] data `gp::Byte` pointer.
+/// @param[in] sizeInBytes Number of bytes to hash.
+/// @param[in] seed Optional initial seed.
+/// @return Computed digest.
+template <concepts::IsStreamingHasher InHasher>
+[[nodiscard]] constexpr typename InHasher::DigestType hash(
+    const gp::Byte* const data,
+    const gp::USize sizeInBytes,
+    const typename InHasher::DigestType seed = InHasher::kDefaultSeed
+) noexcept
+{
+    return InHasher::hash(data, sizeInBytes, seed);
+}
+
+/// @brief Unified character-buffer hash (`hash<XxHash32>(chars, count)`).
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher`.
+/// @tparam InCharT Character code-unit type.
+/// @param[in] data Character pointer.
+/// @param[in] count Number of character code units.
+/// @param[in] seed Optional initial seed.
+/// @return Computed digest.
+template <concepts::IsStreamingHasher InHasher, gp::concepts::IsCharacter InCharT>
+[[nodiscard]] constexpr typename InHasher::DigestType hash(
+    const InCharT* const data, const gp::USize count, const typename InHasher::DigestType seed = InHasher::kDefaultSeed
+) noexcept
+{
+    return InHasher::hash(data, count, seed);
+}
+
+/// @brief Unified untyped runtime memory hash (`hash<Wyhash64>(voidPtr, sizeInBytes)`).
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher`.
+/// @param[in] data Buffer address.
+/// @param[in] sizeInBytes Number of bytes to hash.
+/// @param[in] seed Optional initial seed.
+/// @return Computed digest.
+template <concepts::IsStreamingHasher InHasher>
+[[nodiscard]] inline typename InHasher::DigestType hash(
+    const void* const data,
+    const gp::USize sizeInBytes,
+    const typename InHasher::DigestType seed = InHasher::kDefaultSeed
+) noexcept
+{
+    return InHasher::hash(data, sizeInBytes, seed);
+}
+
+/// @brief Unified variadic multi-field hash (`hash<Murmur3_128>(meshId, lodIndex, materialName)`).
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher`.
+/// @tparam InFirstT First field type.
+/// @tparam InSecondT Second field type.
+/// @tparam InRestT Remaining field types.
+/// @param[in] first First value to append.
+/// @param[in] second Second value to append.
+/// @param[in] rest Remaining values to append sequentially.
+/// @return Combined digest.
+template <concepts::IsStreamingHasher InHasher, typename InFirstT, typename InSecondT, typename... InRestT>
+requires(!detail::isDedicatedTwoOrThreeArgHashOverload<InHasher, InFirstT, InSecondT, InRestT...>())
+[[nodiscard]] constexpr typename InHasher::DigestType
+    hash(const InFirstT& first, const InSecondT& second, const InRestT&... rest) noexcept
+{
+    return hashValues<InHasher>(first, second, rest...);
+}
+
+/// @brief Compile-time `HashAlgorithm` enum dispatch (`hash<HashAlgorithm::Sha256>(...)`).
+/// @tparam InAlgorithm Built-in `HashAlgorithm` enumerator.
+/// @tparam InArgs Forwarded argument types (value, buffer+size, string+case, or multi-field pack).
+/// @param[in] args Arguments forwarded to `hash<Hasher<InAlgorithm>>(...)`.
+/// @return Digest matching `Hasher<InAlgorithm>::DigestType`.
+template <HashAlgorithm InAlgorithm, typename... InArgs>
+requires(InAlgorithm != HashAlgorithm::Count && sizeof...(InArgs) >= 1u)
+[[nodiscard]] constexpr typename Hasher<InAlgorithm>::DigestType hash(InArgs&&... args) noexcept
+{
+    return hash<Hasher<InAlgorithm>>(static_cast<InArgs&&>(args)...);
+}
+
+/// @brief Runtime `HashAlgorithm` dispatch over a `gp::UInt8` buffer (`hash(alg, ptr, len)`).
+/// @param[in] algorithm Target `HashAlgorithm` enumerator.
+/// @param[in] data Byte pointer.
+/// @param[in] sizeInBytes Number of bytes to hash.
+/// @return Tagged `HashDigest`.
+[[nodiscard]] constexpr HashDigest
+    hash(const HashAlgorithm algorithm, const gp::UInt8* const data, const gp::USize sizeInBytes) noexcept
+{
+    return computeHash(algorithm, data, sizeInBytes);
+}
+
+/// @brief Runtime `HashAlgorithm` dispatch over a character buffer (`hash(alg, chars, count)`).
+/// @tparam InCharT Character code-unit type.
+/// @param[in] algorithm Target `HashAlgorithm` enumerator.
+/// @param[in] data Character pointer.
+/// @param[in] count Number of code units to hash.
+/// @return Tagged `HashDigest`.
+template <gp::concepts::IsCharacter InCharT>
+[[nodiscard]] constexpr HashDigest
+    hash(const HashAlgorithm algorithm, const InCharT* const data, const gp::USize count) noexcept
+{
+    return computeHash(algorithm, data, count);
+}
+
+/// @brief Runtime `HashAlgorithm` dispatch over an untyped runtime buffer (`hash(alg, voidPtr, sizeInBytes)`).
+/// @param[in] algorithm Target `HashAlgorithm` enumerator.
+/// @param[in] data Buffer address.
+/// @param[in] sizeInBytes Number of bytes to hash.
+/// @return Tagged `HashDigest`.
+[[nodiscard]] inline HashDigest
+    hash(const HashAlgorithm algorithm, const void* const data, const gp::USize sizeInBytes) noexcept
+{
+    return computeHash(algorithm, data, sizeInBytes);
+}
+
+/// @brief Runtime `HashAlgorithm` dispatch over any hashable value or container (`hash(alg, value)`).
+/// @tparam InT Value type supported by `DynamicHasher::append` or `computeHash`.
+/// @param[in] algorithm Target `HashAlgorithm` enumerator.
+/// @param[in] value Input value or string to hash.
+/// @return Tagged `HashDigest`.
+template <typename InT>
+[[nodiscard]] constexpr HashDigest hash(const HashAlgorithm algorithm, const InT& value) noexcept
+{
+    using DecayedT = std::remove_cvref_t<InT>;
+    if constexpr (concepts::IsCharacterSequence<DecayedT>)
+    {
+        return computeHash(algorithm, value);
+    }
+    else
+    {
+        DynamicHasher hasher(algorithm);
+        hasher.append(value);
+        return hasher.finalize();
+    }
+}
+
+/// @brief Constructs a concrete streaming hasher by type (`makeHasher<Sha256>()`).
+/// @tparam InHasher Concrete hasher satisfying `concepts::IsStreamingHasher`.
+/// @param[in] seed Optional initial seed.
+/// @return Initialized `InHasher` instance.
+template <concepts::IsStreamingHasher InHasher>
+[[nodiscard]] constexpr InHasher makeHasher(const typename InHasher::DigestType seed = InHasher::kDefaultSeed) noexcept
+{
+    return InHasher(seed);
+}
+
+/// @brief Constructs a concrete streaming hasher from a compile-time `HashAlgorithm` enumerator.
+/// @tparam InAlgorithm Target `HashAlgorithm` enumerator.
+/// @param[in] seed Optional initial seed.
+/// @return Initialized `Hasher<InAlgorithm>` instance.
+template <HashAlgorithm InAlgorithm>
+requires(InAlgorithm != HashAlgorithm::Count) [[nodiscard]] constexpr Hasher<InAlgorithm>
+    makeHasher(const typename Hasher<InAlgorithm>::DigestType seed = Hasher<InAlgorithm>::kDefaultSeed) noexcept
+{
+    return Hasher<InAlgorithm>(seed);
+}
+
+/// @brief Constructs a zero-allocation `DynamicHasher` for a runtime-selected `HashAlgorithm`.
+/// @param[in] algorithm Target `HashAlgorithm` enumerator.
+/// @return Initialized `DynamicHasher`.
+[[nodiscard]] constexpr DynamicHasher makeHasher(const HashAlgorithm algorithm = HashAlgorithm::Fnv1a64) noexcept
+{
+    return DynamicHasher(algorithm);
+}
 
 }   // namespace gp::hashing
