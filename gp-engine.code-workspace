@@ -110,6 +110,7 @@
       "assets": "resource",
       "parser": "resolver",
       "audio": "audio",
+      "diagnostics": "debug",
       "physics": "simulations",
       "input": "input",
       "hal": "connection",
