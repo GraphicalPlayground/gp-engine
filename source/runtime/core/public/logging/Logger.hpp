@@ -72,6 +72,19 @@ public:
     /// @return Reference to the global `Logger`.
     [[nodiscard]] static Logger& instance() noexcept;
 
+    /// @brief Installs an optional pre-abort callback invoked by `abortFatal()` before process termination.
+    /// @param[in] handler Callback function pointer, or `nullptr` to clear.
+    /// @return Previously registered callback pointer.
+    static FatalLogHandlerFn setFatalHandler(FatalLogHandlerFn handler) noexcept;
+
+    /// @brief Returns the currently registered fatal pre-abort callback pointer.
+    /// @return Active `FatalLogHandlerFn`, or `nullptr` if none is set.
+    [[nodiscard]] static FatalLogHandlerFn getFatalHandler() noexcept;
+
+    /// @brief Flushes the global logger, triggers any fatal handler, breaks if a debugger is attached, and aborts.
+    /// @param[in] location Source coordinates of the fatal log call site.
+    [[noreturn]] static void abortFatal(const LogSourceLocation& location = LogSourceLocation::current()) noexcept;
+
 public:
     /// @section Lifecycle & Configuration
 
@@ -195,7 +208,7 @@ public:
         }
         else
         {
-            LogMessageBuffer formattedBuffer{};
+            LogFormattedBuffer formattedBuffer{};
             const gp::StringView formattedView = formatTo(formattedBuffer, fmt.format, args...);
             submit(category, level, fmt.location, formattedView);
         }
@@ -333,16 +346,17 @@ GP_FORCEINLINE_HINT void
     log(category, LogLevel::Error, fmt, args...);
 }
 
-/// @brief Emits a `LogLevel::Fatal` message to the global `Logger::instance()` and flushes all sinks synchronously.
+/// @brief Emits a `LogLevel::Fatal` message to the global `Logger::instance()`, flushes all sinks, and aborts.
 /// @tparam InArgs Variadic argument types.
 /// @param[in] category Target `LogCategory`.
 /// @param[in] fmt Compile-time validated format string.
 /// @param[in] args Format replacement arguments.
 template <typename... InArgs>
-GP_FORCEINLINE_HINT void
+[[noreturn]] GP_FORCEINLINE_HINT void
     fatal(const LogCategory& category, const CheckedLogFormatString<InArgs...> fmt, const InArgs&... args) noexcept
 {
     log(category, LogLevel::Fatal, fmt, args...);
+    Logger::abortFatal(fmt.location);
 }
 
 }   // namespace gp::log

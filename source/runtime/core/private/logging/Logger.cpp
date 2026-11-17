@@ -3,15 +3,25 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "logging/Logger.hpp"
+#include "diagnostics/Assert.hpp"
 #include "memory/Memory.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "platforms/base/Platform.hpp"
 #include "platforms/base/system/Thread.hpp"
 #include "platforms/base/system/Time.hpp"
 #include "profiling/Profiler.hpp"
 #include "threading/fibers/Fiber.hpp"
+#include <cstdlib>
 
 namespace gp::log
 {
+
+namespace
+{
+
+gp::thread::Atomic<FatalLogHandlerFn> g_fatalLogHandler{ nullptr };
+
+}   // namespace
 
 LogCategory LogTemp("LogTemp", LogLevel::Trace, LogLevel::Trace);
 LogCategory LogCore("LogCore", LogLevel::Info, LogLevel::Trace);
@@ -40,6 +50,34 @@ Logger& Logger::instance() noexcept
 {
     static Logger s_instance{};
     return s_instance;
+}
+
+FatalLogHandlerFn Logger::setFatalHandler(const FatalLogHandlerFn handler) noexcept
+{
+    return g_fatalLogHandler.exchange(handler, gp::MemoryOrder::AcqRel);
+}
+
+FatalLogHandlerFn Logger::getFatalHandler() noexcept
+{
+    return g_fatalLogHandler.load(gp::MemoryOrder::Acquire);
+}
+
+void Logger::abortFatal(const LogSourceLocation& location) noexcept
+{
+    Logger::instance().flush();
+
+    const FatalLogHandlerFn handler = g_fatalLogHandler.load(gp::MemoryOrder::Acquire);
+    if (handler != nullptr)
+    {
+        handler(location);
+    }
+
+    if (gp::diagnostics::isDebuggerPresent())
+    {
+        GP_PLATFORM_BREAK();
+    }
+
+    std::abort();
 }
 
 LogResult Logger::initialize(const LoggerDesc& desc) noexcept
@@ -229,8 +267,9 @@ void Logger::submit(
 
     const LogExecutionMode activeMode = m_mode.load(gp::MemoryOrder::Acquire);
     const bool isFatal = (level == LogLevel::Fatal);
+    const bool exceedsInlineEntryCapacity = (message.size() > kMaxLogMessageLength);
 
-    if (activeMode == LogExecutionMode::Synchronous || isFatal)
+    if (activeMode == LogExecutionMode::Synchronous || isFatal || exceedsInlineEntryCapacity)
     {
         LogRecordView record{};
         record.timestamp = gp::time::Timestamp(nowNs);
