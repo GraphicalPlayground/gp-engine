@@ -135,6 +135,10 @@ TEST(HashDigestTest, WidthConversionsAndZeroFlags)
     static_assert(k64.toUInt64() == 0x1122334455667788ULL);
     EXPECT_NE(k64.toUInt32(), 0u);
 
+    constexpr HashDigest kSizeDigest(gp::USize{ 42u }, HashAlgorithm::Fnv1a64);
+    static_assert(kSizeDigest.width == HashWidth::Bits64);
+    static_assert(kSizeDigest.toUInt64() == 42ULL);
+
     constexpr HashDigest k128(Hash128(0x1234ULL, 0x5678ULL), HashAlgorithm::Murmur3_128);
     static_assert(k128.width == HashWidth::Bits128);
     EXPECT_EQ(k128.toHash128(), Hash128(0x1234ULL, 0x5678ULL));
