@@ -84,6 +84,21 @@ constexpr void writeHex64(const gp::UInt64 value, char* const outBuffer, const b
     return true;
 }
 
+/// @brief CityHash 128-to-64 mixing primitive kept local to avoid a dependency cycle with `HashMix.hpp`.
+/// @param[in] low First 64-bit word.
+/// @param[in] high Second 64-bit word.
+/// @return Mixed 64-bit word.
+[[nodiscard]] constexpr gp::UInt64 foldWords128To64(const gp::UInt64 low, const gp::UInt64 high) noexcept
+{
+    constexpr gp::UInt64 kMul = 0x9DDFEA08EB382D69ULL;
+    gp::UInt64 a = (low ^ high) * kMul;
+    a ^= (a >> 47u);
+    gp::UInt64 b = (high ^ a) * kMul;
+    b ^= (b >> 47u);
+    b *= kMul;
+    return b;
+}
+
 }   // namespace detail
 
 /// @brief 16-byte trivially copyable 128-bit digest used for asset GUIDs, shader keys, and Murmur3_128 outputs.
@@ -155,13 +170,7 @@ public:
     /// @return Mixed 64-bit hash suitable for 64-bit hash table buckets.
     [[nodiscard]] constexpr gp::UInt64 foldTo64() const noexcept
     {
-        constexpr gp::UInt64 kMul = 0x9DDFEA08EB382D69ULL;
-        gp::UInt64 a = (low ^ high) * kMul;
-        a ^= (a >> 47u);
-        gp::UInt64 b = (high ^ a) * kMul;
-        b ^= (b >> 47u);
-        b *= kMul;
-        return b;
+        return detail::foldWords128To64(low, high);
     }
 
     /// @brief Folds all 128 bits down to a 32-bit hash via `foldTo64()` and Murmur3 finalization.
@@ -222,14 +231,162 @@ public:
 static_assert(sizeof(Hash128) == 16u, "Hash128 must be 16 bytes.");
 static_assert(alignof(Hash128) == 8u, "Hash128 must be 8-byte aligned.");
 
+/// @brief 32-byte trivially copyable 256-bit digest used for SHA-256 content addressing, asset DDC keys, and patch
+///        verification.
+/// @details Words are stored in big-endian significance (`words[0]` is most significant, `words[3]` is least
+///          significant) so `toHexString()`, `tryParseHex()`, and `operator<=>` match standard SHA-256 byte ordering.
+struct Hash256
+{
+public:
+    /// @brief Required buffer capacity (64 hex digits plus trailing null terminator) for `toHexString()`.
+    static constexpr gp::USize kHexBufferSize = 65u;
+
+    /// @brief Four 64-bit words ordered most-significant (`words[0]`) to least-significant (`words[3]`).
+    gp::UInt64 words[4]{};
+
+public:
+    /// @brief Default-constructs a zeroed 256-bit digest.
+    [[nodiscard]] constexpr Hash256() noexcept = default;
+
+    /// @brief Constructs a 256-bit digest from four 64-bit words in most-significant-first order.
+    /// @param[in] w0 Most-significant 64-bit word (`bytes[0..7]`).
+    /// @param[in] w1 Second 64-bit word (`bytes[8..15]`).
+    /// @param[in] w2 Third 64-bit word (`bytes[16..23]`).
+    /// @param[in] w3 Least-significant 64-bit word (`bytes[24..31]`).
+    [[nodiscard]] constexpr Hash256(
+        const gp::UInt64 w0, const gp::UInt64 w1, const gp::UInt64 w2, const gp::UInt64 w3
+    ) noexcept
+        : words{ w0, w1, w2, w3 }
+    {}
+
+    /// @brief Constructs a 256-bit digest from two 128-bit halves (`highHalf` followed by `lowHalf`).
+    /// @param[in] highHalf Upper 128 bits (`words[0] = highHalf.high`, `words[1] = highHalf.low`).
+    /// @param[in] lowHalf Lower 128 bits (`words[2] = lowHalf.high`, `words[3] = lowHalf.low`).
+    [[nodiscard]] constexpr Hash256(const Hash128& highHalf, const Hash128& lowHalf) noexcept
+        : words{ highHalf.high, highHalf.low, lowHalf.high, lowHalf.low }
+    {}
+
+    /// @brief Checks exact 256-bit equality.
+    /// @param[in] other Digest to compare against.
+    /// @return True if all four 64-bit words match.
+    [[nodiscard]] constexpr bool operator==(const Hash256& other) const noexcept = default;
+
+    /// @brief Orders two 256-bit digests lexicographically from `words[0]` to `words[3]`.
+    /// @param[in] other Digest to compare against.
+    /// @return `std::strong_ordering` result.
+    [[nodiscard]] constexpr std::strong_ordering operator<=>(const Hash256& other) const noexcept
+    {
+        for (gp::USize i = 0u; i < 4u; ++i)
+        {
+            if (const std::strong_ordering cmp = words[i] <=> other.words[i]; cmp != 0)
+            {
+                return cmp;
+            }
+        }
+        return std::strong_ordering::equal;
+    }
+
+public:
+    /// @brief Checks whether all 256 bits are zero.
+    /// @return True if all four words equal zero.
+    [[nodiscard]] constexpr bool isZero() const noexcept
+    {
+        return words[0] == 0ULL && words[1] == 0ULL && words[2] == 0ULL && words[3] == 0ULL;
+    }
+
+    /// @brief Checks whether the digest holds any non-zero bit (`!isZero()`).
+    /// @return True if non-zero, false otherwise.
+    [[nodiscard]] constexpr bool isValid() const noexcept
+    {
+        return !isZero();
+    }
+
+    /// @brief Contextual boolean conversion returning `isValid()`.
+    /// @return True if non-zero, false if zero.
+    [[nodiscard]] constexpr explicit operator bool() const noexcept
+    {
+        return isValid();
+    }
+
+    /// @brief Folds all 256 bits down to a 128-bit digest using two independent CityHash `Hash128to64` lanes.
+    /// @return Folded 128-bit digest.
+    [[nodiscard]] constexpr Hash128 foldTo128() const noexcept
+    {
+        const gp::UInt64 low = detail::foldWords128To64(words[2], words[0]);
+        const gp::UInt64 high = detail::foldWords128To64(words[3], words[1]);
+        return Hash128(low, high);
+    }
+
+    /// @brief Folds all 256 bits down to a 64-bit hash key.
+    /// @return Mixed 64-bit hash.
+    [[nodiscard]] constexpr gp::UInt64 foldTo64() const noexcept
+    {
+        return foldTo128().foldTo64();
+    }
+
+    /// @brief Folds all 256 bits down to a 32-bit hash key.
+    /// @return Mixed 32-bit hash.
+    [[nodiscard]] constexpr gp::UInt32 foldTo32() const noexcept
+    {
+        return foldTo128().foldTo32();
+    }
+
+    /// @brief Formats the digest as 64 big-endian hexadecimal characters (`words[0..3]`) plus null terminator.
+    /// @param[out] outBuffer Caller-owned destination buffer.
+    /// @param[in] bufferSize Byte capacity of @p outBuffer; must be at least `kHexBufferSize` (`65`).
+    /// @param[in] uppercase True for uppercase `'A'..'F'`, false for lowercase `'a'..'f'`.
+    /// @return True if formatting succeeded, false if @p outBuffer is null or too small.
+    constexpr bool
+        toHexString(char* const outBuffer, const gp::USize bufferSize, const bool uppercase = false) const noexcept
+    {
+        if (outBuffer == nullptr || bufferSize < kHexBufferSize)
+        {
+            return false;
+        }
+        for (gp::USize i = 0u; i < 4u; ++i)
+        {
+            detail::writeHex64(words[i], outBuffer + (i * 16u), uppercase);
+        }
+        outBuffer[64] = '\0';
+        return true;
+    }
+
+    /// @brief Parses a 64-character hexadecimal digest string (`words[0..3]`) into @p outDigest.
+    /// @param[in] hexStr Pointer to 64 ASCII hexadecimal digits.
+    /// @param[in] length Number of characters available at @p hexStr (must equal `64`).
+    /// @param[out] outDigest Receives the parsed `Hash256` on success.
+    /// @return True if parsing succeeded, false if input is null, wrong length, or contains non-hex characters.
+    [[nodiscard]] static constexpr bool
+        tryParseHex(const char* const hexStr, const gp::USize length, Hash256& outDigest) noexcept
+    {
+        if (hexStr == nullptr || length != 64u)
+        {
+            return false;
+        }
+        Hash256 parsed{};
+        for (gp::USize i = 0u; i < 4u; ++i)
+        {
+            if (!detail::parseHex64(hexStr + (i * 16u), parsed.words[i]))
+            {
+                return false;
+            }
+        }
+        outDigest = parsed;
+        return true;
+    }
+};
+
+static_assert(sizeof(Hash256) == 32u, "Hash256 must be 32 bytes.");
+static_assert(alignof(Hash256) == 8u, "Hash256 must be 8-byte aligned.");
+
 /// @brief Tagged uniform result container returned by runtime-dispatched `DynamicHasher` and `computeHash()`.
-/// @details Always occupies 24 bytes without heap allocations. Use `toUInt32()`, `toUInt64()`, or `toHash128()`
-///          to convert any algorithm width, or read `bits`, `width`, and `algorithm` directly.
+/// @details Always occupies 40 bytes without heap allocations, holding any 32-, 64-, 128-, or 256-bit algorithm
+///          output losslessly. Use `toUInt32()`, `toUInt64()`, `toHash128()`, or `toHash256()` to read any width.
 struct HashDigest
 {
 public:
-    /// @brief Underlying storage holding up to 128 digest bits.
-    Hash128 bits{};
+    /// @brief Underlying storage holding up to 256 digest bits.
+    Hash256 bits{};
 
     /// @brief Native output width of the algorithm that produced this digest.
     HashWidth width{ HashWidth::Bits64 };
@@ -248,7 +405,7 @@ public:
     template <gp::concepts::IsUnsignedIntegral InDigestT>
     requires(sizeof(InDigestT) == 4u)
     [[nodiscard]] constexpr HashDigest(const InDigestT value, const HashAlgorithm inAlgorithm) noexcept
-        : bits(static_cast<gp::UInt64>(value), 0ULL)
+        : bits(static_cast<gp::UInt64>(value), 0ULL, 0ULL, 0ULL)
         , width(HashWidth::Bits32)
         , algorithm(inAlgorithm)
     {}
@@ -260,7 +417,7 @@ public:
     template <gp::concepts::IsUnsignedIntegral InDigestT>
     requires(sizeof(InDigestT) == 8u)
     [[nodiscard]] constexpr HashDigest(const InDigestT value, const HashAlgorithm inAlgorithm) noexcept
-        : bits(static_cast<gp::UInt64>(value), 0ULL)
+        : bits(static_cast<gp::UInt64>(value), 0ULL, 0ULL, 0ULL)
         , width(HashWidth::Bits64)
         , algorithm(inAlgorithm)
     {}
@@ -269,8 +426,17 @@ public:
     /// @param[in] value 128-bit digest value.
     /// @param[in] inAlgorithm Originating algorithm.
     [[nodiscard]] constexpr HashDigest(const Hash128& value, const HashAlgorithm inAlgorithm) noexcept
-        : bits(value)
+        : bits(value.low, value.high, 0ULL, 0ULL)
         , width(HashWidth::Bits128)
+        , algorithm(inAlgorithm)
+    {}
+
+    /// @brief Constructs a 256-bit digest result.
+    /// @param[in] value 256-bit digest value.
+    /// @param[in] inAlgorithm Originating algorithm.
+    [[nodiscard]] constexpr HashDigest(const Hash256& value, const HashAlgorithm inAlgorithm) noexcept
+        : bits(value)
+        , width(HashWidth::Bits256)
         , algorithm(inAlgorithm)
     {}
 
@@ -284,25 +450,44 @@ public:
     {
         if (width == HashWidth::Bits32)
         {
-            return static_cast<gp::UInt32>(bits.low);
+            return static_cast<gp::UInt32>(bits.words[0]);
         }
-        return bits.foldTo32();
+        if (width == HashWidth::Bits256)
+        {
+            return bits.foldTo32();
+        }
+        return Hash128(bits.words[0], bits.words[1]).foldTo32();
     }
 
-    /// @brief Returns the raw 64-bit value for a 64-bit digest, zero-extends 32-bit digests, or folds 128-bit digests.
+    /// @brief Returns the raw 64-bit value for 32/64-bit digests, or folds 128/256-bit digests down to 64 bits.
     /// @return 64-bit digest representation.
     [[nodiscard]] constexpr gp::UInt64 toUInt64() const noexcept
     {
         if (width == HashWidth::Bits128)
         {
+            return Hash128(bits.words[0], bits.words[1]).foldTo64();
+        }
+        if (width == HashWidth::Bits256)
+        {
             return bits.foldTo64();
         }
-        return bits.low;
+        return bits.words[0];
     }
 
-    /// @brief Returns the full 128-bit storage (`{ value, 0 }` for 32-bit and 64-bit digests).
+    /// @brief Returns the 128-bit digest (`{ value, 0 }` for 32/64-bit, exact for 128-bit, folded for 256-bit).
     /// @return 128-bit digest representation.
     [[nodiscard]] constexpr Hash128 toHash128() const noexcept
+    {
+        if (width == HashWidth::Bits256)
+        {
+            return bits.foldTo128();
+        }
+        return Hash128(bits.words[0], bits.words[1]);
+    }
+
+    /// @brief Returns the full 256-bit storage (`{ value, 0, 0, 0 }` for narrower digests).
+    /// @return 256-bit digest representation.
+    [[nodiscard]] constexpr Hash256 toHash256() const noexcept
     {
         return bits;
     }
@@ -322,7 +507,7 @@ public:
     }
 };
 
-static_assert(sizeof(HashDigest) == 24u, "HashDigest must be 24 bytes.");
+static_assert(sizeof(HashDigest) == 40u, "HashDigest must be 40 bytes.");
 
 /// @brief Compile-time mapping from a `HashAlgorithm` enumerator to its concrete streaming hasher class.
 /// @tparam InAlgorithm Target `HashAlgorithm` enumerator.
