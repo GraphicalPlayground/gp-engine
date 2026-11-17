@@ -8,6 +8,9 @@
 #include "ApplicationForward.hpp"
 #include "ApplicationTypes.hpp"
 #include "backend/IApplicationBackend.hpp"
+#include "console/ConsoleEnums.hpp"
+#include "console/ConsoleForward.hpp"
+#include "console/ConsoleTypes.hpp"
 #include "containers/queues/SPSCRingBuffer.hpp"   // IWYU pragma: keep
 #include "containers/views/StringView.hpp"        // IWYU pragma: keep
 #include "CoreMinimal.hpp"
@@ -36,9 +39,11 @@
 #include "logging/sinks/TracySink.hpp"
 #include "memory/allocators/LinearAllocator.hpp"
 #include "memory/pointers/UniquePtr.hpp"
+#include "templates/Delegate.hpp"
 #include "threading/Atomic.hpp"
 #include "threading/jobs/JobGraph.hpp"
 #include "threading/jobs/JobSystem.hpp"
+#include "threading/roles/NamedThreadDispatcher.hpp"
 #include "time/EngineClock.hpp"
 #include "window/IWindow.hpp"
 #include "window/WindowDesc.hpp"   // IWYU pragma: keep
@@ -69,6 +74,22 @@ GP_DECLARE_EXPORTED_LOG_CATEGORY_EXTERN(GP_APPLICATION_API, LogApplication);
 class GP_APPLICATION_API Application
 {
 private:
+    struct ConsoleControlBindings final
+    {
+        console::IConsoleVariable* targetForegroundFps{ nullptr };
+        console::IConsoleVariable* targetBackgroundFps{ nullptr };
+        console::IConsoleVariable* sleepWhenMinimized{ nullptr };
+        console::IConsoleVariable* timeScale{ nullptr };
+        console::IConsoleVariable* paused{ nullptr };
+        console::IConsoleVariable* smoothingMode{ nullptr };
+        console::IConsoleCommand* stepCmd{ nullptr };
+        console::IConsoleCommand* quitCmd{ nullptr };
+        console::IConsoleCommand* statsCmd{ nullptr };
+        console::IConsoleCommand* jobsStatsCmd{ nullptr };
+        gp::DelegateHandle sinkHandle{};
+    };
+
+private:
     ApplicationDesc m_desc{};
     gp::UniquePtr<hal::IApplicationBackend> m_backend{};
     gp::UniquePtr<hal::input::IInputSystem> m_inputSystem{};
@@ -76,6 +97,7 @@ private:
     gp::SPSCByteRingBuffer m_eventStream{};
     gp::time::EngineClock m_clock{};
     gp::thread::JobSystem m_jobSystem{};
+    gp::thread::NamedThreadDispatcher m_namedThreadDispatcher{};
     gp::memory::LinearAllocator m_frameArenas[kFrameArenaBufferCount]{};
     gp::thread::JobGraph m_frameGraph{};
     log::ConsoleSink m_consoleSink{};
@@ -83,12 +105,16 @@ private:
     log::DebugOutputSink m_debugOutputSink{};
     log::TracySink m_tracySink{};
     hal::EventPumpStats m_lastPumpStats{};
+    ConsoleControlBindings m_consoleBindings{};
 
     gp::UInt32 m_activeFrameArenaIndex{ 0u };
     gp::Atomic<bool> m_isRunning{ false };
     bool m_isInitialized{ false };
     bool m_isSuspended{ false };
     bool m_ownsLoggerInitialization{ false };
+    bool m_ownsGameThreadRole{ false };
+    bool m_ownsRenderThreadRole{ false };
+    bool m_ownsRHIThreadRole{ false };
 
 public:
     /// @brief Constructs the application with injected HAL backend and optional custom input system.
@@ -194,6 +220,20 @@ public:
         return m_jobSystem;
     }
 
+    /// @brief Retrieves a mutable reference to the application's per-named-thread task dispatcher.
+    /// @return Reference to `gp::thread::NamedThreadDispatcher`.
+    [[nodiscard]] constexpr gp::thread::NamedThreadDispatcher& getNamedThreadDispatcher() noexcept
+    {
+        return m_namedThreadDispatcher;
+    }
+
+    /// @brief Retrieves a const reference to the application's per-named-thread task dispatcher.
+    /// @return Const reference to `gp::thread::NamedThreadDispatcher`.
+    [[nodiscard]] constexpr const gp::thread::NamedThreadDispatcher& getNamedThreadDispatcher() const noexcept
+    {
+        return m_namedThreadDispatcher;
+    }
+
     /// @brief Retrieves a mutable reference to the current frame's `LinearAllocator` (`Frame N` arena).
     /// @details Reset in $O(1)$ time at the start of Frame `N`; allocations remain valid until the start of Frame
     ///          `N + 2`.
@@ -252,6 +292,17 @@ public:
     {
         return m_lastPumpStats;
     }
+
+    /// @brief Retrieves a reference to the process-wide `gp::console::IConsoleManager` registry ([ADR-0057]).
+    /// @return Reference to `gp::console::IConsoleManager::get()`.
+    [[nodiscard]] static console::IConsoleManager& getConsoleManager() noexcept;
+
+    /// @brief Executes a console variable assignment, query, or command string on the global console manager.
+    /// @param[in] commandLine Raw UTF-8 command or CVar assignment line (e.g., `"app.TargetFps 60"` or `"t.Paused=1"`).
+    /// @param[in] output Optional callback receiving formatted diagnostic lines (`nullptr` logs to `LogConsole`).
+    /// @return `ConsoleResult::Success` on success, or the specific parsing/priority/lookup rejection code.
+    console::ConsoleResult
+        executeConsoleCommand(gp::StringView commandLine, console::ConsoleOutputDelegate* output = nullptr) noexcept;
 
     /// @brief Retrieves a reference to the process-wide `gp::log::Logger` router ([ADR-0054]).
     /// @return Reference to `gp::log::Logger::instance()`.
@@ -426,6 +477,18 @@ private:
     ///        `-core-affinity`, `-no-log`, `-no-console-log`, `-log-file`) from `gp::CommandLine` to `m_desc`.
     void applyCommandLineOverrides() noexcept;
 
+    /// @brief Claims `NamedThread::Game` (and `Render` / `RHI` when `singleThreadedRenderAndRHI` is set) for the
+    ///        calling thread.
+    /// @return True if all requested roles were attached or already held by the caller, false if another thread owns
+    ///         one of them.
+    [[nodiscard]] bool attachThreadRolesInternal() noexcept;
+
+    /// @brief Detaches whichever `NamedThread` roles this `Application` claimed in `attachThreadRolesInternal()`.
+    void detachThreadRolesInternal() noexcept;
+
+    /// @brief Pumps any remaining tasks from the named-thread queues owned by this `Application`.
+    void pumpOwnedNamedThreadQueuesInternal() noexcept;
+
     /// @brief Configures, attaches, and initializes the logging subsystem and built-in sinks (`m_consoleSink`,
     ///        `m_fileSink`, `m_debugOutputSink`, `m_tracySink`).
     void initializeLoggingInternal() noexcept;
@@ -433,6 +496,16 @@ private:
     /// @brief Flushes pending log records, detaches the application's built-in sinks, closes `m_fileSink`, and shuts
     ///        down `Logger::instance()` if initialized by this `Application`.
     void shutdownLoggingInternal() noexcept;
+
+    /// @brief Warms the global `IConsoleManager`, registers application/clock/job console bindings, and synchronizes
+    ///        any startup CLI CVar overrides cleanly into `m_desc` and `m_clock`.
+    void initializeConsoleInternal() noexcept;
+
+    /// @brief Unregisters application-owned console variables, commands, and sink handles before member teardown.
+    void shutdownConsoleInternal() noexcept;
+
+    /// @brief Pulls runtime CVar values from `m_consoleBindings` into `m_desc` and `m_clock`.
+    void syncConsoleControlValues() noexcept;
 
     /// @brief Rotates `m_activeFrameArenaIndex` to `frameIndex & 1u`, resets the new current frame arena in $O(1)$
     ///        time, and rebinds `m_frameGraph` over the reset arena.

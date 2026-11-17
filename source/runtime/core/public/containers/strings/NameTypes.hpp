@@ -5,10 +5,12 @@
 #pragma once
 
 #include "containers/ContainerForward.hpp"
-#include "containers/strings/CharTraits.hpp"
+#include "containers/strings/CharTraits.hpp"   // IWYU pragma: keep
 #include "containers/strings/StringEnums.hpp"
 #include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
+#include "hashing/Fnv1a.hpp"
+#include "hashing/HashingEnums.hpp"
 #include <compare>
 
 namespace gp::container
@@ -96,7 +98,15 @@ public:
     [[nodiscard]] constexpr explicit NameHash(
         const BasicStringView<char> str, const SearchCase searchCase = SearchCase::IgnoreCase
     ) noexcept
-        : m_hash(str.isEmpty() ? kEmptyHash : CharTraits<char>::hash(str.data(), str.size(), searchCase))
+        : m_hash(
+              str.isEmpty() ? kEmptyHash
+                            : gp::hashing::Fnv1a64::hash(
+                                  str.data(),
+                                  str.size(),
+                                  (searchCase == SearchCase::CaseSensitive) ? gp::hashing::HashCase::CaseSensitive
+                                                                            : gp::hashing::HashCase::IgnoreCase
+                              )
+          )
     {}
 
     /// @brief Computes a `NameHash` from a null-terminated UTF-8 C-string.
@@ -116,7 +126,23 @@ public:
         return m_hash;
     }
 
-    /// @brief Implicit conversion to `gp::UInt64` for seamless use in `switch` statements and `case` labels.
+    /// @brief Returns the underlying 64-bit hash integer for `gp::hashing::hashOf`.
+    /// @return 64-bit FNV-1a hash value (`0` if empty).
+    [[nodiscard]] constexpr gp::UInt64 hash() const noexcept
+    {
+        return m_hash;
+    }
+
+    /// @brief Streams the stored 64-bit hash digest into any `gp::hashing` accumulator.
+    /// @tparam InHasher Target streaming hasher type.
+    /// @param[in,out] hasher Target accumulator.
+    template <typename InHasher>
+    constexpr void hashAppend(InHasher& hasher) const noexcept
+    {
+        hasher.append(m_hash);
+    }
+
+    /// @brief Implicit conversion to `gp::UInt64` for direct use in `switch` statements and `case` labels.
     /// @return 64-bit FNV-1a hash value.
     [[nodiscard]] constexpr operator gp::UInt64() const noexcept
     {

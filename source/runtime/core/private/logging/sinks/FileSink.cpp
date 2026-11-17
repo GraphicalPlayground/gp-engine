@@ -100,7 +100,7 @@ void FileSink::write(const LogRecordView& record) noexcept
         return;
     }
 
-    gp::FixedString<640> lineBuffer{};
+    LogLineBuffer lineBuffer{};
     const gp::StringView formattedLine = formatLogRecordLine(lineBuffer, record, m_flags);
     const gp::USize lineLen = formattedLine.size();
 

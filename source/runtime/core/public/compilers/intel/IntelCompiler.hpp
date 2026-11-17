@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "miscellaneous/PreProcessorUtilities.hpp"
+
 // Intel has two distinct compiler families:
 //   • ICC  (classic): defines __INTEL_COMPILER and __ICC.  GCC-ABI, supports most gnu:: attributes.
 //   • ICX  (modern):  defines __INTEL_LLVM_COMPILER.  Built on LLVM/Clang; clang:: attributes work.
@@ -39,6 +41,30 @@
     #define GP_CALLSITE_FORCEINLINE              [[clang::always_inline]]
     #define GP_FLATTEN                           __attribute__((flatten))
 
+    #define GP_SELECT_ANY                        __attribute__((weak))
+    #define GP_PACKED                            __attribute__((packed))
+    #define GP_BUILTIN_UNREACHABLE()             __builtin_unreachable()
+    #define GP_COLD                              __attribute__((cold))
+
+    #define GP_GCC_WARNING_PUSH()                _Pragma("GCC diagnostic push")
+    #define GP_GCC_WARNING_POP()                 _Pragma("GCC diagnostic pop")
+    #define GP_GCC_WARNING_DISABLE(w)            _Pragma(GP_STRINGIFY(GCC diagnostic ignored w))
+
+    #define GP_DISABLE_DEPRECATION_WARNINGS \
+        GP_GCC_WARNING_PUSH()               \
+        GP_GCC_WARNING_DISABLE("-Wdeprecated-declarations")
+    #define GP_ENABLE_DEPRECATION_WARNINGS GP_GCC_WARNING_POP()
+
+    #define GP_THIRD_PARTY_INCLUDES_START                     \
+        GP_GCC_WARNING_PUSH()                                 \
+        GP_GCC_WARNING_DISABLE("-Wdeprecated-declarations")   \
+        GP_GCC_WARNING_DISABLE("-Wunused-parameter")          \
+        GP_GCC_WARNING_DISABLE("-Wshadow")                    \
+        GP_GCC_WARNING_DISABLE("-Wmissing-field-initializers") \
+        GP_GCC_WARNING_DISABLE("-Wgnu-anonymous-struct")      \
+        GP_GCC_WARNING_DISABLE("-Wnested-anon-types")
+    #define GP_THIRD_PARTY_INCLUDES_END GP_GCC_WARNING_POP()
+
 #else   // Classic ICC
 
 /// @section ICC (classic Intel C++ compiler, GCC ABI).
@@ -69,5 +95,27 @@
     #define GP_CALLSITE_FORCEINLINE              __attribute__((always_inline))
     // ICC supports __attribute__((flatten)) since version 19.1.
     #define GP_FLATTEN                           __attribute__((flatten))
+
+    #define GP_SELECT_ANY                        __attribute__((weak))
+    #define GP_PACKED                            __attribute__((packed))
+    #define GP_BUILTIN_UNREACHABLE()             __builtin_unreachable()
+    #define GP_COLD                              __attribute__((cold))
+
+    #define GP_GCC_WARNING_PUSH()                _Pragma("GCC diagnostic push")
+    #define GP_GCC_WARNING_POP()                 _Pragma("GCC diagnostic pop")
+    #define GP_GCC_WARNING_DISABLE(w)            _Pragma(GP_STRINGIFY(GCC diagnostic ignored w))
+
+    #define GP_DISABLE_DEPRECATION_WARNINGS \
+        GP_GCC_WARNING_PUSH()               \
+        GP_GCC_WARNING_DISABLE("-Wdeprecated-declarations")
+    #define GP_ENABLE_DEPRECATION_WARNINGS GP_GCC_WARNING_POP()
+
+    #define GP_THIRD_PARTY_INCLUDES_START                     \
+        GP_GCC_WARNING_PUSH()                                 \
+        GP_GCC_WARNING_DISABLE("-Wdeprecated-declarations")   \
+        GP_GCC_WARNING_DISABLE("-Wunused-parameter")          \
+        GP_GCC_WARNING_DISABLE("-Wshadow")                    \
+        GP_GCC_WARNING_DISABLE("-Wmissing-field-initializers")
+    #define GP_THIRD_PARTY_INCLUDES_END GP_GCC_WARNING_POP()
 
 #endif   // __INTEL_LLVM_COMPILER

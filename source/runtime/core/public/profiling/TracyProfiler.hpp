@@ -24,6 +24,13 @@
 #define GP_PROFILE_SCOPE_NC(name, color) ZoneScopedNC(name, color)
 #define GP_PROFILE_FUNCTION() ZoneScoped
 
+#define GP_PROFILE_SCOPE_ACTIVE(active) SuppressVarShadowWarning(ZoneNamed(___tracy_scoped_zone, active))
+#define GP_PROFILE_SCOPE_N_ACTIVE(name, active) SuppressVarShadowWarning(ZoneNamedN(___tracy_scoped_zone, name, active))
+#define GP_PROFILE_SCOPE_C_ACTIVE(color, active) SuppressVarShadowWarning(ZoneNamedC(___tracy_scoped_zone, color, active))
+#define GP_PROFILE_SCOPE_NC_ACTIVE(name, color, active) \
+    SuppressVarShadowWarning(ZoneNamedNC(___tracy_scoped_zone, name, color, active))
+#define GP_PROFILE_FUNCTION_ACTIVE(active) SuppressVarShadowWarning(ZoneNamed(___tracy_scoped_zone, active))
+
 #define GP_PROFILE_ZONE_TEXT(text, size) ZoneText(text, size)
 #define GP_PROFILE_ZONE_NAME(text, size) ZoneName(text, size)
 #define GP_PROFILE_ZONE_VALUE(val) ZoneValue(val)
@@ -49,11 +56,38 @@
 #define GP_MESSAGE_L(literal) TracyMessageL(literal)
 #define GP_MESSAGE_C(text, size, color) TracyMessageC(text, size, color)
 #define GP_MESSAGE_LC(literal, color) TracyMessageLC(literal, color)
+#define GP_MESSAGE_C_IF(cond, text, size, color) \
+    do                                           \
+    {                                            \
+        if (cond)                                \
+        {                                        \
+            TracyMessageC(text, size, color);    \
+        }                                        \
+    }                                            \
+    while (false)
+#define GP_MESSAGE_LC_IF(cond, literal, color) \
+    do                                         \
+    {                                          \
+        if (cond)                              \
+        {                                      \
+            TracyMessageLC(literal, color);    \
+        }                                      \
+    }                                          \
+    while (false)
 
 /// @section Plots / Graphs
 
 #define GP_PLOT(name, val) TracyPlot(name, val)
 #define GP_PLOT_CONFIG(name, type, step, fill, color) TracyPlotConfig(name, type, step, fill, color)
+#define GP_PLOT_IF(cond, name, val) \
+    do                              \
+    {                               \
+        if (cond)                   \
+        {                           \
+            TracyPlot(name, val);   \
+        }                           \
+    }                               \
+    while (false)
 
 /// @section Threading
 

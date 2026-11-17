@@ -254,6 +254,11 @@ lock-free architectures.
   > combining `<charconv>` stack formatting, `consteval` format string verification, atomic
   > `LogCategory` filtering, dual synchronous/lock-free MPMC ring execution, and a hybrid C++23
   > function plus short-circuiting `GP_LOG` macro front-end.
+- [**ADR-0057**: Runtime Console Variable and Command Registry with Dual-Slot Render Sync](
+  ./ADR-0057.md)
+  > Adopts a zero-allocation runtime console subsystem (`gp::console`) in `gp::core` that combines
+  > O3DE/id Tech intrusive static registration with Unreal-style dual Game/Render slots, priority
+  > tiers, and `gp::Delegate` notifications.
 
 ### Math & Core Types
 

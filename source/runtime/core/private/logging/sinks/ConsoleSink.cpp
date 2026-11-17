@@ -3,7 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "logging/sinks/ConsoleSink.hpp"
-#include "containers/strings/FixedString.hpp"
+#include "containers/strings/FixedString.hpp"   // IWYU pragma: keep
 #include "logging/LogFormatter.hpp"
 #include <cstdio>
 
@@ -28,7 +28,7 @@ void ConsoleSink::write(const LogRecordView& record) noexcept
         return;
     }
 
-    gp::FixedString<640> lineBuffer{};
+    LogLineBuffer lineBuffer{};
     const gp::StringView formattedLine = formatLogRecordLine(lineBuffer, record, m_flags);
 
     std::FILE* const targetStream =

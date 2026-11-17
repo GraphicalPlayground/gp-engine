@@ -4,15 +4,5 @@
 
 #pragma once
 
-#include "miscellaneous/BuildDefines.hpp"   // IWYU pragma: export
-#include "platforms/base/Platform.hpp"      // IWYU pragma: export
-
-#if GP_IS_MONOLITHIC
-    #define GP_CORE_API
-#else
-    #ifdef GP_CORE_EXPORTS
-        #define GP_CORE_API GP_DLLEXPORT
-    #else
-        #define GP_CORE_API GP_DLLIMPORT
-    #endif
-#endif
+#include "CoreAPI.hpp"                       // IWYU pragma: export
+#include "diagnostics/AssertionMacros.hpp"   // IWYU pragma: export

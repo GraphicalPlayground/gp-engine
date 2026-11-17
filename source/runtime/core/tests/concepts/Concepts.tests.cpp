@@ -3,10 +3,73 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "concepts/Concepts.hpp"
+#include "memory/utils/MemoryOps.hpp"
+#include "templates/TypeCompatibleBytes.hpp"
 #include <array>
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
+
+namespace gp::concepts::tests
+{
+
+struct CustomRelocatableHandle
+{
+    static inline int s_moveCount = 0;
+    static inline int s_destructCount = 0;
+
+    int id = 0;
+
+    CustomRelocatableHandle() = default;
+
+    explicit CustomRelocatableHandle(int inId) noexcept
+        : id(inId)
+    {}
+
+    CustomRelocatableHandle(CustomRelocatableHandle&& other) noexcept
+        : id(other.id)
+    {
+        ++s_moveCount;
+        other.id = -1;
+    }
+
+    ~CustomRelocatableHandle()
+    {
+        ++s_destructCount;
+    }
+};
+
+struct NonRelocatableCounter
+{
+    static inline int s_moveCount = 0;
+    static inline int s_destructCount = 0;
+
+    int id = 0;
+
+    NonRelocatableCounter() = default;
+
+    explicit NonRelocatableCounter(int inId) noexcept
+        : id(inId)
+    {}
+
+    NonRelocatableCounter(NonRelocatableCounter&& other) noexcept
+        : id(other.id)
+    {
+        ++s_moveCount;
+        other.id = -1;
+    }
+
+    ~NonRelocatableCounter()
+    {
+        ++s_destructCount;
+    }
+};
+
+}   // namespace gp::concepts::tests
+
+template <>
+struct gp::concepts::IsRelocatableTrait<gp::concepts::tests::CustomRelocatableHandle> : std::true_type
+{};
 
 namespace gp::concepts::tests
 {
@@ -182,10 +245,55 @@ TEST(ConceptsTest, Memory)
     // Relocatable
     EXPECT_TRUE(IsRelocatable<Trivial>);
     EXPECT_TRUE(IsRelocatable<int>);
+    EXPECT_FALSE(IsRelocatable<NonTrivial>);
+    EXPECT_FALSE(IsRelocatable<NonRelocatableCounter>);
+    EXPECT_FALSE(IsTriviallyCopyable<CustomRelocatableHandle>);
+    EXPECT_TRUE(IsRelocatable<CustomRelocatableHandle>);
+    EXPECT_TRUE(IsRelocatable<const CustomRelocatableHandle>);
+
+    static_assert(IsRelocatable<CustomRelocatableHandle>, "Specialized trait must satisfy IsRelocatable.");
+    static_assert(IsRelocatable<const CustomRelocatableHandle>, "CV-qualified type must inherit trait.");
+    static_assert(!IsRelocatable<NonRelocatableCounter>, "Unspecialized non-trivial type must not be relocatable.");
 
     // Raw Pointer
     EXPECT_TRUE(IsRawPointer<int*>);
     EXPECT_FALSE(IsRawPointer<std::vector<int>>);
+}
+
+TEST(ConceptsTest, CustomRelocatableBypassesMoveAndDestroyInRelocateConstructItems)
+{
+    CustomRelocatableHandle::s_moveCount = 0;
+    CustomRelocatableHandle::s_destructCount = 0;
+    NonRelocatableCounter::s_moveCount = 0;
+    NonRelocatableCounter::s_destructCount = 0;
+
+    gp::TypeCompatibleBytes<CustomRelocatableHandle> relocSrc[2];
+    gp::TypeCompatibleBytes<CustomRelocatableHandle> relocDst[2];
+    relocSrc[0].construct(11);
+    relocSrc[1].construct(22);
+
+    gp::memory::relocateConstructItems<CustomRelocatableHandle>(relocDst, relocSrc[0].getTypedPtr(), 2);
+    EXPECT_EQ(CustomRelocatableHandle::s_moveCount, 0);
+    EXPECT_EQ(CustomRelocatableHandle::s_destructCount, 0);
+    EXPECT_EQ(relocDst[0].asRef().id, 11);
+    EXPECT_EQ(relocDst[1].asRef().id, 22);
+    relocDst[0].destruct();
+    relocDst[1].destruct();
+    EXPECT_EQ(CustomRelocatableHandle::s_destructCount, 2);
+
+    gp::TypeCompatibleBytes<NonRelocatableCounter> nonRelocSrc[2];
+    gp::TypeCompatibleBytes<NonRelocatableCounter> nonRelocDst[2];
+    nonRelocSrc[0].construct(33);
+    nonRelocSrc[1].construct(44);
+
+    gp::memory::relocateConstructItems<NonRelocatableCounter>(nonRelocDst, nonRelocSrc[0].getTypedPtr(), 2);
+    EXPECT_EQ(NonRelocatableCounter::s_moveCount, 2);
+    EXPECT_EQ(NonRelocatableCounter::s_destructCount, 2);
+    EXPECT_EQ(nonRelocDst[0].asRef().id, 33);
+    EXPECT_EQ(nonRelocDst[1].asRef().id, 44);
+    nonRelocDst[0].destruct();
+    nonRelocDst[1].destruct();
+    EXPECT_EQ(NonRelocatableCounter::s_destructCount, 4);
 }
 
 TEST(ConceptsTest, Relationship)

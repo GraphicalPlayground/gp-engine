@@ -8,6 +8,7 @@
 #include "memory/HardwareConstants.hpp"
 #include "memory/Memory.hpp"
 #include "profiling/Profiler.hpp"
+#include "profiling/ProfilingControl.hpp"
 #include <utility>
 
 namespace gp::memory
@@ -88,7 +89,7 @@ bool LinearAllocator::initialize(const gp::USize capacityInBytes, Malloc* backin
     m_stats.capacityBytes = capacityInBytes;
 
     GP_MEM_ALLOC_N(m_buffer, m_capacity, m_poolName);
-    GP_PLOT(m_poolName, static_cast<gp::Int64>(0));
+    GP_PLOT_IF(profiling::ProfilingControl::isPlotsEnabled(), m_poolName, static_cast<gp::Int64>(0));
 
     return true;
 }
@@ -111,7 +112,7 @@ bool LinearAllocator::initialize(void* externalBuffer, const gp::USize capacityI
     m_stats = AllocatorStats{};
     m_stats.capacityBytes = capacityInBytes;
 
-    GP_PLOT(m_poolName, static_cast<gp::Int64>(0));
+    GP_PLOT_IF(profiling::ProfilingControl::isPlotsEnabled(), m_poolName, static_cast<gp::Int64>(0));
 
     return true;
 }
@@ -126,7 +127,7 @@ void LinearAllocator::shutdown() noexcept
             m_backingMalloc->deallocate(m_buffer);
         }
 
-        GP_PLOT(m_poolName, static_cast<gp::Int64>(0));
+        GP_PLOT_IF(profiling::ProfilingControl::isPlotsEnabled(), m_poolName, static_cast<gp::Int64>(0));
     }
 
     m_buffer = nullptr;
@@ -164,7 +165,7 @@ void* LinearAllocator::allocate(const gp::USize sizeInBytes, const gp::UInt32 al
     ++m_stats.activeAllocations;
     ++m_stats.totalAllocations;
 
-    GP_PLOT(m_poolName, static_cast<gp::Int64>(m_offset));
+    GP_PLOT_IF(profiling::ProfilingControl::isPlotsEnabled(), m_poolName, static_cast<gp::Int64>(m_offset));
 
     return reinterpret_cast<void*>(alignedAddress);
 }
@@ -211,7 +212,7 @@ void* LinearAllocator::reallocate(
             }
 
             m_stats.peakAllocatedBytes = math::max(m_stats.peakAllocatedBytes, m_offset);
-            GP_PLOT(m_poolName, static_cast<gp::Int64>(m_offset));
+            GP_PLOT_IF(profiling::ProfilingControl::isPlotsEnabled(), m_poolName, static_cast<gp::Int64>(m_offset));
             return ptr;
         }
 
@@ -269,7 +270,7 @@ void LinearAllocator::deallocate(void* ptr, const gp::USize oldSizeInBytes, cons
         m_offset = ptrOffset;
         m_stats.allocatedBytes =
             m_stats.allocatedBytes >= oldSizeInBytes ? (m_stats.allocatedBytes - oldSizeInBytes) : 0u;
-        GP_PLOT(m_poolName, static_cast<gp::Int64>(m_offset));
+        GP_PLOT_IF(profiling::ProfilingControl::isPlotsEnabled(), m_poolName, static_cast<gp::Int64>(m_offset));
     }
 }
 
@@ -303,7 +304,7 @@ void LinearAllocator::rewind(const MemoryMark& savedMark) noexcept
         m_offset = savedMark.offset;
         m_stats.activeAllocations = savedMark.activeAllocations;
         m_stats.allocatedBytes = savedMark.allocatedBytes;
-        GP_PLOT(m_poolName, static_cast<gp::Int64>(m_offset));
+        GP_PLOT_IF(profiling::ProfilingControl::isPlotsEnabled(), m_poolName, static_cast<gp::Int64>(m_offset));
     }
 }
 
@@ -312,7 +313,7 @@ void LinearAllocator::reset() noexcept
     m_offset = 0u;
     m_stats.allocatedBytes = 0u;
     m_stats.activeAllocations = 0ull;
-    GP_PLOT(m_poolName, static_cast<gp::Int64>(0));
+    GP_PLOT_IF(profiling::ProfilingControl::isPlotsEnabled(), m_poolName, static_cast<gp::Int64>(0));
 }
 
 }   // namespace gp::memory

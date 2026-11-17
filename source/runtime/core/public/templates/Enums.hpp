@@ -86,11 +86,11 @@ namespace gp::concepts
 
 /// @brief Concept to check if a type is an enum and has bitwise operators enabled.
 template <typename T>
-concept IsBitwiseEnum = concepts::IsEnum<T> && detail::HasBitwiseOperatorsV<T>;
+concept IsBitwiseEnum = concepts::IsEnum<T> && ::gp::detail::HasBitwiseOperatorsV<T>;
 
 /// @brief Concept to check if a type is an enum and has comparison operators enabled.
 template <typename T>
-concept IsComparableEnum = concepts::IsEnum<T> && detail::HasComparisonOperatorsV<T>;
+concept IsComparableEnum = concepts::IsEnum<T> && ::gp::detail::HasComparisonOperatorsV<T>;
 
 }   // namespace gp::concepts
 

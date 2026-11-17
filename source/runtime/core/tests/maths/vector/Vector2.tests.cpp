@@ -625,4 +625,22 @@ TYPED_TEST(Vector2Test, GlobalClampFunction)
     );
 }
 
+TYPED_TEST(Vector2Test, GetMappedRangeValueClamped)
+{
+    const Vector2<TypeParam> inAsc(TypeParam{ 0 }, TypeParam{ 10 });
+    const Vector2<TypeParam> outRange(TypeParam{ 0 }, TypeParam{ 100 });
+    EXPECT_NEAR(
+        gp::math::getMappedRangeValueClamped(inAsc, outRange, TypeParam{ 2.5 }), TypeParam{ 25 }, TypeParam{ 1e-5 }
+    );
+    EXPECT_NEAR(
+        gp::math::getMappedRangeValueClamped(inAsc, outRange, TypeParam{ 15 }), TypeParam{ 100 }, TypeParam{ 1e-5 }
+    );
+
+    const Vector2<TypeParam> inDesc(TypeParam{ 10 }, TypeParam{ 0 });
+    const Vector2<TypeParam> outNorm(TypeParam{ 0 }, TypeParam{ 1 });
+    EXPECT_NEAR(
+        gp::math::getMappedRangeValueClamped(inDesc, outNorm, TypeParam{ 2 }), TypeParam{ 0.8 }, TypeParam{ 1e-5 }
+    );
+}
+
 }   // namespace gp::math::tests

@@ -4,11 +4,18 @@
 
 #include "Application.hpp"
 #include "backend/SDL3ApplicationBackend.hpp"
+#include "console/AutoConsoleVariable.hpp"
+#include "console/ConsoleEnums.hpp"
+#include "console/ConsoleTypes.hpp"
+#include "console/IConsoleManager.hpp"
+#include "containers/strings/CharTraits.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "Launch.hpp"
 #include "logging/LogMacros.hpp"
 #include "miscellaneous/CommandLine.hpp"
 #include "profiling/Profiler.hpp"
+#include "profiling/ProfilingControl.hpp"
+#include <cstdio>
 
 namespace gp
 {
@@ -21,6 +28,20 @@ GP_DEFINE_LOG_CATEGORY_INLINE(LogDisplay, gp::log::LogLevel::Info, gp::log::LogL
 GP_DEFINE_LOG_CATEGORY_INLINE(LogInput, gp::log::LogLevel::Info, gp::log::LogLevel::Trace);
 GP_DEFINE_LOG_CATEGORY_INLINE(LogDialog, gp::log::LogLevel::Info, gp::log::LogLevel::Trace);
 GP_DEFINE_LOG_CATEGORY_INLINE(LogClipboard, gp::log::LogLevel::Info, gp::log::LogLevel::Trace);
+
+gp::console::AutoConsoleVariable<bool> g_cvarEditorLogInput(
+    "editor.LogInput",
+    true,
+    "Logs keyboard, mouse, and gamepad input polling diagnostics from EditorApplication.",
+    gp::console::ConsoleVarFlags::None
+);
+
+gp::console::AutoConsoleVariable<gp::Int32> g_cvarEditorFpsLogInterval(
+    "editor.FpsLogInterval",
+    120,
+    "Frame interval between periodic EditorApplication FPS logs (<= 0 disables).",
+    gp::console::ConsoleVarFlags::None
+);
 
 }   // namespace
 
@@ -37,7 +58,17 @@ protected:
     /// @return True to proceed into the main loop.
     [[nodiscard]] bool onInitialize() noexcept override
     {
-        GP_PROFILE_SCOPE_NC("EditorApplication::OnInitialize", GP_U32_COLOR_PURPLE);
+        GP_PROFILE_SCOPE_NC_ACTIVE(
+            "EditorApplication::OnInitialize", GP_U32_COLOR_PURPLE, profiling::ProfilingControl::isZonesEnabled()
+        );
+
+        const gp::console::IConsoleManager& consoleMgr = getConsoleManager();
+        GP_LOG_INFO(
+            LogEditor,
+            "Console CVar Registry Ready ({} CVars, {} Commands).",
+            consoleMgr.getVariableCount(),
+            consoleMgr.getCommandCount()
+        );
 
         const gp::UInt32 argumentCount = CommandLine::getArgumentCount();
         for (gp::UInt32 i = 0u; i < argumentCount; ++i)
@@ -80,10 +111,91 @@ protected:
             GP_LOG_INFO(LogEditor, "File log sink active: {}", getFileSink().getFilePath());
         }
 
-        GP_LOG_INFO(LogEditor, "Controls: Press 'ESC' or 'Q' to exit; WASD, mouse, or gamepad to test input routing.");
+        GP_LOG_INFO(
+            LogEditor,
+            "Controls: 'ESC'/'Q' exit | 'F1'/'`' temporary stdin console shell | WASD, mouse, gamepad test input."
+        );
         return true;
     }
 
+private:
+    // TEMP: Modal stdin shell invoked on F1 / Grave (`~`) for ad-hoc CVar & command testing in gp-editor.
+    void runTemporaryStdinShell() noexcept
+    {
+        getLogger().flush();
+
+        std::fputs(
+            "\n========================================================\n"
+            "  [TEMP] Console Stdin Shell Active\n"
+            "  Examples: help | cvar.list | cvar.dump | prof.Status | log.Stats | app.Stats | jobs.Stats\n"
+            "  Set CVar: t.TimeScale 0.5  |  app.TargetFps=60  |  log.GlobalLevel Warning\n"
+            "  Commands: 'resume' (or Enter) returns to gp-editor | 'quit' / 'app.Quit' exits\n"
+            "========================================================\n",
+            stdout
+        );
+        std::fflush(stdout);
+
+        char lineBuffer[512]{};
+        while (true)
+        {
+            std::fputs("gp-console> ", stdout);
+            std::fflush(stdout);
+
+            if (std::fgets(lineBuffer, static_cast<int>(sizeof(lineBuffer)), stdin) == nullptr)
+            {
+                std::fputs("\n[TEMP] stdin EOF reached; resuming gp-editor.\n", stdout);
+                std::fflush(stdout);
+                break;
+            }
+
+            const gp::USize rawLen = gp::container::CharTraits<char>::length(lineBuffer);
+            const gp::StringView trimmed = gp::console::trimConsoleWhitespace(gp::StringView(lineBuffer, rawLen));
+            if (trimmed.isEmpty() || trimmed.equalsIgnoreCase("resume") || trimmed.equalsIgnoreCase("exit"))
+            {
+                std::fputs("[TEMP] Resuming gp-editor window loop...\n", stdout);
+                std::fflush(stdout);
+                break;
+            }
+
+            gp::USize emittedLines = 0u;
+            gp::console::ConsoleOutputDelegate shellOut = gp::console::ConsoleOutputDelegate::createLambda(
+                [&emittedLines](const gp::StringView text) noexcept -> void
+            {
+                if (!text.isEmpty())
+                {
+                    (void)std::fwrite(text.data(), 1u, text.size(), stdout);
+                }
+                std::fputc('\n', stdout);
+                ++emittedLines;
+            }
+            );
+
+            if (trimmed.equalsIgnoreCase("quit"))
+            {
+                (void)executeConsoleCommand("app.Quit", &shellOut);
+                std::fputs("[TEMP] Shutdown requested.\n", stdout);
+                std::fflush(stdout);
+                break;
+            }
+
+            const gp::console::ConsoleResult res = executeConsoleCommand(trimmed, &shellOut);
+            if (emittedLines == 0u && res == gp::console::ConsoleResult::Success)
+            {
+                std::fputs("[ok]\n", stdout);
+            }
+            std::fflush(stdout);
+
+            if (!isRunning())
+            {
+                break;
+            }
+        }
+
+        // Flush any log messages triggered synchronously during shell execution before returning to frames.
+        getLogger().flush();
+    }
+
+protected:
     /// @brief Invoked at the deterministic fixed frequency (60 Hz by default) for physics calculations.
     /// @param[in] fixedDelta Exact fixed timestep duration (e.g., 16.66ms).
     void onFixedUpdate([[maybe_unused]] gp::time::Duration fixedDelta) noexcept override
@@ -93,7 +205,9 @@ protected:
     /// @param[in] timeStats Comprehensive per-frame timing snapshot.
     void onUpdate(const gp::time::FrameTimeStats& timeStats) noexcept override
     {
-        GP_PROFILE_SCOPE_NC("EditorApplication::OnUpdate", GP_U32_COLOR_GREEN);
+        GP_PROFILE_SCOPE_NC_ACTIVE(
+            "EditorApplication::OnUpdate", GP_U32_COLOR_GREEN, profiling::ProfilingControl::isZonesEnabled()
+        );
 
         const gp::hal::input::IInputSystem& input = getInput();
 
@@ -105,13 +219,23 @@ protected:
             return;
         }
 
+        // TEMP: Switch terminal stdin into an interactive console command shell on F1 or Grave (` / ~).
+        if (input.wasScancodeJustPressed(gp::hal::input::Scancode::F1) ||
+            input.wasScancodeJustPressed(gp::hal::input::Scancode::Grave))
+        {
+            runTemporaryStdinShell();
+            return;
+        }
+
+        const bool logInputDiagnostics = g_cvarEditorLogInput.getValueOnGameThread();
+
         // Query Keyboard State (Scancode-based WASD movement)
         const bool moveForward = input.isScancodeDown(gp::hal::input::Scancode::W);
         const bool moveBack = input.isScancodeDown(gp::hal::input::Scancode::S);
         const bool moveLeft = input.isScancodeDown(gp::hal::input::Scancode::A);
         const bool moveRight = input.isScancodeDown(gp::hal::input::Scancode::D);
 
-        if (moveForward || moveBack || moveLeft || moveRight)
+        if (logInputDiagnostics && (moveForward || moveBack || moveLeft || moveRight))
         {
             GP_LOG_INFO(
                 LogInput,
@@ -126,7 +250,7 @@ protected:
         // Query Mouse State (Position and relative motion deltas)
         const auto mousePos = input.getMouse().getPosition();
         const auto mouseDelta = input.getMouse().getDelta();
-        if (mouseDelta.lengthSquared() > 0.0f)
+        if (logInputDiagnostics && mouseDelta.lengthSquared() > 0.0f)
         {
             GP_LOG_INFO(
                 LogInput,
@@ -144,7 +268,7 @@ protected:
             if (pad->isConnected())
             {
                 const auto leftStick = pad->getLeftStick();
-                if (leftStick.lengthSquared() > 0.01f)
+                if (logInputDiagnostics && leftStick.lengthSquared() > 0.01f)
                 {
                     GP_LOG_INFO(LogInput, "Gamepad P1 Left Stick: ({:.2f}, {:.2f})", leftStick.x, leftStick.y);
                 }
@@ -152,7 +276,10 @@ protected:
                 // Example: Trigger dual-motor rumble if 'South' (A/Cross) is pressed
                 if (pad->wasButtonJustPressed(gp::hal::input::GamepadButton::South))
                 {
-                    GP_LOG_INFO(LogInput, "Gamepad P1 'South' button pressed! Triggering haptic rumble...");
+                    if (logInputDiagnostics)
+                    {
+                        GP_LOG_INFO(LogInput, "Gamepad P1 'South' button pressed! Triggering haptic rumble...");
+                    }
                     gp::hal::input::HapticRumbleDesc rumble{ 0.75f, 0.4f, 250u };
                     const_cast<gp::hal::input::IGamepad*>(pad)->setRumble(rumble);
                 }
@@ -170,7 +297,8 @@ protected:
 
         // Periodic FPS printout from the master EngineClock telemetry
         static gp::Int32 s_frameThrottle = 0;
-        if (++s_frameThrottle >= 120)
+        const gp::Int32 fpsInterval = g_cvarEditorFpsLogInterval.getValueOnGameThread();
+        if (fpsInterval > 0 && ++s_frameThrottle >= fpsInterval)
         {
             s_frameThrottle = 0;
             GP_LOG_INFO(
@@ -253,7 +381,9 @@ protected:
     /// @param[in] timeStats Frame metrics including render interpolation alpha ($\alpha$).
     void onRender(const gp::time::FrameTimeStats& timeStats) noexcept override
     {
-        GP_PROFILE_SCOPE_NC("EditorApplication::OnRender", GP_U32_COLOR_BLUE);
+        GP_PROFILE_SCOPE_NC_ACTIVE(
+            "EditorApplication::OnRender", GP_U32_COLOR_BLUE, profiling::ProfilingControl::isZonesEnabled()
+        );
 
         // Use timeStats.fixedStep.interpolationAlpha ($\alpha \in [0.0, 1.0)$)
         // to lerp visual transform matrices between previous and current physics ticks!
@@ -263,7 +393,9 @@ protected:
     /// @brief Invoked upon application shutdown.
     void onShutdown() noexcept override
     {
-        GP_PROFILE_SCOPE_NC("EditorApplication::OnShutdown", GP_U32_COLOR_RED);
+        GP_PROFILE_SCOPE_NC_ACTIVE(
+            "EditorApplication::OnShutdown", GP_U32_COLOR_RED, profiling::ProfilingControl::isZonesEnabled()
+        );
         GP_LOG_INFO(LogEditor, "Application shut down cleanly.");
     }
 };

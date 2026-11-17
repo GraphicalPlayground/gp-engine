@@ -5,13 +5,24 @@
 #include "Application.hpp"
 #include "ApplicationDesc.hpp"
 #include "ApplicationTypes.hpp"
+#include "console/AutoConsoleVariable.hpp"
+#include "console/ConsoleEnums.hpp"
+#include "console/ConsoleTypes.hpp"
+#include "console/IConsoleManager.hpp"
+#include "console/IConsoleVariable.hpp"   // IWYU pragma: keep
+#include "containers/strings/FixedString.hpp"
 #include "logging/sinks/MemoryRingSink.hpp"
 #include "memory/MemoryOrder.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "platforms/base/system/Thread.hpp"
 #include "threading/atomics/Atomic.hpp"   // IWYU pragma: keep
 #include "threading/jobs/JobGraph.hpp"
 #include "threading/jobs/JobSystem.hpp"
 #include "threading/jobs/ParallelFor.hpp"   // IWYU pragma: keep
+#include "threading/roles/NamedThreadDispatcher.hpp"
+#include "threading/roles/ScopedThreadRole.hpp"
+#include "threading/roles/ThreadRole.hpp"
+#include "threading/roles/ThreadRoleEnums.hpp"
 #include <gtest/gtest.h>
 
 namespace gp::tests
@@ -577,6 +588,466 @@ TEST(ApplicationLoggingTest, InitializesLoggerRoutesLifecycleLogsAndCleansUpSink
 
     LogApplication.resetToDefaultLevel();
     logger.clearSinks();
+}
+
+TEST(ApplicationConsoleWiringTest, FrameSyncLatchFlushSinksAndRuntimeControls)
+{
+    CommandLine::shutdown();
+
+    ApplicationDesc desc{};
+    desc.backend.appName = "ConsoleWiringApp";
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.targetForegroundFps = 0.0;
+    desc.targetBackgroundFps = 0.0;
+    desc.frameArenaBytes = 128ULL * 1024ULL;
+    desc.jobSystem.workerThreadCount = 1u;
+    desc.jobSystem.standardFiberCount = 4u;
+    desc.jobSystem.largeFiberCount = 2u;
+
+    class ConsoleSyncProbeApp final : public Application
+    {
+    public:
+        explicit ConsoleSyncProbeApp(const ApplicationDesc& inDesc) noexcept
+            : Application(inDesc)
+            , m_renderSyncVar("test.AppRenderSync", 10, "render sync probe")
+            , m_latchedVar("test.AppLatched", 1, "latched probe", console::ConsoleVarFlags::Latched)
+            , m_sink(
+                  console::ConsoleSinkDelegate::createLambda(
+                      [this]() noexcept -> void
+        {
+            ++m_sinkHits;
+        }
+                  )
+              )
+        {}
+
+        [[nodiscard]] bool hadPreRenderStaleRenderSlotOnFrame1() const noexcept
+        {
+            return m_sawStaleRenderSlotDuringUpdate;
+        }
+
+        [[nodiscard]] bool hadSyncedRenderSlotOnFrame1Render() const noexcept
+        {
+            return m_sawSyncedRenderSlotInRender;
+        }
+
+        [[nodiscard]] bool hadCommittedLatchedOnFrame2() const noexcept
+        {
+            return m_sawCommittedLatchedOnFrame2;
+        }
+
+        [[nodiscard]] gp::Int32 getSinkHitCount() const noexcept
+        {
+            return m_sinkHits;
+        }
+
+        [[nodiscard]] bool wasClockPausedAfterCommand() const noexcept
+        {
+            return m_clockPausedObserved;
+        }
+
+        [[nodiscard]] gp::Float64 getObservedTimeScale() const noexcept
+        {
+            return m_observedTimeScale;
+        }
+
+        [[nodiscard]] time::DeltaSmoothingMode getObservedSmoothingMode() const noexcept
+        {
+            return m_observedSmoothingMode;
+        }
+
+        [[nodiscard]] gp::StringView getAppStatsLine() const noexcept
+        {
+            return m_appStatsOut.view();
+        }
+
+        [[nodiscard]] gp::StringView getJobsStatsLine() const noexcept
+        {
+            return m_jobsStatsOut.view();
+        }
+
+    protected:
+        [[nodiscard]] virtual bool onInitialize() noexcept override
+        {
+            const console::IConsoleManager& console = getConsoleManager();
+            EXPECT_NE(console.findConsoleVariable("app.TargetFps"), nullptr);
+            EXPECT_NE(console.findConsoleVariable("app.BackgroundFps"), nullptr);
+            EXPECT_NE(console.findConsoleVariable("app.SleepWhenMinimized"), nullptr);
+            EXPECT_NE(console.findConsoleVariable("t.TimeScale"), nullptr);
+            EXPECT_NE(console.findConsoleVariable("t.Paused"), nullptr);
+            EXPECT_NE(console.findConsoleVariable("t.SmoothingMode"), nullptr);
+            EXPECT_NE(console.findConsoleCommand("t.Step"), nullptr);
+            EXPECT_NE(console.findConsoleCommand("app.Quit"), nullptr);
+            EXPECT_NE(console.findConsoleCommand("app.Stats"), nullptr);
+            EXPECT_NE(console.findConsoleCommand("jobs.Stats"), nullptr);
+            return true;
+        }
+
+        virtual void onUpdate(const gp::time::FrameTimeStats& timeStats) noexcept override
+        {
+            if (timeStats.frameIndex == 1ULL)
+            {
+                EXPECT_EQ(m_renderSyncVar.set(42), console::ConsoleResult::Success);
+                EXPECT_EQ(m_renderSyncVar.getValueOnGameThread(), 42);
+                m_sawStaleRenderSlotDuringUpdate = (m_renderSyncVar.getValueOnRenderThread() == 10);
+
+                EXPECT_EQ(m_latchedVar.set(99), console::ConsoleResult::Success);
+                EXPECT_EQ(m_latchedVar.getValueOnGameThread(), 1);
+            }
+            else if (timeStats.frameIndex == 2ULL)
+            {
+                m_sawCommittedLatchedOnFrame2 = (m_latchedVar.getValueOnGameThread() == 99);
+
+                console::ConsoleOutputDelegate appOut = console::ConsoleOutputDelegate::createLambda(
+                    [this](const gp::StringView line) noexcept -> void
+                {
+                    m_appStatsOut.assign(line.substr(0u, m_appStatsOut.capacity()));
+                }
+                );
+                console::ConsoleOutputDelegate jobsOut = console::ConsoleOutputDelegate::createLambda(
+                    [this](const gp::StringView line) noexcept -> void
+                {
+                    m_jobsStatsOut.assign(line.substr(0u, m_jobsStatsOut.capacity()));
+                }
+                );
+
+                EXPECT_EQ(executeConsoleCommand("t.TimeScale 0.25"), console::ConsoleResult::Success);
+                EXPECT_EQ(executeConsoleCommand("t.SmoothingMode EMA"), console::ConsoleResult::Success);
+                EXPECT_EQ(executeConsoleCommand("t.Paused 1"), console::ConsoleResult::Success);
+                EXPECT_EQ(executeConsoleCommand("t.Step"), console::ConsoleResult::Success);
+                EXPECT_EQ(executeConsoleCommand("app.Stats", &appOut), console::ConsoleResult::Success);
+                EXPECT_EQ(executeConsoleCommand("jobs.Stats", &jobsOut), console::ConsoleResult::Success);
+
+                m_clockPausedObserved = getClock().getGameplayClock().isLocallyPaused();
+                m_observedTimeScale = getClock().getGameplayClock().getLocalTimeScale();
+                m_observedSmoothingMode = getClock().getSmoothingMode();
+
+                EXPECT_EQ(executeConsoleCommand("app.Quit"), console::ConsoleResult::Success);
+            }
+        }
+
+        virtual void onRender(const gp::time::FrameTimeStats& timeStats) noexcept override
+        {
+            if (timeStats.frameIndex == 1ULL)
+            {
+                m_sawSyncedRenderSlotInRender = (m_renderSyncVar.getValueOnRenderThread() == 42);
+            }
+        }
+
+    private:
+        console::AutoConsoleVariable<gp::Int32> m_renderSyncVar;
+        console::AutoConsoleVariable<gp::Int32> m_latchedVar;
+        console::AutoConsoleVariableSink m_sink;
+        gp::FixedString<383> m_appStatsOut{};
+        gp::FixedString<383> m_jobsStatsOut{};
+        gp::Int32 m_sinkHits{ 0 };
+        gp::Float64 m_observedTimeScale{ 1.0 };
+        time::DeltaSmoothingMode m_observedSmoothingMode{ time::DeltaSmoothingMode::OutlierRejectedAverage };
+        bool m_sawStaleRenderSlotDuringUpdate{ false };
+        bool m_sawSyncedRenderSlotInRender{ false };
+        bool m_sawCommittedLatchedOnFrame2{ false };
+        bool m_clockPausedObserved{ false };
+    };
+
+    {
+        ConsoleSyncProbeApp app(desc);
+        EXPECT_EQ(app.run(), 0);
+        EXPECT_TRUE(app.hadPreRenderStaleRenderSlotOnFrame1());
+        EXPECT_TRUE(app.hadSyncedRenderSlotOnFrame1Render());
+        EXPECT_TRUE(app.hadCommittedLatchedOnFrame2());
+        EXPECT_GE(app.getSinkHitCount(), 1);
+        EXPECT_TRUE(app.wasClockPausedAfterCommand());
+        EXPECT_DOUBLE_EQ(app.getObservedTimeScale(), 0.25);
+        EXPECT_EQ(app.getObservedSmoothingMode(), time::DeltaSmoothingMode::ExponentialMovingAverage);
+        EXPECT_NE(app.getAppStatsLine().find("ConsoleWiringApp"), StringView::npos);
+        EXPECT_NE(app.getJobsStatsLine().find("Jobs[workers=1"), StringView::npos);
+    }
+
+    // All dynamic Application CVars & commands must be cleanly unregistered on shutdown.
+    const console::IConsoleManager& console = Application::getConsoleManager();
+    EXPECT_EQ(console.findConsoleVariable("app.TargetFps"), nullptr);
+    EXPECT_EQ(console.findConsoleVariable("t.TimeScale"), nullptr);
+    EXPECT_EQ(console.findConsoleCommand("app.Quit"), nullptr);
+    EXPECT_EQ(console.findConsoleCommand("jobs.Stats"), nullptr);
+}
+
+TEST(ApplicationConsoleWiringTest, CommandLineOverridesApplyToAppAndClockOnBootstrap)
+{
+    ApplicationDesc desc{};
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.enableJobSystem = false;
+    desc.targetForegroundFps = 120.0;
+    desc.targetBackgroundFps = 30.0;
+    desc.sleepWhenMinimized = true;
+
+    CommandLine::initialize(
+        "gp-tests +app.TargetFps=0 +app.SleepWhenMinimized=0 +t.TimeScale=0.5 -t.SmoothingMode=Raw"
+    );
+
+    class ConsoleCliProbeApp final : public Application
+    {
+    public:
+        explicit ConsoleCliProbeApp(const ApplicationDesc& inDesc) noexcept
+            : Application(inDesc)
+        {}
+
+        gp::Float64 observedTimeScale{ 1.0 };
+        time::DeltaSmoothingMode observedMode{ time::DeltaSmoothingMode::OutlierRejectedAverage };
+        gp::FixedString<127> unpausedStepMsg{};
+        gp::FixedString<127> disabledJobsMsg{};
+
+    protected:
+        virtual void onUpdate(const gp::time::FrameTimeStats&) noexcept override
+        {
+            observedTimeScale = getClock().getGameplayClock().getLocalTimeScale();
+            observedMode = getClock().getSmoothingMode();
+
+            console::ConsoleOutputDelegate stepOut = console::ConsoleOutputDelegate::createLambda(
+                [this](const gp::StringView line) noexcept -> void
+            {
+                unpausedStepMsg.assign(line.substr(0u, unpausedStepMsg.capacity()));
+            }
+            );
+            console::ConsoleOutputDelegate jobsOut = console::ConsoleOutputDelegate::createLambda(
+                [this](const gp::StringView line) noexcept -> void
+            {
+                disabledJobsMsg.assign(line.substr(0u, disabledJobsMsg.capacity()));
+            }
+            );
+            EXPECT_EQ(executeConsoleCommand("t.Step", &stepOut), console::ConsoleResult::Success);
+            EXPECT_EQ(executeConsoleCommand("jobs.Stats", &jobsOut), console::ConsoleResult::Success);
+            EXPECT_EQ(executeConsoleCommand("app.BackgroundFps 0"), console::ConsoleResult::Success);
+            requestQuit();
+        }
+    };
+
+    ConsoleCliProbeApp app(desc);
+    EXPECT_EQ(app.run(), 0);
+    EXPECT_DOUBLE_EQ(app.observedTimeScale, 0.5);
+    EXPECT_EQ(app.observedMode, time::DeltaSmoothingMode::None);
+    EXPECT_NE(app.unpausedStepMsg.view().find("not paused"), StringView::npos);
+    EXPECT_EQ(app.disabledJobsMsg.view(), StringView("JobSystem is disabled."));
+
+    CommandLine::shutdown();
+}
+
+TEST(ApplicationThreadRoleWiringTest, SingleThreadedModeClaimsAllRolesAndPumpsPerPhase)
+{
+    CommandLine::shutdown();
+
+    ApplicationDesc desc{};
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.enableJobSystem = false;
+    desc.singleThreadedRenderAndRHI = true;
+    desc.targetForegroundFps = 0.0;
+    desc.targetBackgroundFps = 0.0;
+
+    class SingleThreadRoleProbeApp final : public Application
+    {
+    public:
+        explicit SingleThreadRoleProbeApp(const ApplicationDesc& inDesc) noexcept
+            : Application(inDesc)
+        {}
+
+        bool initRolesOk{ false };
+        bool gameTaskRanBeforeFrame2Update{ false };
+        bool renderTaskRanBeforeRender{ false };
+        bool rhiTaskRanBeforeEndFrame{ false };
+        bool shutdownTaskDrained{ false };
+
+    protected:
+        [[nodiscard]] virtual bool onInitialize() noexcept override
+        {
+            initRolesOk = thread::isInGameThread() && thread::isInRenderThread() && thread::isInRHIThread() &&
+                          thread::isInParallelRenderThread() && getNamedThreadDispatcher().isInitialized();
+            return initRolesOk;
+        }
+
+        virtual void onUpdate(const gp::time::FrameTimeStats& timeStats) noexcept override
+        {
+            if (timeStats.frameIndex == 1ULL)
+            {
+                EXPECT_EQ(
+                    getNamedThreadDispatcher().dispatch(
+                        thread::NamedThread::Game,
+                        [](void* rawFlag)
+                {
+                    *static_cast<bool*>(rawFlag) = thread::isInGameThread();
+                },
+                        &m_gameTaskRan
+                    ),
+                    thread::ThreadRoleResult::Success
+                );
+                EXPECT_EQ(
+                    getNamedThreadDispatcher().dispatch(
+                        thread::NamedThread::Render,
+                        [](void* rawFlag)
+                {
+                    *static_cast<bool*>(rawFlag) = thread::isInRenderThread();
+                },
+                        &m_renderTaskRan
+                    ),
+                    thread::ThreadRoleResult::Success
+                );
+            }
+            else if (timeStats.frameIndex == 2ULL)
+            {
+                gameTaskRanBeforeFrame2Update = m_gameTaskRan;
+                requestQuit();
+            }
+        }
+
+        virtual void onRender(const gp::time::FrameTimeStats& timeStats) noexcept override
+        {
+            if (timeStats.frameIndex == 1ULL)
+            {
+                renderTaskRanBeforeRender = m_renderTaskRan;
+                EXPECT_EQ(
+                    getNamedThreadDispatcher().dispatch(
+                        thread::NamedThread::RHI,
+                        [](void* rawFlag)
+                {
+                    *static_cast<bool*>(rawFlag) = thread::isInRHIThread();
+                },
+                        &m_rhiTaskRan
+                    ),
+                    thread::ThreadRoleResult::Success
+                );
+            }
+        }
+
+        virtual void onEndFrame(const ApplicationFrameContext& frameContext) noexcept override
+        {
+            EXPECT_EQ(&frameContext.namedThreadDispatcher, &getNamedThreadDispatcher());
+            if (frameContext.getFrameIndex() == 1ULL)
+            {
+                rhiTaskRanBeforeEndFrame = m_rhiTaskRan;
+            }
+        }
+
+        virtual void onShutdown() noexcept override
+        {
+            EXPECT_EQ(
+                getNamedThreadDispatcher().dispatch(
+                    thread::NamedThread::Game,
+                    [](void* rawFlag)
+            {
+                *static_cast<bool*>(rawFlag) = true;
+            },
+                    &shutdownTaskDrained
+                ),
+                thread::ThreadRoleResult::Success
+            );
+        }
+
+    private:
+        bool m_gameTaskRan{ false };
+        bool m_renderTaskRan{ false };
+        bool m_rhiTaskRan{ false };
+    };
+
+    SingleThreadRoleProbeApp app(desc);
+    EXPECT_EQ(app.run(), 0);
+    EXPECT_TRUE(app.initRolesOk);
+    EXPECT_TRUE(app.gameTaskRanBeforeFrame2Update);
+    EXPECT_TRUE(app.renderTaskRanBeforeRender);
+    EXPECT_TRUE(app.rhiTaskRanBeforeEndFrame);
+    EXPECT_TRUE(app.shutdownTaskDrained);
+
+    EXPECT_FALSE(app.getNamedThreadDispatcher().isInitialized());
+    EXPECT_EQ(thread::ThreadRoleRegistry::getCurrentRoles(), thread::ThreadRole::None);
+    EXPECT_FALSE(thread::ThreadRoleRegistry::isAttached(thread::NamedThread::Game));
+    EXPECT_FALSE(thread::ThreadRoleRegistry::isAttached(thread::NamedThread::Render));
+    EXPECT_FALSE(thread::ThreadRoleRegistry::isAttached(thread::NamedThread::RHI));
+}
+
+TEST(ApplicationThreadRoleWiringTest, DedicatedRenderModeLeavesRenderAndRHIUnclaimed)
+{
+    CommandLine::shutdown();
+
+    ApplicationDesc desc{};
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.enableJobSystem = false;
+    desc.singleThreadedRenderAndRHI = false;
+    desc.targetForegroundFps = 0.0;
+    desc.targetBackgroundFps = 0.0;
+
+    class DedicatedRenderProbeApp final : public Application
+    {
+    public:
+        explicit DedicatedRenderProbeApp(const ApplicationDesc& inDesc) noexcept
+            : Application(inDesc)
+        {}
+
+        bool rolesVerified{ false };
+
+    protected:
+        virtual void onUpdate(const gp::time::FrameTimeStats&) noexcept override
+        {
+            rolesVerified = thread::isInGameThread() && !thread::isInRenderThread() && !thread::isInRHIThread() &&
+                            !thread::ThreadRoleRegistry::isAttached(thread::NamedThread::Render) &&
+                            !thread::ThreadRoleRegistry::isAttached(thread::NamedThread::RHI);
+            requestQuit();
+        }
+    };
+
+    DedicatedRenderProbeApp app(desc);
+    EXPECT_EQ(app.run(), 0);
+    EXPECT_TRUE(app.rolesVerified);
+    EXPECT_EQ(thread::ThreadRoleRegistry::getCurrentRoles(), thread::ThreadRole::None);
+}
+
+TEST(ApplicationThreadRoleWiringTest, FailsInitIfAnotherThreadAlreadyOwnsGameRole)
+{
+    CommandLine::shutdown();
+
+    struct HolderState
+    {
+        Atomic<gp::UInt32> isHolding{ 0u };
+        Atomic<gp::UInt32> mayExit{ 0u };
+    };
+
+    HolderState state{};
+    gp::platform::Thread holder{};
+    gp::platform::ThreadDesc holderDesc{};
+    holderDesc.name = "GP_AppGameRoleHolder";
+    holderDesc.entry = [](void* rawState) -> gp::UInt32
+    {
+        HolderState& holderState = *static_cast<HolderState*>(rawState);
+        const thread::ScopedNamedThread guard(thread::NamedThread::Game);
+        holderState.isHolding.store(1u, gp::MemoryOrder::Release);
+        while (holderState.mayExit.load(gp::MemoryOrder::Acquire) == 0u)
+        {
+            gp::platform::Thread::spinWait();
+        }
+        return 0u;
+    };
+    holderDesc.userData = &state;
+    ASSERT_EQ(holder.start(holderDesc), gp::platform::ThreadResult::Success);
+
+    while (state.isHolding.load(gp::MemoryOrder::Acquire) == 0u)
+    {
+        gp::platform::Thread::spinWait();
+    }
+
+    ApplicationDesc desc{};
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.enableJobSystem = false;
+
+    Application app(desc);
+    EXPECT_EQ(app.run(), -1);
+    EXPECT_FALSE(app.getNamedThreadDispatcher().isInitialized());
+
+    state.mayExit.store(1u, gp::MemoryOrder::Release);
+    gp::UInt32 exitCode = 1u;
+    EXPECT_EQ(holder.join(&exitCode), gp::platform::ThreadResult::Success);
+    EXPECT_EQ(exitCode, 0u);
+    EXPECT_FALSE(thread::ThreadRoleRegistry::isAttached(thread::NamedThread::Game));
 }
 
 }   // namespace gp::tests

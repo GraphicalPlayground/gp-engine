@@ -90,6 +90,11 @@
     #define GP_FORCE_ANSI_ALLOCATOR        GP_FALSE
 #endif
 
+/// @brief Indicates whether the current target is compiling unit or integration tests.
+#ifndef GP_WITH_TESTS
+    #define GP_WITH_TESTS                   GP_FALSE
+#endif
+
 /// @section Baisc options that by default depend on the build configuration.
 
 #if GP_BUILD_DEBUG

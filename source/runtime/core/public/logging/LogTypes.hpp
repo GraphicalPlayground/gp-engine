@@ -19,8 +19,18 @@
 namespace gp::log
 {
 
-/// @brief Maximum UTF-8 character capacity (excluding null terminator) of a single formatted log message ([ADR-0054]).
+/// @brief Maximum UTF-8 character capacity (excluding null terminator) of an inline `LogEntry` in the async MPMC ring
+///        ([ADR-0054]).
 inline constexpr gp::USize kMaxLogMessageLength = 439u;
+
+/// @brief Maximum UTF-8 character capacity (excluding null terminator) for stack-formatted log messages before routing.
+/// @details Sized below the 4 KiB Windows stack-probe threshold (`__chkstk`) while supporting messages well past the
+///          439-byte inline `LogEntry` ceiling. Messages exceeding 439 bytes bypass the async ring and flush
+///          synchronously under the dispatch lock so sinks receive the full text without heap allocation.
+inline constexpr gp::USize kMaxFormattedLogMessageLength = 2047u;
+
+/// @brief Maximum UTF-8 character capacity (excluding null terminator) for a complete sink-formatted log line.
+inline constexpr gp::USize kMaxLogLineLength = 2560u;
 
 /// @brief Maximum number of concurrent `ILogSink` instances registered with `Logger` ([ADR-0054]).
 inline constexpr gp::UInt32 kMaxLogSinks = 8u;
@@ -28,8 +38,14 @@ inline constexpr gp::UInt32 kMaxLogSinks = 8u;
 /// @brief Default power-of-two slot capacity for the lock-free asynchronous `MPMCRingQueue<LogEntry>` ([ADR-0054]).
 inline constexpr gp::USize kDefaultAsyncLogQueueCapacity = 256u;
 
-/// @brief Fixed-capacity stack string type used during zero-allocation log message formatting.
+/// @brief Fixed-capacity stack string matching `LogEntry` inline message storage (`439` characters).
 using LogMessageBuffer = gp::FixedString<kMaxLogMessageLength>;
+
+/// @brief Stack string buffer used by `Logger::log()` when formatting messages up to `2047` bytes.
+using LogFormattedBuffer = gp::FixedString<kMaxFormattedLogMessageLength>;
+
+/// @brief Stack string buffer used by text sinks when assembling prefixes, timestamps, and message bodies.
+using LogLineBuffer = gp::FixedString<kMaxLogLineLength>;
 
 /// @brief Compile-time source code coordinates attached to a log record ([ADR-0054]).
 struct LogSourceLocation
@@ -98,6 +114,10 @@ struct LogRecordView
     /// @brief Severity level of the log record.
     LogLevel level = LogLevel::Info;
 };
+
+/// @brief Optional pre-abort callback invoked by `Logger::abortFatal()` right before breaking and terminating.
+/// @param[in] location Source file, function, and line where the fatal log originated.
+using FatalLogHandlerFn = void (*)(const LogSourceLocation& location) noexcept;
 
 /// @brief Trivially copyable, 64-byte cache-line-aligned log record stored in the lock-free `MPMCRingQueue`
 ///        ([ADR-0054]).

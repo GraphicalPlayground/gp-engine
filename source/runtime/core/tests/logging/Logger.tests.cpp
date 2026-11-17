@@ -3,13 +3,20 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "logging/Logger.hpp"
+#include "console/ConsoleEnums.hpp"
+#include "console/ConsoleTypes.hpp"
+#include "console/IConsoleManager.hpp"
+#include "console/IConsoleVariable.hpp"
+#include "containers/strings/FixedString.hpp"
 #include "logging/LogMacros.hpp"
 #include "logging/sinks/DebugOutputSink.hpp"
 #include "logging/sinks/FileSink.hpp"
 #include "logging/sinks/MemoryRingSink.hpp"
+#include "logging/sinks/StringLogSink.hpp"
 #include "logging/sinks/TracySink.hpp"
 #include "miscellaneous/CommandLine.hpp"
 #include "platforms/base/system/Paths.hpp"
+#include "templates/ScopeExit.hpp"   // IWYU pragma: keep
 #include <cstdio>
 #include <gtest/gtest.h>
 
@@ -370,6 +377,241 @@ TEST(LoggerTest, CommandLineOverridesVerbosityAndSyncMode)
 
     logger.shutdown();
     gp::CommandLine::shutdown();
+}
+
+TEST(LoggerTest, ConditionalLoggingMacrosShortCircuitAndFilter)
+{
+    Logger& globalLogger = Logger::instance();
+    globalLogger.shutdown();
+    globalLogger.clearSinks();
+
+    LoggerDesc desc{};
+    desc.mode = LogExecutionMode::Synchronous;
+    desc.applyCommandLineOverrides = false;
+    ASSERT_EQ(globalLogger.initialize(desc), LogResult::Success);
+
+    StringLogSink strSink(LogLevel::Trace, LogSinkFlags::None);
+    ASSERT_EQ(globalLogger.addSink(&strSink), LogResult::Success);
+
+    LogTestSubsystem.setActiveLevel(LogLevel::Trace);
+
+    gp::UInt32 evalCount = 0u;
+    const auto trackEval = [&evalCount](const gp::UInt32 v) noexcept -> gp::UInt32
+    {
+        ++evalCount;
+        return v;
+    };
+
+    const bool condFalse = false;
+    const bool condTrue = true;
+
+    GP_CLOG(condFalse, LogTestSubsystem, Info, "Should not log {}", trackEval(1u));
+    GP_CLOG_WARNING(condFalse, LogTestSubsystem, "Warn skipped {}", trackEval(2u));
+    GP_CLOG_FATAL(condFalse, LogTestSubsystem, "Fatal skipped when false {}", trackEval(3u));
+    EXPECT_EQ(evalCount, 0u);
+    EXPECT_TRUE(strSink.isEmpty());
+
+    GP_CLOG_INFO(condTrue, LogTestSubsystem, "Condition met val={}", trackEval(42u));
+    GP_CLOG_ERROR(condTrue, LogTestSubsystem, "Error met val={}", trackEval(99u));
+    EXPECT_EQ(evalCount, 2u);
+    EXPECT_TRUE(strSink.contains("Condition met val=42"));
+    EXPECT_TRUE(strSink.contains("Error met val=99"));
+
+    // Level filtering still applies when Condition is true.
+    LogTestSubsystem.setActiveLevel(LogLevel::Error);
+    GP_LOGGER_CLOG(condTrue, globalLogger, LogTestSubsystem, Warning, "Masked warning {}", trackEval(7u));
+    EXPECT_EQ(evalCount, 2u);
+
+    LogTestSubsystem.resetToDefaultLevel();
+    globalLogger.clearSinks();
+    globalLogger.shutdown();
+}
+
+TEST(LoggerTest, LongMessagesOver439BytesDeliverWithoutTruncationInSyncAndAsyncModes)
+{
+    gp::FixedString<1500> payload{};
+    for (gp::USize i = 0u; i < 1200u; ++i)
+    {
+        payload.pushBack(static_cast<char>('A' + (i % 26u)));
+    }
+    const gp::StringView expectedTail = payload.view().substr(1180u, 20u);
+
+    // 1. Synchronous mode formatting + delivery past 439 bytes.
+    {
+        Logger syncLogger{};
+        LoggerDesc desc{};
+        desc.mode = LogExecutionMode::Synchronous;
+        desc.applyCommandLineOverrides = false;
+        ASSERT_EQ(syncLogger.initialize(desc), LogResult::Success);
+
+        StringLogSink strSink(LogLevel::Trace, LogSinkFlags::None);
+        ASSERT_EQ(syncLogger.addSink(&strSink), LogResult::Success);
+
+        LogTestSubsystem.setActiveLevel(LogLevel::Info);
+        GP_LOGGER_LOG(syncLogger, LogTestSubsystem, Info, "LongSync: {}", payload.view());
+
+        EXPECT_TRUE(strSink.contains("LongSync: "));
+        EXPECT_TRUE(strSink.contains(expectedTail));
+        EXPECT_GT(strSink.size(), 1200u);
+        syncLogger.shutdown();
+    }
+
+    // 2. AsyncRing mode drains prior queued messages and delivers >439-byte messages intact.
+    {
+        Logger asyncLogger{};
+        LoggerDesc desc{};
+        desc.mode = LogExecutionMode::AsyncRing;
+        desc.asyncFlushIntervalMicroseconds = 500u;
+        desc.applyCommandLineOverrides = false;
+        ASSERT_EQ(asyncLogger.initialize(desc), LogResult::Success);
+
+        StringLogSink strSink(LogLevel::Trace, LogSinkFlags::None);
+        ASSERT_EQ(asyncLogger.addSink(&strSink), LogResult::Success);
+
+        LogTestSubsystem.setActiveLevel(LogLevel::Info);
+        GP_LOGGER_LOG(asyncLogger, LogTestSubsystem, Info, "ShortFirst");
+        GP_LOGGER_LOG(asyncLogger, LogTestSubsystem, Info, "LongAsync: {}", payload.view());
+
+        asyncLogger.flush();
+        asyncLogger.shutdown();
+
+        EXPECT_TRUE(strSink.contains("ShortFirst"));
+        EXPECT_TRUE(strSink.contains("LongAsync: "));
+        EXPECT_TRUE(strSink.contains(expectedTail));
+        EXPECT_GT(strSink.size(), 1200u);
+    }
+
+    LogTestSubsystem.resetToDefaultLevel();
+}
+
+TEST(LoggerTest, FatalHandlerRegistrationAndQuery)
+{
+    const FatalLogHandlerFn previous = Logger::getFatalHandler();
+    const auto dummyHandler = [](const LogSourceLocation&) noexcept -> void
+    {
+    };
+    EXPECT_EQ(Logger::setFatalHandler(dummyHandler), previous);
+    EXPECT_EQ(Logger::getFatalHandler(), dummyHandler);
+    EXPECT_EQ(Logger::setFatalHandler(previous), dummyHandler);
+    EXPECT_EQ(Logger::getFatalHandler(), previous);
+}
+
+#if defined(GTEST_HAS_DEATH_TEST) && GTEST_HAS_DEATH_TEST
+TEST(LoggerDeathTest, FatalMacroAndFunctionFlushAndAbortProcess)
+{
+    EXPECT_DEATH(
+        {
+            Logger& globalLogger = Logger::instance();
+            globalLogger.shutdown();
+            globalLogger.clearSinks();
+            LoggerDesc desc{};
+            desc.mode = LogExecutionMode::Synchronous;
+            desc.applyCommandLineOverrides = false;
+            (void)globalLogger.initialize(desc);
+
+            static bool s_handlerCalled = false;
+            Logger::setFatalHandler(
+                [](const LogSourceLocation& loc) noexcept -> void
+            {
+                s_handlerCalled = (loc.line > 0u);
+                if (s_handlerCalled)
+                {
+                    std::fputs("[FATAL_HANDLER_INVOKED]\n", stderr);
+                    std::fflush(stderr);
+                }
+            }
+            );
+
+            GP_LOG_FATAL(LogCore, "Fatal abort test code={}", 911);
+        },
+        "FATAL_HANDLER_INVOKED"
+    );
+
+    EXPECT_DEATH(
+        {
+            Logger& globalLogger = Logger::instance();
+            globalLogger.shutdown();
+            globalLogger.clearSinks();
+            LoggerDesc desc{};
+            desc.mode = LogExecutionMode::Synchronous;
+            desc.applyCommandLineOverrides = false;
+            (void)globalLogger.initialize(desc);
+
+            const bool trigger = true;
+            GP_CLOG_FATAL(trigger, LogCore, "Conditional fatal {}", 123);
+        },
+        ""
+    );
+
+    EXPECT_DEATH(
+        {
+            Logger& globalLogger = Logger::instance();
+            globalLogger.shutdown();
+            globalLogger.clearSinks();
+            LoggerDesc desc{};
+            desc.mode = LogExecutionMode::Synchronous;
+            desc.applyCommandLineOverrides = false;
+            (void)globalLogger.initialize(desc);
+
+            gp::log::fatal(LogCore, "Direct cpp23 fatal {}", 42);
+        },
+        ""
+    );
+}
+#endif
+
+TEST(LoggerTest, ConsoleCVarsAndCommandsControlGlobalMinLevelFlushAndStats)
+{
+    gp::console::IConsoleManager& console = gp::console::IConsoleManager::get();
+
+    Logger& globalLogger = Logger::instance();
+    globalLogger.shutdown();
+    globalLogger.clearSinks();
+
+    LoggerDesc desc{};
+    desc.mode = LogExecutionMode::Synchronous;
+    desc.globalMinLevel = LogLevel::Trace;
+    desc.applyCommandLineOverrides = false;
+    ASSERT_EQ(globalLogger.initialize(desc), LogResult::Success);
+
+    StringLogSink strSink(LogLevel::Trace, LogSinkFlags::None);
+    ASSERT_EQ(globalLogger.addSink(&strSink), LogResult::Success);
+    LogTestSubsystem.setActiveLevel(LogLevel::Trace);
+
+    EXPECT_EQ(console.processUserConsoleInput("log.GlobalLevel Warning"), gp::console::ConsoleResult::Success);
+    EXPECT_EQ(globalLogger.getGlobalMinLevel(), LogLevel::Warning);
+
+    GP_LOG_INFO(LogTestSubsystem, "Filtered info message");
+    GP_LOG_WARNING(LogTestSubsystem, "Delivered warning message");
+    EXPECT_FALSE(strSink.contains("Filtered info message"));
+    EXPECT_TRUE(strSink.contains("Delivered warning message"));
+
+    // Unrecognized severity string leaves the active global level intact.
+    EXPECT_EQ(console.processUserConsoleInput("log.GlobalLevel NotALevel"), gp::console::ConsoleResult::Success);
+    EXPECT_EQ(globalLogger.getGlobalMinLevel(), LogLevel::Warning);
+
+    gp::FixedString<511> cmdOut{};
+    gp::console::ConsoleOutputDelegate outDelegate = gp::console::ConsoleOutputDelegate::createLambda(
+        [&cmdOut](const gp::StringView line) noexcept -> void
+    {
+        cmdOut.assign(line.substr(0u, cmdOut.capacity()));
+    }
+    );
+
+    EXPECT_EQ(console.processUserConsoleInput("log.Flush"), gp::console::ConsoleResult::Success);
+    EXPECT_EQ(console.processUserConsoleInput("log.Stats", &outDelegate), gp::console::ConsoleResult::Success);
+    EXPECT_NE(cmdOut.view().find("Logger[Synchronous]"), gp::StringView::npos);
+    EXPECT_NE(cmdOut.view().find("level=WARN"), gp::StringView::npos);
+
+    if (gp::console::IConsoleVariable* const levelVar = console.findConsoleVariable("log.GlobalLevel"))
+    {
+        (void)levelVar->reset(gp::console::ConsoleVarSetBy::Console);
+    }
+    EXPECT_EQ(globalLogger.getGlobalMinLevel(), LogLevel::Trace);
+
+    LogTestSubsystem.resetToDefaultLevel();
+    globalLogger.clearSinks();
+    globalLogger.shutdown();
 }
 
 }   // namespace gp::log::tests

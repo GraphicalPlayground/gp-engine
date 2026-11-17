@@ -116,57 +116,62 @@ TEST(FiberScratchAllocatorTest, SameThreadCooperativeFiberYieldOutOfOrderUnwindP
     FiberScratchArena::bindFiberArena(&fiber1Arena);
     EXPECT_EQ(FiberScratchArena::getBoundFiberArena(), &fiber1Arena);
 
-    ScopedFiberScratchMark fiber1Scope{};
-    gp::UInt8* const fiber1Data = static_cast<gp::UInt8*>(scratch.allocate(1024u, 32u));
-    ASSERT_NE(fiber1Data, nullptr);
-    for (gp::USize i = 0u; i < 1024u; ++i)
     {
-        fiber1Data[i] = 0xA1u;
+        ScopedFiberScratchMark fiber1Scope{};
+        gp::UInt8* const fiber1Data = static_cast<gp::UInt8*>(scratch.allocate(1024u, 32u));
+        ASSERT_NE(fiber1Data, nullptr);
+        for (gp::USize i = 0u; i < 1024u; ++i)
+        {
+            fiber1Data[i] = 0xA1u;
+        }
+
+        // 2. Fiber 1 yields at `waitForCounter()`; Worker Thread 0 switches to Fiber 2
+        FiberScratchArena::bindFiberArena(&fiber2Arena);
+        EXPECT_EQ(FiberScratchArena::getBoundFiberArena(), &fiber2Arena);
+        EXPECT_FALSE(fiber1Scope.isArenaBoundToCurrentContext());
+
+        MemoryMark fiber2Mark = scratch.mark();
+        gp::UInt8* const fiber2Data = static_cast<gp::UInt8*>(scratch.allocate(1024u, 32u));
+        ASSERT_NE(fiber2Data, nullptr);
+        for (gp::USize i = 0u; i < 1024u; ++i)
+        {
+            fiber2Data[i] = 0xB2u;
+        }
+
+        // Both fibers hold independent leased pages from the shared PagePool
+        EXPECT_EQ(FiberScratchArena::getSharedPagePool().getLeasedPageCount(), 2u);
+
+        // 3. Fiber 2 yields; Worker Thread 0 switches back to Fiber 1 first (out-of-order completion!)
+        FiberScratchArena::bindFiberArena(&fiber1Arena);
+        EXPECT_TRUE(fiber1Scope.isArenaBoundToCurrentContext());
+
+        // Fiber 1 grows its allocation in-place and rewinds its scope BEFORE Fiber 2 finishes
+        gp::UInt8* const fiber1Grown = static_cast<gp::UInt8*>(scratch.reallocate(fiber1Data, 1024u, 2048u, 32u));
+        EXPECT_EQ(fiber1Grown, fiber1Data);
+        for (gp::USize i = 0u; i < 1024u; ++i)
+        {
+            EXPECT_EQ(fiber1Grown[i], 0xA1u);
+        }
+
+        fiber1Scope.rewindNow();
+        EXPECT_EQ(fiber1Arena.getLeasedPageCount(), 0u);
+        EXPECT_EQ(FiberScratchArena::getSharedPagePool().getLeasedPageCount(), 1u);
+
+        // 4. Worker Thread 0 switches back to Fiber 2; Fiber 2's allocation must be 100% intact and uncorrupted!
+        FiberScratchArena::bindFiberArena(&fiber2Arena);
+        EXPECT_TRUE(scratch.owns(fiber2Data));
+        for (gp::USize i = 0u; i < 1024u; ++i)
+        {
+            EXPECT_EQ(fiber2Data[i], 0xB2u);
+        }
+
+        scratch.rewind(fiber2Mark);
+        EXPECT_EQ(fiber2Arena.getLeasedPageCount(), 0u);
+        EXPECT_EQ(FiberScratchArena::getSharedPagePool().getLeasedPageCount(), 0u);
+
+        // Restore Fiber 1's arena binding before fiber1Scope unwinds so its RAII guard sees its owner context.
+        FiberScratchArena::bindFiberArena(&fiber1Arena);
     }
-
-    // 2. Fiber 1 yields at `waitForCounter()`; Worker Thread 0 switches to Fiber 2
-    FiberScratchArena::bindFiberArena(&fiber2Arena);
-    EXPECT_EQ(FiberScratchArena::getBoundFiberArena(), &fiber2Arena);
-    EXPECT_FALSE(fiber1Scope.isArenaBoundToCurrentContext());
-
-    MemoryMark fiber2Mark = scratch.mark();
-    gp::UInt8* const fiber2Data = static_cast<gp::UInt8*>(scratch.allocate(1024u, 32u));
-    ASSERT_NE(fiber2Data, nullptr);
-    for (gp::USize i = 0u; i < 1024u; ++i)
-    {
-        fiber2Data[i] = 0xB2u;
-    }
-
-    // Both fibers hold independent leased pages from the shared PagePool
-    EXPECT_EQ(FiberScratchArena::getSharedPagePool().getLeasedPageCount(), 2u);
-
-    // 3. Fiber 2 yields; Worker Thread 0 switches back to Fiber 1 first (out-of-order completion!)
-    FiberScratchArena::bindFiberArena(&fiber1Arena);
-    EXPECT_TRUE(fiber1Scope.isArenaBoundToCurrentContext());
-
-    // Fiber 1 grows its allocation in-place and rewinds its scope BEFORE Fiber 2 finishes
-    gp::UInt8* const fiber1Grown = static_cast<gp::UInt8*>(scratch.reallocate(fiber1Data, 1024u, 2048u, 32u));
-    EXPECT_EQ(fiber1Grown, fiber1Data);
-    for (gp::USize i = 0u; i < 1024u; ++i)
-    {
-        EXPECT_EQ(fiber1Grown[i], 0xA1u);
-    }
-
-    fiber1Scope.rewindNow();
-    EXPECT_EQ(fiber1Arena.getLeasedPageCount(), 0u);
-    EXPECT_EQ(FiberScratchArena::getSharedPagePool().getLeasedPageCount(), 1u);
-
-    // 4. Worker Thread 0 switches back to Fiber 2; Fiber 2's allocation must be 100% intact and uncorrupted!
-    FiberScratchArena::bindFiberArena(&fiber2Arena);
-    EXPECT_TRUE(scratch.owns(fiber2Data));
-    for (gp::USize i = 0u; i < 1024u; ++i)
-    {
-        EXPECT_EQ(fiber2Data[i], 0xB2u);
-    }
-
-    scratch.rewind(fiber2Mark);
-    EXPECT_EQ(fiber2Arena.getLeasedPageCount(), 0u);
-    EXPECT_EQ(FiberScratchArena::getSharedPagePool().getLeasedPageCount(), 0u);
 
     FiberScratchArena::bindFiberArena(nullptr);
     FiberScratchArena::shutdownPool();
