@@ -3,13 +3,20 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "logging/Logger.hpp"
+#include "console/AutoConsoleVariable.hpp"
+#include "console/ConsoleEnums.hpp"
+#include "console/ConsoleTypes.hpp"
+#include "console/IConsoleVariable.hpp"
+#include "containers/strings/FixedString.hpp"
 #include "diagnostics/Assert.hpp"
+#include "logging/LogFormatter.hpp"
 #include "memory/Memory.hpp"
 #include "miscellaneous/CommandLine.hpp"
 #include "platforms/base/Platform.hpp"
 #include "platforms/base/system/Thread.hpp"
 #include "platforms/base/system/Time.hpp"
 #include "profiling/Profiler.hpp"
+#include "profiling/ProfilingControl.hpp"
 #include "threading/fibers/Fiber.hpp"
 #include <cstdlib>
 
@@ -20,6 +27,74 @@ namespace
 {
 
 gp::thread::Atomic<FatalLogHandlerFn> g_fatalLogHandler{ nullptr };
+
+void onLogGlobalLevelChanged(gp::console::IConsoleVariable* const var) noexcept
+{
+    if (var == nullptr)
+    {
+        return;
+    }
+
+    LogLevel parsed = LogLevel::Info;
+    if (tryParseLogLevel(var->getString().view(), parsed))
+    {
+        Logger::instance().setGlobalMinLevel(parsed);
+    }
+}
+
+gp::console::AutoConsoleVariable<gp::console::ConsoleString> g_cvarLogGlobalLevel(
+    "log.GlobalLevel",
+    "Trace",
+    "Sets global minimum log severity filter across all categories (Trace, Debug, Info, Warning, Error, Fatal, Off).",
+    gp::console::ConsoleVarFlags::None
+);
+
+gp::console::AutoConsoleCommand g_cmdLogFlush(
+    "log.Flush",
+    "Drains queued asynchronous log records and flushes all registered log sinks.",
+    []() noexcept -> void
+{
+    Logger::instance().flush();
+},
+    gp::console::ConsoleVarFlags::None
+);
+
+gp::console::AutoConsoleCommand g_cmdLogStats(
+    "log.Stats",
+    "Prints Logger dispatch counters, active sinks, mode, and global minimum severity level.",
+    [](const gp::console::ConsoleCommandArgs& args) noexcept -> void
+{
+    const Logger& logger = Logger::instance();
+    const gp::StringView modeStr =
+        (logger.getExecutionMode() == LogExecutionMode::AsyncRing) ? "AsyncRing" : "Synchronous";
+    gp::FixedString<383> line{};
+    (void)formatTo(
+        line,
+        "Logger[{}] initialized={} level={} sinks={} submitted={} dispatched={} dropped={}",
+        modeStr,
+        logger.isInitialized(),
+        logLevelToString(logger.getGlobalMinLevel()),
+        logger.getSinkCount(),
+        logger.getTotalSubmittedCount(),
+        logger.getTotalDispatchedCount(),
+        logger.getDroppedRecordCount()
+    );
+    args.writeLine(line.view());
+},
+    gp::console::ConsoleVarFlags::None
+);
+
+struct LoggerConsoleRegistrar final
+{
+    LoggerConsoleRegistrar() noexcept
+    {
+        g_cvarLogGlobalLevel->setOnChangedCallback(
+            gp::console::ConsoleVarChangedDelegate::createStatic<&onLogGlobalLevelChanged>()
+        );
+    }
+};
+
+const LoggerConsoleRegistrar g_loggerConsoleRegistrar{};
 
 }   // namespace
 
@@ -111,6 +186,15 @@ LogResult Logger::initialize(const LoggerDesc& desc) noexcept
             {
                 targetMinLevel = parsedLevel;
             }
+        }
+    }
+
+    if (g_cvarLogGlobalLevel->getSetBy() > gp::console::ConsoleVarSetBy::Constructor)
+    {
+        LogLevel cvarLevel = targetMinLevel;
+        if (tryParseLogLevel(g_cvarLogGlobalLevel->getString().view(), cvarLevel))
+        {
+            targetMinLevel = cvarLevel;
         }
     }
 
@@ -371,10 +455,15 @@ void Logger::workerThreadLoop() noexcept
     {
         if (!m_asyncQueue.isEmptyApprox())
         {
-            GP_PROFILE_SCOPE_NC("Logger::FlushBatch", GP_U32_COLOR_GRAY);
+            GP_PROFILE_SCOPE_NC_ACTIVE(
+                "Logger::FlushBatch", GP_U32_COLOR_GRAY, gp::profiling::ProfilingControl::isZonesEnabled()
+            );
             acquireDispatchLock(workerTid);
             drainAsyncQueueLocked();
             releaseDispatchLock();
+            const bool plotLogs = gp::profiling::ProfilingControl::isPlotsEnabled();
+            GP_PLOT_IF(plotLogs, "Logger::Submitted", static_cast<gp::Int64>(getTotalSubmittedCount()));
+            GP_PLOT_IF(plotLogs, "Logger::Dropped", static_cast<gp::Int64>(getDroppedRecordCount()));
         }
         else
         {
