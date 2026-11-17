@@ -331,13 +331,7 @@
 /// @section selectany / weak linkage.
 
 #ifndef GP_SELECT_ANY
-    #if GP_COMPILER_MSVC
-        #define GP_SELECT_ANY __declspec(selectany)
-    #elif GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
-        #define GP_SELECT_ANY __attribute__((weak))
-    #else
-        #define GP_SELECT_ANY
-    #endif
+    #define GP_SELECT_ANY
 #endif
 
 /// @section DLL export / import.
@@ -354,15 +348,7 @@
 /// @brief Forces a struct/class to be packed with no padding bytes.
 ///        Use with caution: misaligned access can be costly on some architectures.
 #ifndef GP_PACKED
-    #if GP_COMPILER_MSVC
-        #define GP_PACKED __pragma(pack(push, 1)) /* struct body */ __pragma(pack(pop))
-    // Note: GP_PACKED wraps the struct on MSVC. For per-struct use, prefer:
-    //   #pragma pack(push, 1) / struct Foo { ... }; / #pragma pack(pop)
-    #elif GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
-        #define GP_PACKED __attribute__((packed))
-    #else
-        #define GP_PACKED
-    #endif
+    #define GP_PACKED
 #endif
 
 /// @section Optimisation hints.
@@ -371,13 +357,7 @@
 ///        Triggers undefined behaviour if reached; allows the optimiser to eliminate
 ///        the dead path entirely.
 #ifndef GP_BUILTIN_UNREACHABLE
-    #if GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
-        #define GP_BUILTIN_UNREACHABLE() __builtin_unreachable()
-    #elif GP_COMPILER_MSVC
-        #define GP_BUILTIN_UNREACHABLE() __assume(false)
-    #else
-        #define GP_BUILTIN_UNREACHABLE() (void(0))
-    #endif
+    #define GP_BUILTIN_UNREACHABLE() (void(0))
 #endif
 
 /// @brief Safe wrapper around __has_builtin.
@@ -390,14 +370,8 @@
 
 /// @brief Marks a function as cold (rarely called).
 ///        The optimiser de-prioritises cold functions during inlining and code placement.
-#if !defined(GP_COLD)
-    #if GP_COMPILER_MSVC
-        #define GP_COLD __declspec(noinline)
-    #elif GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
-        #define GP_COLD __attribute__((cold))
-    #else
-        #define GP_COLD
-    #endif
+#ifndef GP_COLD
+    #define GP_COLD
 #endif
 
 /// @section Operator new / delete throw specifications.
@@ -428,41 +402,50 @@
     #define GP_ASSERT(expr, ...)
 #endif
 
-/// @section Warning suppression helpers.
+/// @section Warning suppression helpers (fallbacks when compiler header did not define them).
 ///
 /// Use these to bracket third-party headers or intentional warning-generating code.
 /// Always prefer fixing the root cause over suppressing warnings.
-///
-/// MSVC example:
-///   GP_MSVC_WARNING_PUSH()
-///   GP_MSVC_WARNING_DISABLE(4100)   // unreferenced formal parameter
-///   #include <some_library.h>
-///   GP_MSVC_WARNING_POP()
-///
-/// GCC/Clang example:
-///   GP_GCC_WARNING_PUSH()
-///   GP_GCC_WARNING_DISABLE("-Wunused-parameter")
-///   #include <some_library.h>
-///   GP_GCC_WARNING_POP()
 
-#if GP_COMPILER_MSVC
-    #define GP_MSVC_WARNING_PUSH()          __pragma(warning(push))
-    #define GP_MSVC_WARNING_POP()           __pragma(warning(pop))
-    #define GP_MSVC_WARNING_DISABLE(code)   __pragma(warning(disable : code))
-#else
+#ifndef GP_MSVC_WARNING_PUSH
     #define GP_MSVC_WARNING_PUSH()
+#endif
+#ifndef GP_MSVC_WARNING_POP
     #define GP_MSVC_WARNING_POP()
+#endif
+#ifndef GP_MSVC_WARNING_DISABLE
     #define GP_MSVC_WARNING_DISABLE(code)
 #endif
 
-#if GP_COMPILER_CLANG || GP_COMPILER_GCC || GP_COMPILER_INTEL
-    #define GP_GCC_WARNING_PUSH()           _Pragma("GCC diagnostic push")
-    #define GP_GCC_WARNING_POP()            _Pragma("GCC diagnostic pop")
-    #define GP_GCC_WARNING_DISABLE(w)       _Pragma(GP_STRINGIFY(GCC diagnostic ignored w))
-#else
+#ifndef GP_GCC_WARNING_PUSH
     #define GP_GCC_WARNING_PUSH()
+#endif
+#ifndef GP_GCC_WARNING_POP
     #define GP_GCC_WARNING_POP()
+#endif
+#ifndef GP_GCC_WARNING_DISABLE
     #define GP_GCC_WARNING_DISABLE(w)
+#endif
+
+/// @section Deprecation & third-party warning brackets.
+
+/// @brief Marks an entity as deprecated with a version tag and migration message using C++ standard `[[deprecated]]`.
+/// @param[in] version Engine or module version in which the entity was deprecated.
+/// @param[in] message Diagnostic string literal explaining the replacement.
+#define GP_DEPRECATED(version, message) [[deprecated(message " (Deprecated since " #version ")")]]
+
+#ifndef GP_DISABLE_DEPRECATION_WARNINGS
+    #define GP_DISABLE_DEPRECATION_WARNINGS
+#endif
+#ifndef GP_ENABLE_DEPRECATION_WARNINGS
+    #define GP_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+#ifndef GP_THIRD_PARTY_INCLUDES_START
+    #define GP_THIRD_PARTY_INCLUDES_START
+#endif
+#ifndef GP_THIRD_PARTY_INCLUDES_END
+    #define GP_THIRD_PARTY_INCLUDES_END
 #endif
 
 /// @section Intrinsic cast.
@@ -543,6 +526,42 @@ using WChar = wchar_t;
 
 using Byte = std::byte;
 using NullPtrT = std::nullptr_t;
+
+/// @section Compile-time array utilities.
+
+/// @brief Returns the number of elements in a fixed-size C array at compile time.
+/// @details Rejects decayed pointers at compile time via reference-to-array template deduction,
+///          eliminating the classic `sizeof(arr) / sizeof(arr[0])` pointer-decay bug.
+/// @tparam InElementType Element type of the C array.
+/// @tparam InCount Deduceable compile-time element count.
+/// @param[in] array Reference to the C array whose element count is queried.
+/// @return Compile-time element count (`InCount`).
+template <typename InElementType, USize InCount>
+[[nodiscard]] consteval USize arrayCount([[maybe_unused]] const InElementType (&array)[InCount]) noexcept
+{
+    return InCount;
+}
+
+namespace detail
+{
+
+/// @brief Unevaluated array-size deduction helper backing `GP_ARRAY_COUNT`.
+/// @tparam InElementType Element type of the C array.
+/// @tparam InCount Compile-time element count.
+/// @return Reference to a `char[InCount]` buffer whose `sizeof` equals `InCount`.
+template <typename InElementType, USize InCount>
+char (&arrayCountHelper(InElementType (&)[InCount]))[InCount];
+
+/// @overload
+template <typename InElementType, USize InCount>
+const char (&arrayCountHelper(const InElementType (&)[InCount]))[InCount];
+
+}   // namespace detail
+
+/// @brief Compile-time element count macro for fixed-size C arrays; rejects pointers at compile time.
+/// @param[in] array Fixed-size C array lvalue.
+/// @return Element count as a `gp::USize` constant expression.
+#define GP_ARRAY_COUNT(array) (sizeof(::gp::detail::arrayCountHelper(array)))
 
 }   // namespace gp
 
