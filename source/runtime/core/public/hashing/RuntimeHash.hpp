@@ -12,6 +12,9 @@
 #include "hashing/HashingForward.hpp"   // IWYU pragma: keep
 #include "hashing/HashingTypes.hpp"
 #include "hashing/Murmur3.hpp"
+#include "hashing/Sha256.hpp"
+#include "hashing/SipHash.hpp"
+#include "hashing/Wyhash.hpp"
 #include "hashing/XxHash.hpp"
 
 namespace gp::hashing
@@ -67,13 +70,40 @@ public:
         m_storage = makeSeededStorage(m_algorithm, seed);
     }
 
-    /// @brief Resets the active accumulator with a 128-bit seed (folding for narrower algorithms).
-    /// @param[in] seed 128-bit seed value.
+    /// @brief Resets the active accumulator with a 128-bit seed (used as 128-bit key for `SipHash24` or 128-bit seed
+    ///        for `Murmur3_128`, folded for narrower algorithms).
+    /// @param[in] seed 128-bit seed or key value.
     constexpr void resetWithSeed(const Hash128& seed) noexcept
     {
         if (m_algorithm == HashAlgorithm::Murmur3_128)
         {
             m_storage = StateStorage(Murmur3_128(seed));
+        }
+        else if (m_algorithm == HashAlgorithm::SipHash24)
+        {
+            m_storage = StateStorage(SipHash24(seed));
+        }
+        else if (m_algorithm == HashAlgorithm::Sha256)
+        {
+            m_storage = StateStorage(Sha256(Hash256(seed.high, seed.low, 0ULL, 0ULL)));
+        }
+        else
+        {
+            m_storage = makeSeededStorage(m_algorithm, seed.foldTo64());
+        }
+    }
+
+    /// @brief Resets the active accumulator with a 256-bit seed (used directly by `Sha256`, folded otherwise).
+    /// @param[in] seed 256-bit seed value.
+    constexpr void resetWithSeed(const Hash256& seed) noexcept
+    {
+        if (m_algorithm == HashAlgorithm::Sha256)
+        {
+            m_storage = StateStorage(Sha256(seed));
+        }
+        else if (m_algorithm == HashAlgorithm::Murmur3_128 || m_algorithm == HashAlgorithm::SipHash24)
+        {
+            resetWithSeed(seed.foldTo128());
         }
         else
         {
@@ -174,6 +204,18 @@ public:
         updateIgnoreCase(str.data(), str.size());
     }
 
+    /// @brief Feeds a single raw byte into the active accumulator (`constexpr`-capable).
+    /// @param[in] byte Byte value to consume.
+    constexpr void updateByte(const gp::UInt8 byte) noexcept
+    {
+        dispatch(
+            [byte]<typename InHasher>(InHasher& hasher) noexcept -> void
+        {
+            hasher.updateByte(byte);
+        }
+        );
+    }
+
     /// @brief Feeds a structured value into the active accumulator (`constexpr`-capable).
     /// @tparam InValueT Hashable value type.
     /// @param[in] value Input value to append.
@@ -210,6 +252,12 @@ public:
             return HashDigest(m_storage.xx32.finalize(), m_algorithm);
         case HashAlgorithm::XxHash64:
             return HashDigest(m_storage.xx64.finalize(), m_algorithm);
+        case HashAlgorithm::Wyhash64:
+            return HashDigest(m_storage.wyhash64.finalize(), m_algorithm);
+        case HashAlgorithm::SipHash24:
+            return HashDigest(m_storage.sip24.finalize(), m_algorithm);
+        case HashAlgorithm::Sha256:
+            return HashDigest(m_storage.sha256.finalize(), m_algorithm);
         case HashAlgorithm::Count:
             // falls through
         default:
@@ -224,18 +272,25 @@ public:
         return finalize().toUInt32();
     }
 
-    /// @brief Finalizes and converts the result to a 64-bit digest (folding 128-bit digests if needed).
+    /// @brief Finalizes and converts the result to a 64-bit digest (folding wider digests if needed).
     /// @return 64-bit digest value.
     [[nodiscard]] constexpr gp::UInt64 finalize64() const noexcept
     {
         return finalize().toUInt64();
     }
 
-    /// @brief Finalizes and returns the full 128-bit storage (`{ digest, 0 }` for 32/64-bit algorithms).
+    /// @brief Finalizes and returns a 128-bit digest (zero-extended for 32/64-bit, folded for 256-bit).
     /// @return 128-bit digest value.
     [[nodiscard]] constexpr Hash128 finalize128() const noexcept
     {
         return finalize().toHash128();
+    }
+
+    /// @brief Finalizes and returns the full 256-bit storage (`{ digest, 0, ... }` for narrower algorithms).
+    /// @return 256-bit digest value.
+    [[nodiscard]] constexpr Hash256 finalize256() const noexcept
+    {
+        return finalize().toHash256();
     }
 
 private:
@@ -249,6 +304,9 @@ private:
         Murmur3_128 murmur128;
         XxHash32 xx32;
         XxHash64 xx64;
+        Wyhash64 wyhash64;
+        SipHash24 sip24;
+        Sha256 sha256;
 
         constexpr explicit StateStorage(const Fnv1a32& value) noexcept
             : fnv32(value)
@@ -281,6 +339,18 @@ private:
         constexpr explicit StateStorage(const XxHash64& value) noexcept
             : xx64(value)
         {}
+
+        constexpr explicit StateStorage(const Wyhash64& value) noexcept
+            : wyhash64(value)
+        {}
+
+        constexpr explicit StateStorage(const SipHash24& value) noexcept
+            : sip24(value)
+        {}
+
+        constexpr explicit StateStorage(const Sha256& value) noexcept
+            : sha256(value)
+        {}
     };
 
     [[nodiscard]] static constexpr HashAlgorithm sanitizeAlgorithm(const HashAlgorithm algorithm) noexcept
@@ -312,6 +382,12 @@ private:
             return StateStorage(XxHash32());
         case HashAlgorithm::XxHash64:
             return StateStorage(XxHash64());
+        case HashAlgorithm::Wyhash64:
+            return StateStorage(Wyhash64());
+        case HashAlgorithm::SipHash24:
+            return StateStorage(SipHash24());
+        case HashAlgorithm::Sha256:
+            return StateStorage(Sha256());
         case HashAlgorithm::Count:
             // falls through
         default:
@@ -340,6 +416,12 @@ private:
             return StateStorage(XxHash32(static_cast<gp::UInt32>(seed)));
         case HashAlgorithm::XxHash64:
             return StateStorage(XxHash64(seed));
+        case HashAlgorithm::Wyhash64:
+            return StateStorage(Wyhash64(seed));
+        case HashAlgorithm::SipHash24:
+            return StateStorage(SipHash24(seed));
+        case HashAlgorithm::Sha256:
+            return StateStorage(Sha256(Hash256(seed, 0ULL, 0ULL, 0ULL)));
         case HashAlgorithm::Count:
             // falls through
         default:
@@ -375,6 +457,15 @@ private:
             break;
         case HashAlgorithm::XxHash64:
             visitor(m_storage.xx64);
+            break;
+        case HashAlgorithm::Wyhash64:
+            visitor(m_storage.wyhash64);
+            break;
+        case HashAlgorithm::SipHash24:
+            visitor(m_storage.sip24);
+            break;
+        case HashAlgorithm::Sha256:
+            visitor(m_storage.sha256);
             break;
         case HashAlgorithm::Count:
             // falls through
@@ -540,6 +631,39 @@ template <concepts::IsCharacterSequence InStrT>
 [[nodiscard]] constexpr Hash128 computeHash128(const HashAlgorithm algorithm, const InStrT& str) noexcept
 {
     return computeHash(algorithm, str).toHash128();
+}
+
+/// @brief Computes a 256-bit digest for @p algorithm over an untyped runtime buffer.
+/// @param[in] algorithm Target `HashAlgorithm` enumerator.
+/// @param[in] data Buffer address.
+/// @param[in] sizeInBytes Number of bytes to hash.
+/// @return 256-bit digest (`{ value, 0, ... }` for narrower algorithms).
+[[nodiscard]] inline Hash256
+    computeHash256(const HashAlgorithm algorithm, const void* const data, const gp::USize sizeInBytes) noexcept
+{
+    return computeHash(algorithm, data, sizeInBytes).toHash256();
+}
+
+/// @brief Computes a 256-bit digest for @p algorithm over a byte buffer (`constexpr`-capable).
+/// @param[in] algorithm Target `HashAlgorithm` enumerator.
+/// @param[in] data Byte pointer.
+/// @param[in] sizeInBytes Number of bytes to hash.
+/// @return 256-bit digest.
+[[nodiscard]] constexpr Hash256
+    computeHash256(const HashAlgorithm algorithm, const gp::UInt8* const data, const gp::USize sizeInBytes) noexcept
+{
+    return computeHash(algorithm, data, sizeInBytes).toHash256();
+}
+
+/// @brief Computes a 256-bit digest for @p algorithm over a string-like object (`constexpr`-capable).
+/// @tparam InStrT String type satisfying `concepts::IsCharacterSequence`.
+/// @param[in] algorithm Target `HashAlgorithm` enumerator.
+/// @param[in] str String to hash.
+/// @return 256-bit digest.
+template <concepts::IsCharacterSequence InStrT>
+[[nodiscard]] constexpr Hash256 computeHash256(const HashAlgorithm algorithm, const InStrT& str) noexcept
+{
+    return computeHash(algorithm, str).toHash256();
 }
 
 }   // namespace gp::hashing

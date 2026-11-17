@@ -39,6 +39,9 @@ TEST(RuntimeHashTest, DynamicHasherMatchesEveryStaticAlgorithm)
         computeHash128(HashAlgorithm::Murmur3_128, gp::StringView("abc")) ==
         Hash128(0xB4963F3F3FAD7867ULL, 0x3BA2744126CA2D52ULL)
     );
+    static_assert(
+        computeHash256(HashAlgorithm::Sha256, gp::StringView("abc")) == Sha256::hash(gp::StringView("abc"))
+    );
 
     EXPECT_EQ(computeHash32(HashAlgorithm::Fnv1a32, kInput, kLen), Fnv1a32::hash(kInput, kLen));
     EXPECT_EQ(computeHash64(HashAlgorithm::Fnv1a64, kInput, kLen), Fnv1a64::hash(kInput, kLen));
@@ -48,11 +51,16 @@ TEST(RuntimeHashTest, DynamicHasherMatchesEveryStaticAlgorithm)
     EXPECT_EQ(computeHash128(HashAlgorithm::Murmur3_128, kInput, kLen), Murmur3_128::hash(kInput, kLen));
     EXPECT_EQ(computeHash32(HashAlgorithm::XxHash32, kInput, kLen), XxHash32::hash(kInput, kLen));
     EXPECT_EQ(computeHash64(HashAlgorithm::XxHash64, kInput, kLen), XxHash64::hash(kInput, kLen));
+    EXPECT_EQ(computeHash64(HashAlgorithm::Wyhash64, kInput, kLen), Wyhash64::hash(kInput, kLen));
+    EXPECT_EQ(computeHash64(HashAlgorithm::SipHash24, kInput, kLen), SipHash24::hash(kInput, kLen));
+    EXPECT_EQ(computeHash256(HashAlgorithm::Sha256, kInput, kLen), Sha256::hash(kInput, kLen));
 
     const gp::UInt8* const bytePtr = reinterpret_cast<const gp::UInt8*>(kInput);
     EXPECT_EQ(computeHash64(HashAlgorithm::XxHash64, bytePtr, kLen), XxHash64::hash(kInput, kLen));
+    EXPECT_EQ(computeHash64(HashAlgorithm::Wyhash64, bytePtr, kLen), Wyhash64::hash(kInput, kLen));
     EXPECT_EQ(computeHash32(HashAlgorithm::Crc32, bytePtr, kLen), Crc32::hash(kInput, kLen));
     EXPECT_EQ(computeHash128(HashAlgorithm::Murmur3_128, bytePtr, kLen), Murmur3_128::hash(kInput, kLen));
+    EXPECT_EQ(computeHash256(HashAlgorithm::Sha256, static_cast<const void*>(kInput), kLen), Sha256::hash(kInput, kLen));
 
     const HashDigest dBytes = computeHash(HashAlgorithm::XxHash32, bytePtr, kLen);
     const HashDigest dChars = computeHash(HashAlgorithm::XxHash32, kInput, kLen);
@@ -108,6 +116,22 @@ TEST(RuntimeHashTest, DynamicHasherStreamingResetSeedAndCaseFolding)
     const gp::Byte payload[3] = { gp::Byte{ 'a' }, gp::Byte{ 'b' }, gp::Byte{ 'c' } };
     hasher.update(payload, 3u);
     EXPECT_EQ(hasher.finalize32(), 0x364B3FB7u);
+
+    // Sha256 and SipHash24 via DynamicHasher.
+    hasher.reset(HashAlgorithm::Sha256);
+    EXPECT_EQ(hasher.digestBits(), 256u);
+    hasher.update(gp::StringView("abc"));
+    EXPECT_EQ(hasher.finalize256(), Sha256::hash(gp::StringView("abc")));
+
+    const Hash256 domainSeed(1ULL, 2ULL, 3ULL, 4ULL);
+    hasher.resetWithSeed(domainSeed);
+    hasher.update(gp::StringView("abc"));
+    EXPECT_EQ(hasher.finalize256(), Sha256::hash(gp::StringView("abc"), domainSeed));
+
+    hasher.reset(HashAlgorithm::SipHash24);
+    const Hash128 sipKey(0x0706050403020100ULL, 0x0F0E0D0C0B0A0908ULL);
+    hasher.resetWithSeed(sipKey);
+    EXPECT_EQ(hasher.finalize64(), 0x726FDB47DD0E0E31ULL);
 }
 
 }   // namespace gp::hashing::tests
