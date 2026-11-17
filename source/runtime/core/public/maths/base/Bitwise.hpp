@@ -119,4 +119,122 @@ template <concepts::IsUnsignedIntegral T>
     return std::bit_floor(value);
 }
 
+/// @brief Isolates the lowest set bit in @p value.
+/// @details Uses two's-complement negation (`x & -x`) to mask off every bit except the least significant `1` bit.
+/// @tparam T Unsigned integral type.
+/// @param[in] value Input bitmask word.
+/// @return Word containing only the least significant set bit of @p value, or 0 if @p value is 0.
+template <concepts::IsUnsignedIntegral T>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr T isolateLowestSetBit(const T value) noexcept
+{
+    return static_cast<T>(value & static_cast<T>(T{ 0 } - value));
+}
+
+/// @brief Clears the lowest set bit in @p value and returns the updated mask.
+/// @details Evaluates `x & (x - 1)` (single `blsr` instruction on x64 BMI1) to strip the lowest `1` bit branchlessly.
+/// @tparam T Unsigned integral type.
+/// @param[in] value Input bitmask word.
+/// @return Copy of @p value with its least significant set bit cleared, or 0 if @p value is 0.
+template <concepts::IsUnsignedIntegral T>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr T clearLowestSetBit(const T value) noexcept
+{
+    return static_cast<T>(value & static_cast<T>(value - T{ 1 }));
+}
+
+/// @brief Returns a single-bit mask for @p bitIndex.
+/// @tparam T Unsigned integral type.
+/// @param[in] bitIndex Zero-based bit position (must be less than the bit width of @c T).
+/// @return Value with only bit @p bitIndex set.
+template <concepts::IsUnsignedIntegral T>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr T bitMask(const UInt32 bitIndex) noexcept
+{
+    GP_ASSERT(bitIndex < static_cast<UInt32>(sizeof(T) * 8u) && "Bit index exceeds word width.");
+    return static_cast<T>(T{ 1 } << bitIndex);
+}
+
+/// @brief Builds a bitmask with the lowest @p bitCount bits set.
+/// @tparam T Unsigned integral type.
+/// @param[in] bitCount Number of low bits to set (clamped to the bit width of @c T).
+/// @return Mask containing @p bitCount trailing one bits.
+template <concepts::IsUnsignedIntegral T>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr T trailingBitMask(const UInt32 bitCount) noexcept
+{
+    constexpr UInt32 kWordBits = static_cast<UInt32>(sizeof(T) * 8u);
+    if (bitCount == 0u)
+    {
+        return T{ 0 };
+    }
+    if (bitCount >= kWordBits)
+    {
+        return static_cast<T>(~T{ 0 });
+    }
+    return static_cast<T>((T{ 1 } << bitCount) - T{ 1 });
+}
+
+/// @brief Extracts and clears the lowest set bit index from @p inOutWord.
+/// @details Lowers to `tzcnt` + `blsr` on modern x64 targets and `rbit` + `clz` on ARM64, allowing sparse bit loops
+///          such as `SparseSet` or dirty-mask sweeps to skip all zero bits in constant time.
+/// @note Requires @p inOutWord to be non-zero; use `tryGetAndClearNextBit()` when an empty word is possible.
+/// @tparam T Unsigned integral type.
+/// @param[in,out] inOutWord Non-zero word whose lowest set bit is extracted and cleared.
+/// @return Zero-based index of the extracted bit (`[0, sizeof(T) * 8)`).
+template <concepts::IsUnsignedIntegral T>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr UInt32 getAndClearNextBit(T& inOutWord) noexcept
+{
+    GP_ASSERT(inOutWord != T{ 0 } && "getAndClearNextBit() requires a non-zero word.");
+    const UInt32 bitIndex = static_cast<UInt32>(countTrailingZeros(inOutWord));
+    inOutWord = static_cast<T>(inOutWord & static_cast<T>(inOutWord - T{ 1 }));
+    return bitIndex;
+}
+
+/// @brief Extracts and clears the lowest set bit index from @p inOutWord if any bit is set.
+/// @tparam T Unsigned integral type.
+/// @param[in,out] inOutWord Word whose lowest set bit is extracted and cleared when non-zero.
+/// @param[out] outBitIndex Receives the extracted zero-based bit index on success; left untouched if empty.
+/// @return True if a set bit was extracted, false when @p inOutWord was zero.
+template <concepts::IsUnsignedIntegral T>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr bool tryGetAndClearNextBit(T& inOutWord, UInt32& outBitIndex) noexcept
+{
+    if (inOutWord == T{ 0 })
+    {
+        return false;
+    }
+    outBitIndex = static_cast<UInt32>(countTrailingZeros(inOutWord));
+    inOutWord = static_cast<T>(inOutWord & static_cast<T>(inOutWord - T{ 1 }));
+    return true;
+}
+
+/// @brief Extracts and clears the highest set bit index from @p inOutWord.
+/// @note Requires @p inOutWord to be non-zero; use `tryGetAndClearHighestBit()` when an empty word is possible.
+/// @tparam T Unsigned integral type.
+/// @param[in,out] inOutWord Non-zero word whose most significant set bit is extracted and cleared.
+/// @return Zero-based index of the extracted highest set bit (`[0, sizeof(T) * 8)`).
+template <concepts::IsUnsignedIntegral T>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr UInt32 getAndClearHighestBit(T& inOutWord) noexcept
+{
+    GP_ASSERT(inOutWord != T{ 0 } && "getAndClearHighestBit() requires a non-zero word.");
+    constexpr UInt32 kMaxBit = static_cast<UInt32>(sizeof(T) * 8u - 1u);
+    const UInt32 bitIndex = kMaxBit - static_cast<UInt32>(countLeadingZeros(inOutWord));
+    inOutWord = static_cast<T>(inOutWord ^ static_cast<T>(T{ 1 } << bitIndex));
+    return bitIndex;
+}
+
+/// @brief Extracts and clears the highest set bit index from @p inOutWord if any bit is set.
+/// @tparam T Unsigned integral type.
+/// @param[in,out] inOutWord Word whose highest set bit is extracted and cleared when non-zero.
+/// @param[out] outBitIndex Receives the extracted zero-based bit index on success; left untouched if empty.
+/// @return True if a set bit was extracted, false when @p inOutWord was zero.
+template <concepts::IsUnsignedIntegral T>
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr bool tryGetAndClearHighestBit(T& inOutWord, UInt32& outBitIndex) noexcept
+{
+    if (inOutWord == T{ 0 })
+    {
+        return false;
+    }
+    constexpr UInt32 kMaxBit = static_cast<UInt32>(sizeof(T) * 8u - 1u);
+    outBitIndex = kMaxBit - static_cast<UInt32>(countLeadingZeros(inOutWord));
+    inOutWord = static_cast<T>(inOutWord ^ static_cast<T>(T{ 1 } << outBitIndex));
+    return true;
+}
+
 }   // namespace gp::math
