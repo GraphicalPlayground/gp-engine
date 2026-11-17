@@ -12,7 +12,7 @@
 #include "hashing/Crc32.hpp"
 #include "hashing/Murmur3.hpp"
 #include "hashing/Sha256.hpp"
-#include "hashing/SipHash.hpp"
+#include "hashing/SipHash.hpp"   // IWYU pragma: keep
 #include "hashing/Wyhash.hpp"
 #include "hashing/XxHash.hpp"
 #include "memory/pointers/RefCountedPtr.hpp"
@@ -255,6 +255,7 @@ TEST(HashOfTest, UnifiedHashApiDomainSeparationAndUniquePodBytes)
         gp::UInt32 vertexLayoutId{ 0u };
         gp::UInt32 blendStateId{ 0u };
     };
+
     static_assert(concepts::IsUniqueRepresentation<PackedPipelineKey>);
 
     // 1. Unified single-value & multi-field `gp::hashing::hash(...)` overloads.
@@ -284,9 +285,7 @@ TEST(HashOfTest, UnifiedHashApiDomainSeparationAndUniquePodBytes)
     EXPECT_EQ(hash(HashAlgorithm::Fnv1a64, pairKey).toUInt64(), hashOf<Fnv1a64>(pairKey));
 
     // 3. Domain-separated hashing, seeded packs, and padding-free POD byte hashing.
-    static_assert(
-        hashDomain<XxHash64>("ShaderPSO", 10u, 20u) != hashDomain<XxHash64>("MaterialDef", 10u, 20u)
-    );
+    static_assert(hashDomain<XxHash64>("ShaderPSO", 10u, 20u) != hashDomain<XxHash64>("MaterialDef", 10u, 20u));
     static_assert(hashValuesSeeded<Fnv1a64>(1ULL, 10u, 20u) != hashValuesSeeded<Fnv1a64>(2ULL, 10u, 20u));
 
     const PackedPipelineKey psoA{ 3u, 7u };

@@ -3,7 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "hashing/SipHash.hpp"
-#include "containers/views/StringView.hpp"
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "hashing/HashingConcepts.hpp"
 #include <gtest/gtest.h>

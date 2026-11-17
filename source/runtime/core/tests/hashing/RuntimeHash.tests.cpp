@@ -39,9 +39,7 @@ TEST(RuntimeHashTest, DynamicHasherMatchesEveryStaticAlgorithm)
         computeHash128(HashAlgorithm::Murmur3_128, gp::StringView("abc")) ==
         Hash128(0xB4963F3F3FAD7867ULL, 0x3BA2744126CA2D52ULL)
     );
-    static_assert(
-        computeHash256(HashAlgorithm::Sha256, gp::StringView("abc")) == Sha256::hash(gp::StringView("abc"))
-    );
+    static_assert(computeHash256(HashAlgorithm::Sha256, gp::StringView("abc")) == Sha256::hash(gp::StringView("abc")));
 
     EXPECT_EQ(computeHash32(HashAlgorithm::Fnv1a32, kInput, kLen), Fnv1a32::hash(kInput, kLen));
     EXPECT_EQ(computeHash64(HashAlgorithm::Fnv1a64, kInput, kLen), Fnv1a64::hash(kInput, kLen));
@@ -60,7 +58,9 @@ TEST(RuntimeHashTest, DynamicHasherMatchesEveryStaticAlgorithm)
     EXPECT_EQ(computeHash64(HashAlgorithm::Wyhash64, bytePtr, kLen), Wyhash64::hash(kInput, kLen));
     EXPECT_EQ(computeHash32(HashAlgorithm::Crc32, bytePtr, kLen), Crc32::hash(kInput, kLen));
     EXPECT_EQ(computeHash128(HashAlgorithm::Murmur3_128, bytePtr, kLen), Murmur3_128::hash(kInput, kLen));
-    EXPECT_EQ(computeHash256(HashAlgorithm::Sha256, static_cast<const void*>(kInput), kLen), Sha256::hash(kInput, kLen));
+    EXPECT_EQ(
+        computeHash256(HashAlgorithm::Sha256, static_cast<const void*>(kInput), kLen), Sha256::hash(kInput, kLen)
+    );
 
     const HashDigest dBytes = computeHash(HashAlgorithm::XxHash32, bytePtr, kLen);
     const HashDigest dChars = computeHash(HashAlgorithm::XxHash32, kInput, kLen);

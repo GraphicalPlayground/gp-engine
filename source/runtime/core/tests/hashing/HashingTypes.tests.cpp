@@ -168,7 +168,9 @@ TEST(HashDigestTest, WidthConversionsAndZeroFlags)
     EXPECT_EQ(k128.toUInt64(), Hash128(0x1234ULL, 0x5678ULL).foldTo64());
     EXPECT_EQ(k128.toUInt32(), Hash128(0x1234ULL, 0x5678ULL).foldTo32());
 
-    constexpr Hash256 kRaw256(0x0123456789ABCDEFULL, 0x1111222233334444ULL, 0x5555666677778888ULL, 0x9999AAAABBBBCCCCULL);
+    constexpr Hash256 kRaw256(
+        0x0123456789ABCDEFULL, 0x1111222233334444ULL, 0x5555666677778888ULL, 0x9999AAAABBBBCCCCULL
+    );
     constexpr HashDigest k256(kRaw256, HashAlgorithm::Sha256);
     static_assert(k256.width == HashWidth::Bits256);
     static_assert(k256.toHash256() == kRaw256);
@@ -218,9 +220,7 @@ TEST(Hash256Test, LayoutOrderingFoldingAndHexRoundTrip)
     EXPECT_EQ(parsed, kValA);
     EXPECT_FALSE(Hash256::tryParseHex(nullptr, 64u, parsed));
     EXPECT_FALSE(Hash256::tryParseHex(lowerHex, 63u, parsed));
-    EXPECT_FALSE(
-        Hash256::tryParseHex("0123456789abcdef111122223333444455556666777788889999aaaabbbbcccz", 64u, parsed)
-    );
+    EXPECT_FALSE(Hash256::tryParseHex("0123456789abcdef111122223333444455556666777788889999aaaabbbbcccz", 64u, parsed));
 }
 
 }   // namespace gp::hashing::tests

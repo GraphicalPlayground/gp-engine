@@ -3,7 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "hashing/Sha256.hpp"
-#include "containers/views/StringView.hpp"
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "hashing/HashingConcepts.hpp"
 #include <gtest/gtest.h>
@@ -18,23 +18,17 @@ static_assert(Sha256::kDigestBits == 256u);
 // NIST FIPS 180-4 reference test vectors evaluated at compile time.
 static_assert(
     Sha256::hash("") ==
-    Hash256(
-        0xE3B0C44298FC1C14ULL, 0x9AFBF4C8996FB924ULL, 0x27AE41E4649B934CULL, 0xA495991B7852B855ULL
-    )
+    Hash256(0xE3B0C44298FC1C14ULL, 0x9AFBF4C8996FB924ULL, 0x27AE41E4649B934CULL, 0xA495991B7852B855ULL)
 );
 
 static_assert(
     Sha256::hash("abc") ==
-    Hash256(
-        0xBA7816BF8F01CFEAULL, 0x414140DE5DAE2223ULL, 0xB00361A396177A9CULL, 0xB410FF61F20015ADULL
-    )
+    Hash256(0xBA7816BF8F01CFEAULL, 0x414140DE5DAE2223ULL, 0xB00361A396177A9CULL, 0xB410FF61F20015ADULL)
 );
 
 static_assert(
     Sha256::hash("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq") ==
-    Hash256(
-        0x248D6A61D20638B8ULL, 0xE5C026930C3E6039ULL, 0xA33CE45964FF2167ULL, 0xF6ECEDD419DB06C1ULL
-    )
+    Hash256(0x248D6A61D20638B8ULL, 0xE5C026930C3E6039ULL, 0xA33CE45964FF2167ULL, 0xF6ECEDD419DB06C1ULL)
 );
 
 TEST(Sha256Test, NistVectorsHexFormattingAndStreamingBoundaries)

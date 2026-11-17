@@ -3,8 +3,8 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "hashing/PathHash.hpp"
-#include "containers/strings/String.hpp"
-#include "containers/views/StringView.hpp"
+#include "containers/strings/String.hpp"     // IWYU pragma: keep
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "hashing/HashOf.hpp"
 #include <gtest/gtest.h>
