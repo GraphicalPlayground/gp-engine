@@ -239,6 +239,10 @@ TEST(HashOfTest, CustomHooksHashValuesAndUnifiedEntryPoints)
     EXPECT_NE(combined, 0ULL);
     EXPECT_NE(combinedFast, 0ULL);
     EXPECT_NE(combined, combinedFast);
+
+    static_assert(hashCombine(10ULL, 20ULL) == hashCombine(gp::UInt64{ 10u }, gp::UInt64{ 20u }));
+    static_assert(hashCombineFast(10ULL, 20ULL) == hashCombineFast(gp::UInt64{ 10u }, gp::USize{ 20u }));
+    static_assert(hashCombine(1ULL, 42u) == hashCombine(1ULL, hashOf(gp::UInt32{ 42u })));
 }
 
 }   // namespace gp::hashing::tests
