@@ -9,6 +9,7 @@
 #include "CoreMinimal.hpp"
 #include "logging/LogDesc.hpp"
 #include "threading/jobs/JobSystemDesc.hpp"
+#include "threading/roles/NamedThreadDispatcherDesc.hpp"
 #include "time/EngineClock.hpp"
 #include "window/WindowDesc.hpp"
 
@@ -31,6 +32,9 @@ struct ApplicationDesc
     /// @brief Configuration for the `gp::thread::JobSystem` fiber pool, queues, and worker threads ([ADR-0052],
     ///        [ADR-0053]).
     thread::JobSystemDesc jobSystem{};
+
+    /// @brief Queue capacities and allocator for `Application::getNamedThreadDispatcher()`.
+    thread::NamedThreadDispatcherDesc namedThreadDispatcher{};
 
     /// @brief Configuration for the central `gp::log::Logger` router ([ADR-0054]).
     log::LoggerDesc logger{};
@@ -69,6 +73,11 @@ struct ApplicationDesc
     /// @brief If true, initializes `Application::getJobSystem()` during startup (can be overridden by
     ///        `-no-jobsystem` on the command line).
     bool enableJobSystem{ true };
+
+    /// @brief If true, claims `NamedThread::Render` and `NamedThread::RHI` on the main loop thread alongside
+    ///        `NamedThread::Game` and pumps their queues each frame. Set to false when dedicated Render/RHI OS threads
+    ///        own those roles.
+    bool singleThreadedRenderAndRHI{ true };
 
     /// @brief If true, initializes `gp::log::Logger::instance()` during startup and shuts it down on exit (can be
     ///        overridden by `-no-log` on the command line).
