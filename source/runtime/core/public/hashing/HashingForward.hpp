@@ -13,11 +13,12 @@ namespace gp::hashing
 
 enum class HashAlgorithm : gp::UInt8;
 enum class HashCase : gp::UInt8;
-enum class HashWidth : gp::UInt8;
+enum class HashWidth : gp::UInt16;
 
 /// @section Digest & Result Types
 
 struct Hash128;
+struct Hash256;
 struct HashDigest;
 
 /// @section Algorithm Traits & Unified Accumulator Base
@@ -52,7 +53,16 @@ class Murmur3_128;
 class XxHash32;
 class XxHash64;
 
+class Wyhash64;
+class SipHash24;
+class Sha256;
+
 class DynamicHasher;
+
+template <gp::USize InSlotCapacity, gp::USize InArenaBytes>
+class BasicHashRegistry;
+
+using HashRegistry = BasicHashRegistry<1024u, 32768u>;
 
 /// @section Type Hashing Customization Point
 
