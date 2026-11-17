@@ -12,6 +12,12 @@
 #define GP_PROFILE_SCOPE_NC(name, color)
 #define GP_PROFILE_FUNCTION()
 
+#define GP_PROFILE_SCOPE_ACTIVE(active) static_cast<void>(sizeof(active))
+#define GP_PROFILE_SCOPE_N_ACTIVE(name, active) static_cast<void>(sizeof(active))
+#define GP_PROFILE_SCOPE_C_ACTIVE(color, active) static_cast<void>(sizeof(active))
+#define GP_PROFILE_SCOPE_NC_ACTIVE(name, color, active) static_cast<void>(sizeof(active))
+#define GP_PROFILE_FUNCTION_ACTIVE(active) static_cast<void>(sizeof(active))
+
 #define GP_PROFILE_ZONE_TEXT(text, size)
 #define GP_PROFILE_ZONE_NAME(text, size)
 #define GP_PROFILE_ZONE_VALUE(val)
@@ -37,11 +43,29 @@
 #define GP_MESSAGE_L(literal)
 #define GP_MESSAGE_C(text, size, color)
 #define GP_MESSAGE_LC(literal, color)
+#define GP_MESSAGE_C_IF(cond, text, size, color) \
+    do                                           \
+    {                                            \
+        static_cast<void>(sizeof(cond));         \
+    }                                            \
+    while (false)
+#define GP_MESSAGE_LC_IF(cond, literal, color) \
+    do                                         \
+    {                                          \
+        static_cast<void>(sizeof(cond));       \
+    }                                          \
+    while (false)
 
 /// @section Plots / Graphs
 
 #define GP_PLOT(name, val)
 #define GP_PLOT_CONFIG(name, type, step, fill, color)
+#define GP_PLOT_IF(cond, name, val)      \
+    do                                   \
+    {                                    \
+        static_cast<void>(sizeof(cond)); \
+    }                                    \
+    while (false)
 
 /// @section Threading
 
