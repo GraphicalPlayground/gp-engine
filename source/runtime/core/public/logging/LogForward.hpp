@@ -29,6 +29,7 @@ class FileSink;
 class DebugOutputSink;
 class TracySink;
 class MemoryRingSink;
+class StringLogSink;
 class Logger;
 
 }   // namespace gp::log
