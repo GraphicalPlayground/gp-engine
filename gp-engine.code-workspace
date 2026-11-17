@@ -210,6 +210,7 @@
       "time": "temp",
       "fibers": "tasks",
       "sync": "ci",
+      "lists": "queue",
       "sinks": "filter",
       "hashing": "secure"
     },
