@@ -14,6 +14,7 @@
 #include "containers/strings/StringEnums.hpp"
 #include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
+#include "hashing/HashMix.hpp"
 #include "memory/MemoryBase.hpp"   // IWYU pragma: keep
 #include "threading/atomics/Atomic.hpp"
 #include "threading/atomics/AtomicFlag.hpp"
@@ -457,13 +458,17 @@ public:
     {
         const gp::UInt64 combined = (static_cast<gp::UInt64>(m_comparisonId) << 32u) |
                                     static_cast<gp::UInt64>(static_cast<gp::UInt32>(m_number));
-        // MurmurHash3 64-bit finalizer (fmix64)
-        gp::UInt64 h = combined ^ (combined >> 33u);
-        h *= 0xFF51AFD7ED558CCDULL;
-        h ^= h >> 33u;
-        h *= 0xC4CEB9FE1A85EC53ULL;
-        h ^= h >> 33u;
-        return h;
+        return gp::hashing::avalancheMix64(combined);
+    }
+
+    /// @brief Streams `m_comparisonId` and `m_number` into any `gp::hashing` accumulator.
+    /// @tparam InHasher Target streaming hasher type.
+    /// @param[in,out] hasher Target accumulator.
+    template <typename InHasher>
+    constexpr void hashAppend(InHasher& hasher) const noexcept
+    {
+        hasher.append(m_comparisonId);
+        hasher.append(m_number);
     }
 
 public:
