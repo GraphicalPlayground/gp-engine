@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "miscellaneous/PreProcessorUtilities.hpp"
+
 /// @section Clang compiler version helpers.
 
 #define GP_COMPILER_VERSION_MAJOR   __clang_major__
@@ -54,3 +56,50 @@
 /// @brief Forces inlining of the function body AND all of its callees.
 ///        Use with care: can dramatically increase code size.
 #define GP_FLATTEN __attribute__((flatten))
+
+/// @section Linkage, packing, and optimisation hints.
+
+/// @brief Marks a global variable or static member with weak/selectany linkage across translation units.
+#define GP_SELECT_ANY __attribute__((weak))
+
+/// @brief Forces a struct/class to be packed with no padding bytes.
+#define GP_PACKED __attribute__((packed))
+
+/// @brief Marks a code path as unreachable to allow dead-branch elimination.
+#define GP_BUILTIN_UNREACHABLE() __builtin_unreachable()
+
+/// @brief Marks a function as cold (de-prioritised during inlining and code placement).
+#define GP_COLD __attribute__((cold))
+
+/// @section Warning suppression & third-party include brackets.
+
+/// @brief Pushes the current Clang/GCC diagnostic state onto the compiler stack.
+#define GP_GCC_WARNING_PUSH()     _Pragma("GCC diagnostic push")
+
+/// @brief Restores the previously pushed Clang/GCC diagnostic state.
+#define GP_GCC_WARNING_POP()      _Pragma("GCC diagnostic pop")
+
+/// @brief Disables a specific `-W...` diagnostic flag until `GP_GCC_WARNING_POP()`.
+/// @param[in] w Quoted warning flag literal, e.g. `"-Wunused-parameter"`.
+#define GP_GCC_WARNING_DISABLE(w) _Pragma(GP_STRINGIFY(GCC diagnostic ignored w))
+
+/// @brief Suppresses deprecation warnings (`-Wdeprecated-declarations`) until `GP_ENABLE_DEPRECATION_WARNINGS`.
+#define GP_DISABLE_DEPRECATION_WARNINGS \
+    GP_GCC_WARNING_PUSH()               \
+    GP_GCC_WARNING_DISABLE("-Wdeprecated-declarations")
+
+/// @brief Restores deprecation warning diagnostics pushed by `GP_DISABLE_DEPRECATION_WARNINGS`.
+#define GP_ENABLE_DEPRECATION_WARNINGS GP_GCC_WARNING_POP()
+
+/// @brief Brackets external or OS SDK headers to suppress noisy warnings without relaxing engine warning levels.
+#define GP_THIRD_PARTY_INCLUDES_START                     \
+    GP_GCC_WARNING_PUSH()                                 \
+    GP_GCC_WARNING_DISABLE("-Wdeprecated-declarations")   \
+    GP_GCC_WARNING_DISABLE("-Wunused-parameter")          \
+    GP_GCC_WARNING_DISABLE("-Wshadow")                    \
+    GP_GCC_WARNING_DISABLE("-Wmissing-field-initializers") \
+    GP_GCC_WARNING_DISABLE("-Wgnu-anonymous-struct")      \
+    GP_GCC_WARNING_DISABLE("-Wnested-anon-types")
+
+/// @brief Restores compiler warning state pushed by `GP_THIRD_PARTY_INCLUDES_START`.
+#define GP_THIRD_PARTY_INCLUDES_END GP_GCC_WARNING_POP()
