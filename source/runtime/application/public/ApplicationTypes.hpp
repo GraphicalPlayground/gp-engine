@@ -8,6 +8,7 @@
 #include "CoreMinimal.hpp"
 #include "memory/MemoryForward.hpp"
 #include "threading/jobs/JobSystemForward.hpp"
+#include "threading/roles/ThreadRoleForward.hpp"
 #include "time/EngineClock.hpp"   // IWYU pragma: keep
 
 namespace gp
@@ -37,6 +38,9 @@ struct ApplicationFrameContext
 
     /// @brief Reference to the application's `gp::thread::JobSystem` scheduler.
     gp::thread::JobSystem& jobSystem;
+
+    /// @brief Reference to the application's per-named-thread task dispatcher.
+    gp::thread::NamedThreadDispatcher& namedThreadDispatcher;
 
     /// @brief Reference to the per-frame `gp::thread::JobGraph` backed by `currentFrameArena`.
     gp::thread::JobGraph& frameGraph;
