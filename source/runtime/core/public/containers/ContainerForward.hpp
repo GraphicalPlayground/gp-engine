@@ -101,6 +101,18 @@ using Name = container::Name;
 template <typename InT, USize InN, USize InAlignment = alignof(InT)>
 class Array;
 
+template <typename InAllocator = gp::memory::DefaultAllocator>
+class BitArray;
+
+using ScratchBitArray = BitArray<gp::memory::ThreadScratchAllocator>;
+using PolymorphicBitArray = BitArray<gp::memory::PolymorphicAllocator>;
+
+template <
+    gp::USize InCapacityBytes,
+    gp::UInt32 InAlignment = 8u,
+    typename InFallbackAllocator = gp::memory::DefaultAllocator>
+using InlineBitArray = BitArray<gp::memory::InlineAllocator<InCapacityBytes, InAlignment, InFallbackAllocator>>;
+
 /// @section Vector related forward declarations
 
 template <typename InT, typename InAllocator = gp::memory::DefaultAllocator>
@@ -181,6 +193,8 @@ template <
     typename InKeyFunctions = container::DefaultKeyFunctions<InT>,
     typename InAllocator = gp::memory::DefaultAllocator>
 class Set;
+template <gp::USize InBitCount>
+class BitSet;
 template <typename InT, typename InSizeType = Int32>
 class StridedView;
 template <typename InT, typename InSizeType = Int32>
