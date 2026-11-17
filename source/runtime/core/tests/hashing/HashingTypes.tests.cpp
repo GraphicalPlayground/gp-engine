@@ -9,6 +9,9 @@
 #include "hashing/HashingConcepts.hpp"
 #include "hashing/HashingEnums.hpp"
 #include "hashing/Murmur3.hpp"
+#include "hashing/Sha256.hpp"
+#include "hashing/SipHash.hpp"
+#include "hashing/Wyhash.hpp"
 #include "hashing/XxHash.hpp"
 #include <gtest/gtest.h>
 
@@ -24,17 +27,27 @@ TEST(HashingEnumsAndConceptsTest, EnumMetadataAndConceptValidation)
     static_assert(algorithmDigestBits(HashAlgorithm::XxHash32) == 32u);
     static_assert(algorithmDigestBits(HashAlgorithm::Fnv1a64) == 64u);
     static_assert(algorithmDigestBits(HashAlgorithm::XxHash64) == 64u);
+    static_assert(algorithmDigestBits(HashAlgorithm::Wyhash64) == 64u);
+    static_assert(algorithmDigestBits(HashAlgorithm::SipHash24) == 64u);
     static_assert(algorithmDigestBits(HashAlgorithm::Murmur3_128) == 128u);
+    static_assert(algorithmDigestBits(HashAlgorithm::Sha256) == 256u);
     static_assert(algorithmDigestBits(HashAlgorithm::Count) == 0u);
 
     static_assert(algorithmWidth(HashAlgorithm::Crc32) == HashWidth::Bits32);
     static_assert(algorithmWidth(HashAlgorithm::Fnv1a64) == HashWidth::Bits64);
+    static_assert(algorithmWidth(HashAlgorithm::Wyhash64) == HashWidth::Bits64);
+    static_assert(algorithmWidth(HashAlgorithm::SipHash24) == HashWidth::Bits64);
     static_assert(algorithmWidth(HashAlgorithm::Murmur3_128) == HashWidth::Bits128);
+    static_assert(algorithmWidth(HashAlgorithm::Sha256) == HashWidth::Bits256);
 
     static_assert(isChecksumAlgorithm(HashAlgorithm::Crc32));
     static_assert(isChecksumAlgorithm(HashAlgorithm::Crc32C));
     static_assert(!isChecksumAlgorithm(HashAlgorithm::Fnv1a64));
     static_assert(!isChecksumAlgorithm(HashAlgorithm::XxHash64));
+    static_assert(isCryptographicAlgorithm(HashAlgorithm::Sha256));
+    static_assert(!isCryptographicAlgorithm(HashAlgorithm::Wyhash64));
+    static_assert(isKeyedAlgorithm(HashAlgorithm::SipHash24));
+    static_assert(!isKeyedAlgorithm(HashAlgorithm::Murmur3_128));
 
     EXPECT_STREQ(algorithmToString(HashAlgorithm::Fnv1a32), "Fnv1a32");
     EXPECT_STREQ(algorithmToString(HashAlgorithm::Fnv1a64), "Fnv1a64");
@@ -44,11 +57,15 @@ TEST(HashingEnumsAndConceptsTest, EnumMetadataAndConceptValidation)
     EXPECT_STREQ(algorithmToString(HashAlgorithm::Murmur3_128), "Murmur3_128");
     EXPECT_STREQ(algorithmToString(HashAlgorithm::XxHash32), "XxHash32");
     EXPECT_STREQ(algorithmToString(HashAlgorithm::XxHash64), "XxHash64");
+    EXPECT_STREQ(algorithmToString(HashAlgorithm::Wyhash64), "Wyhash64");
+    EXPECT_STREQ(algorithmToString(HashAlgorithm::SipHash24), "SipHash24");
+    EXPECT_STREQ(algorithmToString(HashAlgorithm::Sha256), "Sha256");
     EXPECT_STREQ(algorithmToString(HashAlgorithm::Count), "Unknown");
 
     static_assert(concepts::IsHashDigest<gp::UInt32>);
     static_assert(concepts::IsHashDigest<gp::UInt64>);
     static_assert(concepts::IsHashDigest<Hash128>);
+    static_assert(concepts::IsHashDigest<Hash256>);
     static_assert(!concepts::IsHashDigest<gp::Float32>);
 
     static_assert(concepts::IsStreamingHasher32<Fnv1a32>);
@@ -59,6 +76,9 @@ TEST(HashingEnumsAndConceptsTest, EnumMetadataAndConceptValidation)
     static_assert(concepts::IsStreamingHasher128<Murmur3_128>);
     static_assert(concepts::IsStreamingHasher32<XxHash32>);
     static_assert(concepts::IsStreamingHasher64<XxHash64>);
+    static_assert(concepts::IsStreamingHasher64<Wyhash64>);
+    static_assert(concepts::IsStreamingHasher64<SipHash24>);
+    static_assert(concepts::IsStreamingHasher256<Sha256>);
     static_assert(!concepts::IsStreamingHasher<gp::Int32>);
 
     static_assert(gp::concepts::IsSameAs<Hasher<HashAlgorithm::Fnv1a32>, Fnv1a32>);
@@ -69,6 +89,9 @@ TEST(HashingEnumsAndConceptsTest, EnumMetadataAndConceptValidation)
     static_assert(gp::concepts::IsSameAs<Hasher<HashAlgorithm::Murmur3_128>, Murmur3_128>);
     static_assert(gp::concepts::IsSameAs<Hasher<HashAlgorithm::XxHash32>, XxHash32>);
     static_assert(gp::concepts::IsSameAs<Hasher<HashAlgorithm::XxHash64>, XxHash64>);
+    static_assert(gp::concepts::IsSameAs<Hasher<HashAlgorithm::Wyhash64>, Wyhash64>);
+    static_assert(gp::concepts::IsSameAs<Hasher<HashAlgorithm::SipHash24>, SipHash24>);
+    static_assert(gp::concepts::IsSameAs<Hasher<HashAlgorithm::Sha256>, Sha256>);
 }
 
 TEST(Hash128Test, LayoutOrderingFoldingAndHexRoundTrip)
@@ -144,6 +167,60 @@ TEST(HashDigestTest, WidthConversionsAndZeroFlags)
     EXPECT_EQ(k128.toHash128(), Hash128(0x1234ULL, 0x5678ULL));
     EXPECT_EQ(k128.toUInt64(), Hash128(0x1234ULL, 0x5678ULL).foldTo64());
     EXPECT_EQ(k128.toUInt32(), Hash128(0x1234ULL, 0x5678ULL).foldTo32());
+
+    constexpr Hash256 kRaw256(0x0123456789ABCDEFULL, 0x1111222233334444ULL, 0x5555666677778888ULL, 0x9999AAAABBBBCCCCULL);
+    constexpr HashDigest k256(kRaw256, HashAlgorithm::Sha256);
+    static_assert(k256.width == HashWidth::Bits256);
+    static_assert(k256.toHash256() == kRaw256);
+    EXPECT_EQ(k256.toHash128(), kRaw256.foldTo128());
+    EXPECT_EQ(k256.toUInt64(), kRaw256.foldTo64());
+    EXPECT_EQ(k256.toUInt32(), kRaw256.foldTo32());
+}
+
+TEST(Hash256Test, LayoutOrderingFoldingAndHexRoundTrip)
+{
+    static_assert(sizeof(Hash256) == 32u);
+    static_assert(alignof(Hash256) == 8u);
+
+    constexpr Hash256 kZero{};
+    static_assert(kZero.isZero());
+    static_assert(!kZero.isValid());
+    static_assert(!static_cast<bool>(kZero));
+
+    constexpr Hash256 kValA(0x0123456789ABCDEFULL, 0x1111222233334444ULL, 0x5555666677778888ULL, 0x9999AAAABBBBCCCCULL);
+    constexpr Hash256 kValB(0xFEDCBA9876543210ULL, 0x0ULL, 0x0ULL, 0x0ULL);
+    static_assert(!kValA.isZero());
+    static_assert(kValA.isValid());
+    static_assert(static_cast<bool>(kValA));
+    static_assert(kValA < kValB);
+    static_assert(kValA.foldTo128().isValid());
+    static_assert(kValA.foldTo64() != 0ULL);
+    static_assert(kValA.foldTo32() != 0u);
+
+    constexpr Hash256 kFromHalves(Hash128(0x2ULL, 0x1ULL), Hash128(0x4ULL, 0x3ULL));
+    static_assert(kFromHalves == Hash256(0x1ULL, 0x2ULL, 0x3ULL, 0x4ULL));
+
+    char lowerHex[Hash256::kHexBufferSize]{};
+    ASSERT_TRUE(kValA.toHexString(lowerHex, sizeof(lowerHex), false));
+    EXPECT_STREQ(lowerHex, "0123456789abcdef111122223333444455556666777788889999aaaabbbbcccc");
+
+    char upperHex[Hash256::kHexBufferSize]{};
+    ASSERT_TRUE(kValA.toHexString(upperHex, sizeof(upperHex), true));
+    EXPECT_STREQ(upperHex, "0123456789ABCDEF111122223333444455556666777788889999AAAABBBBCCCC");
+
+    EXPECT_FALSE(kValA.toHexString(nullptr, Hash256::kHexBufferSize));
+    EXPECT_FALSE(kValA.toHexString(lowerHex, 32u));
+
+    Hash256 parsed{};
+    EXPECT_TRUE(Hash256::tryParseHex(lowerHex, 64u, parsed));
+    EXPECT_EQ(parsed, kValA);
+    EXPECT_TRUE(Hash256::tryParseHex(upperHex, 64u, parsed));
+    EXPECT_EQ(parsed, kValA);
+    EXPECT_FALSE(Hash256::tryParseHex(nullptr, 64u, parsed));
+    EXPECT_FALSE(Hash256::tryParseHex(lowerHex, 63u, parsed));
+    EXPECT_FALSE(
+        Hash256::tryParseHex("0123456789abcdef111122223333444455556666777788889999aaaabbbbcccz", 64u, parsed)
+    );
 }
 
 }   // namespace gp::hashing::tests
