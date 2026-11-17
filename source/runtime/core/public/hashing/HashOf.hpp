@@ -519,43 +519,41 @@ template <concepts::IsStreamingHasher InHasher = Fnv1a64, typename InIteratorT>
 }
 
 /// @brief Combines @p seed with one or more arbitrary hashable values using `hashOf` and `hashCombine`.
-/// @details Excluded when every input argument is already `gp::UInt64` so raw-digest overloads in `HashCombine.hpp`
-///          match directly without re-mixing.
+/// @details Excluded when every input argument is already a 64-bit unsigned integer word so raw-digest overloads in
+///          `HashCombine.hpp` match identically across LLP64 and LP64 without re-mixing.
+/// @tparam InSeedT 64-bit unsigned seed type.
 /// @tparam InFirstT First value type.
 /// @tparam InRestT Remaining value types.
 /// @param[in] seed Accumulated 64-bit hash state.
 /// @param[in] first First value to hash and combine.
 /// @param[in] rest Additional values folded left-to-right.
 /// @return Combined 64-bit hash.
-template <typename InFirstT, typename... InRestT>
-requires(
-    !(gp::concepts::IsSameAs<std::remove_cvref_t<InFirstT>, gp::UInt64> &&
-      (gp::concepts::IsSameAs<std::remove_cvref_t<InRestT>, gp::UInt64> && ...))
-)
-[[nodiscard]] constexpr gp::UInt64 hashCombine(gp::UInt64 seed, const InFirstT& first, const InRestT&... rest) noexcept
+template <detail::IsHashWord64 InSeedT, typename InFirstT, typename... InRestT>
+requires(!(detail::IsHashWord64<InFirstT> && (detail::IsHashWord64<InRestT> && ...))) [[nodiscard]] constexpr gp::UInt64
+    hashCombine(const InSeedT seed, const InFirstT& first, const InRestT&... rest) noexcept
 {
-    seed = hashCombine(seed, hashOf(first));
-    ((seed = hashCombine(seed, hashOf(rest))), ...);
-    return seed;
+    gp::UInt64 state = static_cast<gp::UInt64>(seed);
+    state = hashCombine(state, hashOf(first));
+    ((state = hashCombine(state, hashOf(rest))), ...);
+    return state;
 }
 
 /// @brief Combines @p seed with one or more arbitrary hashable values using `hashOf` and `hashCombineFast`.
+/// @tparam InSeedT 64-bit unsigned seed type.
 /// @tparam InFirstT First value type.
 /// @tparam InRestT Remaining value types.
 /// @param[in] seed Accumulated 64-bit hash state.
 /// @param[in] first First value to hash and combine.
 /// @param[in] rest Additional values folded left-to-right.
 /// @return Combined 64-bit hash.
-template <typename InFirstT, typename... InRestT>
-requires(
-    !(gp::concepts::IsSameAs<std::remove_cvref_t<InFirstT>, gp::UInt64> &&
-      (gp::concepts::IsSameAs<std::remove_cvref_t<InRestT>, gp::UInt64> && ...))
-) [[nodiscard]] constexpr gp::UInt64
-    hashCombineFast(gp::UInt64 seed, const InFirstT& first, const InRestT&... rest) noexcept
+template <detail::IsHashWord64 InSeedT, typename InFirstT, typename... InRestT>
+requires(!(detail::IsHashWord64<InFirstT> && (detail::IsHashWord64<InRestT> && ...))) [[nodiscard]] constexpr gp::UInt64
+    hashCombineFast(const InSeedT seed, const InFirstT& first, const InRestT&... rest) noexcept
 {
-    seed = hashCombineFast(seed, hashOf(first));
-    ((seed = hashCombineFast(seed, hashOf(rest))), ...);
-    return seed;
+    gp::UInt64 state = static_cast<gp::UInt64>(seed);
+    state = hashCombineFast(state, hashOf(first));
+    ((state = hashCombineFast(state, hashOf(rest))), ...);
+    return state;
 }
 
 /// @brief `HashTraits` specialization for `Pair`-like types (`gp::Pair<T1, T2>`).
