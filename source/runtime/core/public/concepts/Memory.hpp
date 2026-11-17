@@ -44,13 +44,21 @@ concept IsPod = IsStandardLayout<T> && std::is_trivial_v<T>;
 template <typename T>
 concept IsBitwiseCopyable = IsTriviallyCopyable<T>;
 
+
+/// @brief Trait variable template indicating whether `T` can be relocated in memory via raw byte copy (`memmove`).
+/// @details Defaults to `IsTriviallyCopyable<T>`. Engine containers that do not store self-referential internal
+///          pointers (such as `gp::String` and `gp::Vector` instantiated with stateless allocators) specialize this
+///          trait to `true` to unlock bulk `memmove` and in-place arena reallocation.
+template <typename T>
+constexpr bool IsRelocatableV = IsTriviallyCopyable<T>;
+
 /// @brief Concept for types that can be moved in memory via memcpy without invoking move constructors.
 /// @note Pedagogical Note: Relocatability is a powerful concept in engine development. It allows
-/// containers (like our future gp::Vector) to reallocate memory by simply memmove-ing the elements,
+/// containers (like our gp::Vector) to reallocate memory by simply memmove-ing the elements,
 /// which is significantly faster than calling move constructors and destructors for every element.
 /// Most trivially copyable types are relocatable.
 template <typename T>
-concept IsRelocatable = IsTriviallyCopyable<T>;
+concept IsRelocatable = IsRelocatableV<std::remove_cv_t<T>>;
 
 /// @brief Concept to explicitly check for raw pointers.
 /// @note This helps distinguish between raw memory addresses and smart pointer objects (like std::unique_ptr).
