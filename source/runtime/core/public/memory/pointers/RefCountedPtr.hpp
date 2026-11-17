@@ -7,6 +7,7 @@
 #include "concepts/Fundamental.hpp"
 #include "concepts/Relationship.hpp"
 #include "CoreMinimal.hpp"
+#include "hashing/HashMix.hpp"
 #include "memory/allocators/AllocatorConcepts.hpp"
 #include "memory/pointers/IntrusiveRefCounted.hpp"   // IWYU pragma: keep
 #include "memory/pointers/PointerConcepts.hpp"
@@ -465,8 +466,8 @@ public:
     }
 
     /// @brief Computes a deterministic pointer hash suitable for RHI pipeline state and descriptor map keys.
-    /// @details Shifts right by `alignof(void*)` log2 bits (`3` on 64-bit) to discard low-entropy alignment zeros
-    ///          before applying a 64-bit SplitMix64 finalizer avalanching mix.
+    /// @details Returns `1` during compile-time `constexpr` evaluation for non-null pointers and delegates runtime
+    ///          address mixing (`SplitMix64`) to `gp::hashing::hashPointer()`.
     /// @return Hash value of the underlying pointer (`0` if `m_ptr == nullptr`).
     [[nodiscard]] GP_FORCEINLINE_HINT constexpr gp::USize getHash() const noexcept
     {
@@ -474,18 +475,13 @@ public:
         {
             return 0u;
         }
-
         if consteval
         {
             return 1u;
         }
         else
         {
-            gp::UInt64 key = static_cast<gp::UInt64>(reinterpret_cast<gp::UIntPtr>(m_ptr));
-            key = (key ^ (key >> 30u)) * 0xBF58476D1CE4E5B9ull;
-            key = (key ^ (key >> 27u)) * 0x94D049BB133111EBull;
-            key = key ^ (key >> 31u);
-            return static_cast<gp::USize>(key);
+            return static_cast<gp::USize>(gp::hashing::hashPointer(m_ptr));
         }
     }
 
