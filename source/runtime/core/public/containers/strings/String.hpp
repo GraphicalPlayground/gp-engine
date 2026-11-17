@@ -2843,6 +2843,11 @@ struct IsBasicString<gp::container::BasicString<InCharT, InAllocator>> : std::tr
 
 }   // namespace detail
 
+/// @brief `BasicString` with a stateless allocator is bitwise relocatable (ADR-0046).
+template <IsCharacter InCharT, IsAllocator InAllocator>
+requires IsStatelessAllocator<InAllocator>
+constexpr bool IsRelocatableV<gp::container::BasicString<InCharT, InAllocator>> = true;
+
 /// @brief Concept satisfied by any instantiation of `gp::container::BasicString`.
 template <typename InType>
 concept IsString = detail::IsBasicString<std::remove_cvref_t<InType>>::value;
