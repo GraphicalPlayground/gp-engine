@@ -59,12 +59,56 @@
     /// @brief Primary engine logging macro routing to `gp::log::Logger::instance()`.
     /// @details Combines C++23 `consteval` format string verification with preprocessor short-circuiting so disabled
     ///          log statements never evaluate their argument expressions and compile out completely when
-    ///          `GP_NO_LOGGING` is enabled.
+    ///          `GP_NO_LOGGING` is enabled. Emitting `Fatal` flushes all sinks and aborts the process.
     /// @param Category Target `gp::log::LogCategory` (e.g., `gp::log::LogCore`).
     /// @param Level Unqualified `gp::log::LogLevel` enumerator (`Trace`, `Debug`, `Info`, `Warning`, `Error`, `Fatal`).
     /// @param Format Compile-time format string literal (`"{}"`).
-    #define GP_LOG(Category, Level, Format, ...) \
-        GP_LOGGER_LOG(::gp::log::Logger::instance(), Category, Level, Format __VA_OPT__(, ) __VA_ARGS__)
+    #define GP_LOG(Category, Level, Format, ...)                                                       \
+        do                                                                                             \
+        {                                                                                              \
+            GP_LOGGER_LOG(::gp::log::Logger::instance(), Category, Level, Format __VA_OPT__(, ) __VA_ARGS__); \
+            if constexpr (::gp::log::LogLevel::Level == ::gp::log::LogLevel::Fatal)                    \
+            {                                                                                          \
+                ::gp::log::Logger::abortFatal(::gp::log::LogSourceLocation::current());                \
+            }                                                                                          \
+        } while (false)
+
+    /// @brief Conditional logging macro targeting a specific `Logger` instance (`LoggerInstance`).
+    /// @details Evaluates `Condition` first and checks `(LoggerInstance).shouldLog(...)`, so neither format arguments
+    ///          nor formatting run when the condition is false or the category level is masked out.
+    /// @param Condition Boolean condition guarding the log emission.
+    /// @param LoggerInstance Reference to the target `gp::log::Logger`.
+    /// @param Category Target `gp::log::LogCategory`.
+    /// @param Level Unqualified `gp::log::LogLevel` enumerator.
+    /// @param Format Compile-time validated format string literal.
+    #define GP_LOGGER_CLOG(Condition, LoggerInstance, Category, Level, Format, ...)            \
+        do                                                                                     \
+        {                                                                                      \
+            if ((Condition) && (LoggerInstance).shouldLog((Category), ::gp::log::LogLevel::Level)) \
+            {                                                                                  \
+                (LoggerInstance)                                                               \
+                    .log((Category), ::gp::log::LogLevel::Level, Format __VA_OPT__(, ) __VA_ARGS__); \
+            }                                                                                  \
+        } while (false)
+
+    /// @brief Conditional logging macro routing to `gp::log::Logger::instance()` when `Condition` holds true.
+    /// @details Mirrors Unreal's `UE_CLOG`. When `Level` is `Fatal` and `Condition` is true, flushes sinks and aborts.
+    /// @param Condition Boolean condition guarding the log emission.
+    /// @param Category Target `gp::log::LogCategory`.
+    /// @param Level Unqualified `gp::log::LogLevel` enumerator.
+    /// @param Format Compile-time validated format string literal.
+    #define GP_CLOG(Condition, Category, Level, Format, ...)                                               \
+        do                                                                                                 \
+        {                                                                                                  \
+            if (Condition)                                                                                 \
+            {                                                                                              \
+                GP_LOGGER_LOG(::gp::log::Logger::instance(), Category, Level, Format __VA_OPT__(, ) __VA_ARGS__); \
+                if constexpr (::gp::log::LogLevel::Level == ::gp::log::LogLevel::Fatal)                    \
+                {                                                                                          \
+                    ::gp::log::Logger::abortFatal(::gp::log::LogSourceLocation::current());                \
+                }                                                                                          \
+            }                                                                                              \
+        } while (false)
 
 #else
 
@@ -75,10 +119,39 @@
             (void)(Category);                                           \
         } while (false)
 
-    #define GP_LOG(Category, Level, Format, ...) \
-        do                                       \
-        {                                        \
-            (void)(Category);                    \
+    #define GP_LOG(Category, Level, Format, ...)                                        \
+        do                                                                              \
+        {                                                                               \
+            (void)(Category);                                                           \
+            if constexpr (::gp::log::LogLevel::Level == ::gp::log::LogLevel::Fatal)     \
+            {                                                                           \
+                ::gp::log::Logger::abortFatal(::gp::log::LogSourceLocation::current()); \
+            }                                                                           \
+        } while (false)
+
+    #define GP_LOGGER_CLOG(Condition, LoggerInstance, Category, Level, Format, ...) \
+        do                                                                          \
+        {                                                                           \
+            (void)sizeof(static_cast<bool>(Condition));                             \
+            (void)(LoggerInstance);                                                 \
+            (void)(Category);                                                       \
+        } while (false)
+
+    #define GP_CLOG(Condition, Category, Level, Format, ...)                            \
+        do                                                                              \
+        {                                                                               \
+            if constexpr (::gp::log::LogLevel::Level == ::gp::log::LogLevel::Fatal)     \
+            {                                                                           \
+                if (Condition)                                                          \
+                {                                                                       \
+                    ::gp::log::Logger::abortFatal(::gp::log::LogSourceLocation::current()); \
+                }                                                                       \
+            }                                                                           \
+            else                                                                        \
+            {                                                                           \
+                (void)sizeof(static_cast<bool>(Condition));                             \
+            }                                                                           \
+            (void)(Category);                                                           \
         } while (false)
 
 #endif
@@ -98,5 +171,29 @@
 /// @brief Convenience macro for `GP_LOG(Category, Error, Format, ...)`.
 #define GP_LOG_ERROR(Category, Format, ...) GP_LOG(Category, Error, Format __VA_OPT__(, ) __VA_ARGS__)
 
-/// @brief Convenience macro for `GP_LOG(Category, Fatal, Format, ...)`.
+/// @brief Convenience macro for `GP_LOG(Category, Fatal, Format, ...)`, flushing sinks synchronously and aborting.
 #define GP_LOG_FATAL(Category, Format, ...) GP_LOG(Category, Fatal, Format __VA_OPT__(, ) __VA_ARGS__)
+
+/// @brief Convenience macro for `GP_CLOG(Condition, Category, Trace, Format, ...)`.
+#define GP_CLOG_TRACE(Condition, Category, Format, ...) \
+    GP_CLOG(Condition, Category, Trace, Format __VA_OPT__(, ) __VA_ARGS__)
+
+/// @brief Convenience macro for `GP_CLOG(Condition, Category, Debug, Format, ...)`.
+#define GP_CLOG_DEBUG(Condition, Category, Format, ...) \
+    GP_CLOG(Condition, Category, Debug, Format __VA_OPT__(, ) __VA_ARGS__)
+
+/// @brief Convenience macro for `GP_CLOG(Condition, Category, Info, Format, ...)`.
+#define GP_CLOG_INFO(Condition, Category, Format, ...) \
+    GP_CLOG(Condition, Category, Info, Format __VA_OPT__(, ) __VA_ARGS__)
+
+/// @brief Convenience macro for `GP_CLOG(Condition, Category, Warning, Format, ...)`.
+#define GP_CLOG_WARNING(Condition, Category, Format, ...) \
+    GP_CLOG(Condition, Category, Warning, Format __VA_OPT__(, ) __VA_ARGS__)
+
+/// @brief Convenience macro for `GP_CLOG(Condition, Category, Error, Format, ...)`.
+#define GP_CLOG_ERROR(Condition, Category, Format, ...) \
+    GP_CLOG(Condition, Category, Error, Format __VA_OPT__(, ) __VA_ARGS__)
+
+/// @brief Convenience macro for `GP_CLOG(Condition, Category, Fatal, Format, ...)`, aborting when `Condition` is true.
+#define GP_CLOG_FATAL(Condition, Category, Format, ...) \
+    GP_CLOG(Condition, Category, Fatal, Format __VA_OPT__(, ) __VA_ARGS__)
