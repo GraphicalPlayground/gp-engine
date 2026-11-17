@@ -14,10 +14,15 @@
 #include "logging/sinks/MemoryRingSink.hpp"
 #include "memory/MemoryOrder.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "platforms/base/system/Thread.hpp"
 #include "threading/atomics/Atomic.hpp"   // IWYU pragma: keep
 #include "threading/jobs/JobGraph.hpp"
 #include "threading/jobs/JobSystem.hpp"
 #include "threading/jobs/ParallelFor.hpp"   // IWYU pragma: keep
+#include "threading/roles/NamedThreadDispatcher.hpp"
+#include "threading/roles/ScopedThreadRole.hpp"
+#include "threading/roles/ThreadRole.hpp"
+#include "threading/roles/ThreadRoleEnums.hpp"
 #include <gtest/gtest.h>
 
 namespace gp::tests
@@ -826,6 +831,223 @@ TEST(ApplicationConsoleWiringTest, CommandLineOverridesApplyToAppAndClockOnBoots
     EXPECT_EQ(app.disabledJobsMsg.view(), StringView("JobSystem is disabled."));
 
     CommandLine::shutdown();
+}
+
+TEST(ApplicationThreadRoleWiringTest, SingleThreadedModeClaimsAllRolesAndPumpsPerPhase)
+{
+    CommandLine::shutdown();
+
+    ApplicationDesc desc{};
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.enableJobSystem = false;
+    desc.singleThreadedRenderAndRHI = true;
+    desc.targetForegroundFps = 0.0;
+    desc.targetBackgroundFps = 0.0;
+
+    class SingleThreadRoleProbeApp final : public Application
+    {
+    public:
+        explicit SingleThreadRoleProbeApp(const ApplicationDesc& inDesc) noexcept
+            : Application(inDesc)
+        {}
+
+        bool initRolesOk{ false };
+        bool gameTaskRanBeforeFrame2Update{ false };
+        bool renderTaskRanBeforeRender{ false };
+        bool rhiTaskRanBeforeEndFrame{ false };
+        bool shutdownTaskDrained{ false };
+
+    protected:
+        [[nodiscard]] virtual bool onInitialize() noexcept override
+        {
+            initRolesOk = thread::isInGameThread() && thread::isInRenderThread() && thread::isInRHIThread() &&
+                          thread::isInParallelRenderThread() && getNamedThreadDispatcher().isInitialized();
+            return initRolesOk;
+        }
+
+        virtual void onUpdate(const gp::time::FrameTimeStats& timeStats) noexcept override
+        {
+            if (timeStats.frameIndex == 1ULL)
+            {
+                EXPECT_EQ(
+                    getNamedThreadDispatcher().dispatch(
+                        thread::NamedThread::Game,
+                        [](void* rawFlag)
+                {
+                    *static_cast<bool*>(rawFlag) = thread::isInGameThread();
+                },
+                        &m_gameTaskRan
+                    ),
+                    thread::ThreadRoleResult::Success
+                );
+                EXPECT_EQ(
+                    getNamedThreadDispatcher().dispatch(
+                        thread::NamedThread::Render,
+                        [](void* rawFlag)
+                {
+                    *static_cast<bool*>(rawFlag) = thread::isInRenderThread();
+                },
+                        &m_renderTaskRan
+                    ),
+                    thread::ThreadRoleResult::Success
+                );
+            }
+            else if (timeStats.frameIndex == 2ULL)
+            {
+                gameTaskRanBeforeFrame2Update = m_gameTaskRan;
+                requestQuit();
+            }
+        }
+
+        virtual void onRender(const gp::time::FrameTimeStats& timeStats) noexcept override
+        {
+            if (timeStats.frameIndex == 1ULL)
+            {
+                renderTaskRanBeforeRender = m_renderTaskRan;
+                EXPECT_EQ(
+                    getNamedThreadDispatcher().dispatch(
+                        thread::NamedThread::RHI,
+                        [](void* rawFlag)
+                {
+                    *static_cast<bool*>(rawFlag) = thread::isInRHIThread();
+                },
+                        &m_rhiTaskRan
+                    ),
+                    thread::ThreadRoleResult::Success
+                );
+            }
+        }
+
+        virtual void onEndFrame(const ApplicationFrameContext& frameContext) noexcept override
+        {
+            EXPECT_EQ(&frameContext.namedThreadDispatcher, &getNamedThreadDispatcher());
+            if (frameContext.getFrameIndex() == 1ULL)
+            {
+                rhiTaskRanBeforeEndFrame = m_rhiTaskRan;
+            }
+        }
+
+        virtual void onShutdown() noexcept override
+        {
+            EXPECT_EQ(
+                getNamedThreadDispatcher().dispatch(
+                    thread::NamedThread::Game,
+                    [](void* rawFlag)
+            {
+                *static_cast<bool*>(rawFlag) = true;
+            },
+                    &shutdownTaskDrained
+                ),
+                thread::ThreadRoleResult::Success
+            );
+        }
+
+    private:
+        bool m_gameTaskRan{ false };
+        bool m_renderTaskRan{ false };
+        bool m_rhiTaskRan{ false };
+    };
+
+    SingleThreadRoleProbeApp app(desc);
+    EXPECT_EQ(app.run(), 0);
+    EXPECT_TRUE(app.initRolesOk);
+    EXPECT_TRUE(app.gameTaskRanBeforeFrame2Update);
+    EXPECT_TRUE(app.renderTaskRanBeforeRender);
+    EXPECT_TRUE(app.rhiTaskRanBeforeEndFrame);
+    EXPECT_TRUE(app.shutdownTaskDrained);
+
+    EXPECT_FALSE(app.getNamedThreadDispatcher().isInitialized());
+    EXPECT_EQ(thread::ThreadRoleRegistry::getCurrentRoles(), thread::ThreadRole::None);
+    EXPECT_FALSE(thread::ThreadRoleRegistry::isAttached(thread::NamedThread::Game));
+    EXPECT_FALSE(thread::ThreadRoleRegistry::isAttached(thread::NamedThread::Render));
+    EXPECT_FALSE(thread::ThreadRoleRegistry::isAttached(thread::NamedThread::RHI));
+}
+
+TEST(ApplicationThreadRoleWiringTest, DedicatedRenderModeLeavesRenderAndRHIUnclaimed)
+{
+    CommandLine::shutdown();
+
+    ApplicationDesc desc{};
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.enableJobSystem = false;
+    desc.singleThreadedRenderAndRHI = false;
+    desc.targetForegroundFps = 0.0;
+    desc.targetBackgroundFps = 0.0;
+
+    class DedicatedRenderProbeApp final : public Application
+    {
+    public:
+        explicit DedicatedRenderProbeApp(const ApplicationDesc& inDesc) noexcept
+            : Application(inDesc)
+        {}
+
+        bool rolesVerified{ false };
+
+    protected:
+        virtual void onUpdate(const gp::time::FrameTimeStats&) noexcept override
+        {
+            rolesVerified = thread::isInGameThread() && !thread::isInRenderThread() && !thread::isInRHIThread() &&
+                            !thread::ThreadRoleRegistry::isAttached(thread::NamedThread::Render) &&
+                            !thread::ThreadRoleRegistry::isAttached(thread::NamedThread::RHI);
+            requestQuit();
+        }
+    };
+
+    DedicatedRenderProbeApp app(desc);
+    EXPECT_EQ(app.run(), 0);
+    EXPECT_TRUE(app.rolesVerified);
+    EXPECT_EQ(thread::ThreadRoleRegistry::getCurrentRoles(), thread::ThreadRole::None);
+}
+
+TEST(ApplicationThreadRoleWiringTest, FailsInitIfAnotherThreadAlreadyOwnsGameRole)
+{
+    CommandLine::shutdown();
+
+    struct HolderState
+    {
+        Atomic<gp::UInt32> isHolding{ 0u };
+        Atomic<gp::UInt32> mayExit{ 0u };
+    };
+
+    HolderState state{};
+    gp::platform::Thread holder{};
+    gp::platform::ThreadDesc holderDesc{};
+    holderDesc.name = "GP_AppGameRoleHolder";
+    holderDesc.entry = [](void* rawState) -> gp::UInt32
+    {
+        HolderState& holderState = *static_cast<HolderState*>(rawState);
+        const thread::ScopedNamedThread guard(thread::NamedThread::Game);
+        holderState.isHolding.store(1u, gp::MemoryOrder::Release);
+        while (holderState.mayExit.load(gp::MemoryOrder::Acquire) == 0u)
+        {
+            gp::platform::Thread::spinWait();
+        }
+        return 0u;
+    };
+    holderDesc.userData = &state;
+    ASSERT_EQ(holder.start(holderDesc), gp::platform::ThreadResult::Success);
+
+    while (state.isHolding.load(gp::MemoryOrder::Acquire) == 0u)
+    {
+        gp::platform::Thread::spinWait();
+    }
+
+    ApplicationDesc desc{};
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.enableJobSystem = false;
+
+    Application app(desc);
+    EXPECT_EQ(app.run(), -1);
+    EXPECT_FALSE(app.getNamedThreadDispatcher().isInitialized());
+
+    state.mayExit.store(1u, gp::MemoryOrder::Release);
+    gp::UInt32 exitCode = 1u;
+    EXPECT_EQ(holder.join(&exitCode), gp::platform::ThreadResult::Success);
+    EXPECT_EQ(exitCode, 0u);
+    EXPECT_FALSE(thread::ThreadRoleRegistry::isAttached(thread::NamedThread::Game));
 }
 
 }   // namespace gp::tests
