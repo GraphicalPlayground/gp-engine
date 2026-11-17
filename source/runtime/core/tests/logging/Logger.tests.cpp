@@ -3,6 +3,10 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "logging/Logger.hpp"
+#include "console/ConsoleEnums.hpp"
+#include "console/ConsoleTypes.hpp"
+#include "console/IConsoleManager.hpp"
+#include "console/IConsoleVariable.hpp"
 #include "containers/strings/FixedString.hpp"
 #include "logging/LogMacros.hpp"
 #include "logging/sinks/DebugOutputSink.hpp"
@@ -555,5 +559,59 @@ TEST(LoggerDeathTest, FatalMacroAndFunctionFlushAndAbortProcess)
     );
 }
 #endif
+
+TEST(LoggerTest, ConsoleCVarsAndCommandsControlGlobalMinLevelFlushAndStats)
+{
+    gp::console::IConsoleManager& console = gp::console::IConsoleManager::get();
+
+    Logger& globalLogger = Logger::instance();
+    globalLogger.shutdown();
+    globalLogger.clearSinks();
+
+    LoggerDesc desc{};
+    desc.mode = LogExecutionMode::Synchronous;
+    desc.globalMinLevel = LogLevel::Trace;
+    desc.applyCommandLineOverrides = false;
+    ASSERT_EQ(globalLogger.initialize(desc), LogResult::Success);
+
+    StringLogSink strSink(LogLevel::Trace, LogSinkFlags::None);
+    ASSERT_EQ(globalLogger.addSink(&strSink), LogResult::Success);
+    LogTestSubsystem.setActiveLevel(LogLevel::Trace);
+
+    EXPECT_EQ(console.processUserConsoleInput("log.GlobalLevel Warning"), gp::console::ConsoleResult::Success);
+    EXPECT_EQ(globalLogger.getGlobalMinLevel(), LogLevel::Warning);
+
+    GP_LOG_INFO(LogTestSubsystem, "Filtered info message");
+    GP_LOG_WARNING(LogTestSubsystem, "Delivered warning message");
+    EXPECT_FALSE(strSink.contains("Filtered info message"));
+    EXPECT_TRUE(strSink.contains("Delivered warning message"));
+
+    // Unrecognized severity string leaves the active global level intact.
+    EXPECT_EQ(console.processUserConsoleInput("log.GlobalLevel NotALevel"), gp::console::ConsoleResult::Success);
+    EXPECT_EQ(globalLogger.getGlobalMinLevel(), LogLevel::Warning);
+
+    gp::FixedString<511> cmdOut{};
+    gp::console::ConsoleOutputDelegate outDelegate = gp::console::ConsoleOutputDelegate::createLambda(
+        [&cmdOut](const gp::StringView line) noexcept -> void
+    {
+        cmdOut.assign(line.substr(0u, cmdOut.capacity()));
+    }
+    );
+
+    EXPECT_EQ(console.processUserConsoleInput("log.Flush"), gp::console::ConsoleResult::Success);
+    EXPECT_EQ(console.processUserConsoleInput("log.Stats", &outDelegate), gp::console::ConsoleResult::Success);
+    EXPECT_NE(cmdOut.view().find("Logger[Synchronous]"), gp::StringView::npos);
+    EXPECT_NE(cmdOut.view().find("level=WARN"), gp::StringView::npos);
+
+    if (gp::console::IConsoleVariable* const levelVar = console.findConsoleVariable("log.GlobalLevel"))
+    {
+        (void)levelVar->reset(gp::console::ConsoleVarSetBy::Console);
+    }
+    EXPECT_EQ(globalLogger.getGlobalMinLevel(), LogLevel::Trace);
+
+    LogTestSubsystem.resetToDefaultLevel();
+    globalLogger.clearSinks();
+    globalLogger.shutdown();
+}
 
 }   // namespace gp::log::tests
