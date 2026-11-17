@@ -181,6 +181,17 @@ lock-free architectures.
   > interned identifier combining a 32-bit `NameEntryId` handle into a 64-shard, cache-line-isolated
   > global `NamePool` with an Unreal-inspired 32-bit split numeric instance suffix (`m_number`),
   > paired with `constexpr` 64-bit FNV-1a `gp::NameHash` (`_nh`) compile-time string literals.
+- [**ADR-0055**: Allocator-Aware Contiguous Dynamic Array (`gp::Vector`) and Trivial Relocatability](./ADR-0055.md)
+  > Establishes `gp::container::Vector<T, Allocator>` (`gp::Vector`, `gp::InlineVector`,
+  > `gp::FixedVector`, `gp::ScratchVector`, `gp::PolymorphicVector`, `gp::AlignedVector`) as a
+  > 24-byte contiguous dynamic array integrating sized `gp::concepts::IsAllocator` arenas
+  > ([ADR-0042](./ADR-0042.md)), bitwise relocation (`gp::concepts::IsRelocatable`),
+  > uninitialized/defaulted construction fast-paths, and $O(1)$ unordered swap-erase semantics.
+- [**ADR-0056**: Contiguous and Byte-Strided Sequence Views (`gp::VectorView` and `gp::StridedView`)](./ADR-0056.md)
+  > Establishes `gp::container::VectorView<T>` (`16 B`) and `gp::container::StridedView<T>` (`24 B`)
+  > as STL-free, `constexpr`, non-owning sequence views standardized on `gp::USize` and signed
+  > `gp::ISize` byte strides, decoupling engine APIs from concrete container allocators and bridging
+  > Array-of-Structures (AoS) and Structure-of-Arrays (SoA) data streams without heap allocations.
 
 ### Math & Core Types
 
