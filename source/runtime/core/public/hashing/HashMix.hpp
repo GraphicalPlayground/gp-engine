@@ -17,6 +17,49 @@
 namespace gp::hashing
 {
 
+namespace detail
+{
+
+/// @brief Multiplies two 64-bit unsigned integers into a full 128-bit product `(outHigh, outLow)`.
+/// @details Uses compiler 128-bit intrinsics at runtime and portable 32-bit limb arithmetic during `constexpr`
+///          evaluation so both `mapToBucket()` and `Wyhash64` share one zero-overhead implementation.
+/// @param[in] lhs Left 64-bit factor.
+/// @param[in] rhs Right 64-bit factor.
+/// @param[out] outLow Lower 64 bits of the 128-bit product.
+/// @param[out] outHigh Upper 64 bits of the 128-bit product.
+GP_FORCEINLINE_HINT constexpr void
+    multiplyUInt64To128(const gp::UInt64 lhs, const gp::UInt64 rhs, gp::UInt64& outLow, gp::UInt64& outHigh) noexcept
+{
+    if (!std::is_constant_evaluated())
+    {
+#if defined(__SIZEOF_INT128__)
+        const unsigned __int128 product = static_cast<unsigned __int128>(lhs) * static_cast<unsigned __int128>(rhs);
+        outLow = static_cast<gp::UInt64>(product);
+        outHigh = static_cast<gp::UInt64>(product >> 64u);
+        return;
+#elif GP_COMPILER_MSVC && GP_ARCHITECTURE_64BIT
+        outLow = _umul128(lhs, rhs, &outHigh);
+        return;
+#endif
+    }
+
+    const gp::UInt64 aLo = lhs & 0xFFFFFFFFULL;
+    const gp::UInt64 aHi = lhs >> 32u;
+    const gp::UInt64 bLo = rhs & 0xFFFFFFFFULL;
+    const gp::UInt64 bHi = rhs >> 32u;
+
+    const gp::UInt64 loLo = aLo * bLo;
+    const gp::UInt64 loHi = aLo * bHi;
+    const gp::UInt64 hiLo = aHi * bLo;
+    const gp::UInt64 hiHi = aHi * bHi;
+
+    const gp::UInt64 cross = (loLo >> 32u) + (loHi & 0xFFFFFFFFULL) + (hiLo & 0xFFFFFFFFULL);
+    outLow = (loLo & 0xFFFFFFFFULL) | (cross << 32u);
+    outHigh = hiHi + (loHi >> 32u) + (hiLo >> 32u) + (cross >> 32u);
+}
+
+}   // namespace detail
+
 /// @brief Applies the MurmurHash3 32-bit finalizer (`fmix32`) to break integer clustering.
 /// @details Sequential integer IDs (entity slots, bone indices, draw call keys) cluster in power-of-two tables if used
 ///          unmixed. Three shift-XOR-multiply rounds spread bit changes across all 32 output bits.
@@ -299,29 +342,10 @@ requires(sizeof(InHashT) == 8u)
         return 0ULL;
     }
 
-    if (!std::is_constant_evaluated())
-    {
-#if defined(__SIZEOF_INT128__)
-        return static_cast<gp::UInt64>((static_cast<unsigned __int128>(h) * static_cast<unsigned __int128>(n)) >> 64u);
-#elif GP_COMPILER_MSVC && GP_ARCHITECTURE_64BIT
-        gp::UInt64 high = 0ULL;
-        (void)_umul128(h, n, &high);
-        return high;
-#endif
-    }
-
-    const gp::UInt64 aLo = h & 0xFFFFFFFFULL;
-    const gp::UInt64 aHi = h >> 32u;
-    const gp::UInt64 bLo = n & 0xFFFFFFFFULL;
-    const gp::UInt64 bHi = n >> 32u;
-
-    const gp::UInt64 loLo = aLo * bLo;
-    const gp::UInt64 loHi = aLo * bHi;
-    const gp::UInt64 hiLo = aHi * bLo;
-    const gp::UInt64 hiHi = aHi * bHi;
-
-    const gp::UInt64 cross = (loLo >> 32u) + (loHi & 0xFFFFFFFFULL) + (hiLo & 0xFFFFFFFFULL);
-    return hiHi + (loHi >> 32u) + (hiLo >> 32u) + (cross >> 32u);
+    gp::UInt64 low = 0ULL;
+    gp::UInt64 high = 0ULL;
+    detail::multiplyUInt64To128(h, n, low, high);
+    return high;
 }
 
 }   // namespace gp::hashing
