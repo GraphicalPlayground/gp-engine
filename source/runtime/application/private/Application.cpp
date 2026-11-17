@@ -4,10 +4,17 @@
 
 #include "Application.hpp"
 #include "backend/GenericApplicationBackend.hpp"
+#include "console/ConsoleEnums.hpp"
+#include "console/ConsoleTypes.hpp"
+#include "console/IConsoleCommand.hpp"   // IWYU pragma: keep
+#include "console/IConsoleManager.hpp"
+#include "console/IConsoleVariable.hpp"
 #include "containers/strings/FixedString.hpp"
 #include "input/GenericInputSystem.hpp"
+#include "logging/LogFormatter.hpp"
 #include "miscellaneous/CommandLine.hpp"
 #include "profiling/Profiler.hpp"
+#include "profiling/ProfilingControl.hpp"
 #include "templates/Optional.hpp"
 
 namespace gp
@@ -23,6 +30,49 @@ inline constexpr gp::USize kMaxDecodedStringBytes = 2048u;
 
 /// @brief Minimum byte capacity enforced per frame arena so `m_frameGraph` buffers always fit comfortably.
 inline constexpr gp::USize kMinFrameArenaBytes = 64ULL * 1024ULL;
+
+[[nodiscard]] gp::StringView smoothingModeToString(const time::DeltaSmoothingMode mode) noexcept
+{
+    switch (mode)
+    {
+    case time::DeltaSmoothingMode::None:
+        return "None";
+    case time::DeltaSmoothingMode::ExponentialMovingAverage:
+        return "ExponentialMovingAverage";
+    case time::DeltaSmoothingMode::OutlierRejectedAverage:
+        return "OutlierRejectedAverage";
+    case time::DeltaSmoothingMode::FixedDeterministic:
+        return "FixedDeterministic";
+    default:
+        return "OutlierRejectedAverage";
+    }
+}
+
+[[nodiscard]] bool tryParseSmoothingMode(const gp::StringView text, time::DeltaSmoothingMode& outMode) noexcept
+{
+    if (text.equalsIgnoreCase("none") || text.equalsIgnoreCase("raw"))
+    {
+        outMode = time::DeltaSmoothingMode::None;
+        return true;
+    }
+    if (text.equalsIgnoreCase("ema") || text.equalsIgnoreCase("exponentialmovingaverage"))
+    {
+        outMode = time::DeltaSmoothingMode::ExponentialMovingAverage;
+        return true;
+    }
+    if (text.equalsIgnoreCase("outlier") || text.equalsIgnoreCase("outlierrejected") ||
+        text.equalsIgnoreCase("outlierrejectedaverage"))
+    {
+        outMode = time::DeltaSmoothingMode::OutlierRejectedAverage;
+        return true;
+    }
+    if (text.equalsIgnoreCase("fixed") || text.equalsIgnoreCase("fixeddeterministic"))
+    {
+        outMode = time::DeltaSmoothingMode::FixedDeterministic;
+        return true;
+    }
+    return false;
+}
 
 /// @brief Peeks a fixed-size POD payload following an `EventHeader` and advances the SPSC consumer cursor.
 /// @tparam InPayloadType Trivially copyable event struct type.
@@ -70,6 +120,18 @@ void Application::requestQuit() noexcept
     {
         m_backend->wakeEventLoop();
     }
+}
+
+console::IConsoleManager& Application::getConsoleManager() noexcept
+{
+    return console::IConsoleManager::get();
+}
+
+console::ConsoleResult Application::executeConsoleCommand(
+    const gp::StringView commandLine, console::ConsoleOutputDelegate* const output
+) noexcept
+{
+    return console::IConsoleManager::get().processUserConsoleInput(commandLine, output);
 }
 
 void Application::applyCommandLineOverrides() noexcept
@@ -195,6 +257,238 @@ void Application::shutdownLoggingInternal() noexcept
     }
 }
 
+void Application::syncConsoleControlValues() noexcept
+{
+    if (m_consoleBindings.targetForegroundFps != nullptr)
+    {
+        const gp::Float64 fps = m_consoleBindings.targetForegroundFps->getFloat64();
+        m_desc.targetForegroundFps = (fps > 0.0) ? fps : 0.0;
+    }
+
+    if (m_consoleBindings.targetBackgroundFps != nullptr)
+    {
+        const gp::Float64 bgFps = m_consoleBindings.targetBackgroundFps->getFloat64();
+        m_desc.targetBackgroundFps = (bgFps > 0.0) ? bgFps : 0.0;
+    }
+
+    if (m_consoleBindings.sleepWhenMinimized != nullptr)
+    {
+        m_desc.sleepWhenMinimized = m_consoleBindings.sleepWhenMinimized->getBool();
+    }
+
+    if (m_consoleBindings.timeScale != nullptr)
+    {
+        m_clock.getGameplayClock().setLocalTimeScale(m_consoleBindings.timeScale->getFloat64());
+    }
+
+    if (m_consoleBindings.paused != nullptr)
+    {
+        m_clock.getGameplayClock().setPaused(m_consoleBindings.paused->getBool());
+    }
+
+    if (m_consoleBindings.smoothingMode != nullptr)
+    {
+        time::DeltaSmoothingMode mode = m_clock.getSmoothingMode();
+        if (detail::tryParseSmoothingMode(m_consoleBindings.smoothingMode->getString().view(), mode))
+        {
+            m_clock.setSmoothingMode(mode);
+        }
+    }
+}
+
+void Application::initializeConsoleInternal() noexcept
+{
+    console::IConsoleManager& console = console::IConsoleManager::get();
+
+    const console::ConsoleVarChangedDelegate syncCallback = console::ConsoleVarChangedDelegate::createLambda(
+        [this](console::IConsoleVariable*) noexcept -> void
+    {
+        syncConsoleControlValues();
+    }
+    );
+
+    m_consoleBindings.targetForegroundFps = console.registerConsoleVariable(
+        "app.TargetFps",
+        m_desc.targetForegroundFps,
+        "Target foreground frame pacing rate in Hz (<= 0 disables pacing).",
+        console::ConsoleVarFlags::None
+    );
+    m_consoleBindings.targetBackgroundFps = console.registerConsoleVariable(
+        "app.BackgroundFps",
+        m_desc.targetBackgroundFps,
+        "Target background frame pacing rate in Hz (<= 0 disables pacing).",
+        console::ConsoleVarFlags::None
+    );
+    m_consoleBindings.sleepWhenMinimized = console.registerConsoleVariable(
+        "app.SleepWhenMinimized",
+        m_desc.sleepWhenMinimized,
+        "Suspends CPU polling with waitEventsTimeout while minimized or backgrounded.",
+        console::ConsoleVarFlags::None
+    );
+    m_consoleBindings.timeScale = console.registerConsoleVariable(
+        "t.TimeScale",
+        m_clock.getGameplayClock().getLocalTimeScale(),
+        "Gameplay simulation clock time dilation multiplier (>= 0.0).",
+        console::ConsoleVarFlags::None
+    );
+    m_consoleBindings.paused = console.registerConsoleVariable(
+        "t.Paused",
+        m_clock.getGameplayClock().isLocallyPaused(),
+        "Pauses the gameplay clock and all dependent domain simulation clocks.",
+        console::ConsoleVarFlags::None
+    );
+    m_consoleBindings.smoothingMode = console.registerConsoleVariable(
+        "t.SmoothingMode",
+        detail::smoothingModeToString(m_clock.getSmoothingMode()),
+        "EngineClock delta smoothing filter (None, EMA, OutlierRejectedAverage, FixedDeterministic).",
+        console::ConsoleVarFlags::None
+    );
+
+    console::IConsoleVariable* const vars[] = { m_consoleBindings.targetForegroundFps,
+                                                m_consoleBindings.targetBackgroundFps,
+                                                m_consoleBindings.sleepWhenMinimized,
+                                                m_consoleBindings.timeScale,
+                                                m_consoleBindings.paused,
+                                                m_consoleBindings.smoothingMode };
+    for (console::IConsoleVariable* const var: vars)
+    {
+        if (var != nullptr)
+        {
+            var->setOnChangedCallback(syncCallback);
+        }
+    }
+
+    m_consoleBindings.stepCmd = console.registerConsoleCommand(
+        "t.Step",
+        "Advances a paused gameplay simulation clock by a single fixed step.",
+        console::ConsoleCommandWithArgsDelegate::createLambda(
+            [this](const console::ConsoleCommandArgs& args) noexcept -> void
+    {
+        time::SimulationClock& gameplayClock = m_clock.getGameplayClock();
+        if (gameplayClock.isLocallyPaused())
+        {
+            gameplayClock.requestSingleStep();
+            args.writeLine("Requested single simulation step.");
+        }
+        else
+        {
+            args.writeLine("Gameplay clock is not paused (set t.Paused=1 first).");
+        }
+    }
+        ),
+        console::ConsoleVarFlags::None
+    );
+
+    m_consoleBindings.quitCmd = console.registerConsoleCommand(
+        "app.Quit",
+        "Signals the Application main loop to shut down cleanly at the end of the frame.",
+        console::ConsoleCommandDelegate::createLambda(
+            [this]() noexcept -> void
+    {
+        requestQuit();
+    }
+        ),
+        console::ConsoleVarFlags::None
+    );
+
+    m_consoleBindings.statsCmd = console.registerConsoleCommand(
+        "app.Stats",
+        "Prints frame timing, pacing targets, and double-buffered frame arena utilization.",
+        console::ConsoleCommandWithArgsDelegate::createLambda(
+            [this](const console::ConsoleCommandArgs& args) noexcept -> void
+    {
+        const gp::time::FrameTimeStats& stats = m_clock.getStats();
+        gp::FixedString<383> line{};
+        (void)log::formatTo(
+            line,
+            "App='{}' frame={} fps={:.2f} targetFg={:.1f} targetBg={:.1f} arenaUsed={} arenaCap={}",
+            m_desc.backend.appName,
+            stats.frameIndex,
+            static_cast<gp::Float64>(stats.smoothedFps),
+            m_desc.targetForegroundFps,
+            m_desc.targetBackgroundFps,
+            getCurrentFrameArena().getUsedBytes(),
+            getCurrentFrameArena().getCapacity()
+        );
+        args.writeLine(line.view());
+    }
+        ),
+        console::ConsoleVarFlags::None
+    );
+
+    m_consoleBindings.jobsStatsCmd = console.registerConsoleCommand(
+        "jobs.Stats",
+        "Prints JobSystem worker counts, dispatched/stolen tasks, and fiber pool availability.",
+        console::ConsoleCommandWithArgsDelegate::createLambda(
+            [this](const console::ConsoleCommandArgs& args) noexcept -> void
+    {
+        if (!m_jobSystem.isInitialized())
+        {
+            args.writeLine("JobSystem is disabled.");
+            return;
+        }
+        const thread::JobSystemStats stats = m_jobSystem.getStats();
+        gp::FixedString<383> line{};
+        (void)log::formatTo(
+            line,
+            "Jobs[workers={} sleeping={}] dispatched={} executed={} stolen={} switches={} freeStd={} freeLarge={}",
+            stats.workerThreadCount,
+            stats.sleepingWorkerCount,
+            stats.totalJobsDispatched,
+            stats.totalJobsExecuted,
+            stats.totalJobsStolen,
+            stats.totalFiberSwitches,
+            stats.availableStandardFibers,
+            stats.availableLargeFibers
+        );
+        args.writeLine(line.view());
+    }
+        ),
+        console::ConsoleVarFlags::None
+    );
+
+    m_consoleBindings.sinkHandle = console.registerConsoleVariableSink(
+        console::ConsoleSinkDelegate::createLambda(
+            [this]() noexcept -> void
+    {
+        syncConsoleControlValues();
+    }
+        )
+    );
+
+    syncConsoleControlValues();
+}
+
+void Application::shutdownConsoleInternal() noexcept
+{
+    console::IConsoleManager& console = console::IConsoleManager::get();
+
+    if (m_consoleBindings.sinkHandle.isValid())
+    {
+        (void)console.unregisterConsoleVariableSink(m_consoleBindings.sinkHandle);
+        m_consoleBindings.sinkHandle.reset();
+    }
+
+    console::IConsoleObject* const objects[] = { m_consoleBindings.jobsStatsCmd,
+                                                 m_consoleBindings.statsCmd,
+                                                 m_consoleBindings.quitCmd,
+                                                 m_consoleBindings.stepCmd,
+                                                 m_consoleBindings.smoothingMode,
+                                                 m_consoleBindings.paused,
+                                                 m_consoleBindings.timeScale,
+                                                 m_consoleBindings.sleepWhenMinimized,
+                                                 m_consoleBindings.targetBackgroundFps,
+                                                 m_consoleBindings.targetForegroundFps };
+    for (console::IConsoleObject* const obj: objects)
+    {
+        if (obj != nullptr)
+        {
+            (void)console.unregisterConsoleObject(obj);
+        }
+    }
+    m_consoleBindings = ConsoleControlBindings{};
+}
+
 bool Application::rebindFrameGraphToCurrentArena() noexcept
 {
     m_frameGraph.shutdown();
@@ -247,10 +541,13 @@ bool Application::initializeInternal() noexcept
     }
 
     GP_SET_THREAD_NAME("GP_MainThread");
-    GP_PROFILE_SCOPE_NC("Application::InitializeInternal", GP_U32_COLOR_PURPLE);
+    GP_PROFILE_SCOPE_NC_ACTIVE(
+        "Application::InitializeInternal", GP_U32_COLOR_PURPLE, profiling::ProfilingControl::isZonesEnabled()
+    );
 
     applyCommandLineOverrides();
     initializeLoggingInternal();
+    (void)console::IConsoleManager::get();
 
     {
         gp::FixedString<256> appInfo{};
@@ -412,6 +709,7 @@ bool Application::initializeInternal() noexcept
         }
     }
 
+    initializeConsoleInternal();
     m_clock.reset();
     m_isInitialized = true;
     GP_LOG_INFO(LogApplication, "Application core subsystems initialized.");
@@ -425,9 +723,12 @@ void Application::shutdownInternal() noexcept
         return;
     }
 
-    GP_PROFILE_SCOPE_NC("Application::ShutdownInternal", GP_U32_COLOR_RED);
+    GP_PROFILE_SCOPE_NC_ACTIVE(
+        "Application::ShutdownInternal", GP_U32_COLOR_RED, profiling::ProfilingControl::isZonesEnabled()
+    );
     GP_LOG_INFO(LogApplication, "Shutting down Application core subsystems...");
 
+    shutdownConsoleInternal();
     m_frameGraph.shutdown();
 
     if (m_jobSystem.isInitialized())
@@ -469,7 +770,9 @@ gp::Int32 Application::run() noexcept
     }
 
     {
-        GP_PROFILE_SCOPE_NC("Application::OnInitialize", GP_U32_COLOR_PURPLE);
+        GP_PROFILE_SCOPE_NC_ACTIVE(
+            "Application::OnInitialize", GP_U32_COLOR_PURPLE, profiling::ProfilingControl::isZonesEnabled()
+        );
         if (!onInitialize()) [[unlikely]]
         {
             shutdownInternal();
@@ -482,22 +785,24 @@ gp::Int32 Application::run() noexcept
 
     while (m_isRunning.load(gp::MemoryOrder::Acquire))
     {
-        GP_PROFILE_SCOPE_NC("Application::Frame", GP_U32_COLOR_WHITE);
+        const bool profZones = profiling::ProfilingControl::isZonesEnabled();
+        const bool profPlots = profiling::ProfilingControl::isPlotsEnabled();
+        GP_PROFILE_SCOPE_NC_ACTIVE("Application::Frame", GP_U32_COLOR_WHITE, profZones);
 
         // OS Power-Saving Wait when minimized or background-suspended.
         const bool windowMinimized = m_mainWindow.isValid() && m_mainWindow->isMinimized();
         if (m_isSuspended || (m_desc.sleepWhenMinimized && windowMinimized))
         {
-            GP_PROFILE_SCOPE_NC("Application::WaitEventsMinimized", GP_U32_COLOR_GRAY);
+            GP_PROFILE_SCOPE_NC_ACTIVE("Application::WaitEventsMinimized", GP_U32_COLOR_GRAY, profZones);
             (void)m_backend->waitEventsTimeout(100u);
         }
 
         // Clear previous frame's transient input edge latches and motion deltas, then pump OS events.
         {
-            GP_PROFILE_SCOPE_NC("Application::PumpEvents", GP_U32_COLOR_CYAN);
+            GP_PROFILE_SCOPE_NC_ACTIVE("Application::PumpEvents", GP_U32_COLOR_CYAN, profZones);
             m_inputSystem->beginFrame();
             (void)m_backend->pumpEvents(m_eventStream, &m_lastPumpStats);
-            GP_PLOT("Events Polled", static_cast<gp::Int64>(m_lastPumpStats.polledCount));
+            GP_PLOT_IF(profPlots, "Events Polled", static_cast<gp::Int64>(m_lastPumpStats.polledCount));
         }
 
         // Consumer Phase: Drain TLV packets, update Window/Display/Input shadow states, and invoke hooks.
@@ -508,17 +813,24 @@ gp::Int32 Application::run() noexcept
             break;
         }
 
+        // Frame-boundary CVar flush & dirty sink dispatch before advancing simulation clocks.
+        console::IConsoleManager& console = console::IConsoleManager::get();
+        (void)console.flushLatchedVariables();
+        (void)console.callAllConsoleVariableSinks();
+
         // Advance hierarchical engine clocks and drain fixed-timestep accumulator.
         const gp::time::FrameTimeStats& timeStats = m_clock.tick();
+        const gp::Float64 rawDeltaMs = timeStats.rawDelta.toMilliseconds();
+        (void)profiling::ProfilingControl::recordFrameHitchIfExceeded(rawDeltaMs, timeStats.frameIndex);
         GP_PROFILE_ZONE_VALUE(timeStats.frameIndex);
-        GP_PLOT("Frame Delta (ms)", timeStats.rawDelta.toMilliseconds());
-        GP_PLOT("Smoothed FPS", static_cast<gp::Float64>(timeStats.smoothedFps));
-        GP_PLOT("Fixed Steps", static_cast<gp::Int64>(timeStats.fixedStep.stepCount));
+        GP_PLOT_IF(profPlots, "Frame Delta (ms)", rawDeltaMs);
+        GP_PLOT_IF(profPlots, "Smoothed FPS", static_cast<gp::Float64>(timeStats.smoothedFps));
+        GP_PLOT_IF(profPlots, "Fixed Steps", static_cast<gp::Int64>(timeStats.fixedStep.stepCount));
 
         // Rotate the double-buffered frame arena (rewinding Frame N while keeping Frame N-1 intact) and
         // rebind m_frameGraph over the active frame arena without heap allocations.
         {
-            GP_PROFILE_SCOPE_NC("Application::RotateFrameArena", GP_U32_COLOR_ORANGE);
+            GP_PROFILE_SCOPE_NC_ACTIVE("Application::RotateFrameArena", GP_U32_COLOR_ORANGE, profZones);
             if (!rotateAndResetFrameArena(timeStats.frameIndex)) [[unlikely]]
             {
                 break;
@@ -534,64 +846,75 @@ gp::Int32 Application::run() noexcept
         // Execute deterministic fixed-timestep simulation sub-steps.
         if (timeStats.fixedStep.stepCount > 0u)
         {
-            GP_PROFILE_SCOPE_NC("Application::FixedUpdate", GP_U32_COLOR_YELLOW);
+            GP_PROFILE_SCOPE_NC_ACTIVE("Application::FixedUpdate", GP_U32_COLOR_YELLOW, profZones);
             GP_PROFILE_ZONE_VALUE(static_cast<gp::UInt64>(timeStats.fixedStep.stepCount));
             for (gp::UInt32 step = 0u; step < timeStats.fixedStep.stepCount; ++step)
             {
-                GP_PROFILE_SCOPE_NC("Application::FixedUpdateStep", GP_U32_COLOR_YELLOW);
+                GP_PROFILE_SCOPE_NC_ACTIVE("Application::FixedUpdateStep", GP_U32_COLOR_YELLOW, profZones);
                 onFixedUpdate(timeStats.fixedStep.fixedDelta);
             }
         }
 
         // Execute variable-timestep gameplay & UI update.
         {
-            GP_PROFILE_SCOPE_NC("Application::OnUpdate", GP_U32_COLOR_GREEN);
+            GP_PROFILE_SCOPE_NC_ACTIVE("Application::OnUpdate", GP_U32_COLOR_GREEN, profZones);
             onUpdate(timeStats);
         }
 
         // Assemble and execute the per-frame simulation/extraction DAG (Main Thread helps as workerIndex == 0).
         {
-            GP_PROFILE_SCOPE_NC("Application::UpdateFrameGraph", GP_U32_COLOR_GREEN);
+            GP_PROFILE_SCOPE_NC_ACTIVE("Application::UpdateFrameGraph", GP_U32_COLOR_GREEN, profZones);
             {
-                GP_PROFILE_SCOPE_NC("Application::OnBuildFrameGraph", GP_U32_COLOR_GREEN);
+                GP_PROFILE_SCOPE_NC_ACTIVE("Application::OnBuildFrameGraph", GP_U32_COLOR_GREEN, profZones);
                 onBuildFrameGraph(m_frameGraph, frameContext);
             }
             if (!m_frameGraph.isEmpty() && m_jobSystem.isInitialized())
             {
-                GP_PROFILE_SCOPE_NC("Application::ExecuteFrameGraph", GP_U32_COLOR_GREEN);
+                GP_PROFILE_SCOPE_NC_ACTIVE("Application::ExecuteFrameGraph", GP_U32_COLOR_GREEN, profZones);
                 (void)m_frameGraph.executeAndWait(m_jobSystem);
             }
         }
 
+        // Game-to-Render thread CVar snapshot handoff before rendering extraction / RDG graph passes.
+        (void)console.syncRenderThreadValues();
+
         // Execute rendering and RDG pass graph when visible and not minimized.
         if (!m_isSuspended && (!m_mainWindow.isValid() || !m_mainWindow->isMinimized()))
         {
-            GP_PROFILE_SCOPE_NC("Application::RenderPhase", GP_U32_COLOR_BLUE);
+            GP_PROFILE_SCOPE_NC_ACTIVE("Application::RenderPhase", GP_U32_COLOR_BLUE, profZones);
             m_frameGraph.clear();
             {
-                GP_PROFILE_SCOPE_NC("Application::OnRender", GP_U32_COLOR_BLUE);
+                GP_PROFILE_SCOPE_NC_ACTIVE("Application::OnRender", GP_U32_COLOR_BLUE, profZones);
                 onRender(timeStats);
             }
             {
-                GP_PROFILE_SCOPE_NC("Application::OnBuildRenderGraph", GP_U32_COLOR_BLUE);
+                GP_PROFILE_SCOPE_NC_ACTIVE("Application::OnBuildRenderGraph", GP_U32_COLOR_BLUE, profZones);
                 onBuildRenderGraph(m_frameGraph, frameContext);
             }
             if (!m_frameGraph.isEmpty() && m_jobSystem.isInitialized())
             {
-                GP_PROFILE_SCOPE_NC("Application::ExecuteRenderGraph", GP_U32_COLOR_BLUE);
+                GP_PROFILE_SCOPE_NC_ACTIVE("Application::ExecuteRenderGraph", GP_U32_COLOR_BLUE, profZones);
                 (void)m_frameGraph.executeAndWait(m_jobSystem);
             }
         }
 
         // Frame-end notification while both currentFrameArena and previousFrameArena remain valid.
         {
-            GP_PROFILE_SCOPE_NC("Application::OnEndFrame", GP_U32_COLOR_PURPLE);
+            GP_PROFILE_SCOPE_NC_ACTIVE("Application::OnEndFrame", GP_U32_COLOR_PURPLE, profZones);
             onEndFrame(frameContext);
+        }
+
+        if (profPlots && m_jobSystem.isInitialized())
+        {
+            const thread::JobSystemStats jobStats = m_jobSystem.getStats();
+            GP_PLOT_IF(true, "JobSystem::Dispatched", static_cast<gp::Int64>(jobStats.totalJobsDispatched));
+            GP_PLOT_IF(true, "JobSystem::Stolen", static_cast<gp::Int64>(jobStats.totalJobsStolen));
+            GP_PLOT_IF(true, "JobSystem::SleepingWorkers", static_cast<gp::Int64>(jobStats.sleepingWorkerCount));
         }
 
         // Adaptive Hybrid Frame Pacing (Foreground vs. Background FPS target).
         {
-            GP_PROFILE_SCOPE_NC("Application::PaceFrame", GP_U32_COLOR_GRAY);
+            GP_PROFILE_SCOPE_NC_ACTIVE("Application::PaceFrame", GP_U32_COLOR_GRAY, profZones);
             const bool isWindowFocused = !m_mainWindow.isValid() || m_mainWindow->isFocused();
             const gp::Float64 targetFps = isWindowFocused ? m_desc.targetForegroundFps : m_desc.targetBackgroundFps;
             m_clock.paceFrame(targetFps);
@@ -601,7 +924,9 @@ gp::Int32 Application::run() noexcept
     }
 
     {
-        GP_PROFILE_SCOPE_NC("Application::OnShutdown", GP_U32_COLOR_RED);
+        GP_PROFILE_SCOPE_NC_ACTIVE(
+            "Application::OnShutdown", GP_U32_COLOR_RED, profiling::ProfilingControl::isZonesEnabled()
+        );
         onShutdown();
     }
     shutdownInternal();
@@ -610,7 +935,9 @@ gp::Int32 Application::run() noexcept
 
 void Application::drainEventStream() noexcept
 {
-    GP_PROFILE_SCOPE_NC("Application::DrainEventStream", GP_U32_COLOR_CYAN);
+    GP_PROFILE_SCOPE_NC_ACTIVE(
+        "Application::DrainEventStream", GP_U32_COLOR_CYAN, profiling::ProfilingControl::isZonesEnabled()
+    );
 
     using namespace gp::hal;
     using namespace gp::hal::event;

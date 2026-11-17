@@ -8,6 +8,9 @@
 #include "ApplicationForward.hpp"
 #include "ApplicationTypes.hpp"
 #include "backend/IApplicationBackend.hpp"
+#include "console/ConsoleEnums.hpp"
+#include "console/ConsoleForward.hpp"
+#include "console/ConsoleTypes.hpp"
 #include "containers/queues/SPSCRingBuffer.hpp"   // IWYU pragma: keep
 #include "containers/views/StringView.hpp"        // IWYU pragma: keep
 #include "CoreMinimal.hpp"
@@ -36,6 +39,7 @@
 #include "logging/sinks/TracySink.hpp"
 #include "memory/allocators/LinearAllocator.hpp"
 #include "memory/pointers/UniquePtr.hpp"
+#include "templates/Delegate.hpp"
 #include "threading/Atomic.hpp"
 #include "threading/jobs/JobGraph.hpp"
 #include "threading/jobs/JobSystem.hpp"
@@ -69,6 +73,22 @@ GP_DECLARE_EXPORTED_LOG_CATEGORY_EXTERN(GP_APPLICATION_API, LogApplication);
 class GP_APPLICATION_API Application
 {
 private:
+    struct ConsoleControlBindings final
+    {
+        console::IConsoleVariable* targetForegroundFps{ nullptr };
+        console::IConsoleVariable* targetBackgroundFps{ nullptr };
+        console::IConsoleVariable* sleepWhenMinimized{ nullptr };
+        console::IConsoleVariable* timeScale{ nullptr };
+        console::IConsoleVariable* paused{ nullptr };
+        console::IConsoleVariable* smoothingMode{ nullptr };
+        console::IConsoleCommand* stepCmd{ nullptr };
+        console::IConsoleCommand* quitCmd{ nullptr };
+        console::IConsoleCommand* statsCmd{ nullptr };
+        console::IConsoleCommand* jobsStatsCmd{ nullptr };
+        gp::DelegateHandle sinkHandle{};
+    };
+
+private:
     ApplicationDesc m_desc{};
     gp::UniquePtr<hal::IApplicationBackend> m_backend{};
     gp::UniquePtr<hal::input::IInputSystem> m_inputSystem{};
@@ -83,6 +103,7 @@ private:
     log::DebugOutputSink m_debugOutputSink{};
     log::TracySink m_tracySink{};
     hal::EventPumpStats m_lastPumpStats{};
+    ConsoleControlBindings m_consoleBindings{};
 
     gp::UInt32 m_activeFrameArenaIndex{ 0u };
     gp::Atomic<bool> m_isRunning{ false };
@@ -252,6 +273,17 @@ public:
     {
         return m_lastPumpStats;
     }
+
+    /// @brief Retrieves a reference to the process-wide `gp::console::IConsoleManager` registry ([ADR-0057]).
+    /// @return Reference to `gp::console::IConsoleManager::get()`.
+    [[nodiscard]] static console::IConsoleManager& getConsoleManager() noexcept;
+
+    /// @brief Executes a console variable assignment, query, or command string on the global console manager.
+    /// @param[in] commandLine Raw UTF-8 command or CVar assignment line (e.g., `"app.TargetFps 60"` or `"t.Paused=1"`).
+    /// @param[in] output Optional callback receiving formatted diagnostic lines (`nullptr` logs to `LogConsole`).
+    /// @return `ConsoleResult::Success` on success, or the specific parsing/priority/lookup rejection code.
+    console::ConsoleResult
+        executeConsoleCommand(gp::StringView commandLine, console::ConsoleOutputDelegate* output = nullptr) noexcept;
 
     /// @brief Retrieves a reference to the process-wide `gp::log::Logger` router ([ADR-0054]).
     /// @return Reference to `gp::log::Logger::instance()`.
@@ -433,6 +465,16 @@ private:
     /// @brief Flushes pending log records, detaches the application's built-in sinks, closes `m_fileSink`, and shuts
     ///        down `Logger::instance()` if initialized by this `Application`.
     void shutdownLoggingInternal() noexcept;
+
+    /// @brief Warms the global `IConsoleManager`, registers application/clock/job console bindings, and synchronizes
+    ///        any startup CLI CVar overrides cleanly into `m_desc` and `m_clock`.
+    void initializeConsoleInternal() noexcept;
+
+    /// @brief Unregisters application-owned console variables, commands, and sink handles before member teardown.
+    void shutdownConsoleInternal() noexcept;
+
+    /// @brief Pulls runtime CVar values from `m_consoleBindings` into `m_desc` and `m_clock`.
+    void syncConsoleControlValues() noexcept;
 
     /// @brief Rotates `m_activeFrameArenaIndex` to `frameIndex & 1u`, resets the new current frame arena in $O(1)$
     ///        time, and rebinds `m_frameGraph` over the reset arena.
