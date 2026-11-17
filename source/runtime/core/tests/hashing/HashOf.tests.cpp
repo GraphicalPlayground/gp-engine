@@ -11,6 +11,9 @@
 #include "CoreMinimal.hpp"
 #include "hashing/Crc32.hpp"
 #include "hashing/Murmur3.hpp"
+#include "hashing/Sha256.hpp"
+#include "hashing/SipHash.hpp"
+#include "hashing/Wyhash.hpp"
 #include "hashing/XxHash.hpp"
 #include "memory/pointers/RefCountedPtr.hpp"
 #include "memory/pointers/UniquePtr.hpp"
@@ -243,6 +246,69 @@ TEST(HashOfTest, CustomHooksHashValuesAndUnifiedEntryPoints)
     static_assert(hashCombine(10ULL, 20ULL) == hashCombine(gp::UInt64{ 10u }, gp::UInt64{ 20u }));
     static_assert(hashCombineFast(10ULL, 20ULL) == hashCombineFast(gp::UInt64{ 10u }, gp::USize{ 20u }));
     static_assert(hashCombine(1ULL, 42u) == hashCombine(1ULL, hashOf(gp::UInt32{ 42u })));
+}
+
+TEST(HashOfTest, UnifiedHashApiDomainSeparationAndUniquePodBytes)
+{
+    struct alignas(4) PackedPipelineKey
+    {
+        gp::UInt32 vertexLayoutId{ 0u };
+        gp::UInt32 blendStateId{ 0u };
+    };
+    static_assert(concepts::IsUniqueRepresentation<PackedPipelineKey>);
+
+    // 1. Unified single-value & multi-field `gp::hashing::hash(...)` overloads.
+    static_assert(hash(42u) == hashOf(42u));
+    static_assert(hash<XxHash64>("Shader") == XxHash64::hash("Shader"));
+    static_assert(hash<HashAlgorithm::XxHash64>("Shader") == XxHash64::hash("Shader"));
+    static_assert(hash<HashAlgorithm::Crc32>("123456789") == 0xCBF43926u);
+    static_assert(hash<HashAlgorithm::Wyhash64>(10u, 20u) == hashValues<Wyhash64>(10u, 20u));
+    static_assert(hash<HashAlgorithm::Sha256>("abc") == Sha256::hash("abc"));
+    static_assert(hash<XxHash64>("Shader", HashCase::IgnoreCase) == XxHash64::hash("shader"));
+    static_assert(hash<Fnv1a64>(gp::StringView("Shader"), HashCase::IgnoreCase) == Fnv1a64::hash("shader"));
+
+    const gp::UInt8 raw[3] = { 'a', 'b', 'c' };
+    const gp::Byte byteArr[3] = { gp::Byte{ 'a' }, gp::Byte{ 'b' }, gp::Byte{ 'c' } };
+    EXPECT_EQ(hash<Sha256>(raw, 3u), Sha256::hash("abc"));
+    EXPECT_EQ(hash<Wyhash64>(byteArr, 3u), Wyhash64::hash("abc"));
+    EXPECT_EQ(hash<Crc32>(static_cast<const void*>(raw), 3u), 0x352441C2u);
+    EXPECT_EQ(hash<HashAlgorithm::XxHash64>(raw, 3u), XxHash64::hash("abc"));
+
+    // 2. Unified runtime `HashAlgorithm` dispatch.
+    EXPECT_EQ(hash(HashAlgorithm::Crc32, raw, 3u).toUInt32(), 0x352441C2u);
+    EXPECT_EQ(hash(HashAlgorithm::XxHash64, static_cast<const void*>(raw), 3u).toUInt64(), XxHash64::hash("abc"));
+    EXPECT_EQ(hash(HashAlgorithm::Sha256, gp::StringView("abc")).toHash256(), Sha256::hash("abc"));
+    EXPECT_TRUE(hash(HashAlgorithm::Wyhash64, PackedPipelineKey{ 1u, 2u }.vertexLayoutId).isValid());
+
+    const gp::Pair<gp::Int32, gp::Int32> pairKey(7, 9);
+    EXPECT_EQ(hash(HashAlgorithm::Fnv1a64, pairKey).toUInt64(), hashOf<Fnv1a64>(pairKey));
+
+    // 3. Domain-separated hashing, seeded packs, and padding-free POD byte hashing.
+    static_assert(
+        hashDomain<XxHash64>("ShaderPSO", 10u, 20u) != hashDomain<XxHash64>("MaterialDef", 10u, 20u)
+    );
+    static_assert(hashValuesSeeded<Fnv1a64>(1ULL, 10u, 20u) != hashValuesSeeded<Fnv1a64>(2ULL, 10u, 20u));
+
+    const PackedPipelineKey psoA{ 3u, 7u };
+    const PackedPipelineKey psoB{ 3u, 8u };
+    EXPECT_NE(hashUniqueBytes<XxHash64>(psoA), hashUniqueBytes<XxHash64>(psoB));
+    EXPECT_EQ(hashUniqueBytes<Crc32>(psoA), Crc32::hash(static_cast<const void*>(&psoA), sizeof(psoA)));
+
+    // 4. Hash256 HashTraits integration.
+    constexpr Hash256 d256 = Sha256::hash("abc");
+    static_assert(hash(d256) == d256.foldTo64());
+    static_assert(hash<XxHash64>(d256) != 0ULL);
+
+    // 5. Unified `makeHasher` factories.
+    Wyhash64 concreteByType = makeHasher<Wyhash64>();
+    Hasher<HashAlgorithm::Wyhash64> concreteByEnum = makeHasher<HashAlgorithm::Wyhash64>();
+    DynamicHasher runtimeDyn = makeHasher(HashAlgorithm::Wyhash64);
+    concreteByType.update("abc", 3u);
+    concreteByEnum.update("abc", 3u);
+    runtimeDyn.update("abc", 3u);
+    EXPECT_EQ(concreteByType.finalize(), Wyhash64::hash("abc"));
+    EXPECT_EQ(concreteByEnum.finalize(), Wyhash64::hash("abc"));
+    EXPECT_EQ(runtimeDyn.finalize64(), Wyhash64::hash("abc"));
 }
 
 }   // namespace gp::hashing::tests
