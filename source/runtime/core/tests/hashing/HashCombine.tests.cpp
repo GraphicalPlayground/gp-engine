@@ -28,6 +28,8 @@ TEST(HashCombineTest, CombineAndCombineFast32And64)
     static_assert(hashCombineFast(10ULL, 20ULL, 30ULL) == hashCombineFast(hashCombineFast(10ULL, 20ULL), 30ULL));
     static_assert(hashCombine(10u, 20u, 30u, 40u) == hashCombine(hashCombine(hashCombine(10u, 20u), 30u), 40u));
     static_assert(hashCombine(10ULL, 20ULL, 30ULL) == hashCombine(hashCombine(10ULL, 20ULL), 30ULL));
+    static_assert(hashCombine(gp::UInt64{ 10u }, gp::USize{ 20u }, 30ULL) == hashCombine(10ULL, 20ULL, 30ULL));
+    static_assert(hashCombineFast(gp::UInt64{ 10u }, gp::USize{ 20u }, 30ULL) == hashCombineFast(10ULL, 20ULL, 30ULL));
 
     const Hash128 d1(0x1111ULL, 0x2222ULL);
     const Hash128 d2(0x3333ULL, 0x4444ULL);
