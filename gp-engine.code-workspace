@@ -206,6 +206,7 @@
       "clipboard": "tasks",
       "device": "connection",
       "threading": "app",
+      "roles": "admin",
       "atomics": "atom",
       "time": "temp",
       "fibers": "tasks",
