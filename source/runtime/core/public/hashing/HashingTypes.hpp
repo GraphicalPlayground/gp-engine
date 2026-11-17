@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "concepts/Concepts.hpp"
 #include "CoreMinimal.hpp"
 #include "hashing/HashingEnums.hpp"
 #include "hashing/HashingForward.hpp"   // IWYU pragma: keep
@@ -241,19 +242,25 @@ public:
     [[nodiscard]] constexpr HashDigest() noexcept = default;
 
     /// @brief Constructs a 32-bit digest result.
+    /// @tparam InDigestT 32-bit unsigned integral digest type.
     /// @param[in] value 32-bit digest value.
     /// @param[in] inAlgorithm Originating algorithm.
-    [[nodiscard]] constexpr HashDigest(const gp::UInt32 value, const HashAlgorithm inAlgorithm) noexcept
+    template <gp::concepts::IsUnsignedIntegral InDigestT>
+    requires(sizeof(InDigestT) == 4u)
+    [[nodiscard]] constexpr HashDigest(const InDigestT value, const HashAlgorithm inAlgorithm) noexcept
         : bits(static_cast<gp::UInt64>(value), 0ULL)
         , width(HashWidth::Bits32)
         , algorithm(inAlgorithm)
     {}
 
-    /// @brief Constructs a 64-bit digest result.
+    /// @brief Constructs a 64-bit digest result (`gp::UInt64`, `unsigned long`, or `unsigned long long`).
+    /// @tparam InDigestT 64-bit unsigned integral digest type.
     /// @param[in] value 64-bit digest value.
     /// @param[in] inAlgorithm Originating algorithm.
-    [[nodiscard]] constexpr HashDigest(const gp::UInt64 value, const HashAlgorithm inAlgorithm) noexcept
-        : bits(value, 0ULL)
+    template <gp::concepts::IsUnsignedIntegral InDigestT>
+    requires(sizeof(InDigestT) == 8u)
+    [[nodiscard]] constexpr HashDigest(const InDigestT value, const HashAlgorithm inAlgorithm) noexcept
+        : bits(static_cast<gp::UInt64>(value), 0ULL)
         , width(HashWidth::Bits64)
         , algorithm(inAlgorithm)
     {}
