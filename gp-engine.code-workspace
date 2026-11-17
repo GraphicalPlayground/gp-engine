@@ -210,7 +210,8 @@
       "time": "temp",
       "fibers": "tasks",
       "sync": "ci",
-      "sinks": "filter"
+      "sinks": "filter",
+      "hashing": "secure"
     },
     /* File Associations */
     "files.associations": {
