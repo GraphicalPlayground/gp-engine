@@ -3,7 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "logging/sinks/DebugOutputSink.hpp"
-#include "containers/strings/FixedString.hpp"
+#include "containers/strings/FixedString.hpp"   // IWYU pragma: keep
 #include "logging/LogFormatter.hpp"
 
 #if GP_PLATFORM_WINDOWS
@@ -25,7 +25,7 @@ void DebugOutputSink::write(const LogRecordView& record) noexcept
         return;
     }
 
-    gp::FixedString<640> lineBuffer{};
+    LogLineBuffer lineBuffer{};
     formatLogRecordLine(lineBuffer, record, m_flags);
 
 #if GP_PLATFORM_WINDOWS
