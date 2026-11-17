@@ -44,13 +44,29 @@ concept IsPod = IsStandardLayout<T> && std::is_trivial_v<T>;
 template <typename T>
 concept IsBitwiseCopyable = IsTriviallyCopyable<T>;
 
-/// @brief Concept for types that can be moved in memory via memcpy without invoking move constructors.
-/// @note Pedagogical Note: Relocatability is a powerful concept in engine development. It allows
-/// containers (like our future gp::Vector) to reallocate memory by simply memmove-ing the elements,
-/// which is significantly faster than calling move constructors and destructors for every element.
-/// Most trivially copyable types are relocatable.
+/// @brief Customization point determining whether a type can be safely relocated in memory via bitwise `memmove`.
+/// @details Defaults to `IsTriviallyCopyable<T>`. Non-trivially-copyable types without internal self-pointers (e.g.,
+///          move-only handles, custom buffers, or non-owning wrappers) may opt into fast-path container relocation
+///          (`gp::memory::relocateConstructItems`) by specializing this trait to `std::true_type`:
+///          @code
+///          template <>
+///          struct gp::concepts::IsRelocatableTrait<MyHandle> : std::true_type
+///          {};
+///          @endcode
+/// @warning Only specialize to `std::true_type` when relocating raw bytes to a new memory address leaves all invariants
+///          intact without invoking a move constructor followed by a destructor.
+/// @tparam T Unqualified type to query (`IsRelocatable` strips `const`/`volatile` automatically).
 template <typename T>
-concept IsRelocatable = IsTriviallyCopyable<T>;
+struct IsRelocatableTrait : std::bool_constant<IsTriviallyCopyable<T>>
+{};
+
+/// @brief Concept for types that can be moved in memory via `memmove` without invoking move constructors and
+/// destructors.
+/// @note Pedagogical Note: Relocatability ("destructive move") lets dynamic containers reallocate storage with a single
+///       bulk `memmove` instead of an $O(N)$ move-construct + destroy loop, while letting custom non-trivial types
+///       explicitly opt in through `IsRelocatableTrait`.
+template <typename T>
+concept IsRelocatable = IsRelocatableTrait<std::remove_cv_t<T>>::value;
 
 /// @brief Concept to explicitly check for raw pointers.
 /// @note This helps distinguish between raw memory addresses and smart pointer objects (like std::unique_ptr).
