@@ -207,6 +207,7 @@
       "device": "connection",
       "threading": "app",
       "roles": "admin",
+      "random": "cluster",
       "atomics": "atom",
       "time": "temp",
       "fibers": "tasks",
