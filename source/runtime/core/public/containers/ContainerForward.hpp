@@ -186,4 +186,76 @@ class StridedView;
 template <typename InT, typename InSizeType = Int32>
 using ConstStridedView = StridedView<const InT, InSizeType>;
 
+/// @section Queue related forward declarations
+
+template <typename InT>
+class SPSCRingBuffer;
+
+template <typename InT, typename InAllocator = gp::memory::DefaultAllocator>
+class Deque;
+
+template <typename InT>
+using ScratchDeque = Deque<InT, gp::memory::ThreadScratchAllocator>;
+
+template <typename InT>
+using PolymorphicDeque = Deque<InT, gp::memory::PolymorphicAllocator>;
+
+template <
+    typename InT,
+    gp::USize InCapacityBytes,
+    gp::UInt32 InAlignment = static_cast<gp::UInt32>(alignof(InT) > 8u ? alignof(InT) : 8u),
+    typename InFallbackAllocator = gp::memory::DefaultAllocator>
+using InlineDeque = Deque<InT, gp::memory::InlineAllocator<InCapacityBytes, InAlignment, InFallbackAllocator>>;
+
+/// @section List related forward declarations
+
+template <typename InTag>
+struct ListNodeHandle;
+
+template <typename InT>
+struct DoubleLinkedListNodeTag;
+
+template <typename InT>
+struct LinkedListNodeTag;
+
+template <typename InT>
+using DoubleLinkedListNodeHandle = ListNodeHandle<DoubleLinkedListNodeTag<InT>>;
+
+template <typename InT>
+using LinkedListNodeHandle = ListNodeHandle<LinkedListNodeTag<InT>>;
+
+template <typename InT, typename InAllocator = gp::memory::DefaultAllocator>
+class DoubleLinkedList;
+
+template <typename InT>
+using ScratchDoubleLinkedList = DoubleLinkedList<InT, gp::memory::ThreadScratchAllocator>;
+
+template <typename InT>
+using PolymorphicDoubleLinkedList = DoubleLinkedList<InT, gp::memory::PolymorphicAllocator>;
+
+template <
+    typename InT,
+    gp::USize InCapacityBytes,
+    gp::UInt32 InAlignment = static_cast<gp::UInt32>(alignof(InT) > 8u ? alignof(InT) : 8u),
+    typename InFallbackAllocator = gp::memory::DefaultAllocator>
+using InlineDoubleLinkedList =
+    DoubleLinkedList<InT, gp::memory::InlineAllocator<InCapacityBytes, InAlignment, InFallbackAllocator>>;
+
+template <typename InT, typename InAllocator = gp::memory::DefaultAllocator>
+class LinkedList;
+
+template <typename InT>
+using ScratchLinkedList = LinkedList<InT, gp::memory::ThreadScratchAllocator>;
+
+template <typename InT>
+using PolymorphicLinkedList = LinkedList<InT, gp::memory::PolymorphicAllocator>;
+
+template <
+    typename InT,
+    gp::USize InCapacityBytes,
+    gp::UInt32 InAlignment = static_cast<gp::UInt32>(alignof(InT) > 8u ? alignof(InT) : 8u),
+    typename InFallbackAllocator = gp::memory::DefaultAllocator>
+using InlineLinkedList =
+    LinkedList<InT, gp::memory::InlineAllocator<InCapacityBytes, InAlignment, InFallbackAllocator>>;
+
 }   // namespace gp
