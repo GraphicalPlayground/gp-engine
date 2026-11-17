@@ -82,6 +82,9 @@ TEST(HashMixTest, PointerSpatialGridAndBucketMapping)
     static_assert(mapToBucket(0xFFFFFFFFu, 17u) == 16u);
     static_assert(mapToBucket(0x8000000000000000ULL, 10ULL) == 5ULL);
     static_assert(mapToBucket(0xFFFFFFFFFFFFFFFFULL, 100ULL) == 99ULL);
+    static_assert(mapToBucket(0xFFFFFFFFu, gp::USize{ 17u }) == 16u);
+    static_assert(mapToBucket(gp::UInt64{ 0x8000000000000000ULL }, gp::USize{ 10u }) == 5ULL);
+    static_assert(mapToBucket(gp::USize{ 0x8000000000000000ULL }, 10u) == 5ULL);
 
     for (gp::UInt32 i = 0u; i < 64u; ++i)
     {
