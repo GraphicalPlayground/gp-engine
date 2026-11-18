@@ -259,6 +259,13 @@ lock-free architectures.
   > Adopts a zero-allocation runtime console subsystem (`gp::console`) in `gp::core` that combines
   > O3DE/id Tech intrusive static registration with Unreal-style dual Game/Render slots, priority
   > tiers, and `gp::Delegate` notifications.
+- [**ADR-0058**: Compact Bit-Packed Mutexes, Futex Parking, and Fiber-Safe Recursive Locks](
+  ./ADR-0058.md)
+  > Introduces `gp::thread::Mutex` (4B), `RecursiveMutex` / `CriticalSection` (16B),
+  > `SharedMutex` (8B), `OnceFlag` / `GP_CALL_ONCE` (4B), `UniqueLock`, and `SharedLock` in
+  > `gp::core`, pairing single-instruction inline atomic fast paths with `gp::platform::Futex`
+  > kernel address parking (`WaitOnAddress`, `futex`, `__ulock_wait`) and dual-domain
+  > fiber/thread recursive ownership tokens.
 
 ### Math & Core Types
 
