@@ -15,6 +15,7 @@ namespace detail
 
 static thread_local Fiber* tl_currentFiber{ nullptr };
 static thread_local Fiber* tl_outgoingFiber{ nullptr };
+static thread_local gp::UInt32 tl_threadNonYieldingLockCount{ 0u };
 
 static GP_FORCEINLINE void compilerMemoryBarrier() noexcept
 {
@@ -498,6 +499,10 @@ FiberResult Fiber::switchTo(Fiber& target) noexcept
 
     if (m_state == FiberState::Running)
     {
+        GP_ASSERT(
+            m_activeNonYieldingLockCount == 0u,
+            "gp::thread::Fiber::switchTo attempted to yield a child Fiber while holding a non-yielding Mutex, " "RecursiveMutex, or SharedMutex ([ADR-0058]). Release all mutexes before yielding a fiber."
+        );
         m_state = FiberState::Suspended;
     }
 
@@ -583,6 +588,38 @@ bool Fiber::isExecutingInChildFiber() noexcept
 {
     const Fiber* const current = detail::getCurrentFiberTLS();
     return (current != nullptr) && !current->isThreadAnchor();
+}
+
+GP_FORCENOINLINE gp::UInt32 Fiber::getActiveNonYieldingLockCount() noexcept
+{
+    detail::compilerMemoryBarrier();
+    const Fiber* const current = detail::getCurrentFiberTLS();
+    if (current != nullptr && !current->isThreadAnchor())
+    {
+        return current->m_activeNonYieldingLockCount;
+    }
+    return detail::tl_threadNonYieldingLockCount;
+}
+
+GP_FORCENOINLINE void Fiber::adjustActiveNonYieldingLockCount(const gp::Int32 delta) noexcept
+{
+    detail::compilerMemoryBarrier();
+    Fiber* const current = detail::getCurrentFiberTLS();
+    gp::UInt32* const counterPtr = (current != nullptr && !current->isThreadAnchor())
+                                       ? &current->m_activeNonYieldingLockCount
+                                       : &detail::tl_threadNonYieldingLockCount;
+
+    if (delta > 0)
+    {
+        *counterPtr += static_cast<gp::UInt32>(delta);
+    }
+    else if (delta < 0)
+    {
+        const gp::UInt32 absDelta = static_cast<gp::UInt32>(-delta);
+        GP_ASSERT(*counterPtr >= absDelta, "Active non-yielding lock count underflow.");
+        *counterPtr = (*counterPtr >= absDelta) ? (*counterPtr - absDelta) : 0u;
+    }
+    detail::compilerMemoryBarrier();
 }
 
 void Fiber::fiberLoopTrampoline([[maybe_unused]] void* const unusedUserData) noexcept

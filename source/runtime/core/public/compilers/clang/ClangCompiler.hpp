@@ -71,6 +71,53 @@
 /// @brief Marks a function as cold (de-prioritised during inlining and code placement).
 #define GP_COLD __attribute__((cold))
 
+/// @section Thread safety static analysis attributes (Clang -Wthread-safety).
+
+/// @brief Declares that a class or struct represents a synchronization capability (e.g. `"mutex"`).
+#define GP_THREAD_CAPABILITY(name) __attribute__((capability(name)))
+
+/// @brief Declares that a class acts as an RAII scoped guard acquiring and releasing a capability.
+#define GP_SCOPED_THREAD_CAPABILITY __attribute__((scoped_lockable))
+
+/// @brief Annotates a member variable as protected by the specified capability (`m_mutex`).
+#define GP_GUARDED_BY(cap) __attribute__((guarded_by(cap)))
+
+/// @brief Annotates a pointer member whose pointee data is protected by the specified capability.
+#define GP_PT_GUARDED_BY(cap) __attribute__((pt_guarded_by(cap)))
+
+/// @brief Declares that a function acquires exclusive ownership of the specified capability.
+#define GP_ACQUIRE_CAPABILITY(...) __attribute__((acquire_capability(__VA_ARGS__)))
+
+/// @brief Declares that a function acquires shared (reader) ownership of the specified capability.
+#define GP_ACQUIRE_SHARED_CAPABILITY(...) __attribute__((acquire_shared_capability(__VA_ARGS__)))
+
+/// @brief Declares that a function attempts to acquire exclusive ownership and returns a boolean success indicator.
+#define GP_TRY_ACQUIRE_CAPABILITY(...) __attribute__((try_acquire_capability(__VA_ARGS__)))
+
+/// @brief Declares that a function attempts to acquire shared ownership and returns a boolean success indicator.
+#define GP_TRY_ACQUIRE_SHARED_CAPABILITY(...) __attribute__((try_acquire_shared_capability(__VA_ARGS__)))
+
+/// @brief Declares that a function releases exclusive ownership of the specified capability.
+#define GP_RELEASE_CAPABILITY(...) __attribute__((release_capability(__VA_ARGS__)))
+
+/// @brief Declares that a function releases shared ownership of the specified capability.
+#define GP_RELEASE_SHARED_CAPABILITY(...) __attribute__((release_shared_capability(__VA_ARGS__)))
+
+/// @brief Declares that a function releases a generic capability (exclusive or shared).
+#define GP_RELEASE_GENERIC_CAPABILITY(...) __attribute__((release_generic_capability(__VA_ARGS__)))
+
+/// @brief Declares that the caller must already hold exclusive ownership of the specified capability.
+#define GP_REQUIRES_CAPABILITY(...) __attribute__((requires_capability(__VA_ARGS__)))
+
+/// @brief Declares that the caller must already hold shared ownership of the specified capability.
+#define GP_REQUIRES_SHARED_CAPABILITY(...) __attribute__((requires_shared_capability(__VA_ARGS__)))
+
+/// @brief Declares that the caller must not hold the specified capability on entry (prevents self-deadlock).
+#define GP_EXCLUDES_CAPABILITY(...) __attribute__((locks_excluded(__VA_ARGS__)))
+
+/// @brief Disables Clang thread-safety analysis for a specific function body (e.g. custom lock internals).
+#define GP_NO_THREAD_SAFETY_ANALYSIS __attribute__((no_thread_safety_analysis))
+
 /// @section Warning suppression & third-party include brackets.
 
 /// @brief Pushes the current Clang/GCC diagnostic state onto the compiler stack.

@@ -47,6 +47,7 @@ private:
     FiberStackTier m_stackTier{ FiberStackTier::Standard64KiB };
     bool m_resetScratchOnCompletion{ true };
     Atomic<gp::UInt8> m_isStackActive{ 0u };
+    gp::UInt32 m_activeNonYieldingLockCount{ 0u };
 
 public:
     /// @brief Constructs an uninitialized fiber (`FiberState::Uninitialized`, 0 bytes of leased memory).
@@ -326,6 +327,19 @@ public:
     ///        `ThreadAnchor` fibers).
     /// @return True if `getCurrentFiber() != nullptr && !getCurrentFiber()->isThreadAnchor()`.
     [[nodiscard]] static bool isExecutingInChildFiber() noexcept;
+
+    /// @brief Queries the number of non-yielding mutexes or shared locks currently held by the active execution
+    ///        context (`Fiber` or OS `Thread`) ([ADR-0058]).
+    /// @details Incremented when `Mutex`, `RecursiveMutex`, or `SharedMutex` acquires a lock and decremented on
+    ///          release. `Fiber::switchTo()` asserts that an outgoing child fiber holds zero non-yielding locks when
+    ///          yielding, mechanically catching illegal cooperative fiber yields inside mutex critical sections.
+    /// @return Active non-yielding lock count on the current fiber or thread.
+    [[nodiscard]] static gp::UInt32 getActiveNonYieldingLockCount() noexcept;
+
+    /// @brief Adjusts the active non-yielding lock depth for the current fiber or OS thread by `delta` (`+1` on lock,
+    ///        `-1` on unlock).
+    /// @param[in] delta Signed adjustment to the active non-yielding lock depth.
+    static void adjustActiveNonYieldingLockCount(gp::Int32 delta) noexcept;
 
     /// @brief Resolves the stack reservation size in bytes for a given `FiberStackTier`.
     /// @param[in] tier Stack tier enumerator.
