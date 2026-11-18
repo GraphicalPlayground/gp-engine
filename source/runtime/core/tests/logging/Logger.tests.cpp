@@ -499,6 +499,8 @@ TEST(LoggerTest, FatalHandlerRegistrationAndQuery)
 #if defined(GTEST_HAS_DEATH_TEST) && GTEST_HAS_DEATH_TEST
 TEST(LoggerDeathTest, FatalMacroAndFunctionFlushAndAbortProcess)
 {
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+
     EXPECT_DEATH(
         {
             Logger& globalLogger = Logger::instance();
