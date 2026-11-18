@@ -374,6 +374,54 @@
     #define GP_COLD
 #endif
 
+/// @section Thread safety static analysis attributes (fallbacks when compiler is not Clang).
+
+#ifndef GP_THREAD_CAPABILITY
+    #define GP_THREAD_CAPABILITY(name)
+#endif
+#ifndef GP_SCOPED_THREAD_CAPABILITY
+    #define GP_SCOPED_THREAD_CAPABILITY
+#endif
+#ifndef GP_GUARDED_BY
+    #define GP_GUARDED_BY(cap)
+#endif
+#ifndef GP_PT_GUARDED_BY
+    #define GP_PT_GUARDED_BY(cap)
+#endif
+#ifndef GP_ACQUIRE_CAPABILITY
+    #define GP_ACQUIRE_CAPABILITY(...)
+#endif
+#ifndef GP_ACQUIRE_SHARED_CAPABILITY
+    #define GP_ACQUIRE_SHARED_CAPABILITY(...)
+#endif
+#ifndef GP_TRY_ACQUIRE_CAPABILITY
+    #define GP_TRY_ACQUIRE_CAPABILITY(...)
+#endif
+#ifndef GP_TRY_ACQUIRE_SHARED_CAPABILITY
+    #define GP_TRY_ACQUIRE_SHARED_CAPABILITY(...)
+#endif
+#ifndef GP_RELEASE_CAPABILITY
+    #define GP_RELEASE_CAPABILITY(...)
+#endif
+#ifndef GP_RELEASE_SHARED_CAPABILITY
+    #define GP_RELEASE_SHARED_CAPABILITY(...)
+#endif
+#ifndef GP_RELEASE_GENERIC_CAPABILITY
+    #define GP_RELEASE_GENERIC_CAPABILITY(...)
+#endif
+#ifndef GP_REQUIRES_CAPABILITY
+    #define GP_REQUIRES_CAPABILITY(...)
+#endif
+#ifndef GP_REQUIRES_SHARED_CAPABILITY
+    #define GP_REQUIRES_SHARED_CAPABILITY(...)
+#endif
+#ifndef GP_EXCLUDES_CAPABILITY
+    #define GP_EXCLUDES_CAPABILITY(...)
+#endif
+#ifndef GP_NO_THREAD_SAFETY_ANALYSIS
+    #define GP_NO_THREAD_SAFETY_ANALYSIS
+#endif
+
 /// @section Operator new / delete throw specifications.
 
 #ifndef GP_OPERATOR_NEW_THROW_SPEC
