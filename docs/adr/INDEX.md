@@ -266,6 +266,13 @@ lock-free architectures.
   > `gp::core`, pairing single-instruction inline atomic fast paths with `gp::platform::Futex`
   > kernel address parking (`WaitOnAddress`, `futex`, `__ulock_wait`) and dual-domain
   > fiber/thread recursive ownership tokens.
+- [**ADR-0059**: Dual-Mode Non-Nullable SharedRef, SharedPtr, WeakPtr, and In-Place Control Blocks](
+  ./ADR-0059.md)
+  > Introduces `gp::SharedRef<T, Mode>`, `gp::SharedPtr<T, Mode>`, `gp::WeakPtr<T, Mode>`,
+  > `gp::SharedFromThis<T, Mode>`, `gp::makeShared`, `gp::allocateShared`, and `gp::makeShareable`
+  > in `gp::core`, pairing a 16-byte dual-counter reference controller wired to
+  > `gp::RefCountThreadSafety` with single-allocation in-place construction and engine-allocator
+  > integration.
 
 ### Math & Core Types
 

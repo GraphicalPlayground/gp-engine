@@ -84,11 +84,17 @@ class IRefCounted;
 template <typename T, typename Deleter>
 class UniquePtr;
 
-template <typename T>
+template <typename InElementType, RefCountThreadSafety InMode>
+class SharedRef;
+
+template <typename InElementType, RefCountThreadSafety InMode>
 class SharedPtr;
 
-template <typename T>
+template <typename InElementType, RefCountThreadSafety InMode>
 class WeakPtr;
+
+template <typename InElementType, RefCountThreadSafety InMode>
+class SharedFromThis;
 
 template <typename InElementType, typename InPolicy>
 class RefCountedPtr;
