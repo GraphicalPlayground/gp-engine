@@ -1057,6 +1057,11 @@ TEST(MutexTest, MultiWaiterFutexParkAndCascadeWakeupWithoutLostWakeups)
         gp::platform::Thread::spinWait();
     }
 
+    while (!ctx.mutex.mayHaveWaiters())
+    {
+        gp::platform::Thread::spinWait();
+    }
+
     // Sleep 2 ms so all 4 waiter threads exhaust their 32-iteration spin budget and park inside Futex::waitOnAddress
     gp::platform::Thread::sleep(2u);
     EXPECT_TRUE(ctx.mutex.mayHaveWaiters());
