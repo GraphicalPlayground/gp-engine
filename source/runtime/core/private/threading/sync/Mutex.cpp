@@ -39,19 +39,34 @@ GP_COLD void Mutex::lockSlow() noexcept
             continue;
         }
 
-        const gp::UInt32 prev = m_state.fetchOr(kMutexLockedBit | kMutexMayHaveWaitersBit, gp::MemoryOrder::Acquire);
-        if ((prev & kMutexLockedBit) == 0u)
+        gp::UInt32 expected = m_state.load(gp::MemoryOrder::Relaxed);
+        for (;;)
         {
-            // If we stole the lock while setting kMutexMayHaveWaitersBit and no prior waiters were flagged,
-            // clear the redundant waiter bit so unlock() stays on the 1-instruction fast path.
-            if ((prev & kMutexMayHaveWaitersBit) == 0u)
+            if ((expected & kMutexLockedBit) == 0u)
             {
-                m_state.store(kMutexLockedBit, gp::MemoryOrder::Relaxed);
-            }
+                if (m_state.compareExchangeWeak(
+                        expected, expected | kMutexLockedBit, gp::MemoryOrder::Acquire, gp::MemoryOrder::Relaxed
+                    ))
+                {
 #if GP_DO_CHECK
-            Fiber::adjustActiveNonYieldingLockCount(1);
+                    Fiber::adjustActiveNonYieldingLockCount(1);
 #endif
-            return;
+                    return;
+                }
+                continue;
+            }
+
+            if ((expected & kMutexMayHaveWaitersBit) == 0u)
+            {
+                if (!m_state.compareExchangeWeak(
+                        expected, expected | kMutexMayHaveWaitersBit, gp::MemoryOrder::Relaxed, gp::MemoryOrder::Relaxed
+                    ))
+                {
+                    continue;
+                }
+            }
+
+            break;
         }
 
         (void)gp::platform::Futex::waitOnAddress(m_state, kMutexLockedBit | kMutexMayHaveWaitersBit);
