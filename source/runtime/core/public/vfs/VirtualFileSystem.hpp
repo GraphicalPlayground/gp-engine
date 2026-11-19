@@ -107,6 +107,45 @@ public:
     /// @return Active mount point count.
     [[nodiscard]] static gp::USize getMountCount(const gp::StringView scheme = {}) noexcept;
 
+    /// @brief Visits active mount points in deterministic lookup order (sorted by scheme, descending priority, and
+    ///        descending registration order) without heap allocations.
+    /// @note Holds a shared read lock across the invocation; the visitor must not call mutating VFS APIs
+    ///       (`mount`, `unmount`, `shutdown`).
+    /// @param[in] scheme Optional scheme filter (empty view visits mounts across all schemes).
+    /// @param[in] visitor Stateless C callback receiving a `MountPointDesc` snapshot per active mount.
+    /// @param[in] userData Opaque context pointer forwarded to `visitor`.
+    /// @return Number of mount points visited before completion or early stop.
+    static gp::USize enumerateMounts(
+        const gp::StringView scheme, const MountPointVisitorFn visitor, void* const userData = nullptr
+    ) noexcept;
+
+    /// @brief Visits active mount points invoking any C++ callable/lambda `(const MountPointDesc&) -> bool` with
+    ///        zero heap allocations.
+    /// @note Holds a shared read lock across the invocation; the visitor must not call mutating VFS APIs.
+    /// @tparam InVisitor Callable matching `bool(const MountPointDesc&)`.
+    /// @param[in] scheme Optional scheme filter (empty view visits mounts across all schemes).
+    /// @param[in,out] visitor Callable returning `true` to continue visiting or `false` to stop early.
+    /// @return Number of mount points visited.
+    template <typename InVisitor>
+    requires(
+        !std::is_convertible_v<InVisitor, MountPointVisitorFn> &&
+        requires(InVisitor& fn, const MountPointDesc& desc) {
+            {
+                fn(desc)
+            } -> std::same_as<bool>;
+        }
+    )
+    static gp::USize enumerateMounts(const gp::StringView scheme, InVisitor&& visitor) noexcept
+    {
+        using VisitorType = std::remove_reference_t<InVisitor>;
+        const MountPointVisitorFn trampoline = [](const MountPointDesc& desc, void* const rawCallable) -> bool
+        {
+            VisitorType* const fn = static_cast<VisitorType*>(rawCallable);
+            return (*fn)(desc);
+        };
+        return enumerateMounts(scheme, trampoline, const_cast<void*>(static_cast<const void*>(&visitor)));
+    }
+
 public:
     /// @section URI Parsing, Sandbox Validation & Physical Path Resolution
 
@@ -266,13 +305,14 @@ public:
     ) static gp::Expected<bool, VfsError>
         iterateDirectory(const gp::StringView directoryUri, InVisitor&& visitor) noexcept
     {
+        using VisitorType = std::remove_reference_t<InVisitor>;
         const VfsDirectoryVisitorFn trampoline = [](const VfsDirectoryEntry& entry,
                                                     void* const rawCallable) -> gp::platform::DirectoryVisitControl
         {
-            InVisitor* const fn = static_cast<InVisitor*>(rawCallable);
+            VisitorType* const fn = static_cast<VisitorType*>(rawCallable);
             return (*fn)(entry);
         };
-        return iterateDirectory(directoryUri, trampoline, &visitor);
+        return iterateDirectory(directoryUri, trampoline, const_cast<void*>(static_cast<const void*>(&visitor)));
     }
 
     /// @brief Recursively iterates over `directoryUri` and all merged subdirectories in depth-first pre-order.
@@ -301,13 +341,16 @@ public:
     ) static gp::Expected<bool, VfsError>
         iterateDirectoryRecursive(const gp::StringView directoryUri, InVisitor&& visitor) noexcept
     {
+        using VisitorType = std::remove_reference_t<InVisitor>;
         const VfsDirectoryVisitorFn trampoline = [](const VfsDirectoryEntry& entry,
                                                     void* const rawCallable) -> gp::platform::DirectoryVisitControl
         {
-            InVisitor* const fn = static_cast<InVisitor*>(rawCallable);
+            VisitorType* const fn = static_cast<VisitorType*>(rawCallable);
             return (*fn)(entry);
         };
-        return iterateDirectoryRecursive(directoryUri, trampoline, &visitor);
+        return iterateDirectoryRecursive(
+            directoryUri, trampoline, const_cast<void*>(static_cast<const void*>(&visitor))
+        );
     }
 
 public:
