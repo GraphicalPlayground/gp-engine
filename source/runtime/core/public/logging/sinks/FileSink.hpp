@@ -9,15 +9,18 @@
 #include "logging/ILogSink.hpp"
 #include "logging/LogDesc.hpp"
 #include "logging/LogEnums.hpp"
+#include "platforms/base/system/FileHandle.hpp"
 #include "platforms/base/system/PathTypes.hpp"
 
 namespace gp::log
 {
 
-/// @brief Buffered, zero-heap-allocation file output sink backed by `gp::platform::Paths` ([ADR-0054]).
+/// @brief Buffered, zero-heap-allocation file output sink backed by `gp::platform::FileHandle` and
+///        `gp::platform::Paths` ([ADR-0054], [ADR-0060]).
 /// @details Accumulates formatted log lines inside an inline `8 KiB` write buffer (`m_writeBuffer`) to minimize OS
 ///          write syscalls, flushing automatically when the buffer fills, when `record.level >= LogLevel::Error`, or
-///          when `flush()` / `close()` is called.
+///          when `flush()` / `close()` is called. Opens the underlying handle with `FileShareMode::Read` so external
+///          log viewers can inspect live logs while the engine is running.
 class GP_CORE_API FileSink final : public ILogSink
 {
 public:
@@ -25,7 +28,7 @@ public:
     static constexpr gp::USize kWriteBufferCapacity = 8192u;
 
 private:
-    void* m_fileHandle{ nullptr };
+    gp::platform::FileHandle m_fileHandle{};
     gp::platform::PathBuffer m_filePath{};
     LogSinkFlags m_flags{ LogSinkFlags::DefaultTextFormat | LogSinkFlags::IncludeSourceLocation };
     gp::USize m_bufferedBytes{ 0u };
@@ -46,18 +49,20 @@ public:
 public:
     /// @brief Opens (or re-opens) the target log file specified in `desc`.
     /// @details If `desc.filePath` is empty, resolves `<tempDir>/<ExecutableName>.log` via `gp::platform::Paths`.
+    ///          Creates missing parent directories automatically before opening the OS file handle.
     /// @param[in] desc File sink configuration parameters.
-    /// @return `LogResult::Success` if the file was opened, or `LogResult::IoError` on failure.
+    /// @return `LogResult::Success` if the file was opened, `LogResult::InvalidArguments` if the resolved path is
+    ///         empty, or `LogResult::IoError` on OS open failure.
     [[nodiscard]] LogResult open(const FileSinkDesc& desc) noexcept;
 
-    /// @brief Flushes any buffered output and closes the underlying file handle.
+    /// @brief Flushes any buffered output and closes the underlying OS `FileHandle`.
     void close() noexcept;
 
     /// @brief Checks whether the log file is currently open for writing.
     /// @return True if open, false otherwise.
-    [[nodiscard]] constexpr bool isOpen() const noexcept
+    [[nodiscard]] bool isOpen() const noexcept
     {
-        return m_fileHandle != nullptr;
+        return m_fileHandle.isValid();
     }
 
     /// @brief Queries the normalized filesystem path of the opened log file.

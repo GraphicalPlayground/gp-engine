@@ -6,6 +6,7 @@
 
 #include "ApplicationTypes.hpp"
 #include "backend/ApplicationBackendDesc.hpp"
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "logging/LogDesc.hpp"
 #include "threading/jobs/JobSystemDesc.hpp"
@@ -44,6 +45,12 @@ struct ApplicationDesc
 
     /// @brief Configuration for the built-in buffered `FileSink` ([ADR-0054]).
     log::FileSinkDesc fileSink{};
+
+    /// @brief Optional application subfolder name passed to `gp::vfs::VirtualFileSystem::initializeDefaultMounts()`
+    ///        ([ADR-0044]).
+    /// @details When empty, `Application` falls back to `backend.appName` (and `VirtualFileSystem` falls back to the
+    ///          executable stem if that is also empty). Can be overridden via `-vfs-app=<name>` on the command line.
+    gp::StringView vfsAppName{};
 
     /// @brief Byte capacity of the lock-free SPSC event stream (automatically rounded up to a power of two).
     gp::USize eventRingBufferBytes{ 16384u };
@@ -96,6 +103,11 @@ struct ApplicationDesc
 
     /// @brief If true, registers the application's `TracySink` with `Logger::instance()`.
     bool enableTracyLogSink{ true };
+
+    /// @brief If true, mounts the six default ADR-0044 VFS schemes (`engine://`, `game://`, `user://`, `appdata://`,
+    ///        `cache://`, `temp://`) during startup and unmounts them on exit (can be overridden by `-no-vfs` on the
+    ///        command line).
+    bool enableVirtualFileSystem{ true };
 };
 
 }   // namespace gp

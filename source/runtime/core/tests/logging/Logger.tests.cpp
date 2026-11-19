@@ -15,6 +15,7 @@
 #include "logging/sinks/StringLogSink.hpp"
 #include "logging/sinks/TracySink.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "platforms/base/system/FileSystem.hpp"
 #include "platforms/base/system/Paths.hpp"
 #include "templates/ScopeExit.hpp"   // IWYU pragma: keep
 #include <cstdio>
@@ -254,6 +255,67 @@ TEST(LoggerTest, FileSinkWritesAndFlushesToDisk)
     const gp::StringView fileContents(readBuf, bytesRead);
     EXPECT_TRUE(fileContents.contains("[INFO][LogTestSubsystem] First disk line 100"));
     EXPECT_TRUE(fileContents.contains("[ERROR][LogTestSubsystem] Second disk line 200"));
+}
+
+TEST(LoggerTest, FileSinkFileHandleCreatesParentsSharesLiveReadAndAppends)
+{
+    const gp::platform::PathBuffer testRoot =
+        gp::platform::Paths::combine(gp::platform::Paths::tempDir(), "gp_filesink_handle_test");
+    const gp::platform::PathBuffer nestedLogPath =
+        gp::platform::Paths::combine(testRoot.view(), "nested/subdir/app.log");
+    gp::platform::FileSystem::removeDirectoryTree(testRoot.view());
+
+    auto cleanup = gp::makeScopeExit(
+        [&testRoot]() noexcept -> void
+    {
+        gp::platform::FileSystem::removeDirectoryTree(testRoot.view());
+    }
+    );
+
+    FileSinkDesc firstDesc{};
+    firstDesc.filePath = nestedLogPath.view();
+    firstDesc.minLevel = LogLevel::Info;
+    firstDesc.flags = LogSinkFlags::None;
+    firstDesc.truncateOnOpen = true;
+
+    FileSink sink{};
+    ASSERT_EQ(sink.open(firstDesc), LogResult::Success);
+    EXPECT_TRUE(sink.isOpen());
+
+    Logger logger{};
+    LoggerDesc loggerDesc{};
+    loggerDesc.mode = LogExecutionMode::Synchronous;
+    loggerDesc.applyCommandLineOverrides = false;
+    ASSERT_EQ(logger.initialize(loggerDesc), LogResult::Success);
+    ASSERT_EQ(logger.addSink(&sink), LogResult::Success);
+
+    LogTestSubsystem.setActiveLevel(LogLevel::Info);
+    GP_LOGGER_LOG(logger, LogTestSubsystem, Info, "Live shared line 1");
+    logger.flush();
+
+    // Verify FileShareMode::Read allows an external reader to inspect the flushed log while FileSink holds it open.
+    gp::String liveSnapshot{};
+    ASSERT_TRUE(gp::platform::FileSystem::readAllText(nestedLogPath.view(), liveSnapshot).hasValue());
+    EXPECT_TRUE(liveSnapshot.view().contains("Live shared line 1"));
+
+    // Close and re-open in append mode (`truncateOnOpen = false`), then flush again.
+    sink.close();
+    EXPECT_FALSE(sink.isOpen());
+
+    FileSinkDesc appendDesc = firstDesc;
+    appendDesc.truncateOnOpen = false;
+    ASSERT_EQ(sink.open(appendDesc), LogResult::Success);
+    EXPECT_TRUE(sink.isOpen());
+
+    GP_LOGGER_LOG(logger, LogTestSubsystem, Error, "Appended line 2");
+    logger.flush();
+    sink.close();
+    logger.shutdown();
+
+    gp::String finalContents{};
+    ASSERT_TRUE(gp::platform::FileSystem::readAllText(nestedLogPath.view(), finalContents).hasValue());
+    EXPECT_TRUE(finalContents.view().contains("Live shared line 1"));
+    EXPECT_TRUE(finalContents.view().contains("Appended line 2"));
 }
 
 TEST(LoggerTest, AsyncRingMultiThreadedConcurrencyStress)

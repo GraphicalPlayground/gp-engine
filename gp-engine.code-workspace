@@ -175,6 +175,7 @@
       "appleclang": "assembly",
       "gcc": "assembly",
       "intel": "assembly",
+      "vfs": "dump",
       "platforms": "client",
       "es": "i18n",
       "fr": "i18n",

@@ -45,6 +45,7 @@
 #include "threading/jobs/JobSystem.hpp"
 #include "threading/roles/NamedThreadDispatcher.hpp"
 #include "time/EngineClock.hpp"
+#include "vfs/VfsForward.hpp"
 #include "window/IWindow.hpp"
 #include "window/WindowDesc.hpp"   // IWYU pragma: keep
 
@@ -111,6 +112,7 @@ private:
     gp::Atomic<bool> m_isRunning{ false };
     bool m_isInitialized{ false };
     bool m_isSuspended{ false };
+    bool m_ownsVfsInitialization{ false };
     bool m_ownsLoggerInitialization{ false };
     bool m_ownsGameThreadRole{ false };
     bool m_ownsRenderThreadRole{ false };
@@ -473,9 +475,19 @@ protected:
     {}
 
 private:
-    /// @brief Applies command-line concurrency and logging overrides (`-threads`, `-workers`, `-no-jobsystem`,
-    ///        `-core-affinity`, `-no-log`, `-no-console-log`, `-log-file`) from `gp::CommandLine` to `m_desc`.
+    /// @brief Applies command-line concurrency, logging, and VFS overrides (`-threads`, `-workers`, `-no-jobsystem`,
+    ///        `-core-affinity`, `-no-log`, `-no-console-log`, `-log-file`, `-no-vfs`, `-vfs-app`) from
+    ///        `gp::CommandLine` to `m_desc`.
     void applyCommandLineOverrides() noexcept;
+
+    /// @brief Mounts the six default ADR-0044 VFS schemes when `m_desc.enableVirtualFileSystem` is true and no mounts
+    ///        are already registered by the caller.
+    /// @return `vfs::VfsError::None` on success (or if skipped), or the error returned by
+    ///         `VirtualFileSystem::initializeDefaultMounts()`.
+    [[nodiscard]] vfs::VfsError initializeVirtualFileSystemInternal() noexcept;
+
+    /// @brief Unmounts all VFS mount points via `VirtualFileSystem::shutdown()` if this `Application` initialized them.
+    void shutdownVirtualFileSystemInternal() noexcept;
 
     /// @brief Claims `NamedThread::Game` (and `Render` / `RHI` when `singleThreadedRenderAndRHI` is set) for the
     ///        calling thread.

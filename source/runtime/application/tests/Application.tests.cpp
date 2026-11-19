@@ -14,7 +14,10 @@
 #include "logging/sinks/MemoryRingSink.hpp"
 #include "memory/MemoryOrder.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "platforms/base/system/FileSystem.hpp"
+#include "platforms/base/system/Paths.hpp"
 #include "platforms/base/system/Thread.hpp"
+#include "templates/ScopeExit.hpp"        // IWYU pragma: keep
 #include "threading/atomics/Atomic.hpp"   // IWYU pragma: keep
 #include "threading/jobs/JobGraph.hpp"
 #include "threading/jobs/JobSystem.hpp"
@@ -23,6 +26,8 @@
 #include "threading/roles/ScopedThreadRole.hpp"
 #include "threading/roles/ThreadRole.hpp"
 #include "threading/roles/ThreadRoleEnums.hpp"
+#include "vfs/MemoryMountBackend.hpp"
+#include "vfs/VirtualFileSystem.hpp"
 #include <gtest/gtest.h>
 
 namespace gp::tests
@@ -1048,6 +1053,269 @@ TEST(ApplicationThreadRoleWiringTest, FailsInitIfAnotherThreadAlreadyOwnsGameRol
     EXPECT_EQ(holder.join(&exitCode), gp::platform::ThreadResult::Success);
     EXPECT_EQ(exitCode, 0u);
     EXPECT_FALSE(thread::ThreadRoleRegistry::isAttached(thread::NamedThread::Game));
+}
+
+TEST(ApplicationVfsWiringTest, DefaultMountsLifecycleAndConsoleDiagnostics)
+{
+    CommandLine::shutdown();
+    vfs::VirtualFileSystem::shutdown();
+
+    auto cleanup = gp::makeScopeExit(
+        []() noexcept -> void
+    {
+        vfs::VirtualFileSystem::shutdown();
+        CommandLine::shutdown();
+    }
+    );
+
+    ApplicationDesc desc{};
+    desc.backend.appName = "GPAppVfsLifecycleUnitTest";
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.enableJobSystem = false;
+    desc.targetForegroundFps = 0.0;
+    desc.targetBackgroundFps = 0.0;
+
+    class VfsLifecycleProbeApp final : public Application
+    {
+    public:
+        explicit VfsLifecycleProbeApp(const ApplicationDesc& inDesc) noexcept
+            : Application(inDesc)
+        {}
+
+        bool allSchemesMountedInInit{ false };
+        bool vfsStillActiveInShutdown{ false };
+        bool consoleStatusReportedSix{ false };
+        gp::PathBuffer tempResolvedPath{};
+
+    protected:
+        [[nodiscard]] virtual bool onInitialize() noexcept override
+        {
+            allSchemesMountedInInit = vfs::VirtualFileSystem::isSchemeMounted("engine://") &&
+                                      vfs::VirtualFileSystem::isSchemeMounted("game://") &&
+                                      vfs::VirtualFileSystem::isSchemeMounted("user://") &&
+                                      vfs::VirtualFileSystem::isSchemeMounted("appdata://") &&
+                                      vfs::VirtualFileSystem::isSchemeMounted("cache://") &&
+                                      vfs::VirtualFileSystem::isSchemeMounted("temp://") &&
+                                      (vfs::VirtualFileSystem::getMountCount() == 6u);
+
+            const gp::Expected<gp::PathBuffer, vfs::VfsError> tempRes =
+                vfs::VirtualFileSystem::resolveWritablePhysicalPath("temp://probe.txt");
+            if (tempRes.hasValue())
+            {
+                tempResolvedPath = tempRes.value();
+            }
+
+            gp::String output{};
+            console::ConsoleOutputDelegate capture = console::ConsoleOutputDelegate::createLambda(
+                [&output](const gp::StringView line) noexcept -> void
+            {
+                output.append(line);
+                output.pushBack('\n');
+            }
+            );
+            const console::ConsoleResult cmdRes = executeConsoleCommand("vfs.Status", &capture);
+            consoleStatusReportedSix =
+                (cmdRes == console::ConsoleResult::Success) && output.view().contains("total=6/");
+            return true;
+        }
+
+        virtual void onUpdate(const gp::time::FrameTimeStats&) noexcept override
+        {
+            requestQuit();
+        }
+
+        virtual void onShutdown() noexcept override
+        {
+            vfsStillActiveInShutdown = (vfs::VirtualFileSystem::getMountCount() == 6u);
+        }
+    };
+
+    VfsLifecycleProbeApp app(desc);
+    EXPECT_EQ(app.run(), 0);
+    EXPECT_TRUE(app.allSchemesMountedInInit);
+    EXPECT_TRUE(app.consoleStatusReportedSix);
+    EXPECT_TRUE(app.vfsStillActiveInShutdown);
+    EXPECT_TRUE(app.tempResolvedPath.view().contains("GPAppVfsLifecycleUnitTest"));
+
+    // Application owned VFS initialization, so shutdownInternal() must unmount all default schemes cleanly.
+    EXPECT_EQ(vfs::VirtualFileSystem::getMountCount(), 0u);
+}
+
+TEST(ApplicationVfsWiringTest, CommandLineNoVfsDisablesDefaultMountsAndPreservesPreMountedBackends)
+{
+    CommandLine::shutdown();
+    vfs::VirtualFileSystem::shutdown();
+
+    auto cleanup = gp::makeScopeExit(
+        []() noexcept -> void
+    {
+        vfs::VirtualFileSystem::shutdown();
+        CommandLine::shutdown();
+    }
+    );
+
+    // 1. Verify -no-vfs disables default mounts cleanly.
+    CommandLine::initialize("gp_app_test -no-vfs");
+    ASSERT_TRUE(CommandLine::isInitialized());
+    {
+        ApplicationDesc desc{};
+        desc.createMainWindow = false;
+        desc.enableLogging = false;
+        desc.enableJobSystem = false;
+        desc.targetForegroundFps = 0.0;
+        desc.targetBackgroundFps = 0.0;
+
+        class NoVfsProbeApp final : public Application
+        {
+        public:
+            explicit NoVfsProbeApp(const ApplicationDesc& inDesc) noexcept
+                : Application(inDesc)
+            {}
+
+            gp::USize mountCountInInit{ 99u };
+
+        protected:
+            [[nodiscard]] virtual bool onInitialize() noexcept override
+            {
+                mountCountInInit = vfs::VirtualFileSystem::getMountCount();
+                return true;
+            }
+
+            virtual void onUpdate(const gp::time::FrameTimeStats&) noexcept override
+            {
+                requestQuit();
+            }
+        };
+
+        NoVfsProbeApp app(desc);
+        EXPECT_EQ(app.run(), 0);
+        EXPECT_EQ(app.mountCountInInit, 0u);
+        EXPECT_EQ(vfs::VirtualFileSystem::getMountCount(), 0u);
+    }
+
+    // 2. Verify pre-mounted caller backends are preserved and not torn down by Application::shutdownInternal().
+    CommandLine::shutdown();
+    vfs::MemoryMountBackend customMem{};
+    ASSERT_TRUE(
+        vfs::VirtualFileSystem::mountBackend(
+            "custom://", &customMem, vfs::MountPriority::Base, vfs::MountAccess::ReadWrite
+        )
+            .hasValue()
+    );
+
+    {
+        ApplicationDesc desc{};
+        desc.createMainWindow = false;
+        desc.enableLogging = false;
+        desc.enableJobSystem = false;
+        desc.targetForegroundFps = 0.0;
+        desc.targetBackgroundFps = 0.0;
+
+        class PreMountedProbeApp final : public Application
+        {
+        public:
+            explicit PreMountedProbeApp(const ApplicationDesc& inDesc) noexcept
+                : Application(inDesc)
+            {}
+
+            bool customMounted{ false };
+            gp::USize totalMounts{ 0u };
+
+        protected:
+            [[nodiscard]] virtual bool onInitialize() noexcept override
+            {
+                customMounted = vfs::VirtualFileSystem::isSchemeMounted("custom://");
+                totalMounts = vfs::VirtualFileSystem::getMountCount();
+                return true;
+            }
+
+            virtual void onUpdate(const gp::time::FrameTimeStats&) noexcept override
+            {
+                requestQuit();
+            }
+        };
+
+        PreMountedProbeApp app(desc);
+        EXPECT_EQ(app.run(), 0);
+        EXPECT_TRUE(app.customMounted);
+        EXPECT_EQ(app.totalMounts, 1u);
+    }
+
+    EXPECT_TRUE(vfs::VirtualFileSystem::isSchemeMounted("custom://"));
+    EXPECT_EQ(vfs::VirtualFileSystem::getMountCount(), 1u);
+    EXPECT_TRUE(vfs::VirtualFileSystem::unmountBackend("custom://", &customMem));
+}
+
+TEST(ApplicationVfsWiringTest, CommandLineVfsAppAndVfsLogFileUriResolution)
+{
+    CommandLine::shutdown();
+    vfs::VirtualFileSystem::shutdown();
+
+    const gp::PathBuffer expectedRoot =
+        gp::platform::Paths::combine(gp::platform::Paths::tempDir(), "GPAppVfsLogUriUnitTest");
+    gp::platform::FileSystem::removeDirectoryTree(expectedRoot.view());
+
+    auto cleanup = gp::makeScopeExit(
+        [&expectedRoot]() noexcept -> void
+    {
+        vfs::VirtualFileSystem::shutdown();
+        CommandLine::shutdown();
+        gp::platform::FileSystem::removeDirectoryTree(expectedRoot.view());
+    }
+    );
+
+    CommandLine::initialize("gp_app_test -vfs-app=GPAppVfsLogUriUnitTest -log-file=temp://logs/vfs_boot.log");
+    ASSERT_TRUE(CommandLine::isInitialized());
+
+    ApplicationDesc desc{};
+    desc.createMainWindow = false;
+    desc.enableLogging = true;
+    desc.enableConsoleLogSink = false;
+    desc.enableDebugOutputLogSink = false;
+    desc.enableTracyLogSink = false;
+    desc.enableFileLogSink = false;   // Enabled by -log-file CLI override
+    desc.logger.mode = log::LogExecutionMode::Synchronous;
+    desc.logger.applyCommandLineOverrides = false;
+    desc.enableJobSystem = false;
+    desc.targetForegroundFps = 0.0;
+    desc.targetBackgroundFps = 0.0;
+
+    class VfsLogProbeApp final : public Application
+    {
+    public:
+        explicit VfsLogProbeApp(const ApplicationDesc& inDesc) noexcept
+            : Application(inDesc)
+        {}
+
+        bool fileSinkWasOpen{ false };
+        gp::PathBuffer openedLogPath{};
+
+    protected:
+        [[nodiscard]] virtual bool onInitialize() noexcept override
+        {
+            fileSinkWasOpen = getFileSink().isOpen();
+            openedLogPath.assign(getFileSink().getFilePath());
+            GP_LOG_INFO(LogApplication, "VfsLogProbeApp marker message");
+            return true;
+        }
+
+        virtual void onUpdate(const gp::time::FrameTimeStats&) noexcept override
+        {
+            requestQuit();
+        }
+    };
+
+    VfsLogProbeApp app(desc);
+    EXPECT_EQ(app.run(), 0);
+    EXPECT_TRUE(app.fileSinkWasOpen);
+    EXPECT_TRUE(app.openedLogPath.view().contains("GPAppVfsLogUriUnitTest"));
+    EXPECT_TRUE(app.openedLogPath.view().endsWith("logs/vfs_boot.log"));
+    EXPECT_EQ(vfs::VirtualFileSystem::getMountCount(), 0u);
+
+    gp::String diskLog{};
+    ASSERT_TRUE(gp::platform::FileSystem::readAllText(app.openedLogPath.view(), diskLog).hasValue());
+    EXPECT_TRUE(diskLog.view().contains("VfsLogProbeApp marker message"));
 }
 
 }   // namespace gp::tests
