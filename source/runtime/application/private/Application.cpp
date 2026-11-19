@@ -13,12 +13,16 @@
 #include "input/GenericInputSystem.hpp"
 #include "logging/LogFormatter.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "platforms/base/system/PathTypes.hpp"
 #include "profiling/Profiler.hpp"
 #include "profiling/ProfilingControl.hpp"
+#include "templates/Expected.hpp"
 #include "templates/Optional.hpp"
 #include "threading/roles/ThreadRole.hpp"
 #include "threading/roles/ThreadRoleEnums.hpp"
 #include "threading/roles/ThreadRoleTypes.hpp"
+#include "vfs/VfsEnums.hpp"
+#include "vfs/VirtualFileSystem.hpp"
 
 namespace gp
 {
@@ -196,6 +200,55 @@ void Application::applyCommandLineOverrides() noexcept
             m_desc.fileSink.filePath = *customLogPath;
         }
     }
+
+    const Optional<bool> optVfs = CommandLine::tryGetBool("vfs");
+    if (optVfs.hasValue())
+    {
+        m_desc.enableVirtualFileSystem = *optVfs;
+    }
+
+    const Optional<StringView> optVfsApp = CommandLine::tryGetString("vfs-app");
+    if (optVfsApp.hasValue() && !optVfsApp->isEmpty())
+    {
+        m_desc.vfsAppName = *optVfsApp;
+    }
+}
+
+vfs::VfsError Application::initializeVirtualFileSystemInternal() noexcept
+{
+    if (!m_desc.enableVirtualFileSystem)
+    {
+        return vfs::VfsError::None;
+    }
+
+    // Preserve pre-configured mounts if the host or test harness mounted schemes before Application::run().
+    if (vfs::VirtualFileSystem::getMountCount() > 0u)
+    {
+        m_ownsVfsInitialization = false;
+        return vfs::VfsError::None;
+    }
+
+    const gp::StringView effectiveAppName = !m_desc.vfsAppName.isEmpty() ? m_desc.vfsAppName : m_desc.backend.appName;
+    const gp::Expected<bool, vfs::VfsError> mountRes =
+        vfs::VirtualFileSystem::initializeDefaultMounts(effectiveAppName);
+    if (!mountRes.hasValue()) [[unlikely]]
+    {
+        vfs::VirtualFileSystem::shutdown();
+        m_ownsVfsInitialization = false;
+        return mountRes.error();
+    }
+
+    m_ownsVfsInitialization = true;
+    return vfs::VfsError::None;
+}
+
+void Application::shutdownVirtualFileSystemInternal() noexcept
+{
+    if (m_ownsVfsInitialization)
+    {
+        vfs::VirtualFileSystem::shutdown();
+        m_ownsVfsInitialization = false;
+    }
 }
 
 bool Application::attachThreadRolesInternal() noexcept
@@ -311,7 +364,26 @@ void Application::initializeLoggingInternal() noexcept
 
     if (m_desc.enableFileLogSink)
     {
-        if (m_fileSink.open(m_desc.fileSink) == log::LogResult::Success)
+        log::FileSinkDesc resolvedFileSinkDesc = m_desc.fileSink;
+        gp::PathBuffer resolvedLogPath{};
+        bool canOpenFileSink = true;
+
+        if (!resolvedFileSinkDesc.filePath.isEmpty() && resolvedFileSinkDesc.filePath.contains("://"))
+        {
+            const gp::Expected<gp::PathBuffer, vfs::VfsError> resolved =
+                vfs::VirtualFileSystem::resolveWritablePhysicalPath(resolvedFileSinkDesc.filePath);
+            if (resolved.hasValue())
+            {
+                resolvedLogPath = resolved.value();
+                resolvedFileSinkDesc.filePath = resolvedLogPath.view();
+            }
+            else
+            {
+                canOpenFileSink = false;
+            }
+        }
+
+        if (canOpenFileSink && m_fileSink.open(resolvedFileSinkDesc) == log::LogResult::Success)
         {
             (void)logger.addSink(&m_fileSink);
         }
@@ -633,12 +705,21 @@ bool Application::initializeInternal() noexcept
     );
 
     applyCommandLineOverrides();
+    const vfs::VfsError vfsInitError = initializeVirtualFileSystemInternal();
     initializeLoggingInternal();
     (void)console::IConsoleManager::get();
+
+    if (vfsInitError != vfs::VfsError::None) [[unlikely]]
+    {
+        GP_LOG_ERROR(
+            LogApplication, "VirtualFileSystem default mount initialization failed ({}).", vfs::toString(vfsInitError)
+        );
+    }
 
     if (!attachThreadRolesInternal()) [[unlikely]]
     {
         shutdownLoggingInternal();
+        shutdownVirtualFileSystemInternal();
         return false;
     }
 
@@ -663,6 +744,7 @@ bool Application::initializeInternal() noexcept
         );
         detachThreadRolesInternal();
         shutdownLoggingInternal();
+        shutdownVirtualFileSystemInternal();
         return false;
     }
 
@@ -676,6 +758,7 @@ bool Application::initializeInternal() noexcept
             m_eventStream.shutdown();
             detachThreadRolesInternal();
             shutdownLoggingInternal();
+            shutdownVirtualFileSystemInternal();
             return false;
         }
     }
@@ -687,6 +770,7 @@ bool Application::initializeInternal() noexcept
         m_eventStream.shutdown();
         detachThreadRolesInternal();
         shutdownLoggingInternal();
+        shutdownVirtualFileSystemInternal();
         return false;
     }
 
@@ -705,6 +789,7 @@ bool Application::initializeInternal() noexcept
             m_eventStream.shutdown();
             detachThreadRolesInternal();
             shutdownLoggingInternal();
+            shutdownVirtualFileSystemInternal();
             return false;
         }
     }
@@ -732,6 +817,7 @@ bool Application::initializeInternal() noexcept
             m_eventStream.shutdown();
             detachThreadRolesInternal();
             shutdownLoggingInternal();
+            shutdownVirtualFileSystemInternal();
             return false;
         }
     }
@@ -766,6 +852,7 @@ bool Application::initializeInternal() noexcept
         m_eventStream.shutdown();
         detachThreadRolesInternal();
         shutdownLoggingInternal();
+        shutdownVirtualFileSystemInternal();
         return false;
     }
 
@@ -785,6 +872,7 @@ bool Application::initializeInternal() noexcept
         m_eventStream.shutdown();
         detachThreadRolesInternal();
         shutdownLoggingInternal();
+        shutdownVirtualFileSystemInternal();
         return false;
     }
 
@@ -805,6 +893,7 @@ bool Application::initializeInternal() noexcept
         m_eventStream.shutdown();
         detachThreadRolesInternal();
         shutdownLoggingInternal();
+        shutdownVirtualFileSystemInternal();
         return false;
     }
 
@@ -827,6 +916,7 @@ bool Application::initializeInternal() noexcept
             m_eventStream.shutdown();
             detachThreadRolesInternal();
             shutdownLoggingInternal();
+            shutdownVirtualFileSystemInternal();
             return false;
         }
     }
@@ -885,6 +975,7 @@ void Application::shutdownInternal() noexcept
     m_eventStream.shutdown();
     detachThreadRolesInternal();
     shutdownLoggingInternal();
+    shutdownVirtualFileSystemInternal();
     m_isInitialized = false;
 }
 
