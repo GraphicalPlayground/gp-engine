@@ -108,6 +108,12 @@ public:
     }
 };
 
+/// @brief Stateless C-style callback signature for zero-allocation VFS mount-table inspection.
+/// @param[in] desc Stack-resident snapshot descriptor of an active mount point.
+/// @param[in] userData Opaque caller-supplied context pointer.
+/// @return True to continue visiting remaining mounts, false to stop early.
+using MountPointVisitorFn = bool (*)(const MountPointDesc& desc, void* userData);
+
 /// @brief Stateless C-style callback signature for zero-allocation VFS directory enumeration.
 /// @param[in] entry Stack-resident VFS directory entry descriptor.
 /// @param[in] userData Opaque caller-supplied context pointer.
