@@ -6,8 +6,11 @@
 #include "containers/strings/FixedString.hpp"
 #include "logging/LogFormatter.hpp"
 #include "memory/Memory.hpp"
+#include "platforms/base/system/FileEnums.hpp"
+#include "platforms/base/system/FileSystem.hpp"
 #include "platforms/base/system/Paths.hpp"
-#include <cstdio>
+#include "templates/Expected.hpp"
+#include <utility>
 
 namespace gp::log
 {
@@ -59,43 +62,38 @@ LogResult FileSink::open(const FileSinkDesc& desc) noexcept
         return LogResult::InvalidArguments;
     }
 
-    const char* const openMode = desc.truncateOnOpen ? "wb" : "ab";
-#if GP_PLATFORM_WINDOWS
-    std::FILE* rawFile = nullptr;
-    const errno_t err = ::fopen_s(&rawFile, m_filePath.cString(), openMode);
-    if (err != 0 || rawFile == nullptr)
+    const gp::StringView parentDir = gp::platform::Paths::getPath(m_filePath.view());
+    if (!parentDir.isEmpty() && !gp::platform::FileSystem::isDirectory(parentDir))
     {
-        m_fileHandle = nullptr;
-        return LogResult::IoError;
+        gp::platform::FileSystem::createDirectoryTree(parentDir);
     }
-    m_fileHandle = rawFile;
-#else
-    std::FILE* const rawFile = std::fopen(m_filePath.cString(), openMode);
-    if (rawFile == nullptr)
-    {
-        m_fileHandle = nullptr;
-        return LogResult::IoError;
-    }
-    m_fileHandle = rawFile;
-#endif
 
+    const gp::platform::FileOpenMode openMode =
+        desc.truncateOnOpen ? gp::platform::FileOpenMode::CreateAlways : gp::platform::FileOpenMode::Append;
+    gp::Expected<gp::platform::FileHandle, gp::platform::FileError> openResult = gp::platform::FileSystem::open(
+        m_filePath.view(), gp::platform::FileAccessMode::Write, openMode, gp::platform::FileShareMode::Read
+    );
+    if (!openResult.hasValue())
+    {
+        return LogResult::IoError;
+    }
+
+    m_fileHandle = std::move(openResult.value());
     return LogResult::Success;
 }
 
 void FileSink::close() noexcept
 {
-    if (m_fileHandle != nullptr)
+    if (m_fileHandle.isValid())
     {
         flush();
-        std::FILE* const rawFile = static_cast<std::FILE*>(m_fileHandle);
-        std::fclose(rawFile);
-        m_fileHandle = nullptr;
+        m_fileHandle.close();
     }
 }
 
 void FileSink::write(const LogRecordView& record) noexcept
 {
-    if (m_fileHandle == nullptr || !shouldWrite(record.level))
+    if (!m_fileHandle.isValid() || !shouldWrite(record.level))
     {
         return;
     }
@@ -122,9 +120,12 @@ void FileSink::write(const LogRecordView& record) noexcept
     }
     else
     {
-        std::FILE* const rawFile = static_cast<std::FILE*>(m_fileHandle);
-        const gp::USize written = std::fwrite(formattedLine.data(), sizeof(char), lineLen, rawFile);
-        m_totalBytesWritten += static_cast<gp::UInt64>(written);
+        const gp::Expected<gp::USize, gp::platform::FileError> writeRes =
+            m_fileHandle.write(formattedLine.data(), lineLen);
+        if (writeRes.hasValue())
+        {
+            m_totalBytesWritten += static_cast<gp::UInt64>(writeRes.value());
+        }
     }
 
     const bool flushEvery = (m_flags & LogSinkFlags::FlushEveryRecord) != LogSinkFlags::None;
@@ -136,26 +137,28 @@ void FileSink::write(const LogRecordView& record) noexcept
 
 void FileSink::flush() noexcept
 {
-    if (m_fileHandle == nullptr)
+    if (!m_fileHandle.isValid())
     {
         return;
     }
 
     flushInternalBuffer();
-    std::FILE* const rawFile = static_cast<std::FILE*>(m_fileHandle);
-    std::fflush(rawFile);
+    m_fileHandle.flush();
 }
 
 void FileSink::flushInternalBuffer() noexcept
 {
-    if (m_fileHandle == nullptr || m_bufferedBytes == 0u)
+    if (!m_fileHandle.isValid() || m_bufferedBytes == 0u)
     {
         return;
     }
 
-    std::FILE* const rawFile = static_cast<std::FILE*>(m_fileHandle);
-    const gp::USize written = std::fwrite(m_writeBuffer, sizeof(char), m_bufferedBytes, rawFile);
-    m_totalBytesWritten += static_cast<gp::UInt64>(written);
+    const gp::Expected<gp::USize, gp::platform::FileError> writeRes =
+        m_fileHandle.write(m_writeBuffer, m_bufferedBytes);
+    if (writeRes.hasValue())
+    {
+        m_totalBytesWritten += static_cast<gp::UInt64>(writeRes.value());
+    }
     m_bufferedBytes = 0u;
 }
 
