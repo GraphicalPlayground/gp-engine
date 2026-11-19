@@ -3,6 +3,9 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "vfs/VirtualFileSystem.hpp"
+#include "console/ConsoleEnums.hpp"
+#include "console/ConsoleTypes.hpp"
+#include "console/IConsoleManager.hpp"
 #include "platforms/base/system/FileSystem.hpp"
 #include "platforms/base/system/Paths.hpp"
 #include "threading/atomics/Atomic.hpp"
@@ -47,7 +50,7 @@ protected:
         m_sandboxRoot = gp::platform::Paths::combine(gp::platform::Paths::tempDir(), folderName.view());
         if (gp::platform::FileSystem::exists(m_sandboxRoot.view()))
         {
-            (void)gp::platform::FileSystem::removeDirectoryTree(m_sandboxRoot.view());
+            gp::platform::FileSystem::removeDirectoryTree(m_sandboxRoot.view());
         }
 
         m_baseGameDir = gp::platform::Paths::combine(m_sandboxRoot.view(), "BaseGame");
@@ -66,7 +69,7 @@ protected:
         VirtualFileSystem::shutdown();
         if (!m_sandboxRoot.isEmpty() && gp::platform::FileSystem::exists(m_sandboxRoot.view()))
         {
-            (void)gp::platform::FileSystem::removeDirectoryTree(m_sandboxRoot.view());
+            gp::platform::FileSystem::removeDirectoryTree(m_sandboxRoot.view());
         }
     }
 };
@@ -459,6 +462,200 @@ TEST_F(VirtualFileSystemTest, RecursiveMergedWalkShadowingFileOverDirAndCrossMou
     EXPECT_EQ(VirtualFileSystem::unmountScheme("game://"), 2u);
     EXPECT_FALSE(VirtualFileSystem::isSchemeMounted("game://"));
     EXPECT_TRUE(VirtualFileSystem::unmountBackend("temp://", &tempMem));
+}
+
+TEST_F(VirtualFileSystemTest, EnumerateMountsDeterministicOrderAndConsoleDiagnostics)
+{
+    static_assert(toString(MountPriority::Base) == "Base");
+    static_assert(toString(MountPriority::ModOverride) == "ModOverride");
+    static_assert(toString(MountPriority::DeveloperOverride) == "DeveloperOverride");
+    static_assert(toString(MountAccess::ReadOnly) == "ReadOnly");
+    static_assert(toString(MountAccess::ReadWrite) == "ReadWrite");
+
+    // Empty VFS diagnostics before mounting anything
+    gp::console::IConsoleManager& consoleMgr = gp::console::IConsoleManager::get();
+    gp::String captured{};
+    gp::console::ConsoleOutputDelegate captureOut = gp::console::ConsoleOutputDelegate::createLambda(
+        [&captured](const gp::StringView line) noexcept -> void
+    {
+        captured.append(line);
+        captured.pushBack('\n');
+    }
+    );
+
+    ASSERT_EQ(consoleMgr.processUserConsoleInput("vfs.Mounts", &captureOut), gp::console::ConsoleResult::Success);
+    EXPECT_TRUE(captured.view().contains("none registered"));
+
+    // Mount physical and memory layers in scrambled priority order to verify deterministic sorting.
+    ASSERT_TRUE(
+        VirtualFileSystem::mount("game://", m_baseGameDir.view(), MountPriority::Base, MountAccess::ReadOnly).hasValue()
+    );
+    ASSERT_TRUE(
+        VirtualFileSystem::mount("user://", m_userSaveDir.view(), MountPriority::Base, MountAccess::ReadWrite)
+            .hasValue()
+    );
+    ASSERT_TRUE(
+        VirtualFileSystem::mount("game://", m_modDir.view(), MountPriority::ModOverride, MountAccess::ReadOnly)
+            .hasValue()
+    );
+    ASSERT_TRUE(
+        VirtualFileSystem::mount("game://", m_patchDir.view(), MountPriority::Patch, MountAccess::ReadOnly).hasValue()
+    );
+
+    // Seed files for vfs.Resolve, vfs.Exists, vfs.Stat, and vfs.Ls
+    ASSERT_TRUE(
+        gp::platform::FileSystem::writeAllText(
+            gp::platform::Paths::combine(m_baseGameDir.view(), "config.ini").view(), "base=1"
+        )
+            .hasValue()
+    );
+    ASSERT_TRUE(
+        gp::platform::FileSystem::writeAllText(
+            gp::platform::Paths::combine(m_modDir.view(), "config.ini").view(), "mod=2222"
+        )
+            .hasValue()
+    );
+    ASSERT_TRUE(
+        gp::platform::FileSystem::createDirectoryTree(gp::platform::Paths::combine(m_patchDir.view(), "sub").view())
+            .hasValue()
+    );
+    ASSERT_TRUE(
+        gp::platform::FileSystem::writeAllText(
+            gp::platform::Paths::combine(m_patchDir.view(), "sub/patch.dat").view(), "patch_bytes"
+        )
+            .hasValue()
+    );
+    ASSERT_TRUE(VirtualFileSystem::writeAllText("user://save.bin", "12345").hasValue());
+
+    // enumerateMounts sorts by scheme ascending, then priority descending
+    MountPriority gamePrios[4]{};
+    gp::USize gameCount = 0u;
+    const gp::USize visitedGame = VirtualFileSystem::enumerateMounts(
+        "game://",
+        [&gamePrios, &gameCount](const MountPointDesc& desc) noexcept -> bool
+    {
+        if (gameCount < 4u)
+        {
+            gamePrios[gameCount] = desc.priority;
+        }
+        ++gameCount;
+        return true;
+    }
+    );
+    EXPECT_EQ(visitedGame, 3u);
+    ASSERT_EQ(gameCount, 3u);
+    EXPECT_EQ(gamePrios[0], MountPriority::ModOverride);
+    EXPECT_EQ(gamePrios[1], MountPriority::Patch);
+    EXPECT_EQ(gamePrios[2], MountPriority::Base);
+
+    // Early stop terminates traversal immediately
+    const gp::USize stoppedCount = VirtualFileSystem::enumerateMounts(
+        "",
+        [](const MountPointDesc&) noexcept -> bool
+    {
+        return false;
+    }
+    );
+    EXPECT_EQ(stoppedCount, 1u);
+
+    // vfs.Status
+    captured.clear();
+    ASSERT_EQ(consoleMgr.processUserConsoleInput("vfs.Status", &captureOut), gp::console::ConsoleResult::Success);
+    EXPECT_TRUE(captured.view().contains("total=4/32"));
+    EXPECT_TRUE(captured.view().contains("game=3"));
+    EXPECT_TRUE(captured.view().contains("user=1"));
+
+    // vfs.Mounts (all & filtered & unmounted)
+    captured.clear();
+    ASSERT_EQ(
+        consoleMgr.processUserConsoleInput("vfs.Mounts game://", &captureOut), gp::console::ConsoleResult::Success
+    );
+    EXPECT_TRUE(captured.view().contains("ModOverride(400)"));
+    EXPECT_TRUE(captured.view().contains("Patch(300)"));
+    EXPECT_TRUE(captured.view().contains("Base(100)"));
+    EXPECT_FALSE(captured.view().contains("user://"));
+
+    captured.clear();
+    ASSERT_EQ(
+        consoleMgr.processUserConsoleInput("vfs.Mounts unknown://", &captureOut), gp::console::ConsoleResult::Success
+    );
+    EXPECT_TRUE(captured.view().contains("no mounts registered"));
+
+    // vfs.Resolve (read-only, writable, sandbox escape, missing arg)
+    captured.clear();
+    ASSERT_EQ(
+        consoleMgr.processUserConsoleInput("vfs.Resolve game://config.ini", &captureOut),
+        gp::console::ConsoleResult::Success
+    );
+    EXPECT_TRUE(captured.view().contains("Canonical: game://config.ini"));
+    EXPECT_TRUE(captured.view().contains("ReadPath :"));
+    EXPECT_TRUE(captured.view().contains("WritePath: <ReadOnlyMount>"));
+
+    captured.clear();
+    ASSERT_EQ(
+        consoleMgr.processUserConsoleInput("vfs.Resolve user://save.bin", &captureOut),
+        gp::console::ConsoleResult::Success
+    );
+    EXPECT_TRUE(captured.view().contains("WritePath:"));
+    EXPECT_FALSE(captured.view().contains("<ReadOnlyMount>"));
+
+    captured.clear();
+    ASSERT_EQ(
+        consoleMgr.processUserConsoleInput("vfs.Resolve game://../../etc/passwd", &captureOut),
+        gp::console::ConsoleResult::Success
+    );
+    EXPECT_TRUE(captured.view().contains("SandboxEscapeViolation"));
+
+    captured.clear();
+    ASSERT_EQ(consoleMgr.processUserConsoleInput("vfs.Resolve", &captureOut), gp::console::ConsoleResult::Success);
+    EXPECT_TRUE(captured.view().contains("Usage:"));
+
+    // vfs.Exists
+    captured.clear();
+    ASSERT_EQ(
+        consoleMgr.processUserConsoleInput("vfs.Exists user://save.bin", &captureOut),
+        gp::console::ConsoleResult::Success
+    );
+    EXPECT_TRUE(captured.view().contains("exists=true"));
+    EXPECT_TRUE(captured.view().contains("isFile=true"));
+
+    captured.clear();
+    ASSERT_EQ(
+        consoleMgr.processUserConsoleInput("vfs.Exists unknown://missing.bin", &captureOut),
+        gp::console::ConsoleResult::Success
+    );
+    EXPECT_TRUE(captured.view().contains("SchemeNotMounted"));
+
+    // vfs.Stat
+    captured.clear();
+    ASSERT_EQ(
+        consoleMgr.processUserConsoleInput("vfs.Stat game://config.ini", &captureOut),
+        gp::console::ConsoleResult::Success
+    );
+    EXPECT_TRUE(captured.view().contains("type=File"));
+    EXPECT_TRUE(captured.view().contains("size=8B"));   // ModOverride ("mod=2222") wins over Base ("base=1")
+
+    captured.clear();
+    ASSERT_EQ(
+        consoleMgr.processUserConsoleInput("vfs.Stat game://does_not_exist.bin", &captureOut),
+        gp::console::ConsoleResult::Success
+    );
+    EXPECT_TRUE(captured.view().contains("NotFound"));
+
+    // vfs.Ls (shallow and recursive)
+    captured.clear();
+    ASSERT_EQ(consoleMgr.processUserConsoleInput("vfs.Ls game://", &captureOut), gp::console::ConsoleResult::Success);
+    EXPECT_TRUE(captured.view().contains("game://config.ini"));
+    EXPECT_TRUE(captured.view().contains("prio=ModOverride"));
+    EXPECT_TRUE(captured.view().contains("[DIR ]"));
+    EXPECT_FALSE(captured.view().contains("patch.dat"));
+
+    captured.clear();
+    ASSERT_EQ(
+        consoleMgr.processUserConsoleInput("vfs.Ls game:// -r", &captureOut), gp::console::ConsoleResult::Success
+    );
+    EXPECT_TRUE(captured.view().contains("game://sub/patch.dat"));
+    EXPECT_TRUE(captured.view().contains("prio=Patch"));
 }
 
 }   // namespace gp::vfs::tests
