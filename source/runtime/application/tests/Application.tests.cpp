@@ -1254,14 +1254,14 @@ TEST(ApplicationVfsWiringTest, CommandLineVfsAppAndVfsLogFileUriResolution)
 
     const gp::PathBuffer expectedRoot =
         gp::platform::Paths::combine(gp::platform::Paths::tempDir(), "GPAppVfsLogUriUnitTest");
-    (void)gp::platform::FileSystem::removeDirectoryTree(expectedRoot.view());
+    gp::platform::FileSystem::removeDirectoryTree(expectedRoot.view());
 
     auto cleanup = gp::makeScopeExit(
         [&expectedRoot]() noexcept -> void
     {
         vfs::VirtualFileSystem::shutdown();
         CommandLine::shutdown();
-        (void)gp::platform::FileSystem::removeDirectoryTree(expectedRoot.view());
+        gp::platform::FileSystem::removeDirectoryTree(expectedRoot.view());
     }
     );
 
