@@ -35,7 +35,7 @@ public:
     {
         if (isValid())
         {
-            (void)close();
+            close();
         }
     }
 
@@ -59,7 +59,7 @@ public:
         {
             if (isValid())
             {
-                (void)close();
+                close();
             }
             m_descriptor = other.m_descriptor;
             other.m_descriptor = kInvalidNativeFileDescriptor;
