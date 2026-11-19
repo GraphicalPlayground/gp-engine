@@ -196,4 +196,42 @@ enum class MountAccess : gp::UInt8
     }
 }
 
+/// @brief Returns a human-readable ASCII name for a `MountPriority` tier (for diagnostics and console output).
+/// @param[in] priority The `MountPriority` tier to stringify.
+/// @return Null-terminated static string view naming the priority tier.
+[[nodiscard]] constexpr gp::StringView toString(const MountPriority priority) noexcept
+{
+    switch (priority)
+    {
+    case MountPriority::Base:
+        return "Base";
+    case MountPriority::DLC:
+        return "DLC";
+    case MountPriority::Patch:
+        return "Patch";
+    case MountPriority::ModOverride:
+        return "ModOverride";
+    case MountPriority::DeveloperOverride:
+        return "DeveloperOverride";
+    default:
+        return "Custom";
+    }
+}
+
+/// @brief Returns a human-readable ASCII name for a `MountAccess` policy (for diagnostics and console output).
+/// @param[in] access The `MountAccess` policy to stringify.
+/// @return Null-terminated static string view (`"ReadOnly"` or `"ReadWrite"`).
+[[nodiscard]] constexpr gp::StringView toString(const MountAccess access) noexcept
+{
+    switch (access)
+    {
+    case MountAccess::ReadOnly:
+        return "ReadOnly";
+    case MountAccess::ReadWrite:
+        return "ReadWrite";
+    default:
+        return "Unknown";
+    }
+}
+
 }   // namespace gp::vfs
