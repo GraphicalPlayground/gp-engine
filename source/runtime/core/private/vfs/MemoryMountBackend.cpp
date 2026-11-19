@@ -172,9 +172,8 @@ bool MemoryMountBackend::isPhysical() const noexcept
 }
 
 gp::Expected<gp::PathBuffer, VfsError>
-    MemoryMountBackend::resolvePhysicalPath(const gp::StringView relativePath) const noexcept
+    MemoryMountBackend::resolvePhysicalPath([[maybe_unused]] const gp::StringView relativePath) const noexcept
 {
-    (void)relativePath;
     return gp::makeUnexpected(VfsError::NotSupported);
 }
 
@@ -210,16 +209,12 @@ gp::Expected<gp::platform::FileStats, VfsError>
 }
 
 gp::Expected<gp::platform::FileHandle, VfsError> MemoryMountBackend::openFileHandle(
-    const gp::StringView relativePath,
-    const gp::platform::FileAccessMode access,
-    const gp::platform::FileOpenMode openMode,
-    const gp::platform::FileShareMode shareMode
+    [[maybe_unused]] const gp::StringView relativePath,
+    [[maybe_unused]] const gp::platform::FileAccessMode access,
+    [[maybe_unused]] const gp::platform::FileOpenMode openMode,
+    [[maybe_unused]] const gp::platform::FileShareMode shareMode
 ) noexcept
 {
-    (void)relativePath;
-    (void)access;
-    (void)openMode;
-    (void)shareMode;
     return gp::makeUnexpected(VfsError::NotSupported);
 }
 
