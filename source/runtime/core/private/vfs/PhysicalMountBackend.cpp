@@ -11,7 +11,7 @@ namespace gp::vfs
 
 PhysicalMountBackend::PhysicalMountBackend(const gp::StringView physicalRootDir) noexcept
 {
-    (void)setRootPath(physicalRootDir);
+    setRootPath(physicalRootDir);
 }
 
 bool PhysicalMountBackend::setRootPath(const gp::StringView physicalRootDir) noexcept
