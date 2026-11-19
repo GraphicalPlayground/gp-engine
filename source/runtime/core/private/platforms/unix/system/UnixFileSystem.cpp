@@ -455,11 +455,12 @@ namespace gp::platform::unix
 {
 
 gp::Expected<FileHandle, FileError> FileSystem::open(
-    const gp::StringView path, const FileAccessMode access, const FileOpenMode openMode, const FileShareMode shareMode
+    const gp::StringView path,
+    const FileAccessMode access,
+    const FileOpenMode openMode,
+    [[maybe_unused]] const FileShareMode shareMode
 ) noexcept
 {
-    (void)shareMode;
-
     PathBuffer posixPath{};
     if (!detail::toPosixPath(path, posixPath, false))
     {
