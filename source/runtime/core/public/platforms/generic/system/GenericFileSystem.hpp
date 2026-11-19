@@ -424,7 +424,7 @@ public:
             {
                 if (entry.stats.isReadOnly())
                 {
-                    (void)InSelf::setReadOnly(entry.path, false);
+                    InSelf::setReadOnly(entry.path, false);
                 }
                 const gp::Expected<bool, FileError> rmRes = InSelf::removeFile(entry.path);
                 if (!rmRes.hasValue())
@@ -448,7 +448,7 @@ public:
 
         if (rootStats.value().isReadOnly())
         {
-            (void)InSelf::setReadOnly(path, false);
+            InSelf::setReadOnly(path, false);
         }
         return InSelf::removeDirectory(path);
     }
@@ -660,7 +660,9 @@ public:
             InVisitor* const fn = static_cast<InVisitor*>(rawCallable);
             return (*fn)(entry);
         };
-        return InSelf::iterateDirectory(directoryPath, trampoline, &visitor);
+        return InSelf::iterateDirectory(
+            directoryPath, trampoline, const_cast<void*>(static_cast<const void*>(&visitor))
+        );
     }
 
     /// @brief Bridges any C++ callable `(const DirectoryEntry&) -> DirectoryVisitControl` to
@@ -680,7 +682,9 @@ public:
             InVisitor* const fn = static_cast<InVisitor*>(rawCallable);
             return (*fn)(entry);
         };
-        return InSelf::iterateDirectoryRecursive(directoryPath, trampoline, &visitor);
+        return InSelf::iterateDirectoryRecursive(
+            directoryPath, trampoline, const_cast<void*>(static_cast<const void*>(&visitor))
+        );
     }
 
     /// @brief Crash-safe atomic write transaction implemented on top of `InSelf` primitives (ADR-0060).
@@ -754,14 +758,14 @@ public:
                 const gp::Expected<gp::USize, FileError> writeRes = handle.write(data, sizeInBytes);
                 if (!writeRes.hasValue())
                 {
-                    (void)handle.close();
-                    (void)InSelf::removeFile(tempPath.view());
+                    handle.close();
+                    InSelf::removeFile(tempPath.view());
                     return gp::makeUnexpected(writeRes.error());
                 }
                 if (writeRes.value() != sizeInBytes)
                 {
-                    (void)handle.close();
-                    (void)InSelf::removeFile(tempPath.view());
+                    handle.close();
+                    InSelf::removeFile(tempPath.view());
                     return gp::makeUnexpected(FileError::DiskFull);
                 }
             }
@@ -769,15 +773,15 @@ public:
             const gp::Expected<bool, FileError> flushRes = handle.flush();
             if (!flushRes.hasValue())
             {
-                (void)handle.close();
-                (void)InSelf::removeFile(tempPath.view());
+                handle.close();
+                InSelf::removeFile(tempPath.view());
                 return gp::makeUnexpected(flushRes.error());
             }
 
             const gp::Expected<bool, FileError> closeRes = handle.close();
             if (!closeRes.hasValue())
             {
-                (void)InSelf::removeFile(tempPath.view());
+                InSelf::removeFile(tempPath.view());
                 return gp::makeUnexpected(closeRes.error());
             }
         }
@@ -785,7 +789,7 @@ public:
         const gp::Expected<bool, FileError> moveRes = InSelf::move(tempPath.view(), path, true);
         if (!moveRes.hasValue())
         {
-            (void)InSelf::removeFile(tempPath.view());
+            InSelf::removeFile(tempPath.view());
             return gp::makeUnexpected(moveRes.error());
         }
 
