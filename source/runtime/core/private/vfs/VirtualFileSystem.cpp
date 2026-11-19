@@ -3,7 +3,12 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "vfs/VirtualFileSystem.hpp"
+#include "console/AutoConsoleVariable.hpp"
+#include "console/ConsoleEnums.hpp"
+#include "console/ConsoleTypes.hpp"
+#include "containers/strings/FixedString.hpp"
 #include "hashing/Fnv1a.hpp"
+#include "logging/LogFormatter.hpp"
 #include "platforms/base/system/Paths.hpp"
 #include "threading/sync/SharedLock.hpp"
 #include "threading/sync/SharedMutex.hpp"
@@ -686,6 +691,90 @@ gp::USize VirtualFileSystem::getMountCount(const gp::StringView scheme) noexcept
         }
     }
     return count;
+}
+
+gp::USize VirtualFileSystem::enumerateMounts(
+    const gp::StringView scheme, const MountPointVisitorFn visitor, void* const userData
+) noexcept
+{
+    if (visitor == nullptr)
+    {
+        return 0u;
+    }
+
+    SchemeBuffer normScheme{};
+    if (!scheme.isEmpty() && !normalizeScheme(scheme, normScheme))
+    {
+        return 0u;
+    }
+
+    detail::VfsGlobalState& state = detail::getState();
+    const gp::thread::SharedLock<gp::thread::SharedMutex> lock(state.mutex);
+
+    gp::USize matchingIndices[kMaxMountPoints]{};
+    gp::USize count = 0u;
+    for (gp::USize i = 0u; i < kMaxMountPoints; ++i)
+    {
+        if (state.mounts[i].active && state.mounts[i].backend != nullptr)
+        {
+            if (normScheme.isEmpty() || state.mounts[i].scheme.view() == normScheme.view())
+            {
+                matchingIndices[count] = i;
+                ++count;
+            }
+        }
+    }
+
+    // Sort deterministically by ascending scheme name, then descending priority, then descending registration order.
+    for (gp::USize i = 1u; i < count; ++i)
+    {
+        const gp::USize keyIdx = matchingIndices[i];
+        const detail::MountTableSlot& keySlot = state.mounts[keyIdx];
+        const gp::UInt16 keyPrio = static_cast<gp::UInt16>(keySlot.priority);
+
+        gp::USize j = i;
+        while (j > 0u)
+        {
+            const gp::USize prevIdx = matchingIndices[j - 1u];
+            const detail::MountTableSlot& prevSlot = state.mounts[prevIdx];
+            const gp::Int32 schemeCmp = keySlot.scheme.view().compare(prevSlot.scheme.view());
+            const gp::UInt16 prevPrio = static_cast<gp::UInt16>(prevSlot.priority);
+
+            const bool shouldComeBefore =
+                (schemeCmp < 0) ||
+                (schemeCmp == 0 && (keyPrio > prevPrio ||
+                                    (keyPrio == prevPrio && keySlot.registrationOrder > prevSlot.registrationOrder)));
+            if (shouldComeBefore)
+            {
+                matchingIndices[j] = prevIdx;
+                --j;
+            }
+            else
+            {
+                break;
+            }
+        }
+        matchingIndices[j] = keyIdx;
+    }
+
+    gp::USize visited = 0u;
+    MountPointDesc desc{};
+    for (gp::USize i = 0u; i < count; ++i)
+    {
+        const detail::MountTableSlot& slot = state.mounts[matchingIndices[i]];
+        desc.scheme.assign(slot.scheme.view());
+        desc.rootPath.assign(slot.backend->rootPath());
+        desc.priority = slot.priority;
+        desc.access = slot.access;
+
+        ++visited;
+        if (!visitor(desc, userData))
+        {
+            break;
+        }
+    }
+
+    return visited;
 }
 
 gp::Expected<gp::PathBuffer, VfsError> VirtualFileSystem::resolvePhysicalPath(const gp::StringView uri) noexcept
@@ -1614,5 +1703,292 @@ gp::Expected<bool, VfsError>
 {
     return writeAtomic(uri, text.data(), text.size());
 }
+
+namespace
+{
+
+/// @brief Maximum entries emitted by a single `vfs.Ls` console command invocation to avoid terminal flooding.
+constexpr gp::USize kMaxConsoleLsEntries = 256u;
+
+gp::console::AutoConsoleCommand g_cmdVfsStatus(
+    "vfs.Status",
+    "Prints active VirtualFileSystem mount counts across the canonical ADR-0044 URI schemes.",
+    [](const gp::console::ConsoleCommandArgs& args) noexcept -> void
+{
+    gp::FixedString<383> line{};
+    gp::log::formatTo(
+        line,
+        "VFS[total={}/{}] engine={} game={} user={} appdata={} cache={} temp={}",
+        VirtualFileSystem::getMountCount(),
+        kMaxMountPoints,
+        VirtualFileSystem::getMountCount(kEngineScheme),
+        VirtualFileSystem::getMountCount(kGameScheme),
+        VirtualFileSystem::getMountCount(kUserScheme),
+        VirtualFileSystem::getMountCount(kAppDataScheme),
+        VirtualFileSystem::getMountCount(kCacheScheme),
+        VirtualFileSystem::getMountCount(kTempScheme)
+    );
+    args.writeLine(line.view());
+},
+    gp::console::ConsoleVarFlags::None
+);
+
+gp::console::AutoConsoleCommand g_cmdVfsMounts(
+    "vfs.Mounts",
+    "Lists active VFS mount points in lookup precedence order. Usage: vfs.Mounts [scheme]",
+    [](const gp::console::ConsoleCommandArgs& args) noexcept -> void
+{
+    const gp::StringView schemeFilter = (args.getArgCount() >= 1u) ? args.getArg(0u) : gp::StringView{};
+    const gp::USize totalMatches = VirtualFileSystem::getMountCount(schemeFilter);
+
+    gp::FixedString<511> line{};
+    if (totalMatches == 0u)
+    {
+        if (schemeFilter.isEmpty())
+        {
+            args.writeLine("VFS Mounts: none registered.");
+        }
+        else
+        {
+            gp::log::formatTo(line, "VFS Mounts: no mounts registered for '{}'.", schemeFilter);
+            args.writeLine(line.view());
+        }
+        return;
+    }
+
+    if (schemeFilter.isEmpty())
+    {
+        gp::log::formatTo(line, "VFS Mounts ({} active):", totalMatches);
+    }
+    else
+    {
+        gp::log::formatTo(line, "VFS Mounts for '{}' ({} active):", schemeFilter, totalMatches);
+    }
+    args.writeLine(line.view());
+
+    gp::USize index = 0u;
+    VirtualFileSystem::enumerateMounts(
+        schemeFilter,
+        [&args, &index](const MountPointDesc& desc) noexcept -> bool
+    {
+        gp::FixedString<511> entryLine{};
+        gp::log::formatTo(
+            entryLine,
+            "  [{}] {} | prio={}({}) | access={} | root={}",
+            index,
+            desc.scheme.view(),
+            toString(desc.priority),
+            static_cast<gp::UInt32>(desc.priority),
+            toString(desc.access),
+            desc.rootPath.view()
+        );
+        args.writeLine(entryLine.view());
+        ++index;
+        return true;
+    }
+    );
+},
+    gp::console::ConsoleVarFlags::None
+);
+
+gp::console::AutoConsoleCommand g_cmdVfsResolve(
+    "vfs.Resolve",
+    "Parses a logical VFS URI and resolves its read and writable physical OS paths. Usage: vfs.Resolve <uri>",
+    [](const gp::console::ConsoleCommandArgs& args) noexcept -> void
+{
+    if (args.getArgCount() < 1u)
+    {
+        args.writeLine("Usage: vfs.Resolve <uri>  (e.g., vfs.Resolve user://saves/slot01.sav)");
+        return;
+    }
+
+    const gp::StringView uri = args.getArg(0u);
+    const gp::Expected<ParsedUri, VfsError> parsed = VirtualFileSystem::parseUri(uri);
+    gp::FixedString<511> line{};
+    if (!parsed.hasValue())
+    {
+        gp::log::formatTo(line, "Resolve '{}': error={}", uri, toString(parsed.error()));
+        args.writeLine(line.view());
+        return;
+    }
+
+    gp::log::formatTo(line, "Canonical: {}{}", parsed.value().scheme.view(), parsed.value().relativePath.view());
+    args.writeLine(line.view());
+
+    const gp::Expected<gp::PathBuffer, VfsError> readRes = VirtualFileSystem::resolvePhysicalPath(uri);
+    line.clear();
+    if (readRes.hasValue())
+    {
+        gp::log::formatTo(line, "  ReadPath : {}", readRes.value().view());
+    }
+    else
+    {
+        gp::log::formatTo(line, "  ReadPath : <{}>", toString(readRes.error()));
+    }
+    args.writeLine(line.view());
+
+    const gp::Expected<gp::PathBuffer, VfsError> writeRes = VirtualFileSystem::resolveWritablePhysicalPath(uri);
+    line.clear();
+    if (writeRes.hasValue())
+    {
+        gp::log::formatTo(line, "  WritePath: {}", writeRes.value().view());
+    }
+    else
+    {
+        gp::log::formatTo(line, "  WritePath: <{}>", toString(writeRes.error()));
+    }
+    args.writeLine(line.view());
+},
+    gp::console::ConsoleVarFlags::None
+);
+
+gp::console::AutoConsoleCommand g_cmdVfsExists(
+    "vfs.Exists",
+    "Checks whether a logical VFS URI exists and reports whether it is a file or directory. Usage: vfs.Exists <uri>",
+    [](const gp::console::ConsoleCommandArgs& args) noexcept -> void
+{
+    if (args.getArgCount() < 1u)
+    {
+        args.writeLine("Usage: vfs.Exists <uri>  (e.g., vfs.Exists game://configs/default.ini)");
+        return;
+    }
+
+    const gp::StringView uri = args.getArg(0u);
+    const gp::Expected<ParsedUri, VfsError> parsed = VirtualFileSystem::parseUri(uri);
+    gp::FixedString<511> line{};
+    if (!parsed.hasValue())
+    {
+        gp::log::formatTo(line, "Exists '{}': error={}", uri, toString(parsed.error()));
+        args.writeLine(line.view());
+        return;
+    }
+
+    if (!VirtualFileSystem::isSchemeMounted(parsed.value().scheme.view()))
+    {
+        gp::log::formatTo(line, "Exists '{}': error={}", uri, toString(VfsError::SchemeNotMounted));
+        args.writeLine(line.view());
+        return;
+    }
+
+    const bool exists = VirtualFileSystem::exists(uri);
+    const bool isFile = exists && VirtualFileSystem::isFile(uri);
+    const bool isDir = exists && VirtualFileSystem::isDirectory(uri);
+    gp::log::formatTo(line, "Exists '{}': exists={} isFile={} isDirectory={}", uri, exists, isFile, isDir);
+    args.writeLine(line.view());
+},
+    gp::console::ConsoleVarFlags::None
+);
+
+gp::console::AutoConsoleCommand g_cmdVfsStat(
+    "vfs.Stat",
+    "Prints size, attributes, and timestamps for a logical VFS URI. Usage: vfs.Stat <uri>",
+    [](const gp::console::ConsoleCommandArgs& args) noexcept -> void
+{
+    if (args.getArgCount() < 1u)
+    {
+        args.writeLine("Usage: vfs.Stat <uri>  (e.g., vfs.Stat user://saves/slot01.sav)");
+        return;
+    }
+
+    const gp::StringView uri = args.getArg(0u);
+    const gp::Expected<gp::platform::FileStats, VfsError> statRes = VirtualFileSystem::getStats(uri);
+    gp::FixedString<511> line{};
+    if (!statRes.hasValue())
+    {
+        gp::log::formatTo(line, "Stat '{}': error={}", uri, toString(statRes.error()));
+        args.writeLine(line.view());
+        return;
+    }
+
+    const gp::platform::FileStats& stats = statRes.value();
+    const gp::StringView typeStr = stats.isDirectory() ? "Directory" : (stats.isFile() ? "File" : "Other");
+    gp::log::formatTo(
+        line,
+        "Stat '{}': type={} size={}B readOnly={} hidden={} symLink={} createdNs={} modifiedNs={} accessedNs={}",
+        uri,
+        typeStr,
+        stats.size,
+        stats.isReadOnly(),
+        stats.isHidden(),
+        stats.isSymbolicLink(),
+        stats.creationTime.nanoseconds,
+        stats.lastWriteTime.nanoseconds,
+        stats.lastAccessTime.nanoseconds
+    );
+    args.writeLine(line.view());
+},
+    gp::console::ConsoleVarFlags::None
+);
+
+gp::console::AutoConsoleCommand g_cmdVfsLs(
+    "vfs.Ls",
+    "Lists merged VFS directory entries in overlay priority order. Usage: vfs.Ls <uri> [-r]",
+    [](const gp::console::ConsoleCommandArgs& args) noexcept -> void
+{
+    if (args.getArgCount() < 1u)
+    {
+        args.writeLine("Usage: vfs.Ls <uri> [-r]  (e.g., vfs.Ls game:// -r)");
+        return;
+    }
+
+    const gp::StringView uri = args.getArg(0u);
+    bool recursive = false;
+    if (args.getArgCount() >= 2u)
+    {
+        const gp::StringView flag = args.getArg(1u);
+        recursive = flag.equalsIgnoreCase("-r") || flag.equalsIgnoreCase("--recursive");
+    }
+
+    gp::USize printedCount = 0u;
+    bool truncated = false;
+    const auto visitor = [&args,
+                          &printedCount,
+                          &truncated](const VfsDirectoryEntry& entry) noexcept -> gp::platform::DirectoryVisitControl
+    {
+        if (printedCount >= kMaxConsoleLsEntries)
+        {
+            truncated = true;
+            return gp::platform::DirectoryVisitControl::Stop;
+        }
+
+        const gp::StringView kindTag = entry.isDirectory() ? "[DIR ]" : "[FILE]";
+        gp::FixedString<511> entryLine{};
+        gp::log::formatTo(
+            entryLine,
+            "  {} {:10}B | prio={} | {}",
+            kindTag,
+            entry.stats.size,
+            toString(entry.sourcePriority),
+            entry.uri
+        );
+        args.writeLine(entryLine.view());
+        ++printedCount;
+        return gp::platform::DirectoryVisitControl::Continue;
+    };
+
+    const gp::Expected<bool, VfsError> iterRes = recursive ? VirtualFileSystem::iterateDirectoryRecursive(uri, visitor)
+                                                           : VirtualFileSystem::iterateDirectory(uri, visitor);
+    gp::FixedString<511> summary{};
+    if (!iterRes.hasValue())
+    {
+        gp::log::formatTo(summary, "Ls '{}': error={}", uri, toString(iterRes.error()));
+        args.writeLine(summary.view());
+        return;
+    }
+
+    if (truncated)
+    {
+        gp::log::formatTo(summary, "... (truncated at {} entries)", kMaxConsoleLsEntries);
+    }
+    else
+    {
+        gp::log::formatTo(summary, "Total: {} entries", printedCount);
+    }
+    args.writeLine(summary.view());
+},
+    gp::console::ConsoleVarFlags::None
+);
+
+}   // namespace
 
 }   // namespace gp::vfs
