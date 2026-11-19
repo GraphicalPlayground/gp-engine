@@ -13,9 +13,10 @@ gpStartThirdparty("openal" VERSION "1.25.3")
   )
 
   gpThirdpartySource(
-    URL    "https://github.com/kcat/openal-soft/archive/dc98bfbe6064d851e32428db83b06732a448810b.tar.gz"
-    HASH   "SHA256=af1096b79f488724ca068a9d3632f05eb56897c6d3ce0984c946ece512ddb020"
-    TARGET "OpenAL"
+    URL           "https://github.com/kcat/openal-soft/archive/dc98bfbe6064d851e32428db83b06732a448810b.tar.gz"
+    HASH          "SHA256=af1096b79f488724ca068a9d3632f05eb56897c6d3ce0984c946ece512ddb020"
+    TARGET        "OpenAL"
+    PATCH_COMMAND git --git-dir= apply "${CMAKE_CURRENT_SOURCE_DIR}/patches/fix_msvc_unique_ptr_transform.patch"
   )
 
   gpThirdpartySetCMakeArgs(
