@@ -82,42 +82,6 @@ GP_COLD void SharedMutex::lockSlow() noexcept
         else
         {
             (void)gp::platform::Futex::waitOnAddress(m_state, expected);
-
-            // After waking from futex, preserve kSharedMutexWriterWaitingBit when claiming exclusive ownership so
-            // any additional parked writers are woken when we subsequently unlock().
-            for (;;)
-            {
-                gp::UInt32 cur = m_state.load(gp::MemoryOrder::Relaxed);
-                if ((cur & (kSharedMutexWriterLockedBit | kSharedMutexReaderCountMask)) == 0u)
-                {
-                    if (m_state.compareExchangeWeak(
-                            cur,
-                            cur | kSharedMutexWriterLockedBit | kSharedMutexWriterWaitingBit,
-                            gp::MemoryOrder::Acquire,
-                            gp::MemoryOrder::Relaxed
-                        ))
-                    {
-#if GP_DO_CHECK
-                        Fiber::adjustActiveNonYieldingLockCount(1);
-#endif
-                        return;
-                    }
-                    continue;
-                }
-
-                if ((cur & kSharedMutexWriterWaitingBit) == 0u)
-                {
-                    if (!m_state.compareExchangeWeak(
-                            cur, cur | kSharedMutexWriterWaitingBit, gp::MemoryOrder::Relaxed, gp::MemoryOrder::Relaxed
-                        ))
-                    {
-                        continue;
-                    }
-                    cur |= kSharedMutexWriterWaitingBit;
-                }
-
-                (void)gp::platform::Futex::waitOnAddress(m_state, cur);
-            }
         }
     }
 }
@@ -127,30 +91,26 @@ GP_COLD void SharedMutex::unlockSlow() noexcept
     gp::UInt32 expected = m_state.load(gp::MemoryOrder::Relaxed);
     for (;;)
     {
-        if ((expected & kSharedMutexWriterWaitingBit) != 0u)
+        const gp::UInt32 waitBits = expected & (kSharedMutexWriterWaitingBit | kSharedMutexReaderWaitingBit);
+        if (waitBits == 0u)
         {
-            const gp::UInt32 desired = expected & ~kSharedMutexWriterWaitingBit;
-            if (m_state.compareExchangeWeak(expected, desired, gp::MemoryOrder::Release, gp::MemoryOrder::Relaxed))
-            {
-                gp::platform::Futex::wakeOne(m_state);
-                return;
-            }
-            continue;
+            return;
         }
 
-        if ((expected & kSharedMutexReaderWaitingBit) != 0u)
+        const gp::UInt32 desired = expected & ~(kSharedMutexWriterWaitingBit | kSharedMutexReaderWaitingBit);
+        if (m_state.compareExchangeWeak(expected, desired, gp::MemoryOrder::Release, gp::MemoryOrder::Relaxed))
         {
-            const gp::UInt32 desired = expected & ~kSharedMutexReaderWaitingBit;
-            if (m_state.compareExchangeWeak(expected, desired, gp::MemoryOrder::Release, gp::MemoryOrder::Relaxed))
+            if ((waitBits & kSharedMutexWriterWaitingBit) != 0u)
+            {
+                gp::platform::Futex::wakeAll(m_state);
+            }
+            if ((waitBits & kSharedMutexReaderWaitingBit) != 0u)
             {
                 m_readerWakeEpoch.fetchAdd(1u, gp::MemoryOrder::Release);
                 gp::platform::Futex::wakeAll(m_readerWakeEpoch);
-                return;
             }
-            continue;
+            return;
         }
-
-        return;
     }
 }
 
@@ -235,13 +195,26 @@ GP_COLD void SharedMutex::lockSharedSlow() noexcept
 GP_COLD void SharedMutex::unlockSharedSlow() noexcept
 {
     gp::UInt32 expected = m_state.load(gp::MemoryOrder::Relaxed);
-    while ((expected & kSharedMutexReaderCountMask) == 0u && (expected & kSharedMutexWriterWaitingBit) != 0u)
+    while ((expected & (kSharedMutexWriterLockedBit | kSharedMutexReaderCountMask)) == 0u)
     {
-        if (m_state.compareExchangeWeak(
-                expected, expected & ~kSharedMutexWriterWaitingBit, gp::MemoryOrder::Release, gp::MemoryOrder::Relaxed
-            ))
+        const gp::UInt32 waitBits = expected & (kSharedMutexWriterWaitingBit | kSharedMutexReaderWaitingBit);
+        if (waitBits == 0u)
         {
-            gp::platform::Futex::wakeOne(m_state);
+            return;
+        }
+
+        const gp::UInt32 desired = expected & ~(kSharedMutexWriterWaitingBit | kSharedMutexReaderWaitingBit);
+        if (m_state.compareExchangeWeak(expected, desired, gp::MemoryOrder::Release, gp::MemoryOrder::Relaxed))
+        {
+            if ((waitBits & kSharedMutexWriterWaitingBit) != 0u)
+            {
+                gp::platform::Futex::wakeAll(m_state);
+            }
+            if ((waitBits & kSharedMutexReaderWaitingBit) != 0u)
+            {
+                m_readerWakeEpoch.fetchAdd(1u, gp::MemoryOrder::Release);
+                gp::platform::Futex::wakeAll(m_readerWakeEpoch);
+            }
             return;
         }
     }
