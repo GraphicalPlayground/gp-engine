@@ -42,7 +42,7 @@ protected:
         m_sandboxRoot = Paths::combine(Paths::tempDir(), folderName.view());
         if (FileSystem::exists(m_sandboxRoot.view()))
         {
-            (void)FileSystem::removeDirectoryTree(m_sandboxRoot.view());
+            FileSystem::removeDirectoryTree(m_sandboxRoot.view());
         }
         const gp::Expected<bool, FileError> createRes = FileSystem::createDirectoryTree(m_sandboxRoot.view());
         ASSERT_TRUE(createRes.hasValue());
@@ -52,7 +52,7 @@ protected:
     {
         if (!m_sandboxRoot.isEmpty() && FileSystem::exists(m_sandboxRoot.view()))
         {
-            (void)FileSystem::removeDirectoryTree(m_sandboxRoot.view());
+            FileSystem::removeDirectoryTree(m_sandboxRoot.view());
         }
     }
 };
@@ -399,9 +399,8 @@ TEST_F(FileSystemTest, ZeroAllocationDirectoryIterationAndRecursiveSkipAndStopCo
     gp::UInt32 lambdaVisited = 0u;
     const gp::Expected<bool, FileError> stopRes = FileSystem::iterateDirectoryRecursive(
         m_sandboxRoot.view(),
-        [&lambdaVisited](const DirectoryEntry& entry) -> DirectoryVisitControl
+        [&lambdaVisited](const DirectoryEntry&) -> DirectoryVisitControl
     {
-        (void)entry;
         ++lambdaVisited;
         return (lambdaVisited == 2u) ? DirectoryVisitControl::Stop : DirectoryVisitControl::Continue;
     }
@@ -540,7 +539,7 @@ TEST_F(FileSystemTest, ConcurrentWriteAtomicAndEmptyFileEdgeCases)
                 // On Windows, simultaneous MoveFileExW replace over the same file can transiently return
                 // AccessDenied/SharingViolation under extreme contention; what matters is zero corruption and
                 // zero leaked .tmp.* files.
-                (void)FileSystem::writeAtomicText(sharedSave.view(), chosen);
+                FileSystem::writeAtomicText(sharedSave.view(), chosen);
 
                 gp::String snapshot{};
                 const gp::Expected<gp::USize, FileError> r = FileSystem::readAllText(sharedSave.view(), snapshot);
