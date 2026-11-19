@@ -15,6 +15,7 @@
 #include "miscellaneous/CommandLine.hpp"
 #include "profiling/Profiler.hpp"
 #include "profiling/ProfilingControl.hpp"
+#include "vfs/VirtualFileSystem.hpp"
 #include <cstdio>
 
 namespace gp
@@ -60,6 +61,14 @@ protected:
     {
         GP_PROFILE_SCOPE_NC_ACTIVE(
             "EditorApplication::OnInitialize", GP_U32_COLOR_PURPLE, profiling::ProfilingControl::isZonesEnabled()
+        );
+
+        // TODO(vfs): Mount editor-only content schemes here (e.g., `editor://` pointing to the editor resources root,
+        //            plus any active project or developer override layers) once the editor asset directory layout is
+        //            defined. The six base ADR-0044 schemes (`engine://`, `game://`, `user://`, `appdata://`,
+        //            `cache://`, `temp://`) are already mounted by `Application::initializeInternal()`.
+        GP_LOG_INFO(
+            LogEditor, "VirtualFileSystem Ready ({} active mounts).", gp::vfs::VirtualFileSystem::getMountCount()
         );
 
         const gp::console::IConsoleManager& consoleMgr = getConsoleManager();
@@ -127,7 +136,7 @@ private:
         std::fputs(
             "\n========================================================\n"
             "  [TEMP] Console Stdin Shell Active\n"
-            "  Examples: help | cvar.list | cvar.dump | prof.Status | log.Stats | app.Stats | jobs.Stats\n"
+            "  Examples: help | cvar.list | cvar.dump | prof.Status | log.Stats | app.Stats | jobs.Stats | vfs.Status | vfs.Mounts\n"
             "  Set CVar: t.TimeScale 0.5  |  app.TargetFps=60  |  log.GlobalLevel Warning\n"
             "  Commands: 'resume' (or Enter) returns to gp-editor | 'quit' / 'app.Quit' exits\n"
             "========================================================\n",
