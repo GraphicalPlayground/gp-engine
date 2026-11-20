@@ -190,6 +190,7 @@ coverage/
 # Documentation Generated
 # ====================
 docs/html/
+docs/xml/
 docs/latex/
 Doxyfile.bak
 
