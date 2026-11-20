@@ -199,6 +199,7 @@
       "de": "i18n",
       "zh-cn": "i18n",
       "traits": "rules",
+      "doxygen": "docs",
       "mimalloc": "migrations",
       "rapidjson": "json",
       "tbb": "migrations",
@@ -392,6 +393,11 @@
     "[shellscript]": {
       "editor.tabSize": 2
     },
+    "[css]": {
+      "editor.tabSize": 2,
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
     /* Git Settings */
     "git.addAICoAuthor": "off",
     "git.autofetch": true,
@@ -404,6 +410,7 @@
       "comments": false,
       "strings": false
     },
+    /* Chat Settings */
     "chat.titleBar.openInAgentsWindow.enabled": false
   },
   "extensions": {
@@ -431,7 +438,8 @@
       "me-dutour-mathieu.vscode-github-actions",
       /* Other */
       "FanaticPythoner.better-todo-tree",
-      "willasm.rc-script"
+      "willasm.rc-script",
+      "esbenp.prettier-vscode"
     ],
     "unwantedRecommendations": [
       /* Conflicts with Clangd */
