@@ -215,7 +215,11 @@
       "sync": "ci",
       "lists": "queue",
       "sinks": "filter",
-      "hashing": "secure"
+      "hashing": "secure",
+      "manifest": "meta",
+      "actions": "tasks",
+      "fetchcontent": "packages",
+      "clangd": "assembly"
     },
     /* File Associations */
     "files.associations": {
@@ -412,7 +416,8 @@
       "github.vscode-github-actions",
       "me-dutour-mathieu.vscode-github-actions",
       /* Other */
-      "FanaticPythoner.better-todo-tree"
+      "FanaticPythoner.better-todo-tree",
+      "willasm.rc-script"
     ],
     "unwantedRecommendations": [
       /* Conflicts with Clangd */
