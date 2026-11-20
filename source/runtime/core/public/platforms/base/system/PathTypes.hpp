@@ -5,7 +5,7 @@
 #pragma once
 
 #include "containers/strings/FixedString.hpp"
-#include "containers/views/StringView.hpp"
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 
 namespace gp::platform

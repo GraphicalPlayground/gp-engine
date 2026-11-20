@@ -367,6 +367,14 @@ Hardware Abstraction Layer (HAL).
   > and mod override layers, to logical URI schemes (`engine://`, `game://`, `user://`,
   > `appdata://`, `cache://`, `temp://`), isolating gameplay, shader, and asset streaming code from
   > physical disk layouts and console sandbox partitions.
+- [**ADR-0060**: Zero-Allocation OS `FileHandle`, Positional `readAt`/`writeAt`, Atomic Writes, and
+  Stack Directory Iteration in `gp::platform::FileSystem`](./ADR-0060.md)
+  > Establishes `gp::platform::FileSystem` and `gp::platform::FileHandle` in `gp::core` as the
+  > Layer 0 zero-heap-allocation OS file and directory I/O subsystem, pairing non-polymorphic RAII
+  > OS file descriptors with lock-free positional I/O (`pread`/`pwrite` and Win32 `OVERLAPPED`
+  > offsets), crash-safe atomic write-and-rename transactions (`writeAtomic`), and zero-allocation
+  > stack-buffered directory tree traversal (`iterateDirectory`) below Layer 1
+  > `gp::vfs::VirtualFileSystem` ([ADR-0044](./ADR-0044.md)).
 
 ### Concurrency & Event Routing
 
