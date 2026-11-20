@@ -31,6 +31,20 @@
       "sanitizer.ignorelist": "lintstaged",
       "*.natvis": "subtitles"
     },
+    "material-icon-theme.files.customClones": [
+      {
+        "base": "hpp",
+        "fileExtensions": ["hpp", "hxx", "h++", "hh"],
+        "name": "hpp",
+        "color": "#9976BF"
+      },
+      {
+        "base": "hpp",
+        "fileExtensions": ["inl"],
+        "name": "inl",
+        "color": "#FFD700"
+      }
+    ],
     "material-icon-theme.folders.customClones": [
       {
         "base": "private",
