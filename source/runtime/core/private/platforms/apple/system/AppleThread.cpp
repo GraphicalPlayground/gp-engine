@@ -105,7 +105,7 @@ namespace detail
 {
     if (name != nullptr && name[0] != '\0')
     {
-        (void)::pthread_setname_np(name);
+        ::pthread_setname_np(name);
     }
     return Thread::currentThreadId();
 }
@@ -251,7 +251,7 @@ ThreadId Thread::currentThreadId() noexcept
     if (s_cachedTid == 0ULL) [[unlikely]]
     {
         gp::UInt64 tid = 0ULL;
-        (void)::pthread_threadid_np(nullptr, &tid);
+        ::pthread_threadid_np(nullptr, &tid);
         s_cachedTid = static_cast<ThreadId>(tid);
     }
     return s_cachedTid;

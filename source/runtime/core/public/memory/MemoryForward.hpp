@@ -35,6 +35,8 @@ class AlignedHeapAllocator;
 class LinearAllocator;
 class StackAllocator;
 class PoolAllocator;
+class PagePool;
+class PagedLinearAllocator;
 
 template <gp::USize InCapacityBytes, gp::UInt32 InAlignment>
 class FixedBufferAllocator;
@@ -45,6 +47,11 @@ class InlineAllocator;
 class ThreadScratchArena;
 class ThreadScratchAllocator;
 class ScopedScratchMark;
+
+class FiberScratchArena;
+class FiberScratchAllocator;
+class ScopedFiberScratchMark;
+class ScopedFiberArenaBind;
 
 template <typename InInnerAllocator>
 class TaggedAllocator;
@@ -77,11 +84,17 @@ class IRefCounted;
 template <typename T, typename Deleter>
 class UniquePtr;
 
-template <typename T>
+template <typename InElementType, RefCountThreadSafety InMode>
+class SharedRef;
+
+template <typename InElementType, RefCountThreadSafety InMode>
 class SharedPtr;
 
-template <typename T>
+template <typename InElementType, RefCountThreadSafety InMode>
 class WeakPtr;
+
+template <typename InElementType, RefCountThreadSafety InMode>
+class SharedFromThis;
 
 template <typename InElementType, typename InPolicy>
 class RefCountedPtr;

@@ -14,18 +14,17 @@
 
 ## Overview
 
-The **Architectural Decision Records (ADRs)** directory documents the foundational engineering
-choices that shape the `gp-engine`.
+The Architectural Decision Records (ADRs) directory documents the engineering choices that shape
+`gp-engine`.
 
-Because `gp-engine` is built around a Deconstructionist Pedagogy, the why is just as critical as
-the how. These records serve as a permanent, educational ledger of the trade-offs, constraints,
-and AAA standards that informed our architecture. They explain why we enforce strict physical
-module boundaries, why we reject the STL in favor of custom memory-safe structures, and how we
-progressively abstract complex OS and hardware realities without hiding them behind a black box.
+Because `gp-engine` follows a deconstructive pedagogy, the why matters as much as the how. These
+records are a permanent ledger of the trade-offs, constraints, and AAA precedents behind the
+architecture. They explain why the codebase enforces physical module boundaries, why it avoids
+allocating STL containers in favor of custom memory-safe structures, and how it abstracts OS and
+hardware details without hiding them.
 
-Each ADR acts as an immutable contract for the codebase. If you are learning the engine,
-contributing a new module, or simply studying modern engine architecture, this index is your map to
-the engine's DNA.
+Each ADR is an immutable contract for the codebase. Whether you are learning the engine, adding a
+module, or studying engine architecture, this index lists every decision by subsystem.
 
 ## ADR Index
 
@@ -34,25 +33,25 @@ the engine's DNA.
 These records define the physical layout of the repository, the declarative build system, and the
 strict visibility rules that prevent the codebase from becoming a tangled "ball of mud."
 
-- [**ADR-0001**: Adoption of Public/Private/Internal Directory Discipline for Modules](./ADR-0001.md)
-  > Establishes a strict three-tier directory structure (`public/`, `private/`, `internal/`)
-  > mechanically enforced by the build system to guarantee module encapsulation and prevent
-  > uncontrolled dependencies.
-- [**ADR-0003**: CMake as Build Generator with GPBT as Declarative Orchestration Layer](./ADR-0003.md)
-  > Adopts CMake as the foundational build system paired with a custom declarative orchestration
-  > layer (GPBT) to enable discovery-order independence and mechanical enforcement of module
-  > visibility.
+- [**ADR-0001**: Adoption of Public/Private/Internal Directory Discipline for Modules](
+  ./ADR-0001.md)
+  > Establishes a three-tier directory structure (`public/`, `private/`, `internal/`) enforced by
+  > the build system to isolate module internals and prevent uncontrolled dependencies.
+- [**ADR-0003**: CMake as Build Generator with GPBT as Declarative Orchestration Layer](
+  ./ADR-0003.md)
+  > Adopts CMake as the build generator paired with a declarative orchestration layer (GPBT) to
+  > enable discovery-order independence and enforce module visibility.
 - [**ADR-0004**: Lifecycle Separation via Top-Level Source Directories](./ADR-0004.md)
-  > Segregates the `source/` tree into distinct top-level directories (`runtime/`, `developer/`,
-  > `launch/`, etc.) that strictly encode build-lifecycle rules, ensuring tooling and editor code
-  > never leak into shipping game binaries.
+  > Splits the `source/` tree into top-level directories (`runtime/`, `developer/`, `launch/`, etc.)
+  > that encode build-lifecycle rules so tooling and editor code stay out of shipping game binaries.
 - [**ADR-0005**: Monorepo Layout and Repository Root Conventions](./ADR-0005.md)
-  > Defines a strict five-folder monorepo layout and establishes `lower-kebab-case` directory naming
-  > conventions to maintain a clean repository root and reduce onboarding friction.
+  > Defines a five-folder monorepo layout and establishes `lower-kebab-case` directory naming
+  > conventions to keep the repository root clean and reduce onboarding friction.
 - [**ADR-0008**: GPBT Extracted to an Independent, Versioned Repository](./ADR-0008.md)
-  > Extracts the custom GPBT build tool into a standalone, version-controlled repository linked as a
-  > Git submodule, decoupling its release cadence from the main engine.
-- [**ADR-0041**: Three-Tier Engine Bootstrapping Topology (`gp::core`, `gp::application`, `gp::launch`)](./ADR-0041.md)
+  > Extracts the GPBT build tool into a standalone, version-controlled repository linked as a Git
+  > submodule, decoupling its release cadence from the main engine.
+- [**ADR-0041**: Three-Tier Engine Bootstrapping Topology (`gp::core`, `gp::application`,
+  `gp::launch`)](./ADR-0041.md)
   > Enforces a strict upward Directed Acyclic Graph (DAG) separating foundational OS primitives
   > (`gp::core`), the hot-reloadable runtime orchestrator (`gp::application`), and the static
   > executable entry-point shell (`gp::launch`) so low-level subsystems can query boot parameters
@@ -63,14 +62,14 @@ strict visibility rules that prevent the codebase from becoming a tangled "ball 
 These records dictate how pluralistic systems (like rendering, audio, and physics) are designed to
 support multiple APIs while maintaining a single, unified interface for the engine.
 
-- [**ADR-0002**: Abstracted Rendering Hardware Interface (RHI) with Runtime-Loaded Backends](./ADR-0002.md)
-  > Mandates a `base/` plus N-backends decomposition for the Rendering Hardware Interface, ensuring
-  > concrete graphics APIs (Vulkan, D3D12, Metal) are loaded as dynamic plugins at runtime to
-  > eliminate compile-time coupling.
+- [**ADR-0002**: Abstracted Rendering Hardware Interface (RHI) with Runtime-Loaded Backends](
+  ./ADR-0002.md)
+  > Mandates a `base/` plus N-backends split for the Rendering Hardware Interface so concrete
+  > graphics APIs (Vulkan, D3D12, Metal) load as dynamic plugins at runtime without compile-time
+  > coupling.
 - [**ADR-0006**: Co-Located Documentation, Tests, and Benchmarks per Module](./ADR-0006.md)
   > Rejects satellite test directories in favor of co-locating tests, benchmarks, and documentation
-  > directly inside each module to ensure these assets scale and refactor atomically with the code
-  > they describe.
+  > inside each module so these assets move and refactor atomically with the code they describe.
 - [**ADR-0007**: Uniform Base+N-Backends Pattern for All Pluralistic Subsystems](./ADR-0007.md)
   > Generalizes the abstract RHI structure to all pluralistic subsystems (Audio, Physics, Parsers),
   > requiring a central `base/` module alongside independent, dynamically loaded backend modules.
@@ -86,68 +85,76 @@ lock-free architectures.
 - [**ADR-0021**: STL-Free Concurrency Primitives and Platform Abstraction](./ADR-0021.md)
   > Rejects `<thread>`, `<mutex>`, and `<atomic>` in favor of custom engine-native primitives
   > (`gp::thread::Atomic`, `gp::thread::Thread`, `gp::container::SPSCByteRingBuffer`) placed in the
-  > core module, ensuring strict memory control and ABI stability across module boundaries.
-- [**ADR-0022**: Functional, Stateless Thread Execution over Object-Oriented Payloads](./ADR-0022.md)
+  > core module, giving explicit memory control and ABI stability across module boundaries.
+- [**ADR-0022**: Functional, Stateless Thread Execution over Object-Oriented Payloads](
+  ./ADR-0022.md)
   > Rejects object-oriented thread interfaces (e.g., `IRunnable`) and `std::thread` in favor of
   > stateless, C-style function pointers with `void*` context payloads, eliminating virtual dispatch
-  > overhead and forced heap allocations to perfectly mirror low-level OS APIs and support
-  > data-oriented Job Systems.
-- [**ADR-0023**: Zero-Allocation Thread Handoff via Suspended Creation and OS Synchronization](./ADR-0023.md)
+  > overhead and forced heap allocations to match low-level OS APIs and support data-oriented Job
+  > Systems.
+- [**ADR-0023**: Zero-Allocation Thread Handoff via Suspended Creation and OS Synchronization](
+  ./ADR-0023.md)
   > To prevent heap allocations and dangling pointers during OS thread creation, the engine mandates
   > a synchronized handoff protocol where threads are spawned in a suspended state
-  > (`CREATE_SUSPENDED`). Startup parameters (including string names and context pointers) are passed
-  > via a parent-stack-allocated payload, and the parent thread blocks on an OS event until the child
-  > securely copies the data to its own local stack.
-- [**ADR-0024**: Strict Compile-Time Lock-Free Guarantees via Concept-Constrained Atomics](./ADR-0024.md)
+  > (`CREATE_SUSPENDED`). Startup parameters (including string names and context pointers) are
+  > passed via a parent-stack-allocated payload, and the parent thread blocks on an OS event until
+  > the child copies the data to its own local stack.
+- [**ADR-0024**: Strict Compile-Time Lock-Free Guarantees via Concept-Constrained Atomics](
+  ./ADR-0024.md)
   > The C++ standard library (`std::atomic<T>`) silently falls back to hidden OS software locks if
   > `T` exceeds the hardware's native register size, silently destroying real-time thread scaling.
   > The engine strictly forbids this by constraining `gp::Atomic<T>` with a `C++20` concept
-  > (`AtomicValue`). This guarantees that any atomic instantiation is strictly 1, 2, 4, or 8 bytes
-  > and trivially copyable, ensuring it always compiles 1:1 down to hardware-native lock-free
-  > instructions (e.g., `LOCK CMPXCHG`) or fails at compile-time.
-- [**ADR-0025**: MESI Cache-Line Isolation and Shadow Indexing in Lock-Free Structures](./ADR-0025.md)
+  > (`AtomicValue`). This guarantees that any atomic instantiation is 1, 2, 4, or 8 bytes and
+  > trivially copyable, so it compiles 1:1 down to hardware-native lock-free instructions (e.g.,
+  > `LOCK CMPXCHG`) or fails at compile time.
+- [**ADR-0025**: MESI Cache-Line Isolation and Shadow Indexing in Lock-Free Structures](
+  ./ADR-0025.md)
   > To prevent "False Sharing" (cache-line ping-ponging) from bottlenecking cross-core throughput,
   > all lock-free communication primitives (e.g., `SPSCRingBuffer`) must explicitly align and pad
   > their internal state to hardware cache-line boundaries (64 bytes), separating Read-Only,
-  > Producer-Modified, and Consumer-Modified zones. Furthermore, cross-thread atomic reads must be
-  > minimized using local "Shadow Index Caching," restricting interconnect bus traffic to only when
-  > a buffer is completely full or completely empty.
-- [**ADR-0030**: 64-Bit Integer Nanoseconds and Rational Frame Rates as Canonical Time Units](./ADR-0030.md)
+  > Producer-Modified, and Consumer-Modified zones. Cross-thread atomic reads are also minimized
+  > using local "Shadow Index Caching," restricting interconnect bus traffic to when a buffer is
+  > completely full or completely empty.
+- [**ADR-0030**: 64-Bit Integer Nanoseconds and Rational Frame Rates as Canonical Time Units](
+  ./ADR-0030.md)
   > Storing accumulated engine time in 32-bit `float` degrades precision past 1 millisecond after
-  > just 4.5 hours of uptime, while storing frame rates as floating-point seconds
-  > (`1.0f / 60.0f = 0.016666668f`) introduces cumulative rounding drift during long cutscenes and
-  > deterministic replays. The engine mandates 64-bit integer nanoseconds (`gp::Int64` for
-  > `Duration`, `gp::UInt64` for `Timestamp`) as the canonical internal representation ($\pm 292$
-  > years range at $1\text{ ns}$ resolution) alongside rational `FrameRate`
-  > (`numerator` / `denominator`) for exact frame intervals. Floating-point deltaTime
-  > (`Float32` / `Float64`) is strictly a read-only leaf view generated for shader and physics
-  > integrators.
-- [**ADR-0031**: Dual Hardware Counters and Per-Thread High-Resolution Kernel Waitable Timers](./ADR-0031.md)
+  > just 4.5 hours of uptime, while storing frame rates as floating-point seconds (`1.0f / 60.0f =
+  > 0.016666668f`) introduces cumulative rounding drift during long cutscenes and deterministic
+  > replays. The engine mandates 64-bit integer nanoseconds (`gp::Int64` for `Duration`,
+  > `gp::UInt64` for `Timestamp`) as the canonical internal representation ($\pm 292$ years range at
+  > $1\text{ ns}$ resolution) alongside rational `FrameRate` (`numerator` / `denominator`) for exact
+  > frame intervals. Floating-point deltaTime (`Float32` / `Float64`) is strictly a read-only leaf
+  > view generated for shader and physics integrators.
+- [**ADR-0031**: Dual Hardware Counters and Per-Thread High-Resolution Kernel Waitable Timers](
+  ./ADR-0031.md)
   > Calling Win32 `Sleep(1)` defaults to a 15.625ms OS scheduler quantum, while globally forcing
   > `timeBeginPeriod(1)` degrades system-wide power efficiency and battery life across all running
   > processes. Furthermore, OS monotonic clocks (`QueryPerformanceCounter`) have higher read latency
-  > (~15–25ns) than raw CPU cycle counters (`__rdtsc` ~1–3ns). `gp::platform::Time` abstracts both
-  > an invariant monotonic nanosecond clock (with a 1-cycle multiply fast-path when QPC runs at
-  > 10 MHz) and a raw CPU cycle counter (`cpuCycles()`) for micro-profiling, while implementing
+  > (~15-25ns) than raw CPU cycle counters (`__rdtsc` ~1-3ns). `gp::platform::Time` abstracts both
+  > an invariant monotonic nanosecond clock (with a 1-cycle multiply fast-path when QPC runs at 10
+  > MHz) and a raw CPU cycle counter (`cpuCycles()`) for micro-profiling, while implementing
   > sub-millisecond thread sleep via thread-local `CREATE_WAITABLE_TIMER_HIGH_RESOLUTION` kernel
   > objects on Windows and `clock_nanosleep` on POSIX.
-- [**ADR-0032**: Hierarchical Simulation Clock Domains with Multiplicative Time Dilation](./ADR-0032.md)
+- [**ADR-0032**: Hierarchical Simulation Clock Domains with Multiplicative Time Dilation](
+  ./ADR-0032.md)
   > A single global `DeltaTime` cannot simultaneously support pausing the game world while keeping
   > UI animations smooth, triggering a 0.05x hit-stop on characters while keeping camera shake at
-  > 1.0x, or running network prediction at an independent rate. Inspired by Frostbite and Decima, the
-  > engine separates hardware timekeeping (`EngineClock`) from hierarchical domain clocks
+  > 1.0x, or running network prediction at an independent rate. Inspired by Frostbite and Decima,
+  > the engine separates hardware timekeeping (`EngineClock`) from hierarchical domain clocks
   > (`SimulationClock`). Any `SimulationClock` may attach to a parent clock; pause states propagate
-  > downward (`isEffectivelyPaused()`) and time dilation scales multiply (`getEffectiveTimeScale()`),
-  > with zero heap allocations.
-- [**ADR-0033**: Configurable Outlier-Rejected Delta Smoothing and Fixed-Accumulator Interpolation ($\alpha$)](./ADR-0033.md)
+  > downward (`isEffectivelyPaused()`) and time dilation scales multiply
+  > (`getEffectiveTimeScale()`), with zero heap allocations.
+- [**ADR-0033**: Outlier-Rejected Delta Smoothing and Fixed-Accumulator Interpolation ($\alpha$)](
+  ./ADR-0033.md)
   > Raw frame-to-frame deltas suffer from micro-jitter caused by OS background threads and driver
   > buffer queues, while physics simulations explode if fed variable deltas or unbounded sub-steps
-  > during a CPU stall ("Spiral of Death"). The clock subsystem provides selectable delta
-  > smoothing (Raw, Exponential Moving Average, or Unreal-style Outlier-Rejected Rolling Window)
-  > alongside a deterministic Fixed-Timestep Accumulator that outputs discrete step counts capped by
+  > during a CPU stall ("Spiral of Death"). The clock subsystem provides selectable delta smoothing
+  > (Raw, Exponential Moving Average, or Unreal-style Outlier-Rejected Rolling Window) alongside a
+  > deterministic Fixed-Timestep Accumulator that outputs discrete step counts capped by
   > `maxSubSteps` and a normalized interpolation factor $\alpha \in [0.0, 1.0)$ for smooth visual
   > rendering between fixed physics ticks.
-- [**ADR-0042**: Lifetime-Scoped Arena Allocators, First-Class Allocator Contract, and Named Pool Telemetry](./ADR-0042.md)
+- [**ADR-0042**: Lifetime-Scoped Arena Allocators, Allocator Contract, and Named Pool Telemetry](
+  ./ADR-0042.md)
   > Container-owned storage wrappers modeled after Unreal Engine (`SizedAllocatorBase`,
   > `ForAnyElementType`, `ForElementType<T>`) invert memory ownership by embedding the container's
   > data pointer inside the policy, cannot be instantiated as standalone memory allocators, and fail
@@ -160,15 +167,30 @@ lock-free architectures.
   > (`gp::concepts::IsAllocator`) that passes `oldSizeInBytes` on reallocation and deallocation to
   > enable headerless $O(1)$ arena operations and named pool telemetry (`GP_MEM_ALLOC_N`,
   > `GP_MEM_FREE_N`) in the Tracy profiler.
-- [**ADR-0045**: Intrusive Reference-Counted Smart Pointers and Bit-Packed Atomic RHI Lifecycle State](./ADR-0045.md)
+- [**ADR-0045**: Intrusive Reference-Counted Smart Pointers and Bit-Packed Atomic RHI Lifecycle
+  State](./ADR-0045.md)
   > Establishes `gp::RefCountedPtr<T, Policy>` as an 8-byte, zero-control-block intrusive smart
   > pointer paired with `IntrusiveRefCounted<Derived, ThreadSafety>` and a 32-bit bit-packed atomic
   > lifecycle counter (`AtomicRefStateCounter`: 30-bit reference count + `MarkedForDelete` and
   > `Deleting` state flags). This architecture eliminates external control-block heap allocations,
-  > guarantees single-register passing across dynamic RHI module boundaries, prevents ABA resurrection
-  > races during multi-threaded deferred GPU resource deletion, and supports custom policy binding for
-  > native COM interfaces (`ID3D12Resource`, `IDXGISwapChain`).
-- [**ADR-0046**: Hybrid 24-Byte SSO String Container, Engine-Native `CharTraits`, and Zero-Allocation UTF Codec](./ADR-0046.md)
+  > guarantees single-register passing across dynamic RHI module boundaries, prevents ABA
+  > resurrection races during multi-threaded deferred GPU resource deletion, and supports custom
+  > policy binding for native COM interfaces (`ID3D12Resource`, `IDXGISwapChain`).
+- [**ADR-0048**: Elastic Page-Chunked Linear Arenas and Context-Swapped Fiber Scratch Allocators](
+  ./ADR-0048.md)
+  > OS thread-local scratchpad allocators (`ThreadScratchAllocator`) corrupt memory and trigger
+  > silent cross-thread data races when cooperative fibers yield at dependency counters
+  > (`waitForCounter`) and migrate across worker threads via work stealing, while pre-allocating
+  > fixed worst-case contiguous slabs for every fiber in a large pool ($M \gg N$) wastes tens of
+  > megabytes of idle RAM. `gp-engine` introduces a two-tier fiber-safe scratch architecture in
+  > `gp::memory`: a lock-free, ABA-safe `PagePool` that leases fixed-size memory pages (`64 KiB`
+  > default) on demand, an elastic `PagedLinearAllocator` that chains pages intrusively with $O(1)$
+  > cross-page `MemoryMark` unwinding and zero idle memory footprint, and a context-swapped
+  > `FiberScratchArena` / `FiberScratchAllocator` / `ScopedFiberScratchMark` suite paired with
+  > fiber-switch epoch assertions in `ScopedScratchMark` to mechanically catch illegal fiber yields
+  > inside thread-local scratch scopes.
+- [**ADR-0046**: Hybrid 24-Byte SSO String, Engine-Native `CharTraits`, and UTF Codec](
+  ./ADR-0046.md)
   > Establishes `gp::container::BasicString<CharT, Allocator>` (`gp::String`, `gp::WString`,
   > `gp::U8String`, `gp::U16String`, `gp::U32String`, `gp::InlineString<N>`, `gp::ScratchString`) as
   > a 24-byte owning string container combining in-situ Small String Optimization (`22` `char`
@@ -192,6 +214,81 @@ lock-free architectures.
   > as STL-free, `constexpr`, non-owning sequence views standardized on `gp::USize` and signed
   > `gp::ISize` byte strides, decoupling engine APIs from concrete container allocators and bridging
   > Array-of-Structures (AoS) and Structure-of-Arrays (SoA) data streams without heap allocations.
+- [**ADR-0047**: Sharded `gp::Name` Pool, Split Numeric Suffixes, and `constexpr` Hash Literals](
+  ./ADR-0047.md)
+  > Establishes `gp::container::Name` (`gp::Name`) as an 8-byte, trivially copyable,
+  > $O(1)$-comparable interned identifier combining a 32-bit `NameEntryId` handle into a 64-shard,
+  > cache-line-isolated global `NamePool` with an Unreal-inspired 32-bit split numeric instance
+  > suffix (`m_number`), paired with `constexpr` 64-bit FNV-1a `gp::NameHash` (`_nh`) compile-time
+  > string literals.
+- [**ADR-0049**: Dual-Tier Platform Execution Contexts and Scratch-Bound Cooperative Fibers](
+  ./ADR-0049.md)
+  > OS kernel thread context switches incur 1-10 microsecond scheduler transitions, TLB flushes, and
+  > kernel lock contention when worker threads block on job dependencies, while C++20 stackless
+  > coroutines infect entire engine call trees with "colored" return types that cannot yield from
+  > deep C++ helper routines. `gp-engine` introduces a dual-tier cooperative execution architecture
+  > in `gp::core`: a low-level `gp::platform::FiberContext` abstracting Windows CET/TEB-safe Win32
+  > Fibers (`CreateFiberEx` / `SwitchToFiber`) and POSIX zero-syscall `x86_64`/`ARM64` ABI
+  > register-frame switches with `PROT_NONE` hardware guard pages, paired with a high-level
+  > `gp::thread::Fiber` that owns an elastic [`PagedLinearAllocator`](./ADR-0048.md), supports
+  > two-tier stack sizing (`64 KiB` standard / `512 KiB` large), re-arms completed tasks without
+  > stack reallocation, and automatically swaps [`FiberScratchArena`](./ADR-0048.md) bindings across
+  > cooperative yields and cross-core work-stealing migrations.
+- [**ADR-0050**: Intrusive Stack Wait-Nodes, 64-Bit Packed Job Counters, and Post-Switch Stack
+  Latches](./ADR-0050.md)
+  > Global fixed-capacity fiber wait tables incur $O(M)$ cross-core cache-line invalidations on
+  > every job completion, while naive check-then-park counters suffer from lost wakeups or dual-core
+  > stack clobbering when a waker resumes a fiber before the yielding core finishes saving its
+  > registers. `gp-engine` introduces zero-allocation, stack-resident `gp::thread::JobWaitNode`
+  > entries, a 64-bit bit-packed `gp::thread::JobCounter` (`CacheAlignedJobCounter`), a binary
+  > `gp::thread::JobFence`, and a hardware-enforced `Fiber::m_isStackActive` post-switch release
+  > latch in `gp::core`.
+- [**ADR-0051**: Bounded Lock-Free Chase-Lev Work-Stealing Deques and Vyukov Sequence MPMC Job
+  Queues](./ADR-0051.md)
+  > Centralized job queues bottleneck across 16-64 hardware threads due to MESI cache-line bouncing
+  > and FIFO cache thrashing, while dynamic Chase-Lev deques violate deterministic frame budgets by
+  > allocating and garbage-collecting ring buffers on the hot path. `gp-engine` introduces a hybrid,
+  > zero-allocation Layer 2 queue architecture in `gp::core`: a per-worker bounded lock-free
+  > Single-Producer Multi-Consumer (SPMC) `gp::thread::WorkStealingDeque<T>` (Chase-Lev with Lê et
+  > al. C11 memory ordering), a bounded Multi-Producer Multi-Consumer (MPMC)
+  > `gp::thread::MPMCRingQueue<T>` (Vyukov per-slot sequence-stamp ring), and 32-byte POD
+  > `gp::thread::JobDecl` and `gp::thread::JobQueueItem` descriptors.
+- [**ADR-0052**: M:N Cooperative Fiber Job System, RDG Task Graphs, and Context-Aware Parallel-For](
+  ./ADR-0052.md)
+  > Scheduling hundreds of Render Dependency Graph (RDG) passes purely by parking imperative fibers
+  > on `JobCounter` barriers exhausts fixed fiber pools and introduces frame-level wave bubbles,
+  > while stackless continuation graphs destroy sequential C++ control flow and lack per-worker RHI
+  > command context indexing. `gp-engine` introduces the Layer 3 `gp::thread::JobSystem` in
+  > `gp::core`: an $M:N$ cooperative fiber work-stealing scheduler combining lazy two-tier fiber
+  > pool acquisition (`64 KiB` / `512 KiB`), priority MPMC and Chase-Lev SPMC queues, a
+  > zero-allocation declarative DAG continuation subsystem (`gp::thread::JobGraphNode` /
+  > `gp::thread::JobGraph`) tailored for RDG pass compilation, and a worker-index-aware
+  > `parallelFor` splitter (`JobContext`) for lock-free per-worker RHI command-list recording.
+- [**ADR-0054**: Zero-Allocation Lock-Free Multi-Sink Logger and Hybrid `GP_LOG` Architecture](
+  ./ADR-0054.md)
+  > Establishes `gp::log` in `gp::core` as a zero-heap-allocation, multi-sink logging subsystem
+  > combining `<charconv>` stack formatting, `consteval` format string verification, atomic
+  > `LogCategory` filtering, dual synchronous/lock-free MPMC ring execution, and a hybrid C++23
+  > function plus short-circuiting `GP_LOG` macro front-end.
+- [**ADR-0057**: Runtime Console Variable and Command Registry with Dual-Slot Render Sync](
+  ./ADR-0057.md)
+  > Adopts a zero-allocation runtime console subsystem (`gp::console`) in `gp::core` that combines
+  > O3DE/id Tech intrusive static registration with Unreal-style dual Game/Render slots, priority
+  > tiers, and `gp::Delegate` notifications.
+- [**ADR-0058**: Compact Bit-Packed Mutexes, Futex Parking, and Fiber-Safe Recursive Locks](
+  ./ADR-0058.md)
+  > Introduces `gp::thread::Mutex` (4B), `RecursiveMutex` / `CriticalSection` (16B),
+  > `SharedMutex` (8B), `OnceFlag` / `GP_CALL_ONCE` (4B), `UniqueLock`, and `SharedLock` in
+  > `gp::core`, pairing single-instruction inline atomic fast paths with `gp::platform::Futex`
+  > kernel address parking (`WaitOnAddress`, `futex`, `__ulock_wait`) and dual-domain
+  > fiber/thread recursive ownership tokens.
+- [**ADR-0059**: Dual-Mode Non-Nullable SharedRef, SharedPtr, WeakPtr, and In-Place Control Blocks](
+  ./ADR-0059.md)
+  > Introduces `gp::SharedRef<T, Mode>`, `gp::SharedPtr<T, Mode>`, `gp::WeakPtr<T, Mode>`,
+  > `gp::SharedFromThis<T, Mode>`, `gp::makeShared`, `gp::allocateShared`, and `gp::makeShareable`
+  > in `gp::core`, pairing a 16-byte dual-counter reference controller wired to
+  > `gp::RefCountThreadSafety` with single-allocation in-place construction and engine-allocator
+  > integration.
 
 ### Math & Core Types
 
@@ -200,9 +297,10 @@ engine-wide consistency.
 
 - [**ADR-0009**: Vector4 default construction uses homogeneous point coordinates](./ADR-0009.md)
   > Establishes that the default constructor for the engine's 4D vector type initializes as a
-  > homogeneous point (`w=1`) rather than a direction (`w=0`) or a zero-vector, ensuring correct affine
+  > homogeneous point (`w=1`) rather than a direction (`w=0`) or a zero-vector, for affine
   > transformations by default.
-- [**ADR-0037**: Vector4 as a General-Purpose Four-Dimensional Vector with Homogeneous Coordinate Support](./ADR-0037.md)
+- [**ADR-0037**: Vector4 as a General-Purpose Four-Dimensional Vector with Homogeneous Coordinate
+  Support](./ADR-0037.md)
   > Defines `gp::math::Vector4<T>` as a general-purpose four-dimensional vector whose mathematical
   > operations consistently account for all four components, while preserving its compatibility with
   > homogeneous 3D coordinates (`w = 0` for directions, `w = 1` for points). This separates general
@@ -215,16 +313,23 @@ These records outline how the engine isolates operating system complexities usin
 Hardware Abstraction Layer (HAL).
 
 - [**ADR-0010**: Adoption of SDL3 as the Primary Platform Abstraction Backend](./ADR-0010.md)
-  > Defines the choice of SDL3 to handle the chaotic realities of OS windowing, input polling, and
-  > device discovery, acting as the concrete implementation behind the engine’s generic HAL.
-- [**ADR-0011**: Dependency-Injected Application Backend Interface for Platform Agnosticism](./ADR-0011.md)
-  > Establishes the `IApplicationBackend` pattern, ensuring the engine logic remains completely blind
-  > to the underlying OS/SDL3 layer, with the specific backend injected at the executable level
-  > (e.g., inside `gp_editor`).
-- [**ADR-0012**: Centralized Application Layer for Platform Lifecycle and Event Orchestration](./ADR-0012.md)
-  > Defines the `gp::application::Application` class as the central manager that owns the injected
-  > backend, tracks active windows, and acts as the orchestrator between OS events and engine
-  > subsystems.
+  > Selects SDL3 to handle OS windowing, input polling, and device discovery as the concrete
+  > implementation behind the engine's generic HAL.
+- [**ADR-0011**: Dependency-Injected Application Backend Interface for Platform Agnosticism](
+  ./ADR-0011.md)
+  > Establishes `IApplicationBackend` so engine logic stays independent of the OS/SDL3 layer, with
+  > the concrete backend injected at the executable level (e.g., inside `gp_editor`).
+- [**ADR-0012**: Centralized Application Layer for Platform Lifecycle and Event Orchestration](
+  ./ADR-0012.md)
+  > Defines `gp::application::Application` as the central host that owns the injected backend,
+  > tracks active windows, and orchestrates OS events and engine subsystems.
+- [**ADR-0053**: Job System, Double-Buffered Frame Arenas, and Task Graphs in `gp::Application`](
+  ./ADR-0053.md)
+  > Amends and extends [ADR-0012](./ADR-0012.md) by integrating `gp::thread::JobSystem`
+  > ([ADR-0052](./ADR-0052.md)), command-line thread count overrides ([ADR-0040](./ADR-0040.md)),
+  > double-buffered per-frame `gp::memory::LinearAllocator` arenas ([ADR-0042](./ADR-0042.md)), and
+  > zero-allocation arena-backed `gp::thread::JobGraph` execution phases (`onBuildFrameGraph` and
+  > `onBuildRenderGraph`) directly into `gp::Application`.
 - [**ADR-0028**: Zero-Allocation Cached Display Topology and Shadow Mode Tables](./ADR-0028.md)
   > Querying OS display managers (`EnumDisplaySettings`, `SDL_GetFullscreenDisplayModes`) at runtime
   > triggers synchronous EDID/driver calls and heap allocations that stall the calling thread. To
@@ -232,7 +337,8 @@ Hardware Abstraction Layer (HAL).
   > work areas, HDR luminance metadata, and deduplicated `DisplayMode` tables inside fixed-capacity
   > inline storage (`kMaxCachedModes = 64`). The topology is populated once on startup and
   > incrementally synchronized via `DisplayEvent` packets from the lock-free `SPSCByteRingBuffer`.
-- [**ADR-0029**: Centralized Display Topology, Spatial Resolution, and Headless Virtual Display Fallback](./ADR-0029.md)
+- [**ADR-0029**: Centralized Display Topology, Spatial Resolution, and Headless Virtual Display
+  Fallback](./ADR-0029.md)
   > Scattering display enumeration, multi-monitor spatial math, and hotplug table management across
   > individual OS backends duplicates complex geometry logic and causes nullptr crashes when the
   > engine runs on headless CI runners or dedicated servers without a physical display. To guarantee
@@ -241,59 +347,74 @@ Hardware Abstraction Layer (HAL).
   > (`getDisplayForPoint` via nearest clamped boundary distance and `getDisplayForRect` via maximum
   > overlapping pixel area), and automatically provisions a synthetic `1920x1080 @ 60Hz` virtual
   > primary display whenever zero physical monitors are detected.
-- [**ADR-0038**: Synchronous Modal Message Boxes and Asynchronous Native File Dialogs with Headless Auto-Resolution](./ADR-0038.md)
+- [**ADR-0038**: Sync Modal Message Boxes and Async Native File Dialogs with Headless
+  Auto-Resolution](./ADR-0038.md)
   > Native OS file and folder pickers execute on asynchronous desktop compositor loops that stall
   > swapchain presentation or deadlock the window manager if blocked synchronously on the Game
   > Thread. Conversely, fatal assertion and crash message boxes must block synchronously and
   > function even before the graphics/window backend is initialized or after it has crashed.
-  > Furthermore, spawning interactive OS modal dialogs on headless CI runners or dedicated servers
-  > hangs automated pipelines indefinitely. The HAL `IDialog` subsystem separates synchronous modal
-  > alerts (`showAlert`, `showMessageBox`, capable of pre-initialization panic execution and custom
+  > Spawning interactive OS modal dialogs on headless CI runners or dedicated servers also hangs
+  > automated pipelines indefinitely. The HAL `IDialog` subsystem separates synchronous modal alerts
+  > (`showAlert`, `showMessageBox`, capable of pre-initialization panic execution and custom
   > button/theme layouts) from non-blocking, callback-driven native file/folder pickers
   > (`showOpenFileDialog`, `showSaveFileDialog`, `showOpenFolderDialog`), while `generic::Dialog`
   > enforces deterministic headless auto-resolution (returning the designated default button or
   > immediate cancellation without blocking).
-- [**ADR-0040**: Zero-Allocation `.bss` Arena and Tokenized `StringView` Command-Line Parser](./ADR-0040.md)
+- [**ADR-0040**: Zero-Allocation `.bss` Arena and Tokenized `StringView` Command-Line Parser](
+  ./ADR-0040.md)
   > Establishes a globally accessible, zero-heap-allocation command-line subsystem in `gp::core`
   > backed by a fixed-capacity `.bss` character arena (`8 KiB`) and a contiguous `gp::StringView`
   > token array (`128` slots), providing non-dangling lifetime guarantees, last-wins override
   > semantics, `-no-<flag>` boolean negation, and `<charconv>` typed value extraction before dynamic
   > memory allocators initialize.
-- [**ADR-0043**: Zero-Allocation `.bss` Known-Folder Discovery and Stack `PathBuffer` Normalization in `gp::platform::Paths`](./ADR-0043.md)
+- [**ADR-0043**: Zero-Allocation `.bss` Folder Discovery and `PathBuffer` in `gp::platform::Paths`](
+  ./ADR-0043.md)
   > Establishes `gp::platform::Paths` in `gp::core` as a unified, zero-heap-allocation OS directory
   > discovery and lexical path normalization subsystem backed by translation-unit `.bss` caches and
   > stack-allocated `gp::PathBuffer` (`gp::FixedString<1024>`), abstracting Windows Known Folders
   > (`SHGetKnownFolderPath`), Linux XDG Base Directories (`$XDG_DATA_HOME`, `$XDG_CONFIG_HOME`,
   > `$HOME`), and macOS Application Support / bundle paths alongside `constexpr`-capable path
   > slicing, relative directory collapsing, and path resolution.
-- [**ADR-0044**: Layered Virtual File System (VFS) Mount-Point and Logical URI Routing Architecture](./ADR-0044.md)
+- [**ADR-0044**: Layered Virtual File System (VFS) Mount-Point and Logical URI Routing
+  Architecture](./ADR-0044.md)
   > Defines the future I/O Virtual File System (`gp::vfs`) architecture as a priority-layered mount
-  > table that consumes physical OS directory roots from `gp::platform::Paths` ([ADR-0043](./ADR-0043.md))
-  > and binds them—alongside read-only compressed archive/pak backends and mod override layers—to
-  > logical URI schemes (`engine://`, `game://`, `user://`, `appdata://`, `cache://`, `temp://`),
-  > isolating gameplay, shader, and asset streaming code from physical disk layouts and console
-  > sandbox partitions.
+  > table that consumes physical OS directory roots from `gp::platform::Paths`
+  > ([ADR-0043](./ADR-0043.md)) and binds them, alongside read-only compressed archive/pak backends
+  > and mod override layers, to logical URI schemes (`engine://`, `game://`, `user://`,
+  > `appdata://`, `cache://`, `temp://`), isolating gameplay, shader, and asset streaming code from
+  > physical disk layouts and console sandbox partitions.
+- [**ADR-0060**: Zero-Allocation OS `FileHandle`, Positional `readAt`/`writeAt`, Atomic Writes, and
+  Stack Directory Iteration in `gp::platform::FileSystem`](./ADR-0060.md)
+  > Establishes `gp::platform::FileSystem` and `gp::platform::FileHandle` in `gp::core` as the
+  > Layer 0 zero-heap-allocation OS file and directory I/O subsystem, pairing non-polymorphic RAII
+  > OS file descriptors with lock-free positional I/O (`pread`/`pwrite` and Win32 `OVERLAPPED`
+  > offsets), crash-safe atomic write-and-rename transactions (`writeAtomic`), and zero-allocation
+  > stack-buffered directory tree traversal (`iterateDirectory`) below Layer 1
+  > `gp::vfs::VirtualFileSystem` ([ADR-0044](./ADR-0044.md)).
 
 ### Concurrency & Event Routing
 
 These records define how data moves safely between threads, prioritizing determinism and
 cache-locality.
 
-- [**ADR-0013**: Multi-Threaded Event Architecture via Lock-Free Queues and Immutable Frame State](./ADR-0013.md)
-  > Mandates that OS events are pumped by a dedicated OS thread into a Single-Producer/Single-Consumer
-  > lock-free ring buffer, allowing the Game Thread to drain them at the start of a frame to guarantee
-  > a deterministic, lock-free, immutable input state.
+- [**ADR-0013**: Multi-Threaded Event Architecture via Lock-Free Queues and Immutable Frame State](
+  ./ADR-0013.md)
+  > Mandates that a dedicated OS thread pumps OS events into a Single-Producer/Single-Consumer
+  > lock-free ring buffer, letting the Game Thread drain them at frame start for an immutable input
+  > state.
 - [**ADR-0019**: Type-Length-Value (TLV) Byte-Stream for Cross-Thread Event Routing](./ADR-0019.md)
   > Rejects fixed-size Tagged Unions and polymorphic event objects in favor of a contiguous raw byte
   > stream (`EventHeader` + payload). This eliminates the "Largest Payload Problem," natively
   > supports variable-length data (like file drop paths or UTF-8 text input), and maximizes CPU
   > cache efficiency.
-- [**ADR-0020**: Strict Data-Oriented Design (PODs) at the Hardware-to-Engine Boundary](./ADR-0020.md)
+- [**ADR-0020**: Strict Data-Oriented Design (PODs) at the Hardware-to-Engine Boundary](
+  ./ADR-0020.md)
   > Mandates that all events crossing from the OS thread to the Game thread must be Trivially
   > Copyable, Standard Layout Plain Old Data (POD) structs. Explicitly forbids the use of C++
   > inheritance, virtual tables, RTTI, and heap allocations (`new`/`delete`) at the HAL level to
   > prevent heap fragmentation and lock contention.
-- [**ADR-0026**: Two-Tier Backpressure and Critical Reserve Admission in Lock-Free Event Queues](./ADR-0026.md)
+- [**ADR-0026**: Two-Tier Backpressure and Critical Reserve Admission in Lock-Free Event Queues](
+  ./ADR-0026.md)
   > High-polling-rate peripherals (8000 Hz mice, controller IMUs) can saturate a fixed-capacity
   > lock-free ring buffer during temporary Game Thread stalls, causing critical discrete state
   > transitions (such as `KeyState::Released` or `WindowAction::CloseRequested`) to be dropped and
@@ -315,13 +436,15 @@ cache-locality.
 
 ### Window Management
 
-These records establish type-safe patterns for dealing with native OS windows and screen coordinates.
+These records establish type-safe patterns for native OS windows and screen coordinates.
 
-- [**ADR-0014**: Type-Safe Native Handles Using Tagged Unions over Opaque Void Pointers](./ADR-0014.md)
-  > Rejects the use of a generic `void*` for OS window handles (HWND, Wayland surface, etc.) in favor
-  > of a tagged union (Struct + Enum) to enforce type-safety and exact backend identification at
-  > compile/runtime.
-- [**ADR-0015**: Strict Semantic Differentiation Between Point2D (Position) and Extent2D (Size)](./ADR-0015.md)
+- [**ADR-0014**: Type-Safe Native Handles Using Tagged Unions over Opaque Void Pointers](
+  ./ADR-0014.md)
+  > Rejects a generic `void*` for OS window handles (HWND, Wayland surface, etc.) in favor of a
+  > tagged union (Struct + Enum) to enforce type safety and backend identification at compile time
+  > and runtime.
+- [**ADR-0015**: Strict Semantic Differentiation Between Point2D (Position) and Extent2D (Size)](
+  ./ADR-0015.md)
   > Establishes separate, type-safe POD structs for coordinate positions (`Point2D`) versus
   > dimensional sizes (`Extent2D`) in window management, preventing logical bugs caused by passing a
   > width/height into an x/y parameter.
@@ -333,32 +456,36 @@ for gameplay programmers.
 
 - [**ADR-0016**: Explicit Separation of Physical ScanCodes and Logical KeyCodes](./ADR-0016.md)
   > Separates `ScanCode` (the physical hardware location of the key on the board, used for gameplay
-  > controls like WASD) from `KeyCode` (the localized OS character mapping, used for UI text typing).
-- [**ADR-0017**: Domain-Specific Input State Abstractions for Keyboard, Mouse, and Gamepad](./ADR-0017.md)
+  > controls like WASD) from `KeyCode` (the localized OS character mapping, used for UI text
+  > typing).
+- [**ADR-0017**: Domain-Specific Input State Abstractions for Keyboard, Mouse, and Gamepad](
+  ./ADR-0017.md)
   > Defines localized, independent classes (`Keyboard`, `Mouse`, `Gamepad`) that maintain their own
   > previous and current state arrays, providing ergonomic polling APIs (e.g., `isKeyPressed`) for
   > gameplay programmers.
 - [**ADR-0018**: Capability-Based Device Abstraction (Input, Haptic, Spatial)](./ADR-0018.md)
-  > Establishes a modular hierarchy for hardware devices, separating them by capability
-  > (e.g., `InputDevice` for buttons, `HapticDevice` for rumble/force-feedback, `SpatialDevice` for
-  > VR/Gyro tracking) rather than monolithically grouping them.
+  > Establishes a modular hierarchy for hardware devices, separating them by capability (e.g.,
+  > `InputDevice` for buttons, `HapticDevice` for rumble/force-feedback, `SpatialDevice` for VR/Gyro
+  > tracking) rather than monolithically grouping them.
 - [**ADR-0034**: Sub-Frame Edge Latching and Two-Phase Frame Transition Snapshots](./ADR-0034.md)
   > Naive double-buffered input state arrays (`current[k] && !previous[k]`) silently drop rapid
   > sub-frame "micro-clicks" whenever both a `KeyState::Pressed` and `KeyState::Released` event for
-  > the same button are queued into the `SPSCByteRingBuffer` during a single frame tick. To guarantee
-  > zero dropped inputs regardless of frame rate or CPU hitches, `gp::hal::input::InputSystem`
-  > separates continuous hold state (`Held`) from edge-latched transition flags (`PressedThisFrame`,
-  > `ReleasedThisFrame`, `RepeatedThisFrame`). `beginFrame()` clears the previous frame's edge
-  > latches and zeroes relative motion deltas prior to pumping OS events, while event ingestion
-  > latches all intra-frame edges before gameplay `onUpdate()` executes.
-- [**ADR-0035**: Scaled Radial 2D Thumbstick Deadzones and Hysteresis-Gated Active Device Switching](./ADR-0035.md)
+  > the same button are queued into the `SPSCByteRingBuffer` during a single frame tick. To
+  > guarantee zero dropped inputs regardless of frame rate or CPU hitches,
+  > `gp::hal::input::InputSystem` separates continuous hold state (`Held`) from edge-latched
+  > transition flags (`PressedThisFrame`, `ReleasedThisFrame`, `RepeatedThisFrame`). `beginFrame()`
+  > clears the previous frame's edge latches and zeroes relative motion deltas prior to pumping OS
+  > events, while event ingestion latches all intra-frame edges before gameplay `onUpdate()`
+  > executes.
+- [**ADR-0035**: Scaled Radial 2D Thumbstick Deadzones and Hysteresis-Gated Active Device
+  Switching](./ADR-0035.md)
   > Applying independent 1D axial deadzones to analog thumbsticks creates a cardinal
   > "cross-snapping" artifact that degrades 360-degree character and camera movement, while raw
-  > analog potentiometer noise causes UI prompts to flicker between Keyboard/Mouse and Gamepad icons.
-  > The input system enforces 2D Scaled Radial Deadzones
-  > ($\vec{v}_{\text{out}} = \hat{v} \cdot \text{remap}(\Vert{}\vec{v}\Vert{}, dz_{\text{in}}, dz_{\text{out}})$)
-  > on dual-axis thumbsticks, 1D axial deadzones on triggers, and requires analog inputs to exceed
-  > an intentional actuation threshold before switching the active `InputDeviceType`.
+  > analog potentiometer noise causes UI prompts to flicker between Keyboard/Mouse and Gamepad
+  > icons. The input system enforces 2D Scaled Radial Deadzones ($\vec{v}_{\text{out}} = \hat{v}
+  > \cdot \text{remap}(\Vert{}\vec{v}\Vert{}, dz_{\text{in}}, dz_{\text{out}})$) on dual-axis
+  > thumbsticks, 1D axial deadzones on triggers, and requires analog inputs to exceed an intentional
+  > actuation threshold before switching the active `InputDeviceType`.
 - [**ADR-0036**: Logical Player Slot Mapping and Focus-Loss Input Sanitization](./ADR-0036.md)
   > OS hardware instance IDs (`deviceId`) increment monotonically across USB/Bluetooth reconnects,
   > breaking gameplay systems that index controllers by player number, while losing OS window focus
@@ -371,4 +498,6 @@ for gameplay programmers.
 ---
 © 2026 Graphical Playground. Built for the next generation of graphics engineers.
 
-![Graphical Playground](https://github.com/GraphicalPlayground/.github/blob/main/assets/misc/gplayd-footer.svg)
+![Graphical Playground][gp-footer]
+
+[gp-footer]: https://github.com/GraphicalPlayground/.github/blob/main/assets/misc/gplayd-footer.svg

@@ -31,6 +31,20 @@
       "sanitizer.ignorelist": "lintstaged",
       "*.natvis": "subtitles"
     },
+    "material-icon-theme.files.customClones": [
+      {
+        "base": "hpp",
+        "fileExtensions": ["hpp", "hxx", "h++", "hh"],
+        "name": "hpp",
+        "color": "#9976BF"
+      },
+      {
+        "base": "hpp",
+        "fileExtensions": ["inl"],
+        "name": "inl",
+        "color": "#FFD700"
+      }
+    ],
     "material-icon-theme.folders.customClones": [
       {
         "base": "private",
@@ -110,6 +124,7 @@
       "assets": "resource",
       "parser": "resolver",
       "audio": "audio",
+      "diagnostics": "debug",
       "physics": "simulations",
       "input": "input",
       "hal": "connection",
@@ -174,6 +189,7 @@
       "appleclang": "assembly",
       "gcc": "assembly",
       "intel": "assembly",
+      "vfs": "dump",
       "platforms": "client",
       "es": "i18n",
       "fr": "i18n",
@@ -183,6 +199,7 @@
       "de": "i18n",
       "zh-cn": "i18n",
       "traits": "rules",
+      "doxygen": "docs",
       "mimalloc": "migrations",
       "rapidjson": "json",
       "tbb": "migrations",
@@ -205,8 +222,19 @@
       "clipboard": "tasks",
       "device": "connection",
       "threading": "app",
+      "roles": "admin",
+      "random": "cluster",
       "atomics": "atom",
-      "time": "temp"
+      "time": "temp",
+      "fibers": "tasks",
+      "sync": "ci",
+      "lists": "queue",
+      "sinks": "filter",
+      "hashing": "secure",
+      "manifest": "meta",
+      "actions": "tasks",
+      "fetchcontent": "packages",
+      "clangd": "assembly"
     },
     /* File Associations */
     "files.associations": {
@@ -365,6 +393,11 @@
     "[shellscript]": {
       "editor.tabSize": 2
     },
+    "[css]": {
+      "editor.tabSize": 2,
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
     /* Git Settings */
     "git.addAICoAuthor": "off",
     "git.autofetch": true,
@@ -377,6 +410,7 @@
       "comments": false,
       "strings": false
     },
+    /* Chat Settings */
     "chat.titleBar.openInAgentsWindow.enabled": false
   },
   "extensions": {
@@ -403,7 +437,9 @@
       "github.vscode-github-actions",
       "me-dutour-mathieu.vscode-github-actions",
       /* Other */
-      "FanaticPythoner.better-todo-tree"
+      "FanaticPythoner.better-todo-tree",
+      "willasm.rc-script",
+      "esbenp.prettier-vscode"
     ],
     "unwantedRecommendations": [
       /* Conflicts with Clangd */

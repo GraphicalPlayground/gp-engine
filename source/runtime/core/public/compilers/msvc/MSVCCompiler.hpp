@@ -60,3 +60,51 @@
 
 /// @brief MSVC has no flatten equivalent; fall back to the per-function forceinline.
 #define GP_FLATTEN __forceinline
+
+/// @section Linkage, packing, and optimisation hints.
+
+/// @brief Marks a global variable or static member with weak/selectany linkage across translation units.
+#define GP_SELECT_ANY __declspec(selectany)
+
+/// @brief Forces a struct/class to be packed with no padding bytes.
+/// @note  Wraps the struct on MSVC; for per-struct packing prefer `#pragma pack(push, 1)` / `#pragma pack(pop)`.
+#define GP_PACKED __pragma(pack(push, 1)) /* struct body */ __pragma(pack(pop))
+
+/// @brief Marks a code path as unreachable to allow dead-branch elimination.
+#define GP_BUILTIN_UNREACHABLE() __assume(false)
+
+/// @brief Marks a function as cold (de-prioritised during inlining and code placement).
+#define GP_COLD __declspec(noinline)
+
+/// @section Warning suppression & third-party include brackets.
+
+/// @brief Pushes the current MSVC warning state onto the compiler stack.
+#define GP_MSVC_WARNING_PUSH()        __pragma(warning(push))
+
+/// @brief Restores the previously pushed MSVC warning state.
+#define GP_MSVC_WARNING_POP()         __pragma(warning(pop))
+
+/// @brief Disables a specific MSVC warning number until `GP_MSVC_WARNING_POP()`.
+/// @param[in] code Four-digit MSVC warning number.
+#define GP_MSVC_WARNING_DISABLE(code) __pragma(warning(disable : code))
+
+/// @brief Suppresses deprecation warnings (`C4996`) until `GP_ENABLE_DEPRECATION_WARNINGS`.
+#define GP_DISABLE_DEPRECATION_WARNINGS \
+    GP_MSVC_WARNING_PUSH()              \
+    GP_MSVC_WARNING_DISABLE(4996)
+
+/// @brief Restores deprecation warning diagnostics pushed by `GP_DISABLE_DEPRECATION_WARNINGS`.
+#define GP_ENABLE_DEPRECATION_WARNINGS GP_MSVC_WARNING_POP()
+
+/// @brief Brackets external or OS SDK headers to suppress noisy warnings without relaxing engine warning levels.
+#define GP_THIRD_PARTY_INCLUDES_START \
+    GP_MSVC_WARNING_PUSH()            \
+    GP_MSVC_WARNING_DISABLE(4100)     \
+    GP_MSVC_WARNING_DISABLE(4127)     \
+    GP_MSVC_WARNING_DISABLE(4201)     \
+    GP_MSVC_WARNING_DISABLE(4324)     \
+    GP_MSVC_WARNING_DISABLE(4458)     \
+    GP_MSVC_WARNING_DISABLE(4996)
+
+/// @brief Restores compiler warning state pushed by `GP_THIRD_PARTY_INCLUDES_START`.
+#define GP_THIRD_PARTY_INCLUDES_END GP_MSVC_WARNING_POP()

@@ -2088,7 +2088,7 @@ public:
 
         const SizeType oldLen = size();
         resizeUninitialized(oldLen + formattedLen);
-        (void)std::format_to_n(data() + oldLen, formattedLen, fmt, std::forward<InArgs>(args)...);
+        std::format_to_n(data() + oldLen, formattedLen, fmt, std::forward<InArgs>(args)...);
         data()[oldLen + formattedLen] = InCharT{ 0 };
         return *this;
     }

@@ -5,6 +5,8 @@
 include(gp-build-tool)
 
 gpStartModule(application)
+  gpEnableTests()
+
   gpAddDependency(PUBLIC core)
   gpAddDependency(PUBLIC hal/base)
   gpAddDependency(PUBLIC hal/generic)

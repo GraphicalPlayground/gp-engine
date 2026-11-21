@@ -108,19 +108,19 @@ public:
             // On x86 and x64, XCHG drains the store buffer faster than MOV followed by MFENCE.
             if constexpr (kByteSize == 1u)
             {
-                (void)_InterlockedExchange8(ptr, rawDesired);
+                _InterlockedExchange8(ptr, rawDesired);
             }
             else if constexpr (kByteSize == 2u)
             {
-                (void)_InterlockedExchange16(ptr, rawDesired);
+                _InterlockedExchange16(ptr, rawDesired);
             }
             else if constexpr (kByteSize == 4u)
             {
-                (void)_InterlockedExchange(ptr, rawDesired);
+                _InterlockedExchange(ptr, rawDesired);
             }
             else if constexpr (kByteSize == 8u)
             {
-                (void)_InterlockedExchange64(ptr, rawDesired);
+                _InterlockedExchange64(ptr, rawDesired);
             }
             return;
         }

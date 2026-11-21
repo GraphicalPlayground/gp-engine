@@ -43,7 +43,7 @@ namespace detail
 
     char fileBuf[4096]{};
     const ssize_t bytesRead = ::read(fd, fileBuf, sizeof(fileBuf) - 1u);
-    (void)::close(fd);
+    ::close(fd);
 
     if (bytesRead <= 0)
     {

@@ -781,6 +781,20 @@ template <concepts::IsFloatingPoint T>
     return Vector2<T>::clamp(value, minVec, maxVec);
 }
 
+/// @brief Maps a value from an input 2D range `[inRange.x, inRange.y]` to an output range `[outRange.x, outRange.y]`,
+///        clamping to output bounds.
+/// @tparam T Floating-point type.
+/// @param[in] inRange Input range (`x` = start, `y` = end; supports descending bounds).
+/// @param[in] outRange Output range (`x` = start, `y` = end).
+/// @param[in] value Input value to remap.
+/// @return Remapped and clamped value in `[outRange.x, outRange.y]`.
+template <concepts::IsFloatingPoint T>
+[[nodiscard]] constexpr T
+    getMappedRangeValueClamped(const Vector2<T>& inRange, const Vector2<T>& outRange, const T value) noexcept
+{
+    return getMappedRangeValueClamped(inRange.x, inRange.y, outRange.x, outRange.y, value);
+}
+
 }   // namespace gp::math
 
 /// @brief Component-wise addition of a scalar bias to a vector, with the scalar on the left-hand side of the operator.

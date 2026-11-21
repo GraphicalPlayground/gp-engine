@@ -83,8 +83,8 @@ TEST(EngineClockTest, ResetRestoresCleanState)
     EngineClock clock;
 
     // Tick a few times to dirty the state
-    (void)clock.tick();
-    (void)clock.tick();
+    clock.tick();
+    clock.tick();
     EXPECT_EQ(clock.getStats().frameIndex, 2ULL);
 
     clock.reset();
@@ -186,7 +186,7 @@ TEST(EngineClockTest, PausingGameplayPausesSimulationSubtreeWhileUIAndRealTimeTi
     EngineClock clock(desc);
 
     // Warm up unpaused
-    (void)clock.tick();
+    clock.tick();
     EXPECT_GT(clock.getStats().deltaTime, 0.0f);
 
     // Pause Gameplay domain

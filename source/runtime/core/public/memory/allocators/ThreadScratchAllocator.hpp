@@ -49,6 +49,22 @@ public:
     ///        without triggering a lazy heap slab allocation.
     /// @return Pointer to the calling thread's `LinearAllocator`, or `nullptr` if uninitialized.
     [[nodiscard]] static LinearAllocator* tryGet() noexcept;
+
+    /// @brief Retrieves a reference to the calling thread's `LinearAllocator` object without triggering lazy slab
+    ///        allocation.
+    /// @return Reference to the calling thread's `thread_local LinearAllocator` instance.
+    [[nodiscard]] static LinearAllocator& getUnchecked() noexcept;
+
+    /// @brief Queries the calling OS thread's monotonic fiber context-switch epoch counter.
+    /// @details Incremented whenever `FiberScratchArena` binds a fiber arena or records a fiber yield on the calling
+    ///          OS worker thread. Used by `ScopedScratchMark` to mechanically detect illegal fiber yields inside
+    ///          OS-thread-bound scratch scopes.
+    /// @return Current fiber-switch epoch on the calling OS thread.
+    [[nodiscard]] static gp::UInt64 getCurrentThreadEpoch() noexcept;
+
+    /// @brief Advances the calling OS thread's monotonic fiber context-switch epoch counter by 1.
+    /// @return New fiber-switch epoch value on the calling OS thread.
+    static gp::UInt64 advanceCurrentThreadEpoch() noexcept;
 };
 
 /// @brief Zero-byte stateless allocator proxy that routes all allocations to the calling thread's `ThreadScratchArena`.
@@ -194,21 +210,35 @@ public:
 ///          thread-local slab.
 class GP_CORE_API ScopedScratchMark final
 {
-private:
-    MemoryMark m_mark{};
-
 public:
-    /// @brief Captures the current cursor mark of the calling thread's `ThreadScratchArena` without lazy allocation.
+    /// @brief Captures the current cursor mark and fiber-switch epoch of the calling thread's `ThreadScratchArena`
+    ///        without lazy allocation.
     ScopedScratchMark() noexcept
         : m_mark(ThreadScratchArena::tryGet() != nullptr ? ThreadScratchArena::tryGet()->mark() : MemoryMark{})
-    {}
+    {
+        m_mark.pageCookie = static_cast<void*>(&ThreadScratchArena::getUnchecked());
+        m_mark.contextEpoch = ThreadScratchArena::getCurrentThreadEpoch();
+    }
 
     /// @brief Rewinds the calling thread's `ThreadScratchArena` back to the mark captured on construction if active.
+    /// @note Asserts that no cooperative fiber context switch or cross-thread migration occurred while this guard was
+    ///       live on the stack.
     ~ScopedScratchMark() noexcept
     {
-        if (LinearAllocator* const arena = ThreadScratchArena::tryGet(); arena != nullptr)
+        const bool validContext = isContextValid();
+        GP_ASSERT(
+            validContext,
+            "ScopedScratchMark spanned a cooperative fiber context switch or migrated across OS worker threads. "
+            "ThreadScratchAllocator is strictly for non-yielding leaf scopes; use FiberScratchAllocator and "
+            "ScopedFiberScratchMark across fiber yield points."
+        );
+
+        if (validContext) [[likely]]
         {
-            arena->rewind(m_mark);
+            if (LinearAllocator* const arena = ThreadScratchArena::tryGet(); arena != nullptr)
+            {
+                arena->rewind(m_mark);
+            }
         }
     }
 
@@ -217,12 +247,42 @@ public:
     ScopedScratchMark(ScopedScratchMark&&) = delete;
     ScopedScratchMark& operator=(ScopedScratchMark&&) = delete;
 
+    /// @brief Manually rewinds the calling thread's scratchpad to the saved checkpoint before the scope exits.
+    void rewindNow() noexcept
+    {
+        const bool validContext = isContextValid();
+        GP_ASSERT(
+            validContext,
+            "ScopedScratchMark::rewindNow called after a cooperative fiber context switch or cross-thread migration."
+        );
+
+        if (validContext) [[likely]]
+        {
+            if (LinearAllocator* const arena = ThreadScratchArena::tryGet(); arena != nullptr)
+            {
+                arena->rewind(m_mark);
+            }
+        }
+    }
+
+    /// @brief Checks whether the calling OS thread and fiber-switch epoch still match the context where this guard was
+    ///        constructed.
+    /// @return True if no fiber switch or thread migration occurred since construction; false otherwise.
+    [[nodiscard]] bool isContextValid() const noexcept
+    {
+        return (m_mark.pageCookie == static_cast<const void*>(&ThreadScratchArena::getUnchecked())) &&
+               (m_mark.contextEpoch == ThreadScratchArena::getCurrentThreadEpoch());
+    }
+
     /// @brief Retrieves the saved checkpoint captured when this guard was constructed.
     /// @return Const reference to `MemoryMark`.
     [[nodiscard]] constexpr const MemoryMark& getMark() const noexcept
     {
         return m_mark;
     }
+
+private:
+    MemoryMark m_mark{};
 };
 
 static_assert(

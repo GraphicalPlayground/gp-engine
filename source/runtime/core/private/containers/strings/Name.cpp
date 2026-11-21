@@ -10,6 +10,7 @@
 #include "containers/strings/StringEnums.hpp"
 #include "containers/views/StringView.hpp"
 #include "CoreMinimal.hpp"
+#include "hashing/Fnv1a.hpp"
 #include "memory/allocators/HeapAllocator.hpp"
 #include "memory/Memory.hpp"
 #include "memory/MemoryBase.hpp"
@@ -107,7 +108,7 @@ NameEntryId NamePool::findOrAdd(const BasicStringView<char> baseStr, const NameF
     const BasicStringView<char> clampedStr =
         (baseStr.size() > kMaxNameLength) ? baseStr.substr(0u, kMaxNameLength) : baseStr;
 
-    const gp::UInt64 hash = CharTraits<char>::hashIgnoreCase(clampedStr.data(), clampedStr.size());
+    const gp::UInt64 hash = gp::hashing::Fnv1a64::hashIgnoreCase(clampedStr.data(), clampedStr.size());
     const gp::UInt32 shardIdx = shardIndexFromHash(hash);
     Shard& shard = m_shards[shardIdx];
 
@@ -361,7 +362,7 @@ Name::Name(const BasicStringView<char> str, const NameFindMode findMode) noexcep
 
     BasicStringView<char> baseStr{};
     gp::Int32 internalNumber = kNameNoNumber;
-    (void)NamePool::splitNameWithCheck(str, baseStr, internalNumber);
+    NamePool::splitNameWithCheck(str, baseStr, internalNumber);
 
     if (NamePool::isCanonicalNone(baseStr))
     {
@@ -479,7 +480,7 @@ bool Name::equalsString(const BasicStringView<char> str, const SearchCase search
 
     BasicStringView<char> rhsBase{};
     gp::Int32 rhsInternalNumber = kNameNoNumber;
-    (void)NamePool::splitNameWithCheck(str, rhsBase, rhsInternalNumber);
+    NamePool::splitNameWithCheck(str, rhsBase, rhsInternalNumber);
 
     if (m_number != rhsInternalNumber)
     {

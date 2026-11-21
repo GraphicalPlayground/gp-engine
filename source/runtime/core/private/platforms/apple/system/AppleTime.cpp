@@ -21,7 +21,7 @@ constexpr gp::UInt64 kNanosecondsPerSecond = 1'000'000'000ULL;
     static mach_timebase_info_data_t s_timebase{ 0u, 0u };
     if (s_timebase.denom == 0u) [[unlikely]]
     {
-        (void)::mach_timebase_info(&s_timebase);
+        ::mach_timebase_info(&s_timebase);
         if (s_timebase.numer == 0u || s_timebase.denom == 0u) [[unlikely]]
         {
             s_timebase.numer = 1u;

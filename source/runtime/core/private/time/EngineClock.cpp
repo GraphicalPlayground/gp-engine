@@ -73,17 +73,17 @@ const FrameTimeStats& EngineClock::tick() noexcept
     // 3. Advance all 6 Domain Clocks
     //    - RealTime advances by raw unclamped delta
     //    - UI, Gameplay, Physics, Animation, and Audio advance by smoothedDelta (scaled by their hierarchy)
-    (void)m_domainClocks[static_cast<gp::USize>(ClockDomain::RealTime)].advance(rawDelta);
-    (void)m_domainClocks[static_cast<gp::USize>(ClockDomain::UI)].advance(smoothedDelta);
+    m_domainClocks[static_cast<gp::USize>(ClockDomain::RealTime)].advance(rawDelta);
+    m_domainClocks[static_cast<gp::USize>(ClockDomain::UI)].advance(smoothedDelta);
 
     const Duration gameplayDelta = m_domainClocks[static_cast<gp::USize>(ClockDomain::Gameplay)].advance(smoothedDelta);
 
     SimulationClock& physicsClock = m_domainClocks[static_cast<gp::USize>(ClockDomain::Physics)];
-    (void)physicsClock.advance(smoothedDelta);
+    physicsClock.advance(smoothedDelta);
     const FixedStepResult fixedStep = physicsClock.consumeFixedSteps();
 
-    (void)m_domainClocks[static_cast<gp::USize>(ClockDomain::Animation)].advance(smoothedDelta);
-    (void)m_domainClocks[static_cast<gp::USize>(ClockDomain::Audio)].advance(smoothedDelta);
+    m_domainClocks[static_cast<gp::USize>(ClockDomain::Animation)].advance(smoothedDelta);
+    m_domainClocks[static_cast<gp::USize>(ClockDomain::Audio)].advance(smoothedDelta);
 
     // 4. Update Smoothed FPS Telemetry
     const gp::Float64 unscaledSeconds = smoothedDelta.toSeconds();
@@ -111,13 +111,13 @@ const FrameTimeStats& EngineClock::tick() noexcept
 
 void EngineClock::paceFrame() noexcept
 {
-    (void)m_framePacer.paceUntilDeadline(m_frameStartTimestamp);
+    m_framePacer.paceUntilDeadline(m_frameStartTimestamp);
 }
 
 void EngineClock::paceFrame(gp::Float64 targetFps) noexcept
 {
     m_framePacer.setTargetFps(targetFps);
-    (void)m_framePacer.paceUntilDeadline(m_frameStartTimestamp);
+    m_framePacer.paceUntilDeadline(m_frameStartTimestamp);
 }
 
 constexpr Duration EngineClock::computeSmoothedDelta(Duration clampedDelta) noexcept
