@@ -175,6 +175,55 @@ TEST(VectorViewTests, SearchPrefixSuffixBinarySearchAndBytes)
     EXPECT_EQ(data[1], 77);
     EXPECT_EQ(data[2], 77);
     EXPECT_EQ(data[3], 77);
+
+    // Single-element startsWith / endsWith, indexIf / lastIndexIf, findLastIf, swap, and comparator binarySearch
+    EXPECT_TRUE(view.startsWith(10));
+    EXPECT_FALSE(view.startsWith(99));
+    EXPECT_TRUE(view.endsWith(60));
+    EXPECT_FALSE(view.endsWith(10));
+
+    EXPECT_EQ(
+        view.indexIf(
+            [](const gp::Int32 v) -> bool
+    {
+        return v == 77;
+    }
+        ),
+        1u
+    );
+    EXPECT_EQ(
+        view.lastIndexIf(
+            [](const gp::Int32 v) -> bool
+    {
+        return v == 77;
+    }
+        ),
+        3u
+    );
+    const auto last77 = view.findLastIf(
+        [](const gp::Int32 v) -> bool
+    {
+        return v == 77;
+    }
+    );
+    ASSERT_NE(last77, view.end());
+    EXPECT_EQ(last77 - view.begin(), 3);
+
+    const gp::Int32 descArr[4] = { 40, 30, 20, 10 };
+    const gp::ConstVectorView<gp::Int32> descView(descArr);
+    const auto gtComp = [](const gp::Int32 a, const gp::Int32 b) -> bool
+    {
+        return a > b;
+    };
+    EXPECT_EQ(descView.binarySearch(20, gtComp), 2u);
+    EXPECT_EQ(descView.lowerBound(25, gtComp), 2u);
+    EXPECT_EQ(descView.upperBound(30, gtComp), 2u);
+
+    gp::ConstVectorView<gp::Int32> emptyRange(
+        static_cast<const gp::Int32*>(nullptr), static_cast<const gp::Int32*>(nullptr)
+    );
+    EXPECT_TRUE(emptyRange.isEmpty());
+    emptyRange.swap(descView == emptyRange ? emptyRange : emptyRange);
 }
 
 }   // namespace gp::tests
