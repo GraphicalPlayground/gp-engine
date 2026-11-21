@@ -71,7 +71,10 @@ public:
         : m_data(first)
         , m_size((first != nullptr && last != nullptr && last >= first) ? static_cast<SizeType>(last - first) : 0u)
     {
-        GP_ASSERT(first <= last, "VectorView range constructor requires first <= last.");
+        GP_ASSERT(
+            (first == nullptr && last == nullptr) || (first != nullptr && last != nullptr && first <= last),
+            "VectorView range constructor requires a valid [first, last) pointer pair."
+        );
     }
 
     /// @brief Constructs a view over a native C-style array `arr[InN]`.
@@ -359,6 +362,18 @@ public:
         m_size -= count;
     }
 
+    /// @brief Swaps the pointer and element count of this view with `other`.
+    /// @param[in,out] other View to swap with.
+    constexpr void swap(VectorView& other) noexcept
+    {
+        const Pointer tempData = m_data;
+        const SizeType tempSize = m_size;
+        m_data = other.m_data;
+        m_size = other.m_size;
+        other.m_data = tempData;
+        other.m_size = tempSize;
+    }
+
     /// @brief Reinterprets the viewed sequence as a read-only byte view (`VectorView<const gp::UInt8>`).
     /// @return Read-only byte view of length `sizeInBytes()`.
     [[nodiscard]] VectorView<const gp::UInt8> asBytes() const noexcept
@@ -421,6 +436,23 @@ public:
         return end();
     }
 
+    /// @brief Finds the last element satisfying `predicate`.
+    /// @tparam InPredicate Unary predicate `(ConstReference) -> bool`.
+    /// @param[in] predicate Search condition.
+    /// @return Iterator to the last matching element, or `end()` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr Iterator findLastIf(InPredicate predicate) const noexcept
+    {
+        for (SizeType i = m_size; i > 0u; --i)
+        {
+            if (predicate(m_data[i - 1u]))
+            {
+                return m_data + (i - 1u);
+            }
+        }
+        return end();
+    }
+
     /// @brief Finds the first index of `value` in the view.
     /// @param[in] value Value to search for.
     /// @return Zero-based index of the first match, or `npos` if not found.
@@ -453,6 +485,16 @@ public:
         return npos;
     }
 
+    /// @brief Finds the first index of an element satisfying `predicate` (alias for `indexOfIf` matching ADR-0056).
+    /// @tparam InPredicate Unary predicate `(ConstReference) -> bool`.
+    /// @param[in] predicate Search condition.
+    /// @return Zero-based index of the first match, or `npos` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr SizeType indexIf(InPredicate predicate) const noexcept
+    {
+        return indexOfIf(predicate);
+    }
+
     /// @brief Finds the last index of `value` in the view.
     /// @param[in] value Value to search for.
     /// @return Zero-based index of the last match, or `npos` if not found.
@@ -483,6 +525,16 @@ public:
             }
         }
         return npos;
+    }
+
+    /// @brief Finds the last index of an element satisfying `predicate` (alias for `lastIndexOfIf`).
+    /// @tparam InPredicate Unary predicate `(ConstReference) -> bool`.
+    /// @param[in] predicate Search condition.
+    /// @return Zero-based index of the last match, or `npos` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr SizeType lastIndexIf(InPredicate predicate) const noexcept
+    {
+        return lastIndexOfIf(predicate);
     }
 
     /// @brief Checks whether the view contains at least one element equal to `value`.
@@ -552,6 +604,14 @@ public:
         return first(prefix.size()) == prefix;
     }
 
+    /// @brief Checks whether this view begins with `value`.
+    /// @param[in] value Element value to compare against `front()`.
+    /// @return True if `!isEmpty()` and `front() == value`, false otherwise.
+    [[nodiscard]] constexpr bool startsWith(const ValueType& value) const noexcept
+    {
+        return (m_size > 0u) && (m_data[0u] == value);
+    }
+
     /// @brief Checks whether this view ends with all elements of `suffix`.
     /// @tparam InOtherT Suffix element type.
     /// @param[in] suffix Suffix sequence to match.
@@ -567,12 +627,32 @@ public:
         return last(suffix.size()) == suffix;
     }
 
+    /// @brief Checks whether this view ends with `value`.
+    /// @param[in] value Element value to compare against `back()`.
+    /// @return True if `!isEmpty()` and `back() == value`, false otherwise.
+    [[nodiscard]] constexpr bool endsWith(const ValueType& value) const noexcept
+    {
+        return (m_size > 0u) && (m_data[m_size - 1u] == value);
+    }
+
     /// @brief Returns the index of the first element `>= value` in a sorted view, or `size()` if all are smaller.
     /// @param[in] value Value to search for.
     /// @return Lower-bound insertion index in `[0, size()]`.
     [[nodiscard]] constexpr SizeType lowerBound(const ValueType& value) const noexcept
     {
         const ConstIterator it = std::ranges::lower_bound(cbegin(), cend(), value);
+        return static_cast<SizeType>(it - cbegin());
+    }
+
+    /// @brief Returns the index of the first element in a sorted view for which `comp(elem, value)` is false.
+    /// @tparam InCompare Strict weak ordering predicate `(ConstReference, const ValueType&) -> bool`.
+    /// @param[in] value Value to search for.
+    /// @param[in] comp Comparator predicate.
+    /// @return Lower-bound insertion index in `[0, size()]`.
+    template <typename InCompare>
+    [[nodiscard]] constexpr SizeType lowerBound(const ValueType& value, InCompare comp) const noexcept
+    {
+        const ConstIterator it = std::ranges::lower_bound(cbegin(), cend(), value, comp);
         return static_cast<SizeType>(it - cbegin());
     }
 
@@ -585,6 +665,18 @@ public:
         return static_cast<SizeType>(it - cbegin());
     }
 
+    /// @brief Returns the index of the first element in a sorted view for which `comp(value, elem)` is true.
+    /// @tparam InCompare Strict weak ordering predicate `(const ValueType&, ConstReference) -> bool`.
+    /// @param[in] value Value to search for.
+    /// @param[in] comp Comparator predicate.
+    /// @return Upper-bound insertion index in `[0, size()]`.
+    template <typename InCompare>
+    [[nodiscard]] constexpr SizeType upperBound(const ValueType& value, InCompare comp) const noexcept
+    {
+        const ConstIterator it = std::ranges::upper_bound(cbegin(), cend(), value, comp);
+        return static_cast<SizeType>(it - cbegin());
+    }
+
     /// @brief Performs O(log N) binary search for `value` in a sorted view.
     /// @param[in] value Value to search for.
     /// @return Index of a matching element, or `npos` if not found.
@@ -592,6 +684,22 @@ public:
     {
         const SizeType idx = lowerBound(value);
         if (idx < m_size && (m_data[idx] == value))
+        {
+            return idx;
+        }
+        return npos;
+    }
+
+    /// @brief Performs O(log N) binary search for `value` in a view sorted according to `comp`.
+    /// @tparam InCompare Strict weak ordering comparator.
+    /// @param[in] value Value to search for.
+    /// @param[in] comp Comparator predicate.
+    /// @return Index of an equivalent element, or `npos` if not found.
+    template <typename InCompare>
+    [[nodiscard]] constexpr SizeType binarySearch(const ValueType& value, InCompare comp) const noexcept
+    {
+        const SizeType idx = lowerBound(value, comp);
+        if (idx < m_size && !comp(value, m_data[idx]))
         {
             return idx;
         }
