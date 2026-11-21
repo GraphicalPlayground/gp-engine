@@ -73,6 +73,14 @@ support multiple APIs while maintaining a single, unified interface for the engi
 - [**ADR-0007**: Uniform Base+N-Backends Pattern for All Pluralistic Subsystems](./ADR-0007.md)
   > Generalizes the abstract RHI structure to all pluralistic subsystems (Audio, Physics, Parsers),
   > requiring a central `base/` module alongside independent, dynamically loaded backend modules.
+- [**ADR-0061**: Hybrid Static/Dynamic Module Manager and Per-Module Shadow Malloc Binding](
+  ./ADR-0061.md)
+  > Establishes `gp::modules` (`IModule`, `ModuleManager`, `GP_IMPLEMENT_MODULE`) inside `gp::core`
+  > to orchestrate dynamic (`.dll`/`.so`/`.dylib`) and monolithic static engine modules. It enforces
+  > an entry-point ABI handshake (`gpInitializeModule`) that synchronizes each shared library's
+  > image-local `g_localShadowMalloc` pointer prior to module allocation, injects per-DLL
+  > `operator new`/`delete` overrides, and executes lock-free-loader, reverse-LIFO teardown
+  > (amending [ADR-0041](./ADR-0041.md)).
 
 ### Core Systems & Concurrency Primitives
 
