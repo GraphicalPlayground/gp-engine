@@ -14,6 +14,7 @@
 #include "logging/sinks/MemoryRingSink.hpp"
 #include "memory/MemoryOrder.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "modules/Modules.hpp"
 #include "platforms/base/system/FileSystem.hpp"
 #include "platforms/base/system/Paths.hpp"
 #include "platforms/base/system/Thread.hpp"
@@ -1316,6 +1317,181 @@ TEST(ApplicationVfsWiringTest, CommandLineVfsAppAndVfsLogFileUriResolution)
     gp::String diskLog{};
     ASSERT_TRUE(gp::platform::FileSystem::readAllText(app.openedLogPath.view(), diskLog).hasValue());
     EXPECT_TRUE(diskLog.view().contains("VfsLogProbeApp marker message"));
+}
+
+namespace
+{
+
+class AppTestRhiBackendModule final : public modules::IModule
+{
+public:
+    static inline gp::UInt32 s_startupOrder{ 0u };
+    static inline gp::UInt32 s_shutdownOrder{ 0u };
+    static inline gp::UInt32 s_orderCounter{ 0u };
+    static inline gp::memory::Malloc* s_observedShadowMalloc{ nullptr };
+
+    virtual bool onStartupModule() noexcept override
+    {
+        s_observedShadowMalloc = gp::memory::getInlineMalloc();
+        s_startupOrder = ++s_orderCounter;
+        return true;
+    }
+
+    virtual void onShutdownModule() noexcept override
+    {
+        s_shutdownOrder = ++s_orderCounter;
+    }
+};
+
+class AppTestAudioBackendModule final : public modules::IModule
+{
+public:
+    static inline gp::UInt32 s_startupOrder{ 0u };
+    static inline gp::UInt32 s_shutdownOrder{ 0u };
+
+    virtual bool onStartupModule() noexcept override
+    {
+        s_startupOrder = ++AppTestRhiBackendModule::s_orderCounter;
+        return true;
+    }
+
+    virtual void onShutdownModule() noexcept override
+    {
+        s_shutdownOrder = ++AppTestRhiBackendModule::s_orderCounter;
+    }
+};
+
+}   // namespace
+
+TEST(ApplicationModuleWiringTest, StartupModulesCliOverridesConsoleCommandsAndReverseLifoShutdown)
+{
+    CommandLine::shutdown();
+    modules::ModuleManager& moduleMgr = Application::getModuleManager();
+    moduleMgr.resetForTesting();
+
+    auto cleanup = gp::makeScopeExit(
+        [&moduleMgr]() noexcept -> void
+    {
+        moduleMgr.resetForTesting();
+        CommandLine::shutdown();
+    }
+    );
+
+    AppTestRhiBackendModule::s_startupOrder = 0u;
+    AppTestRhiBackendModule::s_shutdownOrder = 0u;
+    AppTestRhiBackendModule::s_orderCounter = 0u;
+    AppTestRhiBackendModule::s_observedShadowMalloc = nullptr;
+    AppTestAudioBackendModule::s_startupOrder = 0u;
+    AppTestAudioBackendModule::s_shutdownOrder = 0u;
+
+    ASSERT_TRUE(moduleMgr.registerStaticModule(
+        "rhi/app_test_backend",
+        &modules::StaticModuleRegistrant<AppTestRhiBackendModule>::createInstance,
+        &modules::StaticModuleRegistrant<AppTestRhiBackendModule>::destroyInstance
+    ));
+    ASSERT_TRUE(moduleMgr.registerStaticModule(
+        "audio/app_test_backend",
+        &modules::StaticModuleRegistrant<AppTestAudioBackendModule>::createInstance,
+        &modules::StaticModuleRegistrant<AppTestAudioBackendModule>::destroyInstance
+    ));
+
+    // Pass the second startup module via the -load-module CLI flag while configuring the first in ApplicationDesc.
+    CommandLine::initialize("gp_application_tests -load-module=audio/app_test_backend");
+
+    ApplicationDesc desc{};
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.enableJobSystem = false;
+    desc.targetForegroundFps = 0.0;
+    desc.targetBackgroundFps = 0.0;
+    EXPECT_TRUE(desc.addStartupModule("rhi/app_test_backend"));
+
+    class ModuleLifecycleProbeApp final : public Application
+    {
+    public:
+        explicit ModuleLifecycleProbeApp(const ApplicationDesc& inDesc) noexcept
+            : Application(inDesc)
+        {}
+
+        bool bothLoadedInOnInitialize{ false };
+        bool bothStillLoadedInOnShutdown{ false };
+        bool consoleStatusSucceeded{ false };
+        bool reloadSucceededInOnUpdate{ false };
+
+    protected:
+        [[nodiscard]] virtual bool onInitialize() noexcept override
+        {
+            bothLoadedInOnInitialize =
+                isModuleLoaded("rhi/app_test_backend") && isModuleLoaded("audio/app_test_backend");
+            return bothLoadedInOnInitialize;
+        }
+
+        virtual void onUpdate(const gp::time::FrameTimeStats&) noexcept override
+        {
+            gp::String statusOutput{};
+            console::ConsoleOutputDelegate capture = console::ConsoleOutputDelegate::createLambda(
+                [&statusOutput](const gp::StringView line) noexcept -> void
+            {
+                statusOutput.append(line);
+            }
+            );
+            consoleStatusSucceeded =
+                (executeConsoleCommand("module.Status", &capture) == console::ConsoleResult::Success) &&
+                statusOutput.view().contains("loaded=2");
+
+            modules::ModuleLoadResult reloadRes = modules::ModuleLoadResult::NotFound;
+            reloadSucceededInOnUpdate = (reloadModule("audio/app_test_backend", &reloadRes) != nullptr) &&
+                                        (reloadRes == modules::ModuleLoadResult::Success);
+            requestQuit();
+        }
+
+        virtual void onShutdown() noexcept override
+        {
+            // Modules must remain active throughout onShutdown() and only unload inside shutdownInternal() afterward.
+            bothStillLoadedInOnShutdown =
+                isModuleLoaded("rhi/app_test_backend") && isModuleLoaded("audio/app_test_backend");
+        }
+    };
+
+    ModuleLifecycleProbeApp app(desc);
+    EXPECT_EQ(app.run(), 0);
+    EXPECT_TRUE(app.bothLoadedInOnInitialize);
+    EXPECT_TRUE(app.consoleStatusSucceeded);
+    EXPECT_TRUE(app.reloadSucceededInOnUpdate);
+    EXPECT_TRUE(app.bothStillLoadedInOnShutdown);
+    EXPECT_EQ(AppTestRhiBackendModule::s_observedShadowMalloc, gp::memory::getGlobalMalloc());
+
+    // After app.run() returns, shutdownInternal() must have unloaded all modules in reverse-LIFO order
+    // (audio/app_test_backend shut down BEFORE rhi/app_test_backend).
+    EXPECT_EQ(moduleMgr.getLoadedModuleCount(), 0u);
+    EXPECT_LT(AppTestAudioBackendModule::s_shutdownOrder, AppTestRhiBackendModule::s_shutdownOrder);
+}
+
+TEST(ApplicationModuleWiringTest, FailingRequiredStartupModuleAbortsRunAndRollsBackCleanly)
+{
+    CommandLine::shutdown();
+    modules::ModuleManager& moduleMgr = Application::getModuleManager();
+    moduleMgr.resetForTesting();
+
+    auto cleanup = gp::makeScopeExit(
+        [&moduleMgr]() noexcept -> void
+    {
+        moduleMgr.resetForTesting();
+        CommandLine::shutdown();
+    }
+    );
+
+    ApplicationDesc desc{};
+    desc.createMainWindow = false;
+    desc.enableLogging = false;
+    desc.enableJobSystem = false;
+    desc.failOnStartupModuleLoadError = true;
+    EXPECT_TRUE(desc.addStartupModule("rhi/nonexistent_required_startup_module_xyz"));
+
+    Application app(desc);
+    EXPECT_EQ(app.run(), -1);
+    EXPECT_EQ(moduleMgr.getLoadedModuleCount(), 0u);
+    EXPECT_EQ(thread::ThreadRoleRegistry::getCurrentRoles(), thread::ThreadRole::None);
 }
 
 }   // namespace gp::tests
