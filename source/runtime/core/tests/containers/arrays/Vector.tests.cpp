@@ -756,4 +756,97 @@ TEST(VectorTests, SelfCritiqueEnhancementsInsertGapBinarySearchDeduplicateAndVie
     EXPECT_EQ(copiedKeys[2], 3);
 }
 
+TEST(VectorTests, InlineVectorRelocatableSboDemotionAndSelfAliasingGrowAndStrided)
+{
+    // 1. Relocatable InlineVector<gp::Int32, 4> must also demote back to inline SBO on shrinkToFit()!
+    gp::InlineVector<gp::Int32, 4u> relocInline{ 10, 20, 30, 40 };
+    EXPECT_TRUE(relocInline.getAllocator().isInlinePointer(relocInline.data()));
+    EXPECT_EQ(relocInline.capacity(), 4u);
+
+    // Spill to heap
+    relocInline.pushBack(50);
+    relocInline.pushBack(60);
+    EXPECT_FALSE(relocInline.getAllocator().isInlinePointer(relocInline.data()));
+    EXPECT_GT(relocInline.capacity(), 4u);
+
+    // Pop back to 3 elements (<= 4) and shrinkToFit(): must demote back into the inline SBO buffer!
+    relocInline.popBack();
+    relocInline.popBack();
+    relocInline.popBack();
+    relocInline.shrinkToFit();
+    EXPECT_TRUE(relocInline.getAllocator().isInlinePointer(relocInline.data()));
+    EXPECT_EQ(relocInline.capacity(), 4u);
+    ASSERT_EQ(relocInline.size(), 3u);
+    EXPECT_EQ(relocInline[0], 10);
+    EXPECT_EQ(relocInline[1], 20);
+    EXPECT_EQ(relocInline[2], 30);
+
+    // 2. Self-aliasing assign when count > m_size (using zero-stride broadcast or overlapping pointer)
+    LifecycleTracker::resetCounts();
+    {
+        gp::Vector<LifecycleTracker> tracked;
+        tracked.reserve(8u);
+        tracked.emplaceBack(100);
+        tracked.emplaceBack(200);
+        // Construct a valid element at m_data + 2 in capacity slack to test overlapping assign where count > m_size,
+        // or test self-aliasing StridedView assign/append!
+        const gp::StridedView<LifecycleTracker> selfBroadcast =
+            gp::StridedView<LifecycleTracker>::broadcast(tracked[0], 6u);
+        tracked.assign(selfBroadcast);
+        ASSERT_EQ(tracked.size(), 6u);
+        for (gp::USize i = 0u; i < 6u; ++i)
+        {
+            EXPECT_EQ(tracked[i].id, 100);
+        }
+
+        // Self-aliasing StridedView append that triggers reallocation
+        const gp::StridedView<LifecycleTracker> selfEverySecond = tracked.stridedView().everyNth(2u);
+        tracked.append(selfEverySecond);
+        ASSERT_EQ(tracked.size(), 9u);
+        for (gp::USize i = 0u; i < 9u; ++i)
+        {
+            EXPECT_EQ(tracked[i].id, 100);
+        }
+    }
+    EXPECT_EQ(LifecycleTracker::s_constructCount, LifecycleTracker::s_destructCount);
+
+    // 3. Predicate search & comparator binarySearch / lowerBound / upperBound
+    gp::Vector<gp::Int32> desc{ 90, 70, 50, 30, 10 };
+    const auto greaterComp = [](const gp::Int32 a, const gp::Int32 b) -> bool
+    {
+        return a > b;
+    };
+    EXPECT_EQ(desc.binarySearch(70, greaterComp), 1u);
+    EXPECT_EQ(desc.binarySearch(60, greaterComp), gp::Vector<gp::Int32>::npos);
+    EXPECT_EQ(desc.lowerBound(60, greaterComp), 2u);
+    EXPECT_EQ(desc.upperBound(70, greaterComp), 2u);
+
+    EXPECT_EQ(
+        desc.indexIf(
+            [](const gp::Int32 v) -> bool
+    {
+        return v <= 50;
+    }
+        ),
+        2u
+    );
+    EXPECT_EQ(
+        desc.lastIndexIf(
+            [](const gp::Int32 v) -> bool
+    {
+        return v >= 30;
+    }
+        ),
+        3u
+    );
+    const auto lastMatchIt = desc.findLastIf(
+        [](const gp::Int32 v) -> bool
+    {
+        return v >= 30;
+    }
+    );
+    ASSERT_NE(lastMatchIt, desc.end());
+    EXPECT_EQ(*lastMatchIt, 30);
+}
+
 }   // namespace gp::tests
