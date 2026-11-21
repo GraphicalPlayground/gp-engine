@@ -21,6 +21,7 @@ namespace gp
 ///        [ADR-0054]).
 struct ApplicationDesc
 {
+public:
     /// @brief OS backend and hardware subsystem initialization parameters.
     hal::ApplicationBackendDesc backend{};
 
@@ -108,6 +109,84 @@ struct ApplicationDesc
     ///        `cache://`, `temp://`) during startup and unmounts them on exit (can be overridden by `-no-vfs` on the
     ///        command line).
     bool enableVirtualFileSystem{ true };
+
+    /// @brief Additional shared library search directories registered with `gp::modules::ModuleManager` on startup
+    ///        ([ADR-0061]).
+    gp::StringView moduleSearchDirectories[kMaxApplicationModuleSearchDirectories]{};
+
+    /// @brief Number of active entries populated in `moduleSearchDirectories` (`<=
+    /// kMaxApplicationModuleSearchDirectories`).
+    gp::UInt32 moduleSearchDirectoryCount{ 0u };
+
+    /// @brief Engine or backend module identifiers (e.g., `"rhi/null"`, `"rhi/d3d12"`, `"audio/openal"`) loaded
+    ///        automatically during `Application::initializeInternal()` prior to `onInitialize()` ([ADR-0061]).
+    /// @details Can be augmented or overridden on the command line via `-load-module=<name>` or
+    ///          `-modules=<modA,modB,...>`.
+    gp::StringView startupModules[kMaxApplicationStartupModules]{};
+
+    /// @brief Number of active entries populated in `startupModules` (`<= kMaxApplicationStartupModules`).
+    gp::UInt32 startupModuleCount{ 0u };
+
+    /// @brief If true, initializes `gp::modules::ModuleManager` search paths and loads `startupModules` during startup
+    ///        (can be disabled via `-no-modules` on the command line) ([ADR-0061]).
+    bool enableModuleSystem{ true };
+
+    /// @brief If true, aborts `Application::run()` initialization cleanly if any module in `startupModules` fails to
+    ///        load ([ADR-0061]).
+    bool failOnStartupModuleLoadError{ true };
+
+    /// @brief If true, automatically unloads all modules loaded by this `Application` in reverse-LIFO order during
+    ///        `Application::shutdownInternal()` after `JobSystem` workers and named-thread queues drain ([ADR-0061]).
+    bool unloadModulesOnShutdown{ true };
+
+public:
+    /// @brief Appends a module identifier to `startupModules` if capacity permits and not already listed.
+    /// @param[in] moduleName Module identifier to schedule for startup loading (e.g., `"rhi/null"`).
+    /// @return True if added (or already present), false if `moduleName` is empty or capacity is exhausted.
+    constexpr bool addStartupModule(const gp::StringView moduleName) noexcept
+    {
+        if (moduleName.isEmpty())
+        {
+            return false;
+        }
+        for (gp::UInt32 i = 0u; i < startupModuleCount; ++i)
+        {
+            if (startupModules[i].equalsIgnoreCase(moduleName))
+            {
+                return true;
+            }
+        }
+        if (startupModuleCount >= kMaxApplicationStartupModules)
+        {
+            return false;
+        }
+        startupModules[startupModuleCount++] = moduleName;
+        return true;
+    }
+
+    /// @brief Appends a directory path to `moduleSearchDirectories` if capacity permits.
+    /// @param[in] directory Directory path (UTF-8) to register with `ModuleManager`.
+    /// @return True if added (or already present), false if `directory` is empty or capacity is exhausted.
+    constexpr bool addModuleSearchDirectory(const gp::StringView directory) noexcept
+    {
+        if (directory.isEmpty())
+        {
+            return false;
+        }
+        for (gp::UInt32 i = 0u; i < moduleSearchDirectoryCount; ++i)
+        {
+            if (moduleSearchDirectories[i].equalsIgnoreCase(directory))
+            {
+                return true;
+            }
+        }
+        if (moduleSearchDirectoryCount >= kMaxApplicationModuleSearchDirectories)
+        {
+            return false;
+        }
+        moduleSearchDirectories[moduleSearchDirectoryCount++] = directory;
+        return true;
+    }
 };
 
 }   // namespace gp
