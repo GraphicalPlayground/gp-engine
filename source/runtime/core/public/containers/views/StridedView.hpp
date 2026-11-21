@@ -430,6 +430,15 @@ public:
         return (*this)[m_size - 1u];
     }
 
+    /// @brief Accesses an element indexed backward from the end of the strided view (`0` = last element).
+    /// @param[in] indexFromEnd Offset backward from `size() - 1`.
+    /// @return Reference to `(*this)[size() - 1 - indexFromEnd]`.
+    [[nodiscard]] GP_FORCEINLINE_HINT constexpr Reference lastElement(const SizeType indexFromEnd = 0u) const noexcept
+    {
+        GP_ASSERT(indexFromEnd < m_size, "StridedView::lastElement indexFromEnd out of bounds.");
+        return (*this)[m_size - 1u - indexFromEnd];
+    }
+
     /// @brief Returns a pointer to the first element (`index == 0`) in the view.
     /// @return Pointer to element `0`, or `nullptr` if empty.
     [[nodiscard]] GP_FORCEINLINE_HINT constexpr Pointer data() const noexcept
@@ -588,6 +597,48 @@ public:
         return slice(0u, m_size - count);
     }
 
+    /// @brief Advances the start of this strided view in-place by `count` elements.
+    /// @param[in] count Number of leading elements to remove (`count <= size()`).
+    constexpr void removePrefix(const SizeType count) noexcept
+    {
+        GP_ASSERT(count <= m_size, "StridedView::removePrefix count exceeds view size.");
+        if (count == m_size)
+        {
+            m_data = nullptr;
+            m_size = 0u;
+            return;
+        }
+        m_data = detail::resolveStridedAddress(m_data, m_strideInBytes, static_cast<DifferenceType>(count));
+        m_size -= count;
+    }
+
+    /// @brief Shrinks the end of this strided view in-place by `count` elements.
+    /// @param[in] count Number of trailing elements to remove (`count <= size()`).
+    constexpr void removeSuffix(const SizeType count) noexcept
+    {
+        GP_ASSERT(count <= m_size, "StridedView::removeSuffix count exceeds view size.");
+        m_size -= count;
+        if (m_size == 0u)
+        {
+            m_data = nullptr;
+        }
+    }
+
+    /// @brief Swaps the pointer, size, and byte stride of this view with `other`.
+    /// @param[in,out] other Strided view to swap with.
+    constexpr void swap(StridedView& other) noexcept
+    {
+        const Pointer tempData = m_data;
+        const SizeType tempSize = m_size;
+        const DifferenceType tempStride = m_strideInBytes;
+        m_data = other.m_data;
+        m_size = other.m_size;
+        m_strideInBytes = other.m_strideInBytes;
+        other.m_data = tempData;
+        other.m_size = tempSize;
+        other.m_strideInBytes = tempStride;
+    }
+
     /// @brief Returns a new strided view that visits every `step`-th element (`stride() * step`).
     /// @param[in] step Positive element step (`step >= 1`).
     /// @return Sub-sampled `StridedView`.
@@ -667,6 +718,38 @@ public:
         return end();
     }
 
+    /// @brief Finds the last occurrence of `value` in the strided view.
+    /// @param[in] value Value to search for.
+    /// @return Iterator to the last matching element, or `end()` if not found.
+    [[nodiscard]] constexpr Iterator findLast(const ValueType& value) const noexcept
+    {
+        for (SizeType i = m_size; i > 0u; --i)
+        {
+            if ((*this)[i - 1u] == value)
+            {
+                return Iterator(m_data, m_strideInBytes, static_cast<DifferenceType>(i - 1u));
+            }
+        }
+        return end();
+    }
+
+    /// @brief Finds the last element satisfying `predicate` in the strided view.
+    /// @tparam InPredicate Unary predicate `(ConstReference) -> bool`.
+    /// @param[in] predicate Search condition.
+    /// @return Iterator to the last matching element, or `end()` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr Iterator findLastIf(InPredicate predicate) const noexcept
+    {
+        for (SizeType i = m_size; i > 0u; --i)
+        {
+            if (predicate((*this)[i - 1u]))
+            {
+                return Iterator(m_data, m_strideInBytes, static_cast<DifferenceType>(i - 1u));
+            }
+        }
+        return end();
+    }
+
     /// @brief Finds the first index of `value` in the strided view.
     /// @param[in] value Value to search for.
     /// @return Zero-based logical index of the first match, or `npos` if not found.
@@ -699,6 +782,16 @@ public:
         return npos;
     }
 
+    /// @brief Finds the first index of an element satisfying `predicate` (alias for `indexOfIf` matching ADR-0056).
+    /// @tparam InPredicate Unary predicate `(ConstReference) -> bool`.
+    /// @param[in] predicate Search condition.
+    /// @return Zero-based logical index of the first match, or `npos` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr SizeType indexIf(InPredicate predicate) const noexcept
+    {
+        return indexOfIf(predicate);
+    }
+
     /// @brief Finds the last index of `value` in the strided view.
     /// @param[in] value Value to search for.
     /// @return Zero-based logical index of the last match, or `npos` if not found.
@@ -712,6 +805,33 @@ public:
             }
         }
         return npos;
+    }
+
+    /// @brief Finds the last index of an element satisfying `predicate`.
+    /// @tparam InPredicate Unary predicate `(ConstReference) -> bool`.
+    /// @param[in] predicate Search condition.
+    /// @return Zero-based logical index of the last match, or `npos` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr SizeType lastIndexOfIf(InPredicate predicate) const noexcept
+    {
+        for (SizeType i = m_size; i > 0u; --i)
+        {
+            if (predicate((*this)[i - 1u]))
+            {
+                return i - 1u;
+            }
+        }
+        return npos;
+    }
+
+    /// @brief Finds the last index of an element satisfying `predicate` (alias for `lastIndexOfIf`).
+    /// @tparam InPredicate Unary predicate `(ConstReference) -> bool`.
+    /// @param[in] predicate Search condition.
+    /// @return Zero-based logical index of the last match, or `npos` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr SizeType lastIndexIf(InPredicate predicate) const noexcept
+    {
+        return lastIndexOfIf(predicate);
     }
 
     /// @brief Checks whether the strided view contains at least one element equal to `value`.
@@ -741,6 +861,24 @@ public:
         for (SizeType i = 0u; i < m_size; ++i)
         {
             if ((*this)[i] == value)
+            {
+                ++matches;
+            }
+        }
+        return matches;
+    }
+
+    /// @brief Counts the number of elements satisfying `predicate`.
+    /// @tparam InPredicate Unary predicate `(ConstReference) -> bool`.
+    /// @param[in] predicate Search condition.
+    /// @return Number of matching elements.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr SizeType countIf(InPredicate predicate) const noexcept
+    {
+        SizeType matches = 0u;
+        for (SizeType i = 0u; i < m_size; ++i)
+        {
+            if (predicate((*this)[i]))
             {
                 ++matches;
             }
@@ -790,16 +928,17 @@ public:
     requires(concepts::IsSameAs<std::remove_cv_t<InOtherT>, ValueType> && std::three_way_comparable<ValueType>)
     [[nodiscard]] constexpr auto operator<=>(const StridedView<InOtherT>& rhs) const noexcept
     {
+        using OrderingType = std::compare_three_way_result_t<ValueType>;
         const SizeType minLen = m_size < rhs.size() ? m_size : rhs.size();
         for (SizeType i = 0u; i < minLen; ++i)
         {
-            const auto cmp = (*this)[i] <=> rhs[i];
+            const OrderingType cmp = (*this)[i] <=> rhs[i];
             if (cmp != 0)
             {
                 return cmp;
             }
         }
-        return m_size <=> rhs.size();
+        return static_cast<OrderingType>(m_size <=> rhs.size());
     }
 
 private:
@@ -807,6 +946,25 @@ private:
     SizeType m_size{ 0u };
     DifferenceType m_strideInBytes{ static_cast<DifferenceType>(sizeof(InT)) };
 };
+
+/// @brief Deduction guides for `StridedView`.
+template <typename InT, gp::USize InN>
+StridedView(InT (&)[InN]) -> StridedView<InT>;
+
+template <typename InT, gp::USize InN, gp::USize InAlign>
+StridedView(Array<InT, InN, InAlign>&) -> StridedView<InT>;
+
+template <typename InT, gp::USize InN, gp::USize InAlign>
+StridedView(const Array<InT, InN, InAlign>&) -> StridedView<const InT>;
+
+template <typename InT, typename InAllocator>
+StridedView(Vector<InT, InAllocator>&) -> StridedView<InT>;
+
+template <typename InT, typename InAllocator>
+StridedView(const Vector<InT, InAllocator>&) -> StridedView<const InT>;
+
+template <typename InT>
+StridedView(const VectorView<InT>&) -> StridedView<InT>;
 
 /// @brief Projects a `StridedView` onto a data member `memberPtr` of its element struct.
 /// @tparam InStruct Source struct type (may be `const`).
