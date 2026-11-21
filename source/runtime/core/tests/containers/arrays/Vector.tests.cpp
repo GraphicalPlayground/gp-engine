@@ -574,7 +574,7 @@ TEST(VectorTests, ArenaIntegrationLinearInlineFixedScratchAndAligned)
     alignas(16) gp::UInt8 rawArena[1024]{};
     gp::memory::LinearAllocator linearArena(rawArena, sizeof(rawArena), "TestVectorLinearArena");
     {
-        gp::PolymorphicVector<gp::Int32> arenaVec(gp::memory::PolymorphicAllocator(&linearArena));
+        gp::PolymorphicVector<gp::Int32> arenaVec{ gp::memory::PolymorphicAllocator(&linearArena) };
         arenaVec.reserve(4u);
         const gp::Int32* const initialPtr = arenaVec.data();
         ASSERT_NE(initialPtr, nullptr);
