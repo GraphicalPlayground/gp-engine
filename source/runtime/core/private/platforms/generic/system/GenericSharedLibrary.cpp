@@ -3,25 +3,31 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "platforms/generic/system/GenericSharedLibrary.hpp"
+#include "logging/LogCategory.hpp"
+#include "logging/LogMacros.hpp"
 
 namespace gp::platform::generic
 {
 
-void* SharedLibrary::getHandle([[maybe_unused]] gp::StringView filename) noexcept
+void* SharedLibrary::getHandle(const gp::StringView filename) noexcept
 {
-    // TODO: Add a fatal log: SharedLibrary::getHandle is not implemented for this platform.
+    GP_LOG_ERROR(
+        gp::log::LogCore, "SharedLibrary::getHandle('{}') is not implemented for the generic platform.", filename
+    );
     return nullptr;
 }
 
-void* SharedLibrary::getExport([[maybe_unused]] void* handle, [[maybe_unused]] gp::StringView procName) noexcept
+void* SharedLibrary::getExport([[maybe_unused]] void* const handle, const gp::StringView procName) noexcept
 {
-    // TODO: Add a fatal log: SharedLibrary::getExport is not implemented for this platform.
+    GP_LOG_ERROR(
+        gp::log::LogCore, "SharedLibrary::getExport('{}') is not implemented for the generic platform.", procName
+    );
     return nullptr;
 }
 
-void SharedLibrary::freeHandle([[maybe_unused]] void* handle) noexcept
+void SharedLibrary::freeHandle([[maybe_unused]] void* const handle) noexcept
 {
-    // TODO: Add a fatal log: SharedLibrary::freeHandle is not implemented for this platform.
+    GP_LOG_ERROR(gp::log::LogCore, "SharedLibrary::freeHandle() is not implemented for the generic platform.");
 }
 
 }   // namespace gp::platform::generic
