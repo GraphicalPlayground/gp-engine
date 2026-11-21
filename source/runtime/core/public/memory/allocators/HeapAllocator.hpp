@@ -19,13 +19,7 @@ namespace detail
 /// @return Non-null pointer to the active `Malloc` instance.
 [[nodiscard]] GP_FORCEINLINE_HINT Malloc* resolveActiveMalloc() noexcept
 {
-    Malloc* inlineMalloc = gp::memory::getInlineMalloc();
-    if (inlineMalloc != nullptr) [[likely]]
-    {
-        return inlineMalloc;
-    }
-
-    return gp::memory::getGlobalMalloc();
+    return gp::memory::getActiveMalloc();
 }
 
 }   // namespace detail
