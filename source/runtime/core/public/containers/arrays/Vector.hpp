@@ -564,14 +564,31 @@ public:
                 }
             }
 
-            for (SizeType i = 0u; i < count; ++i)
+            if (count <= m_size)
             {
                 if (offset > 0u)
                 {
-                    m_data[i] = std::move(m_data[offset + i]);
+                    for (SizeType i = 0u; i < count; ++i)
+                    {
+                        m_data[i] = std::move(m_data[offset + i]);
+                    }
+                }
+                destructRange(m_data + count, m_size - count);
+            }
+            else
+            {
+                if (offset > 0u)
+                {
+                    for (SizeType i = 0u; i < m_size; ++i)
+                    {
+                        m_data[i] = std::move(m_data[offset + i]);
+                    }
+                }
+                for (SizeType i = m_size; i < count; ++i)
+                {
+                    constructAtSlot(m_data + i, std::move(m_data[offset + i]));
                 }
             }
-            destructRange(m_data + count, m_size - count);
             m_size = count;
             return *this;
         }
@@ -651,9 +668,29 @@ public:
     requires(concepts::IsSameAs<std::remove_cv_t<InOtherT>, InT>)
     constexpr Vector& assign(const StridedView<InOtherT>& strided) noexcept
     {
+        if (strided.isEmpty())
+        {
+            clear();
+            return *this;
+        }
+
         if (strided.isContiguous())
         {
             return assign(strided.data(), strided.size());
+        }
+
+        const bool overlapsSelf =
+            isPointerInCurrentBuffer(strided.data()) || isPointerInCurrentBuffer(&strided[strided.size() - 1u]);
+        if (overlapsSelf) [[unlikely]]
+        {
+            Vector staged(m_allocator);
+            staged.reserve(strided.size());
+            for (SizeType i = 0u; i < strided.size(); ++i)
+            {
+                staged.pushBack(strided[i]);
+            }
+            *this = std::move(staged);
+            return *this;
         }
 
         clear();
@@ -1519,6 +1556,30 @@ public:
             return append(strided.data(), strided.size());
         }
 
+        const bool overlapsSelf =
+            isPointerInCurrentBuffer(strided.data()) || isPointerInCurrentBuffer(&strided[strided.size() - 1u]);
+        if (overlapsSelf) [[unlikely]]
+        {
+            const gp::ISize startByteOffset =
+                reinterpret_cast<const gp::UInt8*>(strided.data()) - reinterpret_cast<const gp::UInt8*>(m_data);
+            const gp::ISize strideBytes = strided.stride();
+            const SizeType count = strided.size();
+            if ((m_size + count) > m_capacity)
+            {
+                growForAdditional(count);
+            }
+
+            const gp::UInt8* const newBaseBytes = reinterpret_cast<const gp::UInt8*>(m_data) + startByteOffset;
+            for (SizeType i = 0u; i < count; ++i)
+            {
+                const InT* const elemPtr =
+                    reinterpret_cast<const InT*>(newBaseBytes + (static_cast<gp::ISize>(i) * strideBytes));
+                constructAtSlot(m_data + m_size + i, *elemPtr);
+            }
+            m_size += count;
+            return *this;
+        }
+
         if ((m_size + strided.size()) > m_capacity)
         {
             growForAdditional(strided.size());
@@ -2104,6 +2165,40 @@ public:
         return end();
     }
 
+    /// @brief Finds the last element satisfying `predicate`.
+    /// @tparam InPredicate Unary predicate `(const InT&) -> bool`.
+    /// @param[in] predicate Search predicate.
+    /// @return Iterator to the last matching element, or `end()` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr Iterator findLastIf(InPredicate predicate) noexcept
+    {
+        for (SizeType i = m_size; i > 0u; --i)
+        {
+            if (predicate(m_data[i - 1u]))
+            {
+                return m_data + (i - 1u);
+            }
+        }
+        return end();
+    }
+
+    /// @brief Finds the last element satisfying `predicate` (const overload).
+    /// @tparam InPredicate Unary predicate `(const InT&) -> bool`.
+    /// @param[in] predicate Search predicate.
+    /// @return Const iterator to the last matching element, or `end()` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr ConstIterator findLastIf(InPredicate predicate) const noexcept
+    {
+        for (SizeType i = m_size; i > 0u; --i)
+        {
+            if (predicate(m_data[i - 1u]))
+            {
+                return m_data + (i - 1u);
+            }
+        }
+        return end();
+    }
+
     /// @brief Finds the first index of `value` in the vector.
     /// @param[in] value Element value to search for.
     /// @return Zero-based index of the first match, or `npos` if not found.
@@ -2136,6 +2231,16 @@ public:
         return npos;
     }
 
+    /// @brief Finds the first index of an element satisfying `predicate` (alias for `indexOfIf`).
+    /// @tparam InPredicate Unary predicate `(const InT&) -> bool`.
+    /// @param[in] predicate Search predicate.
+    /// @return Zero-based index of the first match, or `npos` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr SizeType indexIf(InPredicate predicate) const noexcept
+    {
+        return indexOfIf(predicate);
+    }
+
     /// @brief Finds the last index of `value` in the vector.
     /// @param[in] value Element value to search for.
     /// @return Zero-based index of the last match, or `npos` if not found.
@@ -2166,6 +2271,16 @@ public:
             }
         }
         return npos;
+    }
+
+    /// @brief Finds the last index of an element satisfying `predicate` (alias for `lastIndexOfIf`).
+    /// @tparam InPredicate Unary predicate `(const InT&) -> bool`.
+    /// @param[in] predicate Search predicate.
+    /// @return Zero-based index of the last match, or `npos` if not found.
+    template <typename InPredicate>
+    [[nodiscard]] constexpr SizeType lastIndexIf(InPredicate predicate) const noexcept
+    {
+        return lastIndexOfIf(predicate);
     }
 
     /// @brief Checks whether the vector contains at least one element equal to `value`.
@@ -2270,12 +2385,36 @@ public:
         return static_cast<SizeType>(it - cbegin());
     }
 
+    /// @brief Returns the index of the first element in a sorted vector for which `comp(elem, value)` is false.
+    /// @tparam InCompare Strict weak ordering predicate `(const InT&, const InT&) -> bool`.
+    /// @param[in] value Value to search for.
+    /// @param[in] comp Comparator predicate.
+    /// @return Lower-bound insertion index in `[0, size()]`.
+    template <typename InCompare>
+    [[nodiscard]] constexpr SizeType lowerBound(const InT& value, InCompare comp) const noexcept
+    {
+        const ConstIterator it = std::ranges::lower_bound(cbegin(), cend(), value, comp);
+        return static_cast<SizeType>(it - cbegin());
+    }
+
     /// @brief Returns the index of the first element `> value` in a sorted vector, or `size()` if none are greater.
     /// @param[in] value Value to search for.
     /// @return Upper-bound insertion index in `[0, size()]`.
     [[nodiscard]] constexpr SizeType upperBound(const InT& value) const noexcept
     {
         const ConstIterator it = std::ranges::upper_bound(cbegin(), cend(), value);
+        return static_cast<SizeType>(it - cbegin());
+    }
+
+    /// @brief Returns the index of the first element in a sorted vector for which `comp(value, elem)` is true.
+    /// @tparam InCompare Strict weak ordering predicate `(const InT&, const InT&) -> bool`.
+    /// @param[in] value Value to search for.
+    /// @param[in] comp Comparator predicate.
+    /// @return Upper-bound insertion index in `[0, size()]`.
+    template <typename InCompare>
+    [[nodiscard]] constexpr SizeType upperBound(const InT& value, InCompare comp) const noexcept
+    {
+        const ConstIterator it = std::ranges::upper_bound(cbegin(), cend(), value, comp);
         return static_cast<SizeType>(it - cbegin());
     }
 
@@ -2286,6 +2425,22 @@ public:
     {
         const SizeType idx = lowerBound(value);
         if (idx < m_size && (m_data[idx] == value))
+        {
+            return idx;
+        }
+        return npos;
+    }
+
+    /// @brief Performs O(log N) binary search for `value` in a vector sorted according to `comp`.
+    /// @tparam InCompare Strict weak ordering comparator.
+    /// @param[in] value Value to search for.
+    /// @param[in] comp Comparator predicate.
+    /// @return Index of an equivalent element, or `npos` if not found.
+    template <typename InCompare>
+    [[nodiscard]] constexpr SizeType binarySearch(const InT& value, InCompare comp) const noexcept
+    {
+        const SizeType idx = lowerBound(value, comp);
+        if (idx < m_size && !comp(value, m_data[idx]))
         {
             return idx;
         }
@@ -2349,6 +2504,20 @@ public:
     /// @brief Returns a read-only `ConstVectorView<InT>` spanning all elements in this vector.
     /// @return `ConstVectorView<InT>(m_data, m_size)`.
     [[nodiscard]] GP_FORCEINLINE_HINT constexpr ConstViewType constView() const noexcept
+    {
+        return ConstViewType(m_data, m_size);
+    }
+
+    /// @brief Implicitly converts this mutable vector to a mutable `VectorView<InT>`.
+    /// @return `VectorView<InT>(m_data, m_size)`.
+    [[nodiscard]] GP_FORCEINLINE_HINT constexpr operator ViewType() noexcept
+    {
+        return ViewType(m_data, m_size);
+    }
+
+    /// @brief Implicitly converts this vector to a read-only `ConstVectorView<InT>`.
+    /// @return `ConstVectorView<InT>(m_data, m_size)`.
+    [[nodiscard]] GP_FORCEINLINE_HINT constexpr operator ConstViewType() const noexcept
     {
         return ConstViewType(m_data, m_size);
     }
