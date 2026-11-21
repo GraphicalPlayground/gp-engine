@@ -176,6 +176,28 @@ public:
             return newPtr;
         }
 
+        if (m_inlineOffset == 0u && newSizeInBytes <= InCapacityBytes)
+        {
+            const gp::UInt32 effectiveAlignment = math::max<gp::UInt32>(kMinimumAlignment, alignment);
+            const gp::UInt64 baseAddress = reinterpret_cast<gp::UInt64>(m_inlineBuffer);
+            const gp::UInt64 alignedAddress = memory::align(baseAddress, static_cast<gp::UInt64>(effectiveAlignment));
+            const gp::USize padding = static_cast<gp::USize>(alignedAddress - baseAddress);
+            const gp::USize totalRequired = padding + newSizeInBytes;
+
+            if (totalRequired <= InCapacityBytes)
+            {
+                void* const inlinePtr = reinterpret_cast<void*>(alignedAddress);
+                if (oldSizeInBytes > 0u)
+                {
+                    const gp::USize bytesToCopy = math::min(oldSizeInBytes, newSizeInBytes);
+                    memory::copyMemory(inlinePtr, ptr, bytesToCopy);
+                }
+                m_inlineOffset = totalRequired;
+                m_fallbackAllocator.deallocate(ptr, oldSizeInBytes, alignment);
+                return inlinePtr;
+            }
+        }
+
         return m_fallbackAllocator.reallocate(ptr, oldSizeInBytes, newSizeInBytes, alignment);
     }
 
