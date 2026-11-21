@@ -138,14 +138,9 @@ template <typename InT>
 using PolymorphicVector = container::Vector<InT, gp::memory::PolymorphicAllocator>;
 
 template <typename InT, gp::UInt32 InAlignment = static_cast<gp::UInt32>(alignof(InT))>
-using AlignedVector = container::Vector<
-    InT,
-    gp::memory::AlignedHeapAllocator<(InAlignment > 8u ? InAlignment : 8u)>>;
+using AlignedVector = container::Vector<InT, gp::memory::AlignedHeapAllocator<(InAlignment > 8u ? InAlignment : 8u)>>;
 
-template <
-    typename InT,
-    gp::USize InElementCount,
-    typename InFallbackAllocator = gp::memory::DefaultAllocator>
+template <typename InT, gp::USize InElementCount, typename InFallbackAllocator = gp::memory::DefaultAllocator>
 using InlineVector = container::Vector<
     InT,
     gp::memory::InlineAllocator<

@@ -3,8 +3,8 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "containers/views/StridedView.hpp"
-#include "containers/arrays/Array.hpp"
-#include "containers/arrays/Vector.hpp"
+#include "containers/arrays/Array.hpp"    // IWYU pragma: keep
+#include "containers/arrays/Vector.hpp"   // IWYU pragma: keep
 #include <gtest/gtest.h>
 
 namespace gp::tests
@@ -50,10 +50,9 @@ struct EntityRecord
     }
 
     const gp::Int32 constantValue = 42;
-    const gp::ConstStridedView<gp::Int32> broadcast =
-        gp::ConstStridedView<gp::Int32>::broadcast(constantValue, 5u);
+    const gp::ConstStridedView<gp::Int32> broadcast = gp::ConstStridedView<gp::Int32>::broadcast(constantValue, 5u);
     gp::Int32 sum = 0;
-    for (const gp::Int32 v : broadcast)
+    for (const gp::Int32 v: broadcast)
     {
         sum += v;
     }
@@ -74,14 +73,8 @@ TYPED_TEST_SUITE(StridedViewTypedTest, StridedNumericTypes);
 TYPED_TEST(StridedViewTypedTest, ContiguousStepAndReverseIteration)
 {
     using Elem = TypeParam;
-    Elem arr[6] = {
-        static_cast<Elem>(1),
-        static_cast<Elem>(2),
-        static_cast<Elem>(3),
-        static_cast<Elem>(4),
-        static_cast<Elem>(5),
-        static_cast<Elem>(6)
-    };
+    Elem arr[6] = { static_cast<Elem>(1), static_cast<Elem>(2), static_cast<Elem>(3),
+                    static_cast<Elem>(4), static_cast<Elem>(5), static_cast<Elem>(6) };
 
     gp::StridedView<Elem> view(arr);
     EXPECT_TRUE(view.isContiguous());
@@ -121,10 +114,10 @@ TEST(StridedViewTests, FootprintAndRandomAccessIteratorConcepts)
 TEST(StridedViewTests, AoSMemberProjectionAndChainedNestedProjection)
 {
     gp::Vector<EntityRecord> entities{
-        { .id = 101u, .transform = { 1.0f, 2.0f, 3.0f }, .health = 100 },
-        { .id = 102u, .transform = { 4.0f, 5.0f, 6.0f }, .health = 80 },
-        { .id = 103u, .transform = { 7.0f, 8.0f, 9.0f }, .health = 60 },
-        { .id = 104u, .transform = { 10.0f, 11.0f, 12.0f }, .health = 40 }
+        { .id = 101u,    .transform = { 1.0f, 2.0f, 3.0f }, .health = 100 },
+        { .id = 102u,    .transform = { 4.0f, 5.0f, 6.0f },  .health = 80 },
+        { .id = 103u,    .transform = { 7.0f, 8.0f, 9.0f },  .health = 60 },
+        { .id = 104u, .transform = { 10.0f, 11.0f, 12.0f },  .health = 40 }
     };
 
     // Project mutable health field directly from AoS vector
@@ -137,7 +130,7 @@ TEST(StridedViewTests, AoSMemberProjectionAndChainedNestedProjection)
     EXPECT_EQ(healthView[3], 40);
 
     // Mutate health in-place through the strided view
-    for (gp::Int32& hp : healthView)
+    for (gp::Int32& hp: healthView)
     {
         hp += 10;
     }

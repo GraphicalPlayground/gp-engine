@@ -57,7 +57,7 @@ public:
     /// @brief Constructs a view over `count` contiguous elements starting at `data`.
     /// @param[in] data Pointer to the first element (may be `nullptr` if `count == 0`).
     /// @param[in] count Number of elements in the view.
-    [[nodiscard]] constexpr VectorView(Pointer const data, const SizeType count) noexcept
+    [[nodiscard]] constexpr VectorView(const Pointer data, const SizeType count) noexcept
         : m_data(data)
         , m_size(count)
     {
@@ -67,7 +67,7 @@ public:
     /// @brief Constructs a view over the contiguous pointer range `[first, last)`.
     /// @param[in] first Pointer to the first element.
     /// @param[in] last Pointer one past the last element (`last >= first`).
-    [[nodiscard]] constexpr VectorView(Pointer const first, Pointer const last) noexcept
+    [[nodiscard]] constexpr VectorView(const Pointer first, const Pointer last) noexcept
         : m_data(first)
         , m_size((first != nullptr && last != nullptr && last >= first) ? static_cast<SizeType>(last - first) : 0u)
     {

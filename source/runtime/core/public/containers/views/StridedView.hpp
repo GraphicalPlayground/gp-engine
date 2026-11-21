@@ -27,9 +27,8 @@ namespace detail
 /// @param[in] index Signed logical element index.
 /// @return Pointer to the element at `index`.
 template <typename InT>
-[[nodiscard]] GP_FORCEINLINE_HINT constexpr InT* resolveStridedAddress(
-    InT* const base, const gp::ISize strideInBytes, const gp::ISize index
-) noexcept
+[[nodiscard]] GP_FORCEINLINE_HINT constexpr InT*
+    resolveStridedAddress(InT* const base, const gp::ISize strideInBytes, const gp::ISize index) noexcept
 {
     if (base == nullptr || index == 0 || strideInBytes == 0)
     {
@@ -85,7 +84,7 @@ public:
     /// @param[in] strideInBytes Signed byte stride between consecutive elements.
     /// @param[in] index Logical element index.
     [[nodiscard]] constexpr StridedIterator(
-        Pointer const base, const DifferenceType strideInBytes, const DifferenceType index
+        const Pointer base, const DifferenceType strideInBytes, const DifferenceType index
     ) noexcept
         : m_base(base)
         , m_strideInBytes(strideInBytes)
@@ -283,7 +282,7 @@ public:
     /// @param[in] count Number of elements in the view.
     /// @param[in] strideInBytes Signed byte offset between consecutive elements (must be a multiple of `alignof(InT)`).
     [[nodiscard]] constexpr StridedView(
-        Pointer const data,
+        const Pointer data,
         const SizeType count,
         const DifferenceType strideInBytes = static_cast<DifferenceType>(sizeof(InT))
     ) noexcept
@@ -611,7 +610,7 @@ public:
         {
             return *this;
         }
-        Pointer const lastPtr =
+        const Pointer lastPtr =
             detail::resolveStridedAddress(m_data, m_strideInBytes, static_cast<DifferenceType>(m_size - 1u));
         return StridedView(lastPtr, m_size, -m_strideInBytes);
     }
@@ -629,9 +628,7 @@ public:
         GP_ASSERT(memberPtr != nullptr, "StridedView::project called with a null member pointer.");
         if (m_size == 0u || m_data == nullptr)
         {
-            return StridedView<QualifiedMember>(
-                nullptr, 0u, static_cast<DifferenceType>(sizeof(QualifiedMember))
-            );
+            return StridedView<QualifiedMember>(nullptr, 0u, static_cast<DifferenceType>(sizeof(QualifiedMember)));
         }
         QualifiedMember* const firstFieldPtr = &(m_data->*memberPtr);
         return StridedView<QualifiedMember>(firstFieldPtr, m_size, m_strideInBytes);
@@ -819,8 +816,7 @@ private:
 /// @param[in] memberPtr Pointer-to-data-member `&InStructBase::field`.
 /// @return `StridedView` over the projected member field.
 template <typename InStruct, typename InMember, typename InStructBase>
-requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
-[[nodiscard]] constexpr auto
+requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>) [[nodiscard]] constexpr auto
     makeStridedView(const StridedView<InStruct>& view, InMember InStructBase::* const memberPtr) noexcept
 {
     return view.project(memberPtr);
@@ -834,8 +830,7 @@ requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
 /// @param[in] memberPtr Pointer-to-data-member `&InStructBase::field`.
 /// @return `StridedView` over the projected member field.
 template <typename InStruct, typename InMember, typename InStructBase>
-requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
-[[nodiscard]] constexpr auto
+requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>) [[nodiscard]] constexpr auto
     makeStridedView(const VectorView<InStruct>& view, InMember InStructBase::* const memberPtr) noexcept
 {
     return StridedView<InStruct>(view).project(memberPtr);
@@ -850,8 +845,7 @@ requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
 /// @param[in] memberPtr Pointer-to-data-member `&InStructBase::field`.
 /// @return Mutable `StridedView<InMember>` over the projected member field.
 template <typename InStruct, typename InAllocator, typename InMember, typename InStructBase>
-requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
-[[nodiscard]] constexpr auto
+requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>) [[nodiscard]] constexpr auto
     makeStridedView(Vector<InStruct, InAllocator>& vec, InMember InStructBase::* const memberPtr) noexcept
 {
     return StridedView<InStruct>(vec).project(memberPtr);
@@ -866,8 +860,7 @@ requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
 /// @param[in] memberPtr Pointer-to-data-member `&InStructBase::field`.
 /// @return Read-only `StridedView<const InMember>` over the projected member field.
 template <typename InStruct, typename InAllocator, typename InMember, typename InStructBase>
-requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
-[[nodiscard]] constexpr auto
+requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>) [[nodiscard]] constexpr auto
     makeStridedView(const Vector<InStruct, InAllocator>& vec, InMember InStructBase::* const memberPtr) noexcept
 {
     return StridedView<const InStruct>(vec).project(memberPtr);
@@ -883,8 +876,7 @@ requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
 /// @param[in] memberPtr Pointer-to-data-member `&InStructBase::field`.
 /// @return Mutable `StridedView<InMember>` over the projected member field.
 template <typename InStruct, gp::USize InN, gp::USize InAlign, typename InMember, typename InStructBase>
-requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
-[[nodiscard]] constexpr auto
+requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>) [[nodiscard]] constexpr auto
     makeStridedView(Array<InStruct, InN, InAlign>& arr, InMember InStructBase::* const memberPtr) noexcept
 {
     return StridedView<InStruct>(arr).project(memberPtr);
@@ -900,8 +892,7 @@ requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
 /// @param[in] memberPtr Pointer-to-data-member `&InStructBase::field`.
 /// @return Read-only `StridedView<const InMember>` over the projected member field.
 template <typename InStruct, gp::USize InN, gp::USize InAlign, typename InMember, typename InStructBase>
-requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
-[[nodiscard]] constexpr auto
+requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>) [[nodiscard]] constexpr auto
     makeStridedView(const Array<InStruct, InN, InAlign>& arr, InMember InStructBase::* const memberPtr) noexcept
 {
     return StridedView<const InStruct>(arr).project(memberPtr);
@@ -917,8 +908,7 @@ requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
 /// @return `StridedView` over the projected member field.
 template <typename InStruct, gp::USize InN, typename InMember, typename InStructBase>
 requires(std::is_base_of_v<InStructBase, std::remove_cv_t<InStruct>>)
-[[nodiscard]] constexpr auto
-    makeStridedView(InStruct (&arr)[InN], InMember InStructBase::* const memberPtr) noexcept
+[[nodiscard]] constexpr auto makeStridedView(InStruct (&arr)[InN], InMember InStructBase::* const memberPtr) noexcept
 {
     return StridedView<InStruct>(arr).project(memberPtr);
 }

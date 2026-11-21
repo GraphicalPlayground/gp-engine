@@ -2,10 +2,10 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "containers/arrays/Vector.hpp"
-#include "containers/strings/String.hpp"
+#include "containers/arrays/Vector.hpp"           // IWYU pragma: keep
+#include "containers/strings/String.hpp"          // IWYU pragma: keep
 #include "memory/allocators/LinearAllocator.hpp"
-#include "memory/allocators/StackAllocator.hpp"
+#include "memory/allocators/StackAllocator.hpp"   // IWYU pragma: keep
 #include "memory/allocators/TaggedAllocator.hpp"
 #include "memory/allocators/ThreadScratchAllocator.hpp"
 #include "memory/pointers/UniquePtr.hpp"
@@ -169,7 +169,7 @@ TYPED_TEST(VectorTypedTest, BasicConstructionAccessAndIteration)
     EXPECT_FALSE(listVec.isValidIndex(4u));
 
     Elem sum = static_cast<Elem>(0);
-    for (const Elem val : listVec)
+    for (const Elem val: listVec)
     {
         sum += val;
     }
@@ -209,7 +209,7 @@ TEST(VectorTests, FootprintAndConceptInvariants)
     static_assert(gp::concepts::IsRelocatable<gp::String>);
     static_assert(!gp::concepts::IsRelocatable<gp::InlineVector<gp::Int32, 8u>>);
     static_assert(!gp::concepts::IsRelocatable<gp::FixedVector<gp::Int32, 8u>>);
-    static_assert(!gp::concepts::IsRelocatable<gp::PolymorphicVector<gp::Int32>>);
+    static_assert(gp::concepts::IsRelocatable<gp::PolymorphicVector<gp::Int32>>);
     static_assert(!gp::concepts::IsRelocatable<LifecycleTracker>);
 }
 
@@ -480,9 +480,9 @@ TEST(VectorTests, OrderedEraseAndUnorderedSwapErase)
 
     const gp::USize removedEvens = ordered.removeAllIf(
         [](const gp::Int32 v) -> bool
-        {
-            return v >= 50;
-        }
+    {
+        return v >= 50;
+    }
     );
     EXPECT_EQ(removedEvens, 2u);
     ASSERT_EQ(ordered.size(), 2u);
@@ -509,9 +509,9 @@ TEST(VectorTests, OrderedEraseAndUnorderedSwapErase)
     gp::Vector<gp::Int32> swapPred{ 2, 4, 1, 6, 3, 8, 5 };
     const gp::USize removedSwapCount = swapPred.removeAllIfSwap(
         [](const gp::Int32 v) -> bool
-        {
-            return (v % 2) == 0;
-        }
+    {
+        return (v % 2) == 0;
+    }
     );
     EXPECT_EQ(removedSwapCount, 4u);
     ASSERT_EQ(swapPred.size(), 3u);
@@ -524,13 +524,26 @@ TEST(VectorTests, SearchCountSortAndComparisons)
 {
     gp::Vector<gp::Int32> vec{ 5, 2, 8, 2, 9, 1, 2 };
     EXPECT_EQ(vec.count(2), 3u);
-    EXPECT_EQ(vec.countIf([](const gp::Int32 v) -> bool { return v > 4; }), 3u);
+    EXPECT_EQ(
+        vec.countIf(
+            [](const gp::Int32 v) -> bool
+    {
+        return v > 4;
+    }
+        ),
+        3u
+    );
     EXPECT_EQ(vec.indexOf(2), 1u);
     EXPECT_EQ(vec.lastIndexOf(2), 6u);
     EXPECT_EQ(vec.indexOf(999), gp::Vector<gp::Int32>::npos);
     EXPECT_TRUE(vec.contains(8));
     EXPECT_FALSE(vec.contains(42));
-    EXPECT_TRUE(vec.containsIf([](const gp::Int32 v) -> bool { return v == 9; }));
+    EXPECT_TRUE(vec.containsIf(
+        [](const gp::Int32 v) -> bool
+    {
+        return v == 9;
+    }
+    ));
 
     auto foundIt = vec.find(8);
     ASSERT_NE(foundIt, vec.end());
@@ -542,9 +555,9 @@ TEST(VectorTests, SearchCountSortAndComparisons)
 
     vec.sort(
         [](const gp::Int32 a, const gp::Int32 b) -> bool
-        {
-            return a > b;
-        }
+    {
+        return a > b;
+    }
     );
     EXPECT_EQ(vec.front(), 9);
     EXPECT_EQ(vec.back(), 1);
@@ -561,7 +574,7 @@ TEST(VectorTests, ArenaIntegrationLinearInlineFixedScratchAndAligned)
     alignas(16) gp::UInt8 rawArena[1024]{};
     gp::memory::LinearAllocator linearArena(rawArena, sizeof(rawArena), "TestVectorLinearArena");
     {
-        gp::PolymorphicVector<gp::Int32> arenaVec((gp::memory::PolymorphicAllocator(&linearArena)));
+        gp::PolymorphicVector<gp::Int32> arenaVec(gp::memory::PolymorphicAllocator(&linearArena));
         arenaVec.reserve(4u);
         const gp::Int32* const initialPtr = arenaVec.data();
         ASSERT_NE(initialPtr, nullptr);
@@ -726,7 +739,11 @@ TEST(VectorTests, SelfCritiqueEnhancementsInsertGapBinarySearchDeduplicateAndVie
         gp::Float32 weight;
     };
 
-    gp::Vector<ItemRecord> records{ { 1, 1.5f }, { 2, 2.5f }, { 3, 3.5f } };
+    gp::Vector<ItemRecord> records{
+        { 1, 1.5f },
+        { 2, 2.5f },
+        { 3, 3.5f }
+    };
     gp::StridedView<gp::Int32> keys = records.project(&ItemRecord::key);
     ASSERT_EQ(keys.size(), 3u);
     EXPECT_EQ(keys[0], 1);

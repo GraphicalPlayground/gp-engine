@@ -4,7 +4,7 @@
 
 #include "containers/views/VectorView.hpp"
 #include "containers/arrays/Array.hpp"
-#include "containers/arrays/Vector.hpp"
+#include "containers/arrays/Vector.hpp"   // IWYU pragma: keep
 #include <gtest/gtest.h>
 
 namespace gp::tests
@@ -54,11 +54,7 @@ TYPED_TEST(VectorViewTypedTest, SlicingIterationAndMutation)
 {
     using Elem = TypeParam;
     Elem buffer[5] = {
-        static_cast<Elem>(1),
-        static_cast<Elem>(2),
-        static_cast<Elem>(3),
-        static_cast<Elem>(4),
-        static_cast<Elem>(5)
+        static_cast<Elem>(1), static_cast<Elem>(2), static_cast<Elem>(3), static_cast<Elem>(4), static_cast<Elem>(5)
     };
 
     gp::VectorView<Elem> mutableView(buffer);
@@ -106,7 +102,7 @@ TEST(VectorViewTests, ContainerInteropAcrossAllocators)
     const auto sumElements = [](const gp::ConstVectorView<gp::Int32> view) -> gp::Int32
     {
         gp::Int32 total = 0;
-        for (const gp::Int32 v : view)
+        for (const gp::Int32 v: view)
         {
             total += v;
         }
@@ -134,8 +130,21 @@ TEST(VectorViewTests, SearchPrefixSuffixBinarySearchAndBytes)
 
     EXPECT_TRUE(view.contains(40));
     EXPECT_FALSE(view.contains(99));
-    EXPECT_TRUE(view.containsIf([](const gp::Int32 v) -> bool { return v > 55; }));
-    EXPECT_EQ(view.countIf([](const gp::Int32 v) -> bool { return (v % 20) == 0; }), 3u);
+    EXPECT_TRUE(view.containsIf(
+        [](const gp::Int32 v) -> bool
+    {
+        return v > 55;
+    }
+    ));
+    EXPECT_EQ(
+        view.countIf(
+            [](const gp::Int32 v) -> bool
+    {
+        return (v % 20) == 0;
+    }
+        ),
+        3u
+    );
 
     const gp::Int32 prefixArr[2] = { 10, 20 };
     const gp::Int32 suffixArr[2] = { 50, 60 };
