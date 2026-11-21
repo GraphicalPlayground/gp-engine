@@ -10,11 +10,11 @@
 #include "containers/views/StridedView.hpp"
 #include "containers/views/VectorView.hpp"
 #include "CoreMinimal.hpp"
-#include "maths/base/Scalar.hpp"
+#include "maths/base/Scalar.hpp"                          // IWYU pragma: keep
 #include "memory/allocators/AlignedHeapAllocator.hpp"     // IWYU pragma: keep
 #include "memory/allocators/AllocatorConcepts.hpp"
 #include "memory/allocators/FixedBufferAllocator.hpp"     // IWYU pragma: keep
-#include "memory/allocators/HeapAllocator.hpp"
+#include "memory/allocators/HeapAllocator.hpp"            // IWYU pragma: keep
 #include "memory/allocators/InlineAllocator.hpp"          // IWYU pragma: keep
 #include "memory/allocators/PolymorphicAllocator.hpp"     // IWYU pragma: keep
 #include "memory/allocators/ThreadScratchAllocator.hpp"   // IWYU pragma: keep
@@ -105,7 +105,8 @@ public:
         alignof(InT) > gp::memory::kMinimumAlignment ? alignof(InT) : gp::memory::kMinimumAlignment
     );
 
-    /// @brief Number of elements that fit inside the allocator's embedded inline buffer (`0` for heap/arena allocators).
+    /// @brief Number of elements that fit inside the allocator's embedded inline buffer (`0` for heap/arena
+    /// allocators).
     static constexpr SizeType kInlineElementCapacity = detail::resolveInlineElementCapacity<InAllocator, InT>();
 
 public:
@@ -202,8 +203,7 @@ public:
     /// @param[in] first Beginning of the range.
     /// @param[in] last End of the range.
     template <typename InInputIt>
-    requires(!std::is_integral_v<InInputIt>)
-    [[nodiscard]] constexpr Vector(InInputIt first, InInputIt last) noexcept
+    requires(!std::is_integral_v<InInputIt>) [[nodiscard]] constexpr Vector(InInputIt first, InInputIt last) noexcept
     {
         assign(first, last);
     }
@@ -594,14 +594,15 @@ public:
     /// @param[in] last End of the source range.
     /// @return Reference to `*this`.
     template <typename InInputIt>
-    requires(!std::is_integral_v<InInputIt>)
-    constexpr Vector& assign(InInputIt first, InInputIt last) noexcept
+    requires(!std::is_integral_v<InInputIt>) constexpr Vector& assign(InInputIt first, InInputIt last) noexcept
     {
-        if constexpr (std::contiguous_iterator<InInputIt> &&
-                      concepts::IsSameAs<std::remove_cvref_t<std::iter_value_t<InInputIt>>, InT>)
+        if constexpr (
+            std::contiguous_iterator<InInputIt> &&
+            concepts::IsSameAs<std::remove_cvref_t<std::iter_value_t<InInputIt>>, InT>
+        )
         {
             const SizeType count = static_cast<SizeType>(std::distance(first, last));
-            return assign( count > 0u ? std::to_address(first) : nullptr, count );
+            return assign(count > 0u ? std::to_address(first) : nullptr, count);
         }
         else
         {
@@ -738,7 +739,8 @@ public:
         return m_data[m_size - 1u];
     }
 
-    /// @brief Accesses an element indexed backward from the end of the vector (`0` = last element, `1` = second-to-last).
+    /// @brief Accesses an element indexed backward from the end of the vector (`0` = last element, `1` =
+    /// second-to-last).
     /// @param[in] indexFromEnd Offset backward from `size() - 1`.
     /// @return Reference to `m_data[size() - 1 - indexFromEnd]`.
     [[nodiscard]] GP_FORCEINLINE_HINT constexpr Reference last(const SizeType indexFromEnd = 0u) noexcept
@@ -996,7 +998,9 @@ public:
         }
 
         const SizeType shrunkCap = clampToInlineCapacity(
-            gp::memory::calculateSlackShrink<SizeType>(m_allocator, m_size, m_capacity, sizeof(InT), true, kAllocAlignment)
+            gp::memory::calculateSlackShrink<SizeType>(
+                m_allocator, m_size, m_capacity, sizeof(InT), true, kAllocAlignment
+            )
         );
         if (shrunkCap < m_capacity)
         {
@@ -1624,8 +1628,10 @@ public:
             return m_data + index;
         }
 
-        if constexpr (std::contiguous_iterator<InInputIt> &&
-                      concepts::IsSameAs<std::remove_cvref_t<std::iter_value_t<InInputIt>>, InT>)
+        if constexpr (
+            std::contiguous_iterator<InInputIt> &&
+            concepts::IsSameAs<std::remove_cvref_t<std::iter_value_t<InInputIt>>, InT>
+        )
         {
             const SizeType count = static_cast<SizeType>(std::distance(first, last));
             return insert(pos, std::to_address(first), count);
@@ -1898,9 +1904,9 @@ public:
         const InT valueCopy(value);
         return removeAllIf(
             [&valueCopy](const InT& elem) -> bool
-            {
-                return elem == valueCopy;
-            }
+        {
+            return elem == valueCopy;
+        }
         );
     }
 
@@ -1912,9 +1918,9 @@ public:
         const InT valueCopy(value);
         return removeAllIfSwap(
             [&valueCopy](const InT& elem) -> bool
-            {
-                return elem == valueCopy;
-            }
+        {
+            return elem == valueCopy;
+        }
         );
     }
 
@@ -2451,8 +2457,7 @@ public:
     /// @return Read-only `StridedView<const InMember>` over the projected field.
     template <typename InMember, typename InStructBase>
     requires(std::is_base_of_v<InStructBase, InT>)
-    [[nodiscard]] constexpr StridedView<const InMember>
-        project(InMember InStructBase::* const memberPtr) const noexcept
+    [[nodiscard]] constexpr StridedView<const InMember> project(InMember InStructBase::* const memberPtr) const noexcept
     {
         return constStridedView().project(memberPtr);
     }
@@ -2655,9 +2660,7 @@ private:
             }
         }
 
-        return gp::memory::calculateSlackReserve<SizeType>(
-            m_allocator, clampedMin, sizeof(InT), true, kAllocAlignment
-        );
+        return gp::memory::calculateSlackReserve<SizeType>(m_allocator, clampedMin, sizeof(InT), true, kAllocAlignment);
     }
 
     /// @brief Computes geometric growth capacity via `gp::memory::calculateSlackGrow`.
@@ -2738,9 +2741,8 @@ private:
 
         if constexpr (concepts::IsRelocatable<InT>)
         {
-            Pointer resizedData = static_cast<Pointer>(
-                m_allocator.reallocate(m_data, oldBytes, newBytes, kAllocAlignment)
-            );
+            Pointer resizedData =
+                static_cast<Pointer>(m_allocator.reallocate(m_data, oldBytes, newBytes, kAllocAlignment));
             if (resizedData == nullptr) [[unlikely]]
             {
                 return false;
@@ -3083,8 +3085,7 @@ private:
     /// @param[out] dest Destination pointer.
     /// @param[in,out] source Source pointer.
     /// @param[in] count Number of elements to relocate.
-    static GP_FORCEINLINE_HINT constexpr void
-        relocateRange(Pointer dest, Pointer source, const SizeType count) noexcept
+    static GP_FORCEINLINE_HINT constexpr void relocateRange(Pointer dest, Pointer source, const SizeType count) noexcept
     {
         if (count == 0u || dest == nullptr || source == nullptr || dest == source)
         {
@@ -3181,10 +3182,13 @@ constexpr bool IsVectorV<gp::container::Vector<InT, InAllocator>> = true;
 namespace gp::concepts
 {
 
-/// @brief `gp::Vector` instantiated with a stateless allocator is bitwise relocatable (ADR-0055).
-template <typename InT, IsAllocator InAllocator>
-requires IsStatelessAllocator<InAllocator>
-constexpr bool IsRelocatableV<gp::container::Vector<InT, InAllocator>> = true;
+/// @brief Specialization enabling bitwise relocation of `gp::Vector` when its allocator is bitwise relocatable.
+/// @tparam InT Element type.
+/// @tparam InAllocator Allocator type.
+template <typename InT, typename InAllocator>
+struct IsRelocatableTrait<gp::container::Vector<InT, InAllocator>>
+    : std::bool_constant<std::is_move_constructible_v<InAllocator> && IsRelocatable<InAllocator>>
+{};
 
 /// @brief Concept to check if a type is any instantiation of `gp::Vector`.
 /// @tparam InT The type to check.
