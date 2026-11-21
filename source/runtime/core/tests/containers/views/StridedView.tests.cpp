@@ -183,6 +183,63 @@ TEST(StridedViewTests, ZeroStrideBroadcastAndSearchOperations)
     EXPECT_EQ(projectedHealth, contiguousHealth);
     EXPECT_EQ(projectedHealth.indexOf(20), 1u);
     EXPECT_EQ(projectedHealth.lastIndexOf(30), 2u);
+    EXPECT_EQ(projectedHealth.lastElement(0u), 30);
+    EXPECT_EQ(projectedHealth.lastElement(1u), 20);
+    EXPECT_EQ(
+        projectedHealth.indexIf(
+            [](const gp::Int32 v) -> bool
+    {
+        return v >= 20;
+    }
+        ),
+        1u
+    );
+    EXPECT_EQ(
+        projectedHealth.lastIndexIf(
+            [](const gp::Int32 v) -> bool
+    {
+        return v >= 20;
+    }
+        ),
+        2u
+    );
+    EXPECT_EQ(
+        projectedHealth.countIf(
+            [](const gp::Int32 v) -> bool
+    {
+        return v >= 20;
+    }
+        ),
+        2u
+    );
+
+    const auto lastIt = projectedHealth.findLast(20);
+    ASSERT_NE(lastIt, projectedHealth.end());
+    EXPECT_EQ(*lastIt, 20);
+
+    const auto lastIfIt = projectedHealth.findLastIf(
+        [](const gp::Int32 v) -> bool
+    {
+        return v < 30;
+    }
+    );
+    ASSERT_NE(lastIfIt, projectedHealth.end());
+    EXPECT_EQ(*lastIfIt, 20);
+
+    gp::ConstStridedView<gp::Int32> mutableSlice = projectedHealth;
+    mutableSlice.removePrefix(1u);
+    EXPECT_EQ(mutableSlice.size(), 2u);
+    EXPECT_EQ(mutableSlice.front(), 20);
+    mutableSlice.removeSuffix(1u);
+    EXPECT_EQ(mutableSlice.size(), 1u);
+    EXPECT_EQ(mutableSlice.back(), 20);
+
+    // Floating-point three-way comparison (<=>) returning partial_ordering
+    const gp::Float32 floatsA[3] = { 1.0f, 2.0f, 3.0f };
+    const gp::Float32 floatsB[3] = { 1.0f, 2.0f, 4.0f };
+    const gp::ConstStridedView<gp::Float32> fViewA(floatsA);
+    const gp::ConstStridedView<gp::Float32> fViewB(floatsB);
+    EXPECT_TRUE((fViewA <=> fViewB) < 0);
 }
 
 }   // namespace gp::tests
