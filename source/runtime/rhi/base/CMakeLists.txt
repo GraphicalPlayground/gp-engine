@@ -6,6 +6,7 @@ include(gp-build-tool)
 
 gpStartModule(rhi/base)
   gpAddDependency(PUBLIC core)
+  gpAddDependency(PUBLIC hal/base)
 
   gpAddDependency(DYNAMIC rhi/null)
 
