@@ -1,0 +1,69 @@
+// Copyright (c) - Graphical Playground. All rights reserved.
+// For more information, see https://graphical-playground/legal
+// mailto:support AT graphical-playground DOT com
+
+#pragma once
+
+#include "CoreMinimal.hpp"   // IWYU pragma: keep
+
+namespace gp::rhi::pipeline
+{
+
+/// @brief Texture sampling filter mode.
+enum class SamplerFilter : gp::UInt8;
+
+/// @brief Texture coordinate wrapping behavior outside `[0, 1]`.
+enum class SamplerAddressMode : gp::UInt8;
+
+/// @brief Depth comparison mode for shadow/comparison samplers.
+enum class SamplerCompareFunction : gp::UInt8;
+
+/// @brief Polygon rasterization fill mode.
+enum class RasterizerFillMode : gp::UInt8;
+
+/// @brief Triangle face culling mode.
+enum class RasterizerCullMode : gp::UInt8;
+
+/// @brief Depth clipping vs. clamping behavior outside the near/far planes.
+enum class RasterizerDepthClipMode : gp::UInt8;
+
+/// @brief Per-channel color write enable mask for blend targets.
+enum class ColorWriteMask : gp::UInt8;
+
+/// @brief Comparison operator used by depth and stencil tests.
+enum class CompareFunction : gp::UInt8;
+
+/// @brief Predefined stencil bitmask presets.
+enum class StencilMask : gp::UInt8;
+
+/// @brief Operation applied to the stencil buffer on test pass or fail.
+enum class StencilOp : gp::UInt8;
+
+/// @brief Arithmetic operation combining source and destination blend terms.
+enum class BlendOperation : gp::UInt8;
+
+/// @brief Multiplier applied to source or destination channels during blending.
+enum class BlendFactor : gp::UInt8;
+
+/// @brief Component format of a vertex input attribute.
+enum class VertexElementType : gp::UInt8;
+
+/// @brief Coarse geometry topology class specified on a graphics pipeline state.
+enum class PrimitiveTopologyType : gp::UInt8;
+
+/// @brief Exact primitive topology passed to draw commands.
+enum class PrimitiveType : gp::UInt8;
+
+/// @brief Per-axis pixel coarseness for Variable Rate Shading.
+enum class VRSAxisShadingRate : gp::UInt8;
+
+/// @brief Combined X/Y shading rate tile dimensions for Variable Rate Shading.
+enum class VRSShadingRate : gp::UInt8;
+
+/// @brief Combiner applied between draw-level, primitive-level, and image-level VRS rates.
+enum class VRSRateCombiner : gp::UInt8;
+
+/// @brief Encoding format of a screen-space VRS rate attachment.
+enum class VRSImageDataType : gp::UInt8;
+
+}   // namespace gp::rhi::pipeline
