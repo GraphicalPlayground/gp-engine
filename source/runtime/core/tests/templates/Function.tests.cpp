@@ -271,14 +271,19 @@ gp::Int32 applyVisitor(const gp::Int32 value, const FunctionRef<gp::Int32(gp::In
 
 }   // namespace
 
+constexpr gp::USize kExpectedFunctionUnpaddedSize = Function<void()>::kInlineStorageSize + (3u * sizeof(void*));
+constexpr gp::USize kExpectedFunctionAlign = Function<void()>::kInlineStorageAlignment;
+constexpr gp::USize kExpectedFunctionSize =
+    ((kExpectedFunctionUnpaddedSize + kExpectedFunctionAlign - 1u) / kExpectedFunctionAlign) * kExpectedFunctionAlign;
+
 static_assert(sizeof(FunctionRef<void()>) == 2u * sizeof(void*), "FunctionRef must be a 2-pointer 16-byte view.");
 static_assert(
-    sizeof(Function<void()>) == 56u,
-    "Default 32-byte SBO gp::Function must occupy 56 bytes (32B storage + 3 pointers, zero boolean padding)."
+    sizeof(Function<void()>) == kExpectedFunctionSize,
+    "Default 32-byte SBO gp::Function must occupy (32B + 3 pointers) rounded up to alignof(std::max_align_t) " "(56B on Win64, 64B on System V x64/ARM64)."
 );
 static_assert(
-    sizeof(UniqueFunction<void()>) == 56u,
-    "Default 32-byte SBO gp::UniqueFunction must occupy 56 bytes (32B storage + 3 pointers, zero boolean padding)."
+    sizeof(UniqueFunction<void()>) == kExpectedFunctionSize,
+    "Default 32-byte SBO gp::UniqueFunction must occupy (32B + 3 pointers) rounded up to alignof(std::max_align_t) " "(56B on Win64, 64B on System V x64/ARM64)."
 );
 static_assert(!std::is_default_constructible_v<FunctionRef<void()>>, "FunctionRef must not be default-constructible.");
 static_assert(

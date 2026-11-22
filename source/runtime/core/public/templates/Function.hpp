@@ -86,11 +86,12 @@ struct IsFunction<Function<InRet(InArgs...), InInlineSize>> final : std::true_ty
 ///          1. **Zero-Branch Hot-Path Dispatch:** `m_callablePtr` always caches the active payload address (`m_storage`
 ///             when stored inline, or the allocated heap block when spilled). Invoking `operator()` or `execute()`
 ///             loads `m_invoke` and `m_callablePtr` directly with zero inline/heap branching on the execution path.
-///          2. **48-Byte Cache-Conscious Footprint (Default 32B SBO):** By replacing a boolean heap flag (`+8 B` tail
-///             padding) with `m_callablePtr` and eliminating C++ virtual tables (`vptr` inside every heap block),
-///             `FunctionStorageCore<..., 32>` occupies exactly 48 bytes (`32 B` buffer + `8 B` `m_callablePtr` +
-///             `8 B` `m_invoke` + `8 B` `m_ops` = `56 B`, or `isHeapAllocated()` computed via pointer comparison
-///             `m_callablePtr != m_storage` in `48 B` total!).
+///          2. **Compact Footprint (Default 32B SBO):** By replacing a boolean heap flag with `m_callablePtr` and
+///             eliminating C++ virtual tables (`vptr` inside every heap block), `FunctionStorageCore<..., 32>` stores
+///             only `32 B` inline storage + `3` pointers (`56 B` unpadded: `56 B` on Win64 where
+///             `alignof(std::max_align_t) == 8`, and `64 B` — one cache line — on System V x64/ARM64 where
+///             `alignof(std::max_align_t) == 16`). `isHeapAllocated()` is computed via pointer comparison
+///             `m_callablePtr != m_storage`.
 ///          3. **Trivial Inline Fast-Path:** Trivially copyable and trivially destructible inline closures set
 ///             `m_ops = nullptr`, allowing copy and move operations to execute a single fixed-size `std::memcpy` with
 ///             zero indirect lifecycle call overhead.
@@ -191,7 +192,7 @@ public:
 
     /// @brief Reports whether the bound callable is currently stored in a heap block rather than the inline SBO buffer.
     /// @details Determined in $O(1)$ without storing an extra boolean field by comparing `m_callablePtr` against the
-    ///          address of `m_storage`, keeping `sizeof(Function<Sig, 32>) == 56` bytes with zero tail padding.
+    ///          address of `m_storage`, keeping the unpadded layout to `kInlineStorageSize + 3 * sizeof(void*)` bytes.
     /// @return `true` if spilled to `gp::memory::HeapAllocator`, `false` if inline or unbound.
     [[nodiscard]] GP_FORCEINLINE_HINT bool isHeapAllocated() const noexcept
     {
