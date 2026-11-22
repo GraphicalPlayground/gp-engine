@@ -6,6 +6,7 @@
 
 #include "concepts/Concepts.hpp"
 #include "CoreMinimal.hpp"                      // IWYU pragma: keep
+#include "maths/color/ColorForward.hpp"         // IWYU pragma: export
 #include "maths/color/PixelFormatForward.hpp"   // IWYU pragma: export
 #include "maths/random/RandomForward.hpp"       // IWYU pragma: export
 
