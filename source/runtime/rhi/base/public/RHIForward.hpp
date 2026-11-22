@@ -8,8 +8,23 @@
 #include "core/ResourceForward.hpp"               // IWYU pragma: export
 #include "CoreMinimal.hpp"                        // IWYU pragma: keep
 #include "device/DeviceForward.hpp"               // IWYU pragma: export
+#include "maths/color/PixelFormatForward.hpp"     // IWYU pragma: export
 #include "pipeline/PipelineForward.hpp"           // IWYU pragma: export
 #include "presentation/PresentationForward.hpp"   // IWYU pragma: export
 #include "shaders/ShaderForward.hpp"              // IWYU pragma: export
 #include "sync/SyncForward.hpp"                   // IWYU pragma: export
 #include "views/ViewForward.hpp"                  // IWYU pragma: export
+
+namespace gp::rhi
+{
+
+using gp::math::PixelFormat;
+using gp::math::PixelFormatChannelFlags;
+using gp::math::PixelFormatComponentType;
+using gp::math::PixelFormatCompression;
+using gp::math::PixelFormatInfo;
+
+/// @brief Runtime hardware usage capabilities supported by an active RHI device for a given `PixelFormat`.
+enum class PixelFormatCapabilities : gp::UInt32;
+
+}   // namespace gp::rhi
