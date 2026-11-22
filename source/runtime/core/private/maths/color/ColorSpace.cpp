@@ -17,6 +17,7 @@ namespace
 
 /// @brief Returns the `4x4` identity matrix.
 /// @return Identity `Matrix4x4<Float64>`.
+// TODO: Consider moving this to Matrix4x4.hpp as a method.
 [[nodiscard]] constexpr Matrix4x4<gp::Float64> makeIdentity4x4() noexcept
 {
     Matrix4x4<gp::Float64> m{};
@@ -31,6 +32,7 @@ namespace
 /// @param[in] a Left matrix.
 /// @param[in] b Right matrix.
 /// @return Matrix product `a * b`.
+// TODO: Consider moving this to Matrix4x4.hpp as a method.
 [[nodiscard]] constexpr Matrix4x4<gp::Float64>
     multiply4x4(const Matrix4x4<gp::Float64>& a, const Matrix4x4<gp::Float64>& b) noexcept
 {
@@ -63,6 +65,7 @@ namespace
 /// @param[in] m `4x4` matrix.
 /// @param[in] v 3D column vector.
 /// @return Transformed 3D vector.
+// TODO: Consider moving this to Matrix4x4.hpp as a method.
 [[nodiscard]] constexpr Vector3<gp::Float64>
     transform3x3(const Matrix4x4<gp::Float64>& m, const Vector3<gp::Float64>& v) noexcept
 {
@@ -76,6 +79,7 @@ namespace
 /// @brief Inverts the upper-left `3x3` block of a `4x4` matrix (`m33 = 1.0`).
 /// @param[in] m Source `4x4` matrix with zero translation/perspective rows.
 /// @return Inverted `4x4` matrix, or identity if singular (`|det| <= 1e-18`).
+// TODO: Consider moving this to Matrix4x4.hpp as a method.
 [[nodiscard]] constexpr Matrix4x4<gp::Float64> invert3x3Block(const Matrix4x4<gp::Float64>& m) noexcept
 {
     const gp::Float64 c00 = m.m11 * m.m22 - m.m12 * m.m21;
