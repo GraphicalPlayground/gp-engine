@@ -40,6 +40,12 @@ enum class UniformBufferValidation : gp::UInt8;
 /// @brief Behavior and reflection flags for uniform buffer creation.
 enum class UniformBufferFlags : gp::UInt8;
 
+/// @brief Selects whether a render target binds a color clear value, a depth-stencil clear value, or none.
+enum class ClearBinding : gp::UInt8;
+
+/// @brief Packed depth and stencil read/write access mode for render passes and transitions.
+enum class ExclusiveDepthStencilMode : gp::UInt8;
+
 /// @brief Pairs a buffer or allocation byte size with its element stride.
 struct SizeAndStride;
 
@@ -49,8 +55,29 @@ struct VRamAllocation;
 /// @brief Diagnostic snapshot describing an RHI resource's identity, type, and VRAM footprint.
 struct ResourceInfo;
 
+/// @brief Tagged clear value bound to a color or depth-stencil render target.
+struct ClearValueBinding;
+
+/// @brief Bitmask wrapper describing exclusive depth and stencil access states.
+class ExclusiveDepthStencil;
+
 /// @brief Reference-counted base class for all GPU resources managed by the RHI.
 class Resource;
+
+/// @brief Base class for RHI resources that support shader views and barrier state tracking.
+class ViewableResource;
+
+/// @brief GPU buffer resource.
+class Buffer;
+
+/// @brief GPU texture resource.
+class Texture;
+
+/// @brief Indirection wrapper referencing another GPU texture.
+class TextureReference;
+
+/// @brief Ray tracing acceleration structure resource.
+class RayTracingAccelerationStructure;
 
 /// @brief Coordinates deferred RHI resource deletion queues and render-thread lifetime extensions.
 class ResourceDeletionQueue;
