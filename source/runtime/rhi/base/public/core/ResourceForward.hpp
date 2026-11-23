@@ -61,6 +61,18 @@ struct ClearValueBinding;
 /// @brief Bitmask wrapper describing exclusive depth and stencil access states.
 class ExclusiveDepthStencil;
 
+/// @brief Describes one resource member slot inside a uniform buffer layout.
+struct UniformBufferResource;
+
+/// @brief Mutable creation parameters used to construct an immutable `UniformBufferLayout`.
+struct UniformBufferLayoutDesc;
+
+/// @brief Immutable layout metadata describing constant data and resource slots in a uniform buffer.
+class UniformBufferLayout;
+
+/// @brief Immutable GPU uniform buffer binding constant memory and referenced RHI resources.
+class UniformBuffer;
+
 /// @brief Reference-counted base class for all GPU resources managed by the RHI.
 class Resource;
 
@@ -90,5 +102,15 @@ using ResourceRef = gp::RefCountedPtr<Resource, gp::DefaultRefCountPolicy<Resour
 
 /// @brief Intrusive smart pointer handle to a `ViewableResource`.
 using ViewableResourceRef = gp::RefCountedPtr<ViewableResource, gp::DefaultRefCountPolicy<ViewableResource>>;
+
+/// @brief Intrusive smart pointer handle to a `UniformBufferLayout`.
+using UniformBufferLayoutRef = gp::RefCountedPtr<UniformBufferLayout, gp::DefaultRefCountPolicy<UniformBufferLayout>>;
+
+/// @brief Intrusive smart pointer handle to an immutable `const UniformBufferLayout`.
+using UniformBufferLayoutConstRef =
+    gp::RefCountedPtr<const UniformBufferLayout, gp::DefaultRefCountPolicy<const UniformBufferLayout>>;
+
+/// @brief Intrusive smart pointer handle to a `UniformBuffer`.
+using UniformBufferRef = gp::RefCountedPtr<UniformBuffer, gp::DefaultRefCountPolicy<UniformBuffer>>;
 
 }   // namespace gp::rhi::resource
