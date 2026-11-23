@@ -19,6 +19,9 @@ enum class ResourceLockMode : gp::UInt8;
 /// @brief Usage, lifetime, and binding flags for GPU buffers.
 enum class BufferUsageFlags : gp::UInt32;
 
+/// @brief Selects how a newly created GPU buffer initializes its backing memory.
+enum class BufferInitAction : gp::UInt8;
+
 /// @brief Dimensionality of an RHI texture resource.
 enum class TextureDimension : gp::UInt8;
 
@@ -30,6 +33,12 @@ enum class CubeFace : gp::UInt32;
 
 /// @brief Status of an asynchronous 2D texture reallocation request.
 enum class TextureReallocationStatus : gp::UInt8;
+
+/// @brief Identifies which data or metadata plane of a texture a view accesses.
+enum class TexturePlane : gp::UInt8;
+
+/// @brief Selects how a newly created GPU texture initializes its backing memory.
+enum class TextureInitAction : gp::UInt8;
 
 /// @brief Expected update frequency and lifetime of a uniform buffer.
 enum class UniformBufferUsage : gp::UInt8;
@@ -46,6 +55,34 @@ enum class ClearBinding : gp::UInt8;
 /// @brief Packed depth and stencil read/write access mode for render passes and transitions.
 enum class ExclusiveDepthStencilMode : gp::UInt8;
 
+/// @brief Integer 2D coordinate or texel extent.
+struct IntPoint;
+
+/// @brief Integer 3D coordinate or texel extent.
+struct IntVector;
+
+/// @brief Integer 2D axis-aligned rectangle.
+struct IntRect;
+
+/// @brief Unsigned subresource range `[first, first + num)`.
+template <typename InType>
+struct Range;
+
+/// @brief 8-bit subresource index range for mip levels.
+using Range8 = Range<gp::UInt8>;
+
+/// @brief 16-bit subresource index range for array slices.
+using Range16 = Range<gp::UInt16>;
+
+/// @brief Interface supplying CPU-side upload bytes for buffer creation.
+class IResourceArrayUpload;
+
+/// @brief Non-owning stack adapter exposing a raw view as `IResourceArrayUpload`.
+class ResourceArrayUploadView;
+
+/// @brief Interface supplying bulk CPU-side subresource bytes for texture creation.
+class IResourceBulkData;
+
 /// @brief Pairs a buffer or allocation byte size with its element stride.
 struct SizeAndStride;
 
@@ -60,6 +97,24 @@ struct ClearValueBinding;
 
 /// @brief Bitmask wrapper describing exclusive depth and stencil access states.
 class ExclusiveDepthStencil;
+
+/// @brief Immutable layout descriptor for a GPU buffer resource.
+struct BufferDesc;
+
+/// @brief Fluent creation parameters for allocating and initializing a GPU buffer.
+struct BufferCreateDesc;
+
+/// @brief Identifies a single texture subresource by face, array slice, and mip level.
+struct TextureSubresourceIndex;
+
+/// @brief Streaming callback provider supplying texture subresources during creation.
+struct TextureDataProvider;
+
+/// @brief Descriptor capturing dimensionality, format, flags, extent, and clear value of a GPU texture.
+struct TextureDesc;
+
+/// @brief Fluent creation parameters for allocating and initializing a GPU texture.
+struct TextureCreateDesc;
 
 /// @brief Describes one resource member slot inside a uniform buffer layout.
 struct UniformBufferResource;
@@ -82,6 +137,9 @@ class ViewableResource;
 /// @brief GPU buffer resource.
 class Buffer;
 
+/// @brief CPU-readable staging buffer for GPU-to-CPU readbacks.
+class StagingBuffer;
+
 /// @brief GPU texture resource.
 class Texture;
 
@@ -90,6 +148,9 @@ class TextureReference;
 
 /// @brief Ray tracing acceleration structure resource.
 class RayTracingAccelerationStructure;
+
+/// @brief Top-level ray tracing acceleration structure scene resource.
+class RayTracingScene;
 
 /// @brief Coordinates deferred RHI resource deletion queues and render-thread lifetime extensions.
 class ResourceDeletionQueue;
@@ -102,6 +163,18 @@ using ResourceRef = gp::RefCountedPtr<Resource, gp::DefaultRefCountPolicy<Resour
 
 /// @brief Intrusive smart pointer handle to a `ViewableResource`.
 using ViewableResourceRef = gp::RefCountedPtr<ViewableResource, gp::DefaultRefCountPolicy<ViewableResource>>;
+
+/// @brief Intrusive smart pointer handle to a `Buffer`.
+using BufferRef = gp::RefCountedPtr<Buffer, gp::DefaultRefCountPolicy<Buffer>>;
+
+/// @brief Intrusive smart pointer handle to a `StagingBuffer`.
+using StagingBufferRef = gp::RefCountedPtr<StagingBuffer, gp::DefaultRefCountPolicy<StagingBuffer>>;
+
+/// @brief Intrusive smart pointer handle to a `Texture`.
+using TextureRef = gp::RefCountedPtr<Texture, gp::DefaultRefCountPolicy<Texture>>;
+
+/// @brief Intrusive smart pointer handle to a `TextureReference`.
+using TextureReferenceRef = gp::RefCountedPtr<TextureReference, gp::DefaultRefCountPolicy<TextureReference>>;
 
 /// @brief Intrusive smart pointer handle to a `UniformBufferLayout`.
 using UniformBufferLayoutRef = gp::RefCountedPtr<UniformBufferLayout, gp::DefaultRefCountPolicy<UniformBufferLayout>>;
