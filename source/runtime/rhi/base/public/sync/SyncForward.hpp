@@ -24,4 +24,46 @@ enum class ResourceTransitionFlags : gp::UInt8;
 /// @brief Metric captured by a GPU render query.
 enum class RenderQueryType : gp::UInt8;
 
+/// @brief Concrete resource kind stored inside a `TransitionInfo` payload.
+enum class TransitionResourceType : gp::UInt8;
+
+/// @brief Resource kind referenced by a transient memory aliasing barrier.
+enum class TransientAliasingResourceType : gp::UInt8;
+
+/// @brief Action performed on a transient resource during memory aliasing.
+enum class TransientAliasingAction : gp::UInt8;
+
+/// @brief Identifies a mip level, array slice, and plane slice subresource range.
+struct SubresourceRange;
+
+/// @brief Physical memory commit size request for a reserved GPU resource.
+struct CommitResourceInfo;
+
+/// @brief Barrier transition descriptor for a single RHI resource or subresource range.
+struct TransitionInfo;
+
+/// @brief Identifies a prior transient resource whose memory overlaps an acquiring resource.
+struct TransientAliasingOverlap;
+
+/// @brief Transient memory acquire or discard descriptor for aliasing barriers.
+struct TransientAliasingInfo;
+
+/// @brief Creation parameters for a pipeline barrier transition object.
+struct TransitionCreateInfo;
+
+/// @brief Pairs a tracked `ResourceAccess` state with the active `PipelineStage` mask.
+struct TrackedAccess;
+
+/// @brief Associates a `ViewableResource` pointer with its tracked access state and pipeline mask.
+struct TrackedAccessInfo;
+
+/// @brief Backend lifecycle callbacks registered for opaque `Transition` private data.
+struct TransitionBackendHooks;
+
+/// @brief Opaque runtime object tracking a pending split or immediate RHI resource transition.
+class Transition;
+
+/// @brief Entry point for creating, beginning, and ending `Transition` objects.
+class TransitionController;
+
 }   // namespace gp::rhi::sync
