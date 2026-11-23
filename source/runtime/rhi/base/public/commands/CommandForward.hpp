@@ -30,4 +30,10 @@ enum class AsyncComputeBudget : gp::UInt8;
 /// @brief Driver hint for balancing occupancy between graphics and synchronous compute work.
 enum class SyncComputeBudget : gp::UInt8;
 
+/// @brief Immediate RHI command list used by the render thread to record and flush GPU work.
+class CommandListImmediate;
+
+/// @brief Dispatches recorded RHI command lists and drives deferred resource deletion batches.
+class CommandListExecutor;
+
 }   // namespace gp::rhi::command
