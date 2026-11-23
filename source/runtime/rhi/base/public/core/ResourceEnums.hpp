@@ -83,5 +83,41 @@ enum class ResourceLockMode : gp::UInt8
     WriteOnlyNoOverwrite
 };
 
-}   // namespace gp::rhi::resource
+/// @brief Selects what kind of hardware fast-clear value is bound to a render target.
+enum class ClearBinding : gp::UInt8
+{
+    /// @brief No clear value is bound; platforms that require a bound clear value skip fast clears.
+    NoneBound = 0,
 
+    /// @brief A four-channel linear RGBA clear color is bound.
+    ColorBound,
+
+    /// @brief Depth and stencil clear values are bound.
+    DepthStencilBound
+};
+
+/// @brief Packed depth and stencil access mode using the low nibble for depth and the high nibble for stencil.
+enum class ExclusiveDepthStencilMode : gp::UInt8
+{
+    DepthNop = 0x00u,
+    DepthRead = 0x01u,
+    DepthWrite = 0x02u,
+    DepthMask = 0x0Fu,
+
+    StencilNop = 0x00u,
+    StencilRead = 0x10u,
+    StencilWrite = 0x20u,
+    StencilMask = 0xF0u,
+
+    DepthNopStencilNop = DepthNop | StencilNop,
+    DepthReadStencilNop = DepthRead | StencilNop,
+    DepthWriteStencilNop = DepthWrite | StencilNop,
+    DepthNopStencilRead = DepthNop | StencilRead,
+    DepthReadStencilRead = DepthRead | StencilRead,
+    DepthWriteStencilRead = DepthWrite | StencilRead,
+    DepthNopStencilWrite = DepthNop | StencilWrite,
+    DepthReadStencilWrite = DepthRead | StencilWrite,
+    DepthWriteStencilWrite = DepthWrite | StencilWrite
+};
+
+}   // namespace gp::rhi::resource
