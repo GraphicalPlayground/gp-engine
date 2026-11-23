@@ -54,6 +54,27 @@ enum class ResourceType : gp::UInt8
     DescriptorRange
 };
 
+/// @brief Total number of enumerators defined in `ResourceType`.
+inline constexpr gp::USize kResourceTypeCount = static_cast<gp::USize>(ResourceType::DescriptorRange) + 1u;
+
+/// @brief Checks whether `type` identifies a compiled GPU pipeline state resource.
+/// @param[in] type Resource type tag to inspect.
+/// @return True for graphics, compute, ray tracing, or work graph pipeline states; false otherwise.
+[[nodiscard]] inline constexpr bool isPipelineStateResourceType(const ResourceType type) noexcept
+{
+    switch (type)
+    {
+    case ResourceType::GraphicsPipelineState:
+    case ResourceType::ComputePipelineState:
+    case ResourceType::RayTracingPipelineState:
+    case ResourceType::WorkGraphPipelineState:
+        return true;
+
+    default:
+        return false;
+    }
+}
+
 /// @brief CPU mapping access mode when locking a GPU buffer or texture.
 enum class ResourceLockMode : gp::UInt8
 {
@@ -63,3 +84,4 @@ enum class ResourceLockMode : gp::UInt8
 };
 
 }   // namespace gp::rhi::resource
+
