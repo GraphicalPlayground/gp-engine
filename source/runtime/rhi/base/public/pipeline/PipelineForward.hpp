@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "memory/MemoryForward.hpp"
 
 namespace gp::rhi::pipeline
 {
@@ -65,5 +66,53 @@ enum class VRSRateCombiner : gp::UInt8;
 
 /// @brief Encoding format of a screen-space VRS rate attachment.
 enum class VRSImageDataType : gp::UInt8;
+
+/// @brief Creation parameters for a GPU texture sampler state.
+struct SamplerStateDesc;
+
+/// @brief Creation parameters for a fixed-function polygon rasterizer state.
+struct RasterizerStateDesc;
+
+/// @brief Creation parameters for a depth and stencil test state.
+struct DepthStencilStateDesc;
+
+/// @brief Per-render-target blend configuration inside `BlendStateDesc`.
+struct RenderTargetBlendDesc;
+
+/// @brief Creation parameters for a multi-target color blend state.
+struct BlendStateDesc;
+
+/// @brief Single vertex buffer attribute layout entry.
+struct VertexElement;
+
+/// @brief Immutable GPU texture sampler state resource.
+class SamplerState;
+
+/// @brief Immutable GPU rasterizer state resource.
+class RasterizerState;
+
+/// @brief Immutable GPU depth-stencil state resource.
+class DepthStencilState;
+
+/// @brief Immutable GPU blend state resource.
+class BlendState;
+
+/// @brief Immutable GPU vertex input layout resource.
+class VertexDeclaration;
+
+/// @brief Intrusive smart pointer handle to a `SamplerState`.
+using SamplerStateRef = gp::RefCountedPtr<SamplerState, gp::DefaultRefCountPolicy<SamplerState>>;
+
+/// @brief Intrusive smart pointer handle to a `RasterizerState`.
+using RasterizerStateRef = gp::RefCountedPtr<RasterizerState, gp::DefaultRefCountPolicy<RasterizerState>>;
+
+/// @brief Intrusive smart pointer handle to a `DepthStencilState`.
+using DepthStencilStateRef = gp::RefCountedPtr<DepthStencilState, gp::DefaultRefCountPolicy<DepthStencilState>>;
+
+/// @brief Intrusive smart pointer handle to a `BlendState`.
+using BlendStateRef = gp::RefCountedPtr<BlendState, gp::DefaultRefCountPolicy<BlendState>>;
+
+/// @brief Intrusive smart pointer handle to a `VertexDeclaration`.
+using VertexDeclarationRef = gp::RefCountedPtr<VertexDeclaration, gp::DefaultRefCountPolicy<VertexDeclaration>>;
 
 }   // namespace gp::rhi::pipeline
