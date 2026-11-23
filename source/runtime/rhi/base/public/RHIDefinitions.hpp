@@ -37,6 +37,21 @@ static_assert(
 /// @brief Maximum number of mip levels supported by an RHI texture.
 inline constexpr gp::UInt32 kMaxTextureMipCount = 15u;
 
+/// @brief Default maximum width and height in texels for 2D and 3D RHI textures.
+inline constexpr gp::UInt32 kDefaultMaxTextureDimensions = 16384u;
+
+/// @brief Default maximum face dimension in texels for cubemap RHI textures.
+inline constexpr gp::UInt32 kDefaultMaxCubeTextureDimensions = 16384u;
+
+/// @brief Default maximum array slice count for texture arrays.
+inline constexpr gp::UInt32 kDefaultMaxTextureArrayLayers = 2048u;
+
+/// @brief Minimum smallest-mip dimension required for reserved texture arrays.
+inline constexpr gp::UInt32 kDefaultReservedTextureArrayMinMipDimension = 256u;
+
+/// @brief Default minimum byte alignment for buffer-backed typed shader resource views.
+inline constexpr gp::UInt32 kDefaultBufferSRVMinAlignment = 16u;
+
 /// @brief Maximum number of LOD levels supported for static and skeletal meshes.
 inline constexpr gp::UInt32 kMaxMeshLodCount = 8u;
 
