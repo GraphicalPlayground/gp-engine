@@ -15,3 +15,17 @@
         #define GP_RHI_API GP_DLLIMPORT
     #endif
 #endif
+
+/// @brief Controls whether `gp::rhi::resource::Resource` tracks owner names, active instances, and `ResourceInfo`.
+/// @details Enabled by default in non-shipping builds so memory snapshots and leak diagnostics remain available.
+#ifndef GP_RHI_WANT_RESOURCE_INFO
+    #define GP_RHI_WANT_RESOURCE_INFO (!GP_BUILD_SHIPPING)
+#endif
+
+/// @brief Forces RHI resource tracking and info metadata off regardless of `GP_RHI_WANT_RESOURCE_INFO`.
+#ifndef GP_RHI_FORCE_DISABLE_RESOURCE_INFO
+    #define GP_RHI_FORCE_DISABLE_RESOURCE_INFO 0
+#endif
+
+/// @brief Final compile-time switch governing RHI resource metadata and instance tracking.
+#define GP_RHI_ENABLE_RESOURCE_INFO (GP_RHI_WANT_RESOURCE_INFO && !GP_RHI_FORCE_DISABLE_RESOURCE_INFO)
