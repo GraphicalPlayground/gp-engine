@@ -24,4 +24,7 @@ enum class StaticShaderBindingLayoutSupport : gp::UInt8;
 /// @brief PCI vendor IDs for known GPU manufacturers and software rasterizers.
 enum class GpuVendorId : gp::UInt32;
 
+/// @brief Backend interface that owns GPU device creation, resource factories, and deferred teardown.
+class DynamicRHI;
+
 }   // namespace gp::rhi
