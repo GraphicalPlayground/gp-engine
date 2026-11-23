@@ -27,4 +27,7 @@ using gp::math::PixelFormatInfo;
 /// @brief Runtime hardware usage capabilities supported by an active RHI device for a given `PixelFormat`.
 enum class PixelFormatCapabilities : gp::UInt32;
 
+/// @brief Compact 32-bit bitmask identifying active GPU adapter nodes.
+struct GPUMask;
+
 }   // namespace gp::rhi
