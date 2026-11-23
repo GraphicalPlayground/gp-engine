@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "memory/MemoryForward.hpp"
 
 namespace gp::rhi::resource
 {
@@ -38,5 +39,26 @@ enum class UniformBufferValidation : gp::UInt8;
 
 /// @brief Behavior and reflection flags for uniform buffer creation.
 enum class UniformBufferFlags : gp::UInt8;
+
+/// @brief Pairs a buffer or allocation byte size with its element stride.
+struct SizeAndStride;
+
+/// @brief Describes the start offset and byte span of a GPU video memory allocation.
+struct VRamAllocation;
+
+/// @brief Diagnostic snapshot describing an RHI resource's identity, type, and VRAM footprint.
+struct ResourceInfo;
+
+/// @brief Reference-counted base class for all GPU resources managed by the RHI.
+class Resource;
+
+/// @brief Coordinates deferred RHI resource deletion queues and render-thread lifetime extensions.
+class ResourceDeletionQueue;
+
+/// @brief RAII scope guard that extends the lifetime of eligible RHI resources on the render thread.
+class ScopedResourceLifetimeExtension;
+
+/// @brief Intrusive smart pointer handle to a `Resource`.
+using ResourceRef = gp::RefCountedPtr<Resource, gp::DefaultRefCountPolicy<Resource>>;
 
 }   // namespace gp::rhi::resource
