@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "memory/MemoryForward.hpp"
 
 namespace gp::rhi::sync
 {
@@ -65,5 +66,26 @@ class Transition;
 
 /// @brief Entry point for creating, beginning, and ending `Transition` objects.
 class TransitionController;
+
+/// @brief GPU-to-CPU synchronization fence signaled from GPU command queues.
+class GPUFence;
+
+/// @brief GPU render query capturing occlusion counts or hardware timestamps.
+class RenderQuery;
+
+/// @brief Pool managing reusable `RenderQuery` allocations.
+class RenderQueryPool;
+
+/// @brief Move-only RAII handle returning a leased `RenderQuery` to its owning `RenderQueryPool`.
+class PooledRenderQuery;
+
+/// @brief Intrusive smart pointer handle to a `GPUFence`.
+using GPUFenceRef = gp::RefCountedPtr<GPUFence, gp::DefaultRefCountPolicy<GPUFence>>;
+
+/// @brief Intrusive smart pointer handle to a `RenderQuery`.
+using RenderQueryRef = gp::RefCountedPtr<RenderQuery, gp::DefaultRefCountPolicy<RenderQuery>>;
+
+/// @brief Intrusive smart pointer handle to a `RenderQueryPool`.
+using RenderQueryPoolRef = gp::RefCountedPtr<RenderQueryPool, gp::DefaultRefCountPolicy<RenderQueryPool>>;
 
 }   // namespace gp::rhi::sync
