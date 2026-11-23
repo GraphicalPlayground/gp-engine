@@ -85,6 +85,12 @@ struct BlendStateDesc;
 /// @brief Single vertex buffer attribute layout entry.
 struct VertexElement;
 
+/// @brief Per-pipeline usage counters tracking frame activity and total bind count.
+struct PipelineStateStats;
+
+/// @brief Input shader stage set and vertex layout used to build a bound shader state or graphics pipeline.
+class BoundShaderStateInput;
+
 /// @brief Immutable GPU texture sampler state resource.
 class SamplerState;
 
@@ -100,6 +106,21 @@ class BlendState;
 /// @brief Immutable GPU vertex input layout resource.
 class VertexDeclaration;
 
+/// @brief Compiled combination of graphics shader stages and vertex input declaration.
+class BoundShaderState;
+
+/// @brief Compiled graphics pipeline state object combining shaders, fixed-function states, and target formats.
+class GraphicsPipelineState;
+
+/// @brief Compiled compute pipeline state object wrapping a compute shader stage.
+class ComputePipelineState;
+
+/// @brief Compiled ray tracing pipeline state object.
+class RayTracingPipelineState;
+
+/// @brief Compiled GPU work graph pipeline state object.
+class WorkGraphPipelineState;
+
 /// @brief Intrusive smart pointer handle to a `SamplerState`.
 using SamplerStateRef = gp::RefCountedPtr<SamplerState, gp::DefaultRefCountPolicy<SamplerState>>;
 
@@ -114,5 +135,24 @@ using BlendStateRef = gp::RefCountedPtr<BlendState, gp::DefaultRefCountPolicy<Bl
 
 /// @brief Intrusive smart pointer handle to a `VertexDeclaration`.
 using VertexDeclarationRef = gp::RefCountedPtr<VertexDeclaration, gp::DefaultRefCountPolicy<VertexDeclaration>>;
+
+/// @brief Intrusive smart pointer handle to a `BoundShaderState`.
+using BoundShaderStateRef = gp::RefCountedPtr<BoundShaderState, gp::DefaultRefCountPolicy<BoundShaderState>>;
+
+/// @brief Intrusive smart pointer handle to a `GraphicsPipelineState`.
+using GraphicsPipelineStateRef =
+    gp::RefCountedPtr<GraphicsPipelineState, gp::DefaultRefCountPolicy<GraphicsPipelineState>>;
+
+/// @brief Intrusive smart pointer handle to a `ComputePipelineState`.
+using ComputePipelineStateRef =
+    gp::RefCountedPtr<ComputePipelineState, gp::DefaultRefCountPolicy<ComputePipelineState>>;
+
+/// @brief Intrusive smart pointer handle to a `RayTracingPipelineState`.
+using RayTracingPipelineStateRef =
+    gp::RefCountedPtr<RayTracingPipelineState, gp::DefaultRefCountPolicy<RayTracingPipelineState>>;
+
+/// @brief Intrusive smart pointer handle to a `WorkGraphPipelineState`.
+using WorkGraphPipelineStateRef =
+    gp::RefCountedPtr<WorkGraphPipelineState, gp::DefaultRefCountPolicy<WorkGraphPipelineState>>;
 
 }   // namespace gp::rhi::pipeline
