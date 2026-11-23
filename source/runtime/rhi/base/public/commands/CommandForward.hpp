@@ -39,6 +39,9 @@ class CommandListBase;
 /// @brief Command list interface supporting compute and barrier recording.
 class ComputeCommandList;
 
+/// @brief Low-level backend execution context supporting compute work and resource state tracking.
+class IComputeContext;
+
 /// @brief Dispatches recorded RHI command lists and drives deferred resource deletion batches.
 class CommandListExecutor;
 

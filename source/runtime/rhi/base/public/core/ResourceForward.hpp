@@ -88,4 +88,7 @@ class ScopedResourceLifetimeExtension;
 /// @brief Intrusive smart pointer handle to a `Resource`.
 using ResourceRef = gp::RefCountedPtr<Resource, gp::DefaultRefCountPolicy<Resource>>;
 
+/// @brief Intrusive smart pointer handle to a `ViewableResource`.
+using ViewableResourceRef = gp::RefCountedPtr<ViewableResource, gp::DefaultRefCountPolicy<ViewableResource>>;
+
 }   // namespace gp::rhi::resource
