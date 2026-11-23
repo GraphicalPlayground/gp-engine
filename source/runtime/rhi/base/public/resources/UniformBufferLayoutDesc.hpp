@@ -6,11 +6,11 @@
 
 #include "containers/arrays/Vector.hpp"
 #include "containers/strings/String.hpp"
-#include "containers/views/StringView.hpp"
-#include "core/ResourceForward.hpp"   // IWYU pragma: keep
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
+#include "core/ResourceForward.hpp"          // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "hashing/Crc32.hpp"
-#include "memory/MemoryBase.hpp"
+#include "memory/MemoryBase.hpp"   // IWYU pragma: keep
 #include "resources/UniformBufferEnums.hpp"
 #include "RHIDefinitions.hpp"
 #include "shaders/ShaderEnums.hpp"
@@ -161,8 +161,10 @@ struct UniformBufferLayoutDesc
         tmpHash |= (desc.staticSlot != kMaxUniformBufferStaticSlots ? (1u << 0u) : 0u);
 
         // Mix flags that do not derive from the resource list into the hash.
-        tmpHash |= ((desc.flags & UniformBufferFlags::NoEmulatedUniformBuffer) != UniformBufferFlags::None ? (1u << 1u) : 0u);
-        tmpHash |= ((desc.flags & UniformBufferFlags::NeedsReflectedMembers) != UniformBufferFlags::None ? (1u << 2u) : 0u);
+        tmpHash |=
+            ((desc.flags & UniformBufferFlags::NoEmulatedUniformBuffer) != UniformBufferFlags::None ? (1u << 1u) : 0u);
+        tmpHash |=
+            ((desc.flags & UniformBufferFlags::NeedsReflectedMembers) != UniformBufferFlags::None ? (1u << 2u) : 0u);
 
         for (gp::USize resourceIndex = 0u; resourceIndex < desc.resources.size(); ++resourceIndex)
         {
@@ -213,10 +215,8 @@ struct UniformBufferLayoutDesc
     /// @return True when constant buffer size, static slot, binding flags, and resource arrays match.
     [[nodiscard]] bool operator==(const UniformBufferLayoutDesc& rhs) const noexcept
     {
-        return (constantBufferSize == rhs.constantBufferSize) &&
-               (staticSlot == rhs.staticSlot) &&
-               (bindingFlags == rhs.bindingFlags) &&
-               (resources == rhs.resources);
+        return (constantBufferSize == rhs.constantBufferSize) && (staticSlot == rhs.staticSlot) &&
+               (bindingFlags == rhs.bindingFlags) && (resources == rhs.resources);
     }
 };
 
