@@ -92,6 +92,41 @@ enum class TextureReallocationStatus : gp::UInt8
     InProgress
 };
 
+/// @brief Identifies which data or metadata plane of a texture a view accesses.
+enum class TexturePlane : gp::UInt8
+{
+    Primary = 0,
+    PrimaryCompressed = 1,
+    Depth = 2,
+    Stencil = 3,
+    HTile = 4,
+    FMask = 5,
+    CMask = 6
+};
+
+/// @brief Total number of enumerators in `TexturePlane`.
+inline constexpr gp::UInt8 kTexturePlaneCount = static_cast<gp::UInt8>(TexturePlane::CMask) + 1u;
+
+/// @brief Minimum bit width required to store any `TexturePlane` enumerator in a bitfield.
+inline constexpr gp::UInt32 kTexturePlaneNumBits = 3u;
+static_assert(
+    (1u << kTexturePlaneNumBits) >= static_cast<gp::UInt32>(kTexturePlaneCount),
+    "kTexturePlaneNumBits must be wide enough to represent all TexturePlane enumerators."
+);
+
+/// @brief Selects how a newly created GPU texture initializes its backing memory.
+enum class TextureInitAction : gp::UInt8
+{
+    /// @brief Leave initial contents undefined (backend default).
+    Default = 0,
+    /// @brief Upload initial subresources from `TextureCreateDesc::bulkData`.
+    BulkData,
+    /// @brief Stream subresources through `TextureCreateDesc::dataProvider`.
+    DataProvider,
+    /// @brief Caller populates initial contents through a texture initializer handle.
+    Initializer
+};
+
 }   // namespace gp::rhi::resource
 
 GP_ENABLE_ENUM_BITWISE_OPERATIONS(gp::rhi::resource::TextureCreateFlags);
