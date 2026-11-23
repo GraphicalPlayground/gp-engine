@@ -21,6 +21,9 @@ enum class DescriptorType : gp::UInt8;
 /// @brief Bitmask over `DescriptorType` values for descriptor range and heap filtering.
 enum class DescriptorTypeMask : gp::UInt16;
 
+/// @brief Compact index-and-type handle identifying a bindless descriptor heap slot.
+struct DescriptorHandle;
+
 /// @brief Read-only shader view of a GPU buffer or texture.
 class ShaderResourceView;
 
