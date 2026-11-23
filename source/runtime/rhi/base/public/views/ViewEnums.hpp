@@ -65,6 +65,43 @@ enum class DescriptorTypeMask : gp::UInt16
     Standard = ((1u << 0) | (1u << 2) | (1u << 4)) | ((1u << 1) | (1u << 3) | (1u << 5)) | (1u << 6) | (1u << 8)
 };
 
+/// @brief High-level category of an RHI resource view descriptor.
+enum class ViewType : gp::UInt8
+{
+    BufferSRV = 0,
+    BufferUAV = 1,
+    TextureSRV = 2,
+    TextureUAV = 3
+};
+
+/// @brief Sub-kind describing how a buffer view interprets raw buffer memory.
+enum class BufferViewType : gp::UInt8
+{
+    Unknown = 0,
+    Typed = 1,
+    Structured = 2,
+    AccelerationStructure = 3,
+    Raw = 4
+};
+
+/// @brief Texture dimensionality targeted by a texture view descriptor.
+enum class TextureViewDimension : gp::UInt8
+{
+    Unknown = 0,
+    Texture2D = 1,
+    Texture2DArray = 2,
+    TextureCube = 3,
+    TextureCubeArray = 4,
+    Texture3D = 5
+};
+
+/// @brief Minimum bit width required to store any `TextureViewDimension` enumerator in a bitfield.
+inline constexpr gp::UInt32 kTextureViewDimensionNumBits = 3u;
+static_assert(
+    (1u << kTextureViewDimensionNumBits) > static_cast<gp::UInt32>(TextureViewDimension::Texture3D),
+    "kTextureViewDimensionNumBits must be wide enough to represent all TextureViewDimension enumerators."
+);
+
 }   // namespace gp::rhi::view
 
 GP_ENABLE_ENUM_COMPARISON_OPERATIONS(gp::rhi::view::BindlessConfiguration);
@@ -125,6 +162,28 @@ namespace gp::rhi::view
     }
 
     return static_cast<DescriptorTypeMask>(1u << static_cast<gp::UInt16>(type));
+}
+
+/// @brief Maps a `ViewType` category to its corresponding bindless `DescriptorType`.
+/// @param[in] viewType View category to convert.
+/// @return Matching `DescriptorType` enumerator.
+[[nodiscard]] inline constexpr DescriptorType descriptorTypeFromViewType(const ViewType viewType) noexcept
+{
+    switch (viewType)
+    {
+    case ViewType::BufferUAV:
+        return DescriptorType::BufferUAV;
+
+    case ViewType::TextureSRV:
+        return DescriptorType::TextureSRV;
+
+    case ViewType::TextureUAV:
+        return DescriptorType::TextureUAV;
+
+    case ViewType::BufferSRV:
+    default:
+        return DescriptorType::BufferSRV;
+    }
 }
 
 }   // namespace gp::rhi::view
