@@ -138,6 +138,30 @@ enum class RenderQueryType : gp::UInt8
     AbsoluteTime
 };
 
+/// @brief Concrete resource kind referenced by a `TransitionInfo` entry.
+enum class TransitionResourceType : gp::UInt8
+{
+    Unknown = 0,
+    Texture,
+    Buffer,
+    UAV,
+    BVH
+};
+
+/// @brief Resource kind participating in a transient memory aliasing barrier.
+enum class TransientAliasingResourceType : gp::UInt8
+{
+    Texture = 0,
+    Buffer
+};
+
+/// @brief Operation executed by a transient memory aliasing barrier.
+enum class TransientAliasingAction : gp::UInt8
+{
+    Acquire = 0,
+    Discard
+};
+
 }   // namespace gp::rhi::sync
 
 GP_ENABLE_ENUM_BITWISE_OPERATIONS(gp::rhi::sync::ResourceAccess);
