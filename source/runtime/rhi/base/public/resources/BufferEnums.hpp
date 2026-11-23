@@ -46,6 +46,19 @@ enum class BufferUsageFlags : gp::UInt32
     AnyDynamic = (1u << 1) | (1u << 2)
 };
 
+/// @brief Selects how a newly created GPU buffer initializes its backing memory.
+enum class BufferInitAction : gp::UInt8
+{
+    /// @brief Leave initial contents undefined (backend default).
+    Default = 0,
+    /// @brief Zero-initialize the entire buffer allocation.
+    Zeroed,
+    /// @brief Upload initial bytes from `BufferCreateDesc::initialData` and invoke `discard()`.
+    ResourceArray,
+    /// @brief Caller populates initial bytes through a buffer initializer handle.
+    Initializer
+};
+
 }   // namespace gp::rhi::resource
 
 GP_ENABLE_ENUM_BITWISE_OPERATIONS(gp::rhi::resource::BufferUsageFlags);
