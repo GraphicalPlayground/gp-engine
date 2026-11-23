@@ -29,3 +29,15 @@
 
 /// @brief Final compile-time switch governing RHI resource metadata and instance tracking.
 #define GP_RHI_ENABLE_RESOURCE_INFO (GP_RHI_WANT_RESOURCE_INFO && !GP_RHI_FORCE_DISABLE_RESOURCE_INFO)
+
+/// @brief Controls whether shader objects retain debug names, uniform buffer names, and reflection validation tables.
+#ifndef GP_RHI_INCLUDE_SHADER_DEBUG_DATA
+    #define GP_RHI_INCLUDE_SHADER_DEBUG_DATA (!GP_BUILD_SHIPPING)
+#endif
+
+/// @brief Conditionally compiles expressions that depend on shader debug metadata.
+#if GP_RHI_INCLUDE_SHADER_DEBUG_DATA
+    #define GP_RHI_IF_SHADER_DEBUG_DATA(...) __VA_ARGS__
+#else
+    #define GP_RHI_IF_SHADER_DEBUG_DATA(...)
+#endif
