@@ -28,8 +28,13 @@ enum class DescriptorHeapType : gp::UInt8
     Sampler,
     RenderTarget,
     DepthStencil,
+    /// @brief Sentinel count of valid descriptor heap categories.
+    Count,
     Invalid = 0xFFu
 };
+
+/// @brief Total number of valid `DescriptorHeapType` categories (`Standard` through `DepthStencil`).
+inline constexpr gp::UInt8 kDescriptorHeapTypeCount = static_cast<gp::UInt8>(DescriptorHeapType::Count);
 
 /// @brief Concrete view type stored in a descriptor handle.
 enum class DescriptorType : gp::UInt8
@@ -163,6 +168,27 @@ namespace gp::rhi::view
 
     return static_cast<DescriptorTypeMask>(1u << static_cast<gp::UInt16>(type));
 }
+
+/// @brief Diagnostic snapshot reporting utilization of a backend bindless descriptor heap or allocator pool.
+struct BindlessDescriptorAllocationInfo
+{
+    /// @brief Bitmask of `DescriptorType` values served by this descriptor pool.
+    DescriptorTypeMask types{ DescriptorTypeMask::None };
+
+    /// @brief Number of descriptors currently allocated.
+    gp::UInt32 count{ 0u };
+
+    /// @brief Current backing heap capacity in descriptors.
+    gp::UInt32 capacity{ 0u };
+
+    /// @brief Maximum hardware or configured capacity in descriptors.
+    gp::UInt32 maxCapacity{ 0u };
+
+    /// @brief Default memberwise equality comparison.
+    /// @param[in] rhs Allocation snapshot to compare against.
+    /// @return True when types, count, capacity, and maxCapacity all match.
+    [[nodiscard]] constexpr bool operator==(const BindlessDescriptorAllocationInfo& rhs) const noexcept = default;
+};
 
 /// @brief Maps a `ViewType` category to its corresponding bindless `DescriptorType`.
 /// @param[in] viewType View category to convert.
