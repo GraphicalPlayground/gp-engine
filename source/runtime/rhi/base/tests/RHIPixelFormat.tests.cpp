@@ -59,12 +59,16 @@ TEST(RHIPixelFormatTest, CompositeMasksIncludeExpectedFlags)
     EXPECT_TRUE(hasPixelFormatCapabilities(
         PixelFormatCapabilities::AllTextureFlags,
         PixelFormatCapabilities::AnyTexture | PixelFormatCapabilities::RenderTarget |
-            PixelFormatCapabilities::DepthStencil | PixelFormatCapabilities::TextureFilterable |
-            PixelFormatCapabilities::TextureBlendable
+            PixelFormatCapabilities::DepthStencil | PixelFormatCapabilities::TextureMipmaps |
+            PixelFormatCapabilities::TextureLoad | PixelFormatCapabilities::TextureSample |
+            PixelFormatCapabilities::TextureGather | PixelFormatCapabilities::TextureAtomics |
+            PixelFormatCapabilities::TextureBlendable | PixelFormatCapabilities::TextureStore |
+            PixelFormatCapabilities::TextureFilterable
     ));
     EXPECT_TRUE(hasPixelFormatCapabilities(
         PixelFormatCapabilities::AllBufferFlags,
         PixelFormatCapabilities::Buffer | PixelFormatCapabilities::VertexBuffer | PixelFormatCapabilities::IndexBuffer |
+            PixelFormatCapabilities::BufferLoad | PixelFormatCapabilities::BufferStore |
             PixelFormatCapabilities::BufferAtomics
     ));
     EXPECT_TRUE(hasPixelFormatCapabilities(
