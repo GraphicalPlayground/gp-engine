@@ -43,15 +43,19 @@ public:
         s_destructCount.store(0u, gp::memory::MemoryOrder::SeqCst);
     }
 
-    explicit TestResource(const ResourceType type = ResourceType::Buffer, const gp::UInt32 id = 0u) noexcept
+    explicit TestResource(const ResourceType type = ResourceType::Buffer, const bool probeAddRefInDtor = false) noexcept
         : Resource(type)
-        , m_id(id)
+        , m_probeAddRefInDtor(probeAddRefInDtor)
     {
         s_constructCount.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed);
     }
 
     virtual ~TestResource() noexcept override
     {
+        if (m_probeAddRefInDtor)
+        {
+            s_tryAddRefDuringDeleteSucceeded.store(tryAddRefIfNotDeleting(), gp::memory::MemoryOrder::Relaxed);
+        }
         s_destructCount.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed);
     }
 
@@ -60,10 +64,7 @@ public:
         setCommitted(committed);
     }
 
-    [[nodiscard]] gp::UInt32 getId() const noexcept
-    {
-        return m_id;
-    }
+    static inline gp::thread::Atomic<bool> s_tryAddRefDuringDeleteSucceeded{ true };
 
 #if GP_RHI_ENABLE_RESOURCE_INFO
     void setCustomResourceInfo(const ResourceInfo& info) noexcept
@@ -85,7 +86,7 @@ public:
 #endif
 
 private:
-    gp::UInt32 m_id{ 0u };
+    bool m_probeAddRefInDtor{ false };
 #if GP_RHI_ENABLE_RESOURCE_INFO
     ResourceInfo m_customInfo{};
     bool m_hasCustomInfo{ false };
@@ -117,14 +118,17 @@ protected:
 
 }   // namespace
 
-TEST_F(ResourceTestFixture, InitialStateMatchesUnrealDefaults)
+TEST_F(ResourceTestFixture, InitialStateMatchesDefaultContract)
 {
-    TestResource* const raw = new TestResource(ResourceType::Texture, 7u);
+    TestResource::s_tryAddRefDuringDeleteSucceeded.store(true, gp::memory::MemoryOrder::SeqCst);
+    TestResource* const raw = new TestResource(ResourceType::Texture, true);
 
     EXPECT_EQ(raw->getType(), ResourceType::Texture);
     EXPECT_EQ(raw->getRefCount(), 0u);
     EXPECT_FALSE(raw->isValid());
     EXPECT_FALSE(raw->isMarkedForDelete());
+    // tryAddRefIfLive() must reject a freshly constructed resource with refCount == 0.
+    EXPECT_FALSE(raw->tryAddRefIfLive());
     EXPECT_TRUE(raw->isCommitted());
     EXPECT_TRUE(raw->allowsLifetimeExtension());
     EXPECT_TRUE(raw->getOwnerName().isNone());
@@ -132,20 +136,23 @@ TEST_F(ResourceTestFixture, InitialStateMatchesUnrealDefaults)
     raw->setCommittedForTest(false);
     EXPECT_FALSE(raw->isCommitted());
 
-    // Acquire and release once so teardown runs through the deferred deletion queue.
-    ResourceRef ref(raw);
+    // Direct addRef() and release() check plus teardown via deferred deletion.
+    EXPECT_EQ(raw->addRef(), 1u);
     EXPECT_TRUE(raw->isValid());
-    EXPECT_EQ(raw->getRefCount(), 1u);
-    ref.reset();
+    EXPECT_EQ(raw->addRef(), 2u);
+    EXPECT_EQ(raw->release(), 1u);
+    EXPECT_EQ(raw->release(), 0u);
 
     ResourceDeletionQueue::flushPendingDeletes(true);
     EXPECT_EQ(TestResource::s_constructCount.load(), 1u);
     EXPECT_EQ(TestResource::s_destructCount.load(), 1u);
+    // tryAddRefIfNotDeleting() must return false once Deleting is latched during teardown.
+    EXPECT_FALSE(TestResource::s_tryAddRefDuringDeleteSucceeded.load());
 }
 
 TEST_F(ResourceTestFixture, RefCountedPtrRetainCopyMoveAndDeferredDelete)
 {
-    TestResource* const raw = new TestResource(ResourceType::Buffer, 42u);
+    TestResource* const raw = new TestResource(ResourceType::Buffer);
     {
         ResourceRef first(raw);
         EXPECT_EQ(raw->getRefCount(), 1u);
@@ -176,7 +183,7 @@ TEST_F(ResourceTestFixture, RefCountedPtrRetainCopyMoveAndDeferredDelete)
 
 TEST_F(ResourceTestFixture, CacheResurrectionPreventsDeletionAndClearsMark)
 {
-    TestResource* const raw = new TestResource(ResourceType::SamplerState, 11u);
+    TestResource* const raw = new TestResource(ResourceType::SamplerState);
 
     {
         ResourceRef ref(raw);
@@ -224,7 +231,7 @@ TEST_F(ResourceTestFixture, CacheResurrectionPreventsDeletionAndClearsMark)
 
 TEST_F(ResourceTestFixture, TransientResurrectionCyclesDoNotDuplicateQueueEntries)
 {
-    TestResource* const raw = new TestResource(ResourceType::BlendState, 3u);
+    TestResource* const raw = new TestResource(ResourceType::BlendState);
 
     {
         ResourceRef initialRef(raw);
@@ -288,7 +295,7 @@ TEST_F(ResourceTestFixture, PipelineStateDeletionCounterTracksOnlyPipelineStates
 
 TEST_F(ResourceTestFixture, OwnerNameAndGetResourceInfoBehavior)
 {
-    TestResource* const raw = new TestResource(ResourceType::Texture, 9u);
+    TestResource* const raw = new TestResource(ResourceType::Texture);
     ResourceRef ref(raw);
 
     const gp::Name owner("ShadowMapAtlas");
@@ -327,47 +334,57 @@ TEST_F(ResourceTestFixture, GlobalTrackingLifecycleAndGather)
     EXPECT_EQ(Resource::getTrackedResourceCount(), 0u);
 
     // Resources created before tracking starts are not tracked.
-    ResourceRef untracked(new TestResource(ResourceType::Buffer, 1u));
+    ResourceRef untracked(new TestResource(ResourceType::Buffer));
     EXPECT_FALSE(untracked->isBeingTracked());
     EXPECT_EQ(Resource::getTrackedResourceCount(), 0u);
 
     Resource::startTrackingAllResources();
     EXPECT_TRUE(Resource::isTrackingAllResources());
 
-    ResourceRef trackedA(new TestResource(ResourceType::Buffer, 2u));
-    ResourceRef trackedB(new TestResource(ResourceType::Texture, 3u));
-    ResourceRef trackedC(new TestResource(ResourceType::UniformBuffer, 4u));
+    ResourceRef trackedA(new TestResource(ResourceType::Buffer));
+    ResourceRef trackedB(new TestResource(ResourceType::Texture));
+    ResourceRef trackedC(new TestResource(ResourceType::UniformBuffer));
+    ResourceRef trackedD(new TestResource(ResourceType::SamplerState));
 
     EXPECT_TRUE(trackedA->isBeingTracked());
     EXPECT_TRUE(trackedB->isBeingTracked());
     EXPECT_TRUE(trackedC->isBeingTracked());
-    EXPECT_EQ(Resource::getTrackedResourceCount(), 3u);
+    EXPECT_TRUE(trackedD->isBeingTracked());
+    EXPECT_EQ(Resource::getTrackedResourceCount(), 4u);
 
     // Duplicate begin and null calls are no-ops.
     Resource::beginTrackingResource(nullptr);
     Resource::endTrackingResource(nullptr);
     Resource::beginTrackingResource(trackedA.get());
-    EXPECT_EQ(Resource::getTrackedResourceCount(), 3u);
+    EXPECT_EQ(Resource::getTrackedResourceCount(), 4u);
 
     gp::Vector<Resource*> gathered{};
     Resource::gatherTrackedResources(gathered);
-    EXPECT_EQ(gathered.size(), 3u);
+    EXPECT_EQ(gathered.size(), 4u);
 
-    // Deleting the middle element unlinks it cleanly on destruction.
+    // Deleting a middle element unlinks it cleanly on destruction.
     trackedB.reset();
-    EXPECT_EQ(Resource::getTrackedResourceCount(), 3u);
+    EXPECT_EQ(Resource::getTrackedResourceCount(), 4u);
     ResourceDeletionQueue::flushPendingDeletes(true);
+    EXPECT_EQ(Resource::getTrackedResourceCount(), 3u);
+
+    // Explicitly unlinking the head (trackedD, pushed last) and tail (trackedA, pushed first) exercises both endpoints.
+    Resource::endTrackingResource(trackedD.get());
+    EXPECT_FALSE(trackedD->isBeingTracked());
     EXPECT_EQ(Resource::getTrackedResourceCount(), 2u);
+
+    Resource::endTrackingResource(trackedA.get());
+    EXPECT_FALSE(trackedA->isBeingTracked());
+    EXPECT_EQ(Resource::getTrackedResourceCount(), 1u);
 
     // Stopping tracking clears every remaining link and resets the count.
     Resource::stopTrackingAllResources();
     EXPECT_FALSE(Resource::isTrackingAllResources());
     EXPECT_EQ(Resource::getTrackedResourceCount(), 0u);
-    EXPECT_FALSE(trackedA->isBeingTracked());
     EXPECT_FALSE(trackedC->isBeingTracked());
 
     // Subsequent endTrackingResource() calls on unlinked resources are safe no-ops.
-    Resource::endTrackingResource(trackedA.get());
+    Resource::endTrackingResource(trackedC.get());
     EXPECT_EQ(Resource::getTrackedResourceCount(), 0u);
 }
 
