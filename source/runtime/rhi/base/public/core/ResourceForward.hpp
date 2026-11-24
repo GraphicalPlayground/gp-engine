@@ -67,6 +67,12 @@ struct IntVector;
 /// @brief Integer 2D axis-aligned rectangle.
 struct IntRect;
 
+/// @brief Four-component unsigned 32-bit integer vector for UAV clears and shader root constants.
+struct UIntVector4;
+
+/// @brief Four-channel IEEE-754 half-precision (`UInt16`) RGBA color for float surface readback.
+struct Float16Color;
+
 /// @brief Unsigned subresource range `[first, first + num)`.
 template <typename InType>
 struct Range;
@@ -107,6 +113,9 @@ struct BufferDesc;
 /// @brief Fluent creation parameters for allocating and initializing a GPU buffer.
 struct BufferCreateDesc;
 
+/// @brief Move-only RAII initializer granting writable upload access while creating a GPU buffer.
+struct BufferInitializer;
+
 /// @brief Identifies a single texture subresource by face, array slice, and mip level.
 struct TextureSubresourceIndex;
 
@@ -121,6 +130,39 @@ struct TextureValidationLimits;
 
 /// @brief Fluent creation parameters for allocating and initializing a GPU texture.
 struct TextureCreateDesc;
+
+/// @brief Writable subresource pointer, stride, and byte size returned by `TextureInitializer`.
+struct TextureSubresourceInitializer;
+
+/// @brief Move-only RAII initializer granting writable subresource upload access while creating a GPU texture.
+struct TextureInitializer;
+
+/// @brief Parameters identifying a texture subresource region to lock for CPU access.
+struct TextureLockArgs;
+
+/// @brief Mapped CPU pointer, row stride, and byte size returned by `DynamicRHI::lockTexture()`.
+struct TextureLockResult;
+
+/// @brief Platform-aligned GPU byte size and alignment returned by `DynamicRHI::calcTexturePlatformSize()`.
+struct CalcTextureSizeResult;
+
+/// @brief 2D sub-rectangle specification for `updateTexture2D()`.
+struct UpdateTextureRegion2D;
+
+/// @brief 3D sub-box specification for `updateTexture3D()`.
+struct UpdateTextureRegion3D;
+
+/// @brief Staged CPU allocation descriptor for `beginUpdateTexture3D()` / `endUpdateTexture3D()`.
+struct UpdateTexture3DData;
+
+/// @brief Pairs a destination and source resource for atomic backing-memory replacement.
+struct ResourceReplaceInfo;
+
+/// @brief Snapshot of dedicated, streaming, and pool GPU texture memory budgets.
+struct TextureMemoryStats;
+
+/// @brief Options controlling cube face, mip index, and compression when reading back a render target surface.
+struct ReadSurfaceDataFlags;
 
 /// @brief Describes one resource member slot inside a uniform buffer layout.
 struct UniformBufferResource;
