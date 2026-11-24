@@ -3,6 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "shaders/ShaderEnums.hpp"
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include <gtest/gtest.h>
 
 namespace gp::rhi::shader::tests
@@ -185,6 +186,70 @@ TEST(ShaderEnumsTest, UniformBufferBindingFlagsBitwiseOperations)
         UniformBufferBindingFlags::StaticAndShader & UniformBufferBindingFlags::Shader,
         UniformBufferBindingFlags::Shader
     );
+}
+
+TEST(ShaderEnumsTest, EnumCountsBitWidthsAndFrequencyStrings)
+{
+    EXPECT_EQ(kShaderFrequencyNumBits, 4u);
+    EXPECT_EQ(
+        kShaderCodeResourceBindingTypeCount,
+        static_cast<gp::UInt32>(ShaderCodeResourceBindingType::RWTexture2DMultiView) + 1u
+    );
+    EXPECT_EQ(kUniformBufferBaseTypeCount, static_cast<gp::UInt32>(UniformBufferBaseType::UniformBlock) + 1u);
+    EXPECT_EQ(kUniformBufferBaseTypeNumBits, 5u);
+
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::Vertex, true)), gp::StringView("SF_Vertex"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::Vertex, false)), gp::StringView("Vertex"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::Mesh, true)), gp::StringView("SF_Mesh"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::Mesh, false)), gp::StringView("Mesh"));
+    EXPECT_EQ(
+        gp::StringView(getShaderFrequencyString(ShaderFrequency::Amplification, true)),
+        gp::StringView("SF_Amplification")
+    );
+    EXPECT_EQ(
+        gp::StringView(getShaderFrequencyString(ShaderFrequency::Amplification, false)), gp::StringView("Amplification")
+    );
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::Pixel, true)), gp::StringView("SF_Pixel"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::Pixel, false)), gp::StringView("Pixel"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::Geometry, true)), gp::StringView("SF_Geometry"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::Geometry, false)), gp::StringView("Geometry"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::Compute, true)), gp::StringView("SF_Compute"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::Compute, false)), gp::StringView("Compute"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::RayGen, true)), gp::StringView("SF_RayGen"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::RayGen, false)), gp::StringView("RayGen"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::RayMiss, true)), gp::StringView("SF_RayMiss"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(ShaderFrequency::RayMiss, false)), gp::StringView("RayMiss"));
+    EXPECT_EQ(
+        gp::StringView(getShaderFrequencyString(ShaderFrequency::RayHitGroup, true)), gp::StringView("SF_RayHitGroup")
+    );
+    EXPECT_EQ(
+        gp::StringView(getShaderFrequencyString(ShaderFrequency::RayHitGroup, false)), gp::StringView("RayHitGroup")
+    );
+    EXPECT_EQ(
+        gp::StringView(getShaderFrequencyString(ShaderFrequency::RayCallable, true)), gp::StringView("SF_RayCallable")
+    );
+    EXPECT_EQ(
+        gp::StringView(getShaderFrequencyString(ShaderFrequency::RayCallable, false)), gp::StringView("RayCallable")
+    );
+    EXPECT_EQ(
+        gp::StringView(getShaderFrequencyString(ShaderFrequency::WorkGraphRoot, true)),
+        gp::StringView("SF_WorkGraphRoot")
+    );
+    EXPECT_EQ(
+        gp::StringView(getShaderFrequencyString(ShaderFrequency::WorkGraphRoot, false)), gp::StringView("WorkGraphRoot")
+    );
+    EXPECT_EQ(
+        gp::StringView(getShaderFrequencyString(ShaderFrequency::WorkGraphComputeNode, true)),
+        gp::StringView("SF_WorkGraphComputeNode")
+    );
+    EXPECT_EQ(
+        gp::StringView(getShaderFrequencyString(ShaderFrequency::WorkGraphComputeNode, false)),
+        gp::StringView("WorkGraphComputeNode")
+    );
+
+    const ShaderFrequency invalidStage = static_cast<ShaderFrequency>(0xFFu);
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(invalidStage, true)), gp::StringView("SF_NumFrequencies"));
+    EXPECT_EQ(gp::StringView(getShaderFrequencyString(invalidStage, false)), gp::StringView("NumFrequencies"));
 }
 
 }   // namespace gp::rhi::shader::tests
