@@ -58,6 +58,9 @@ struct TrackedAccess;
 /// @brief Associates a `ViewableResource` pointer with its tracked access state and pipeline mask.
 struct TrackedAccessInfo;
 
+/// @brief Resolved before/after access states and execution pipelines for a single `TransitionInfo`.
+struct ResourceState;
+
 /// @brief Backend lifecycle callbacks registered for opaque `Transition` private data.
 struct TransitionBackendHooks;
 
