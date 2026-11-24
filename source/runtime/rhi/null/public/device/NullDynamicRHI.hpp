@@ -20,6 +20,7 @@
 #include "maths/color/Color.hpp"
 #include "maths/color/LinearColor.hpp"
 #include "maths/vector/Vector4.hpp"
+#include "memory/pointers/RefCountedPtr.hpp"
 #include "pipeline/BlendStateDesc.hpp"
 #include "pipeline/DepthStencilStateDesc.hpp"
 #include "pipeline/PipelineForward.hpp"
