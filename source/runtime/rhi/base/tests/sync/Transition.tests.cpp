@@ -3,6 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "sync/Transition.hpp"
+#include "containers/arrays/Vector.hpp"   // IWYU pragma: keep
 #include "memory/MemoryBase.hpp"
 #include "sync/SyncEnums.hpp"
 #include "sync/TransitionDesc.hpp"
@@ -10,7 +11,6 @@
 #include <gtest/gtest.h>
 #include <thread>
 #include <type_traits>
-#include <vector>
 
 namespace gp::rhi::sync::tests
 {
@@ -195,7 +195,7 @@ TEST_F(TransitionTestFixture, ConcurrentSplitBeginAndEndRetireEveryTransitionOnc
     TransitionController::configureBackend(hooks);
 
     constexpr gp::UInt32 kTransitionCount = 2000u;
-    std::vector<Transition*> transitions;
+    gp::Vector<Transition*> transitions{};
     transitions.reserve(kTransitionCount);
 
     const TransitionCreateInfo createInfo(PipelineStage::All, PipelineStage::All);
@@ -203,14 +203,15 @@ TEST_F(TransitionTestFixture, ConcurrentSplitBeginAndEndRetireEveryTransitionOnc
     {
         Transition* const transition = TransitionController::create(createInfo);
         ASSERT_NE(transition, nullptr);
-        transitions.push_back(transition);
+        transitions.pushBack(transition);
     }
 
     EXPECT_EQ(s_createHookCalls.load(), kTransitionCount);
 
     gp::thread::Atomic<bool> startLatch{ false };
 
-    std::thread graphicsThread([&transitions, &startLatch]()
+    std::thread graphicsThread(
+        [&transitions, &startLatch]() -> void
     {
         while (!startLatch.load(gp::memory::MemoryOrder::Acquire))
         {
@@ -221,9 +222,11 @@ TEST_F(TransitionTestFixture, ConcurrentSplitBeginAndEndRetireEveryTransitionOnc
             TransitionController::markBegin(transitions[i], PipelineStage::Graphics);
             TransitionController::markEnd(transitions[i], PipelineStage::Graphics);
         }
-    });
+    }
+    );
 
-    std::thread asyncComputeThread([&transitions, &startLatch]()
+    std::thread asyncComputeThread(
+        [&transitions, &startLatch]() -> void
     {
         while (!startLatch.load(gp::memory::MemoryOrder::Acquire))
         {
@@ -234,7 +237,8 @@ TEST_F(TransitionTestFixture, ConcurrentSplitBeginAndEndRetireEveryTransitionOnc
             TransitionController::markBegin(transitions[i], PipelineStage::AsyncCompute);
             TransitionController::markEnd(transitions[i], PipelineStage::AsyncCompute);
         }
-    });
+    }
+    );
 
     startLatch.store(true, gp::memory::MemoryOrder::Release);
     graphicsThread.join();
@@ -242,6 +246,70 @@ TEST_F(TransitionTestFixture, ConcurrentSplitBeginAndEndRetireEveryTransitionOnc
 
     EXPECT_EQ(s_releaseHookCalls.load(gp::memory::MemoryOrder::Acquire), kTransitionCount);
     EXPECT_EQ(s_validMagicReleases.load(gp::memory::MemoryOrder::Acquire), kTransitionCount);
+}
+
+TEST_F(TransitionTestFixture, OneSidedPipelinesAllStageMaskAndAlignmentFloor)
+{
+    // Backend requesting 0 bytes with 16-byte power-of-two alignment preserves alignment and aligns allocation size.
+    TransitionBackendHooks zeroSizeHooks{};
+    zeroSizeHooks.privateDataSizeInBytes = 0u;
+    zeroSizeHooks.privateDataAlignInBytes = 16u;
+    TransitionController::configureBackend(zeroSizeHooks);
+    EXPECT_EQ(TransitionController::getPrivateDataSizeInBytes(), 0u);
+    EXPECT_EQ(TransitionController::getPrivateDataAlignInBytes(), 16u);
+    EXPECT_EQ(TransitionController::getTotalAllocationSize(), gp::memory::align(sizeof(Transition), 16u));
+
+    // Backend requesting alignment smaller than alignof(Transition) keeps alignof(Transition).
+    TransitionBackendHooks smallAlignHooks{};
+    smallAlignHooks.privateDataSizeInBytes = 4u;
+    smallAlignHooks.privateDataAlignInBytes = 1u;
+    smallAlignHooks.onCreate = [](Transition* const transition, const TransitionCreateInfo&) noexcept -> void
+    {
+        s_createHookCalls.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed);
+        *transition->getPrivateData<gp::UInt32>() = 0xDEADBEEFu;
+    };
+    smallAlignHooks.onRelease = [](Transition* const transition) noexcept -> void
+    {
+        s_releaseHookCalls.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed);
+        if (*transition->getPrivateData<gp::UInt32>() == 0xDEADBEEFu)
+        {
+            s_validMagicReleases.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed);
+        }
+    };
+    TransitionController::configureBackend(smallAlignHooks);
+    EXPECT_EQ(TransitionController::getAlignment(), alignof(Transition));
+
+    // srcPipelines == None retires immediately on markEnd(dst).
+    {
+        const TransitionCreateInfo endOnlyInfo(PipelineStage::None, PipelineStage::Graphics);
+        Transition* const transition = TransitionController::create(endOnlyInfo);
+        ASSERT_NE(transition, nullptr);
+        TransitionController::markEnd(transition, PipelineStage::Graphics);
+        EXPECT_EQ(s_releaseHookCalls.load(), 1u);
+        EXPECT_EQ(s_validMagicReleases.load(), 1u);
+    }
+
+    // dstPipelines == None retires immediately on markBegin(src).
+    {
+        const TransitionCreateInfo beginOnlyInfo(PipelineStage::AsyncCompute, PipelineStage::None);
+        Transition* const transition = TransitionController::create(beginOnlyInfo);
+        ASSERT_NE(transition, nullptr);
+        TransitionController::markBegin(transition, PipelineStage::AsyncCompute);
+        EXPECT_EQ(s_releaseHookCalls.load(), 2u);
+        EXPECT_EQ(s_validMagicReleases.load(), 2u);
+    }
+
+    // Passing PipelineStage::All clears both pipeline bits in a single call.
+    {
+        const TransitionCreateInfo allInfo(PipelineStage::All, PipelineStage::All);
+        Transition* const transition = TransitionController::create(allInfo);
+        ASSERT_NE(transition, nullptr);
+        TransitionController::markBegin(transition, PipelineStage::All);
+        EXPECT_EQ(s_releaseHookCalls.load(), 2u);
+        TransitionController::markEnd(transition, PipelineStage::All);
+        EXPECT_EQ(s_releaseHookCalls.load(), 3u);
+        EXPECT_EQ(s_validMagicReleases.load(), 3u);
+    }
 }
 
 }   // namespace gp::rhi::sync::tests
