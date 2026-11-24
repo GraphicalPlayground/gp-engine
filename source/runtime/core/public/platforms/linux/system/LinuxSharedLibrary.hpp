@@ -10,7 +10,18 @@
 namespace gp::platform::linux
 {
 
-struct SharedLibrary final : public gp::platform::unix::SharedLibrary
-{};
+/// @brief Linux implementation of dynamic shared library (`.so`) loading and search-path management.
+/// @details Inherits POSIX `dlopen`/`dlsym`/`dlclose`, ELF versioned soname handling (`.so` and `.so.<N>`),
+///          and thread-safe search-path resolution from `gp::platform::unix::SharedLibrary`.
+struct GP_CORE_API SharedLibrary final : public gp::platform::unix::SharedLibrary
+{
+public:
+    SharedLibrary() = delete;
+    ~SharedLibrary() = delete;
+    SharedLibrary(const SharedLibrary&) = delete;
+    SharedLibrary& operator=(const SharedLibrary&) = delete;
+    SharedLibrary(SharedLibrary&&) = delete;
+    SharedLibrary& operator=(SharedLibrary&&) = delete;
+};
 
 }   // namespace gp::platform::linux
