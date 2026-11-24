@@ -78,7 +78,67 @@ TEST(SyncEnumsTest, PipelineStageQueries)
 
     EXPECT_EQ(getPipelineStageIndex(PipelineStage::Graphics), 0u);
     EXPECT_EQ(getPipelineStageIndex(PipelineStage::AsyncCompute), 1u);
+    EXPECT_EQ(getPipelineStageIndex(PipelineStage::None), 0u);
     EXPECT_EQ(getPipelineStageCount(), kPipelineStageCount);
+}
+
+TEST(SyncEnumsTest, TransitionFlagsAndPipelineArrayContract)
+{
+    EXPECT_EQ(ResourceTransitionFlags::Last, ResourceTransitionFlags::IgnoreAfterState);
+    EXPECT_EQ(
+        ResourceTransitionFlags::Mask,
+        ResourceTransitionFlags::MaintainCompression | ResourceTransitionFlags::IgnoreAfterState
+    );
+
+    const TransitionCreateFlags combinedCreate =
+        TransitionCreateFlags::NoFence | TransitionCreateFlags::AllowDuringRenderPass;
+    EXPECT_EQ(combinedCreate & TransitionCreateFlags::NoFence, TransitionCreateFlags::NoFence);
+    EXPECT_EQ(combinedCreate & TransitionCreateFlags::NoSplit, TransitionCreateFlags::None);
+    EXPECT_NE(
+        (TransitionCreateFlags::NoSplit | TransitionCreateFlags::AllowDecayPipelines) &
+            TransitionCreateFlags::AllowDecayPipelines,
+        TransitionCreateFlags::None
+    );
+
+    // Edge cases on access classification predicates
+    EXPECT_FALSE(isReadOnlyExclusiveAccess(ResourceAccess::None));
+    EXPECT_FALSE(isReadOnlyExclusiveAccess(ResourceAccess::SRVGraphics | ResourceAccess::DSVRead));
+    EXPECT_FALSE(isReadOnlyAccess(ResourceAccess::DSVRead | ResourceAccess::DSVWrite));
+    EXPECT_FALSE(isWriteOnlyAccess(ResourceAccess::None));
+    EXPECT_FALSE(isWriteOnlyAccess(ResourceAccess::DSVWrite | ResourceAccess::DSVRead));
+    EXPECT_TRUE(isInvalidAccess(ResourceAccess::CopyDest | ResourceAccess::UAVCompute));
+    EXPECT_TRUE(isInvalidAccess(ResourceAccess::SRVCompute | ResourceAccess::BVHWrite));
+
+    PipelineArray<gp::UInt32> arrA{};
+    EXPECT_EQ(arrA.size(), kPipelineStageCount);
+    arrA[PipelineStage::Graphics] = 10u;
+    arrA[PipelineStage::AsyncCompute] = 20u;
+
+    const PipelineArray<gp::UInt32>& constRef = arrA;
+    EXPECT_EQ(constRef[PipelineStage::Graphics], 10u);
+    EXPECT_EQ(constRef[PipelineStage::AsyncCompute], 20u);
+
+    gp::UInt32 sum = 0u;
+    for (const gp::UInt32 value: constRef)
+    {
+        sum += value;
+    }
+    EXPECT_EQ(sum, 30u);
+
+    for (gp::UInt32& value: arrA)
+    {
+        value += 5u;
+    }
+    EXPECT_EQ(arrA[PipelineStage::Graphics], 15u);
+    EXPECT_EQ(arrA[PipelineStage::AsyncCompute], 25u);
+
+    PipelineArray<gp::UInt32> arrB{};
+    arrB[PipelineStage::Graphics] = 15u;
+    arrB[PipelineStage::AsyncCompute] = 25u;
+    EXPECT_EQ(arrA, arrB);
+
+    arrB[PipelineStage::AsyncCompute] = 99u;
+    EXPECT_NE(arrA, arrB);
 }
 
 }   // namespace gp::rhi::sync::tests
