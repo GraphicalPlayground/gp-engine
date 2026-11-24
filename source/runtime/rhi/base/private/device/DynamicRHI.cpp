@@ -7,14 +7,18 @@
 #include "commands/CommandListExecutor.hpp"
 #include "commands/CommandListImmediate.hpp"
 #include "commands/CommandPacket.hpp"
+#include "core/GPUMask.hpp"
+#include "core/Resource.hpp"
 #include "core/ResourceDeletionQueue.hpp"
 #include "device/DefaultRenderQueryPool.hpp"
 #include "device/GenericStagingBuffer.hpp"
 #include "device/RHIGlobals.hpp"
+#include "device/RHIModuleDiscovery.hpp"
 #include "maths/base/Arithmetic.hpp"
 #include "memory/GlobalMemory.hpp"
 #include "memory/Memory.hpp"
 #include "resources/TextureUtils.hpp"
+#include "sync/SyncEnums.hpp"
 #include "sync/Transition.hpp"
 #include "threading/sync/UniqueLock.hpp"
 #include <utility>
@@ -645,6 +649,10 @@ void rhiInit(DynamicRHI* const rhi) noexcept
     GP_CHECKF(rhi != nullptr, "rhiInit() requires a non-null DynamicRHI instance.");
     GP_CHECKF(g_dynamicRHI == nullptr, "rhiInit() called while another DynamicRHI is still active.");
 
+#if GP_RHI_ENABLE_RESOURCE_INFO
+    resource::Resource::startTrackingAllResources();
+#endif
+
     g_dynamicRHI = rhi;
 
     sync::TransitionBackendHooks hooks{};
@@ -662,14 +670,21 @@ void rhiInit(DynamicRHI* const rhi) noexcept
     sync::TransitionController::configureBackend(hooks);
 
     getRHIGlobals().isRHIInitialized = true;
+    GP_CHECK(getRHIGlobals().isRHIInitialized);
+
+    command::CommandListImmediate& immediateCmdList = command::getImmediateCommandList();
+    if (command::ICommandContext* const defaultContext = g_dynamicRHI->getDefaultContext(); defaultContext != nullptr)
+    {
+        immediateCmdList.setContext(sync::PipelineStage::Graphics, defaultContext);
+        (void)immediateCmdList.getContext();
+    }
+    immediateCmdList.setGPUMask(GPUMask::all());
 }
 
 void rhiPostInit() noexcept
 {
-    if (g_dynamicRHI != nullptr)
-    {
-        g_dynamicRHI->postInit();
-    }
+    GP_CHECKF(g_dynamicRHI != nullptr, "rhiPostInit() called before rhiInit().");
+    g_dynamicRHI->postInit();
 }
 
 void rhiExit() noexcept
@@ -692,9 +707,14 @@ void rhiExit() noexcept
     delete g_dynamicRHI;
     g_dynamicRHI = nullptr;
 
+#if GP_RHI_ENABLE_RESOURCE_INFO
+    resource::Resource::stopTrackingAllResources();
+#endif
+
     sync::TransitionController::resetBackend();
     command::getCommandListExecutor().reset();
     getRHIGlobals().reset();
+    detail::clearLoadedRHIModuleName();
     g_minClipZ = 0.0f;
     g_projectionSignY = 1.0f;
 }
