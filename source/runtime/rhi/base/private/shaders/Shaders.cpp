@@ -66,7 +66,6 @@ bool Shader::isExcludedFromSpecialization(
                     return true;
                 }
             }
-            return false;
         }
     }
 
