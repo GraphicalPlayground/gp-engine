@@ -42,6 +42,7 @@ enum class ResourceType : gp::UInt8
     ShaderResourceView,
     RayTracingGeometry,
     RayTracingScene,
+    RayTracingOpacityMicromapArray,
     RayTracingShaderBindingTable,
     StagingBuffer,
     CustomPresent,
@@ -82,6 +83,10 @@ enum class ResourceLockMode : gp::UInt8
     WriteOnly,
     WriteOnlyNoOverwrite
 };
+
+/// @brief Total number of enumerators defined in `ResourceLockMode`.
+inline constexpr gp::UInt32 kResourceLockModeCount =
+    static_cast<gp::UInt32>(ResourceLockMode::WriteOnlyNoOverwrite) + 1u;
 
 /// @brief Selects what kind of hardware fast-clear value is bound to a render target.
 enum class ClearBinding : gp::UInt8
