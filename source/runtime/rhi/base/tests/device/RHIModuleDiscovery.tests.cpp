@@ -478,20 +478,26 @@ TEST_F(RHIModuleDiscoveryTest, CommandLineOverridesSelectBackendAndFeatureLevel)
 TEST_F(RHIModuleDiscoveryTest, SelectionNegotiatesFeatureLevelAndUnloadsUnsupportedCandidates)
 {
     using UnsupportedD3D12 = MockDynamicRHIModule<InterfaceType::D3D12, FeatureLevel::SM6, false>;
-    using SupportedVulkanSM5 = MockDynamicRHIModule<InterfaceType::Vulkan, FeatureLevel::SM5, true>;
+#if GP_PLATFORM_MACOS
+    using SupportedFallbackSM5 = MockDynamicRHIModule<InterfaceType::Metal, FeatureLevel::SM5, true>;
+    constexpr gp::StringView kExpectedFallbackModule = kMetalRHIModuleName;
+#else
+    using SupportedFallbackSM5 = MockDynamicRHIModule<InterfaceType::Vulkan, FeatureLevel::SM5, true>;
+    constexpr gp::StringView kExpectedFallbackModule = kVulkanRHIModuleName;
+#endif
     using SupportedNull = MockDynamicRHIModule<InterfaceType::Null, FeatureLevel::SM5, true>;
 
     UnsupportedD3D12::resetTracking();
-    SupportedVulkanSM5::resetTracking();
+    SupportedFallbackSM5::resetTracking();
     SupportedNull::resetTracking();
 
     gp::modules::ModuleManager manager{};
     ASSERT_TRUE(
         manager.registerStaticModule(kD3D12RHIModuleName, &createMockModule<UnsupportedD3D12>, &destroyMockModule)
     );
-    ASSERT_TRUE(
-        manager.registerStaticModule(kVulkanRHIModuleName, &createMockModule<SupportedVulkanSM5>, &destroyMockModule)
-    );
+    ASSERT_TRUE(manager.registerStaticModule(
+        kExpectedFallbackModule, &createMockModule<SupportedFallbackSM5>, &destroyMockModule
+    ));
     ASSERT_TRUE(manager.registerStaticModule(kNullRHIModuleName, &createMockModule<SupportedNull>, &destroyMockModule));
 
     RHIBootstrapDesc desc{};
@@ -501,11 +507,11 @@ TEST_F(RHIModuleDiscoveryTest, SelectionNegotiatesFeatureLevelAndUnloadsUnsuppor
 
     const RHISelectionResult result = selectDynamicRHIModule(desc, manager);
     ASSERT_TRUE(result.isValid());
-    EXPECT_EQ(result.moduleName, kVulkanRHIModuleName);
+    EXPECT_EQ(result.moduleName, kExpectedFallbackModule);
     EXPECT_EQ(result.featureLevel, FeatureLevel::SM5);
     EXPECT_FALSE(result.usedNullFallback);
     EXPECT_FALSE(manager.isModuleLoaded(kD3D12RHIModuleName));
-    EXPECT_TRUE(manager.isModuleLoaded(kVulkanRHIModuleName));
+    EXPECT_TRUE(manager.isModuleLoaded(kExpectedFallbackModule));
 }
 
 TEST_F(RHIModuleDiscoveryTest, SelectionFallsBackToNullWhenHardwareUnavailable)
