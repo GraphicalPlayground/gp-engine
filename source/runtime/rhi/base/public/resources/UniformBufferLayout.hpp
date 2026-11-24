@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "containers/arrays/Vector.hpp"
-#include "containers/strings/String.hpp"
-#include "containers/views/StringView.hpp"
-#include "containers/views/VectorView.hpp"
+#include "containers/arrays/Vector.hpp"      // IWYU pragma: keep
+#include "containers/strings/String.hpp"     // IWYU pragma: keep
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
+#include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "core/Resource.hpp"
-#include "core/ResourceForward.hpp"   // IWYU pragma: keep
+#include "core/ResourceForward.hpp"          // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "resources/UniformBufferEnums.hpp"
 #include "resources/UniformBufferLayoutDesc.hpp"
@@ -164,18 +164,43 @@ public:
     [[nodiscard]] bool operator==(const UniformBufferLayout& rhs) const noexcept;
 
 private:
+    /// @brief Debug name of the uniform buffer parameter structure.
     gp::String m_name{};
+
+    /// @brief All RHI resource member entries sorted by offset.
     gp::Vector<UniformBufferResource> m_resources{};
+
+    /// @brief Render-graph managed resource entries.
     gp::Vector<UniformBufferResource> m_graphResources{};
+
+    /// @brief Render-graph managed texture entries.
     gp::Vector<UniformBufferResource> m_graphTextures{};
+
+    /// @brief Render-graph managed buffer entries.
     gp::Vector<UniformBufferResource> m_graphBuffers{};
+
+    /// @brief Render-graph managed nested uniform buffer entries.
     gp::Vector<UniformBufferResource> m_graphUniformBuffers{};
+
+    /// @brief Non-graph referenced uniform buffer entries.
     gp::Vector<UniformBufferResource> m_uniformBuffers{};
+
+    /// @brief Precomputed 32-bit structural hash of this layout.
     gp::UInt32 m_hash{ 0u };
+
+    /// @brief Constant data payload size in bytes.
     gp::UInt32 m_constantBufferSize{ 0u };
+
+    /// @brief Byte offset of embedded render target binding slots, or `kUniformBufferInvalidOffset`.
     gp::UInt16 m_renderTargetsOffset{ kUniformBufferInvalidOffset };
+
+    /// @brief Global static uniform buffer slot index, or `kMaxUniformBufferStaticSlots`.
     UniformBufferStaticSlot m_staticSlot{ kMaxUniformBufferStaticSlots };
+
+    /// @brief Permitted binding models for uniform buffers created with this layout.
     shader::UniformBufferBindingFlags m_bindingFlags{ shader::UniformBufferBindingFlags::Shader };
+
+    /// @brief Behavioral and reflection flags assigned to this layout.
     UniformBufferFlags m_flags{ UniformBufferFlags::None };
 };
 
