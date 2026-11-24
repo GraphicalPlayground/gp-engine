@@ -73,6 +73,10 @@ static_assert(!std::is_copy_constructible_v<VertexShader>, "VertexShader must no
 static_assert(!std::is_copy_constructible_v<ComputeShader>, "ComputeShader must not be copy constructible.");
 
 static_assert(kShaderFrequencyOf<VertexShader> == ShaderFrequency::Vertex);
+static_assert(kShaderFrequencyOf<const VertexShader> == ShaderFrequency::Vertex);
+static_assert(kShaderFrequencyOf<VertexShader*> == ShaderFrequency::Vertex);
+static_assert(kShaderFrequencyOf<const VertexShader*> == ShaderFrequency::Vertex);
+static_assert(kShaderFrequencyOf<VertexShaderRef> == ShaderFrequency::Vertex);
 static_assert(kShaderFrequencyOf<MeshShader> == ShaderFrequency::Mesh);
 static_assert(kShaderFrequencyOf<AmplificationShader> == ShaderFrequency::Amplification);
 static_assert(kShaderFrequencyOf<PixelShader> == ShaderFrequency::Pixel);
@@ -105,6 +109,18 @@ struct BytecodeBuffer
 {
     gp::Vector<gp::UInt8> bytes{};
 };
+
+/// @brief Tracks function-pointer deleter invocations for CreateShaderDesc tests.
+gp::UInt32 g_fnPtrDeleterCalls = 0u;
+const void* g_fnPtrDeletedAddress = nullptr;
+
+/// @brief Free-function deleter used to verify non-functor invocable deleters.
+/// @param[in] ptr Bytecode pointer passed to the deleter.
+void freeFunctionBytecodeDeleter(const void* const ptr) noexcept
+{
+    ++g_fnPtrDeleterCalls;
+    g_fnPtrDeletedAddress = ptr;
+}
 
 class ShaderTestFixture : public ::testing::Test
 {
@@ -185,18 +201,21 @@ TEST_F(ShaderTestFixture, CreateShaderDescSupportsNonOwningSharedAndCustomDelete
     // Custom deleter constructor keeps data valid while copies exist and invokes deleter once at final release.
     gp::UInt32 deleterCalls = 0u;
     const void* deletedPtr = nullptr;
+    ShaderLibrary* const fakeLibrary = reinterpret_cast<ShaderLibrary*>(static_cast<gp::UIntPtr>(0x12340u));
     {
         CreateShaderDesc deleterDesc(
             gp::ConstVectorView<gp::UInt8>(rawBytes, 4u),
-            [&deleterCalls, &deletedPtr](const void* const ptr) noexcept
+            [&deleterCalls, &deletedPtr](const void* const ptr) noexcept -> void
         {
             ++deleterCalls;
             deletedPtr = ptr;
-        }
+        },
+            fakeLibrary
         );
         EXPECT_TRUE(deleterDesc.isValid());
         EXPECT_TRUE(deleterDesc.codeOwner.isValid());
         EXPECT_EQ(deleterDesc.codeOwner.get(), static_cast<const void*>(rawBytes));
+        EXPECT_EQ(deleterDesc.library, fakeLibrary);
 
         CreateShaderDesc copiedDesc = deleterDesc;
         EXPECT_EQ(deleterCalls, 0u);
@@ -204,6 +223,20 @@ TEST_F(ShaderTestFixture, CreateShaderDescSupportsNonOwningSharedAndCustomDelete
     }
     EXPECT_EQ(deleterCalls, 1u);
     EXPECT_EQ(deletedPtr, static_cast<const void*>(rawBytes));
+
+    // Free function-pointer deleter also satisfies CreateShaderDesc's invocable constraint.
+    g_fnPtrDeleterCalls = 0u;
+    g_fnPtrDeletedAddress = nullptr;
+    {
+        CreateShaderDesc fnPtrDesc(
+            gp::ConstVectorView<gp::UInt8>(rawBytes, 4u), &freeFunctionBytecodeDeleter, fakeLibrary
+        );
+        EXPECT_TRUE(fnPtrDesc.isValid());
+        EXPECT_TRUE(fnPtrDesc.codeOwner.isValid());
+        EXPECT_EQ(fnPtrDesc.library, fakeLibrary);
+    }
+    EXPECT_EQ(g_fnPtrDeleterCalls, 1u);
+    EXPECT_EQ(g_fnPtrDeletedAddress, static_cast<const void*>(rawBytes));
 }
 
 TEST_F(ShaderTestFixture, ShaderMetadataFlagsSpecializationAndPSOCompilationTracking)
@@ -228,13 +261,22 @@ TEST_F(ShaderTestFixture, ShaderMetadataFlagsSpecializationAndPSOCompilationTrac
     vs->setShaderBundleUsage(true);
     EXPECT_TRUE(vs->hasNoDerivativeOps());
     EXPECT_TRUE(vs->hasShaderBundleUsage());
+    vs->setNoDerivativeOps(false);
+    vs->setShaderBundleUsage(false);
+    EXPECT_FALSE(vs->hasNoDerivativeOps());
+    EXPECT_FALSE(vs->hasShaderBundleUsage());
 
     gp::Vector<ShaderSpecializationExclusion> exclusions{};
-    ShaderSpecializationExclusion entry{};
-    entry.bindPoint = 2u;
-    entry.specializationHashes.emplaceBack(0x11223344u);
-    entry.specializationHashes.emplaceBack(0x55667788u);
-    exclusions.emplaceBack(std::move(entry));
+    ShaderSpecializationExclusion entryA{};
+    entryA.bindPoint = 2u;
+    entryA.specializationHashes.emplaceBack(0x11223344u);
+    ShaderSpecializationExclusion entryB{};
+    entryB.bindPoint = 2u;
+    entryB.specializationHashes.emplaceBack(0x55667788u);
+    EXPECT_NE(entryA, entryB);
+    EXPECT_EQ(entryA, entryA);
+    exclusions.emplaceBack(std::move(entryA));
+    exclusions.emplaceBack(std::move(entryB));
     vs->setSpecializationExclusions(std::move(exclusions));
 
     // Exclusions are ignored while specialization constants are disabled.
@@ -242,11 +284,24 @@ TEST_F(ShaderTestFixture, ShaderMetadataFlagsSpecializationAndPSOCompilationTrac
 
     vs->setSpecializationConstants(true);
     EXPECT_TRUE(vs->hasSpecializationConstants());
-    EXPECT_EQ(vs->getSpecializationExclusions().size(), 1u);
+    EXPECT_EQ(vs->getSpecializationExclusions().size(), 2u);
     EXPECT_TRUE(vs->isExcludedFromSpecialization(2u, 0x11223344u));
+    // Duplicate bindPoint entries must all be scanned.
     EXPECT_TRUE(vs->isExcludedFromSpecialization(2u, 0x55667788u));
     EXPECT_FALSE(vs->isExcludedFromSpecialization(2u, 0x99AABBCCu));
     EXPECT_FALSE(vs->isExcludedFromSpecialization(3u, 0x11223344u));
+
+    vs->setSpecializationConstants(false);
+    EXPECT_FALSE(vs->hasSpecializationConstants());
+    EXPECT_FALSE(vs->isExcludedFromSpecialization(2u, 0x11223344u));
+
+    // Direct PSO compilation ref-count observation while held.
+    vs->setInUseByPSOCompilation(true);
+    EXPECT_TRUE(vs->isInUseByPSOCompilation());
+    EXPECT_EQ(vs->getPSOCompilationUseCount(), 1);
+    vs->setInUseByPSOCompilation(false);
+    EXPECT_FALSE(vs->isInUseByPSOCompilation());
+    EXPECT_EQ(vs->getPSOCompilationUseCount(), 0);
 
     ShaderResourceTable table{};
     table.resourceTableBits = 0x01u;
@@ -269,14 +324,16 @@ TEST_F(ShaderTestFixture, ShaderMetadataFlagsSpecializationAndPSOCompilationTrac
     std::thread workers[kThreadCount];
     for (gp::Int32 i = 0; i < kThreadCount; ++i)
     {
-        workers[i] = std::thread([shaderPtr = vs.get()]()
+        workers[i] = std::thread(
+            [shaderPtr = vs.get()]() -> void
         {
             for (gp::Int32 iter = 0; iter < kIterations; ++iter)
             {
                 shaderPtr->setInUseByPSOCompilation(true);
                 shaderPtr->setInUseByPSOCompilation(false);
             }
-        });
+        }
+        );
     }
     for (gp::Int32 i = 0; i < kThreadCount; ++i)
     {
@@ -335,6 +392,13 @@ TEST_F(ShaderTestFixture, ShaderDebugNamesAndValidationMetadataRoundTrip)
     ps->setCodeValidationUBSizes(std::move(ubSizes));
     ASSERT_EQ(ps->getCodeValidationUBSizes().size(), 1u);
     EXPECT_EQ(ps->getCodeValidationUBSizes()[0], expectedUBSize);
+
+    const ShaderCodeValidationStride otherStride{ 3u, 32u };
+    const ShaderCodeValidationType otherType{ 1u, ShaderCodeResourceBindingType::Buffer };
+    const ShaderCodeValidationUBSize otherUBSize{ 2u, 512u };
+    EXPECT_NE(expectedStride, otherStride);
+    EXPECT_NE(expectedSRVType, otherType);
+    EXPECT_NE(expectedUBSize, otherUBSize);
 }
 #endif
 
@@ -370,6 +434,9 @@ TEST_F(ShaderTestFixture, AllConcreteShaderStagesReportMatchingTypesAndFrequenci
 
     EXPECT_EQ(rgs->getType(), resource::ResourceType::RayTracingShader);
     EXPECT_EQ(rgs->getFrequency(), ShaderFrequency::RayGen);
+    EXPECT_EQ(rgs->getRayTracingPayloadType(), 0u);
+    EXPECT_EQ(rgs->getRayTracingPayloadSize(), 0u);
+    EXPECT_EQ(rgs->getLocalBindingDataSize(), 0u);
     rgs->setRayTracingPayloadType(0x03u);
     rgs->setRayTracingPayloadSize(48u);
     rgs->setLocalBindingDataSize(96u);
@@ -389,6 +456,8 @@ TEST_F(ShaderTestFixture, AllConcreteShaderStagesReportMatchingTypesAndFrequenci
     EXPECT_EQ(cs->getType(), resource::ResourceType::ComputeShader);
     EXPECT_EQ(cs->getFrequency(), ShaderFrequency::Compute);
     EXPECT_EQ(cs->getStats(), nullptr);
+    // Updating stats while m_stats is null must remain a safe no-op.
+    cs->updateStats(1u);
 
     pipeline::PipelineStateStats stats{};
     cs->setStats(&stats);
