@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "allocators/AllocatorForward.hpp"        // IWYU pragma: export
 #include "commands/CommandForward.hpp"            // IWYU pragma: export
 #include "core/ResourceForward.hpp"               // IWYU pragma: export
 #include "CoreMinimal.hpp"                        // IWYU pragma: keep
