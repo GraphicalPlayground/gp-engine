@@ -9,6 +9,7 @@
 #include "resources/BufferDesc.hpp"
 #include "resources/BufferEnums.hpp"
 #include "resources/StagingBuffer.hpp"
+#include "resources/StreamSourceSlot.hpp"
 #include "sync/SyncEnums.hpp"
 
 namespace gp::rhi::resource
@@ -99,6 +100,25 @@ StagingBuffer::~StagingBuffer() noexcept = default;
 gp::UInt64 StagingBuffer::getGPUSizeBytes() const noexcept
 {
     return 0u;
+}
+
+StreamSourceSlotRef StreamSourceSlot::create(Buffer* const buffer) noexcept
+{
+    return StreamSourceSlotRef(new StreamSourceSlot(buffer));
+}
+
+StreamSourceSlot::StreamSourceSlot(Buffer* const buffer) noexcept
+    : Resource(ResourceType::StreamSourceSlot)
+    , m_buffer(buffer)
+    , m_offset(0u)
+{}
+
+StreamSourceSlot::~StreamSourceSlot() noexcept = default;
+
+void StreamSourceSlot::update(Buffer* const buffer, const gp::UInt32 offset) noexcept
+{
+    m_buffer = BufferRef(buffer);
+    m_offset = offset;
 }
 
 }   // namespace gp::rhi::resource
