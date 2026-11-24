@@ -67,6 +67,15 @@ enum class VRSRateCombiner : gp::UInt8;
 /// @brief Encoding format of a screen-space VRS rate attachment.
 enum class VRSImageDataType : gp::UInt8;
 
+/// @brief Render pass subpass usage hint for tile-based GPU optimizations.
+enum class SubpassHint : gp::UInt8;
+
+/// @brief Hardware conservative rasterization mode.
+enum class ConservativeRasterization : gp::UInt8;
+
+/// @brief Pass category hint attached to precached pipeline state initializers.
+enum class PSOPrecacheCompileType : gp::UInt8;
+
 /// @brief Creation parameters for a GPU texture sampler state.
 struct SamplerStateDesc;
 
@@ -87,6 +96,21 @@ struct VertexElement;
 
 /// @brief Per-pipeline usage counters tracking frame activity and total bind count.
 struct PipelineStateStats;
+
+/// @brief Subset of render target format and load/store fields extracted from a render pass for PSO initialization.
+struct GraphicsPipelineRenderTargetsInfo;
+
+/// @brief Full immutable creation descriptor for a graphics pipeline state object.
+class GraphicsPipelineStateInitializer;
+
+/// @brief Creation descriptor for a compute pipeline state object.
+struct ComputePipelineStateInitializer;
+
+/// @brief Fallback graphics pipeline state holding its initializer for backends without native PSOs.
+class GraphicsPipelineStateFallback;
+
+/// @brief Fallback compute pipeline state wrapping a compute shader for backends without native PSOs.
+class ComputePipelineStateFallback;
 
 /// @brief Input shader stage set and vertex layout used to build a bound shader state or graphics pipeline.
 class BoundShaderStateInput;
