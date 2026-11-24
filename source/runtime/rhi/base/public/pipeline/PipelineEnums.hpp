@@ -247,6 +247,32 @@ enum class VRSImageDataType : gp::UInt8
     Fractional
 };
 
+/// @brief Render pass subpass usage hint for tile-based GPU optimizations.
+enum class SubpassHint : gp::UInt8
+{
+    None = 0,
+    DepthReadSubpass,
+    DeferredShadingSubpass,
+    CustomResolveSubpass
+};
+
+/// @brief Hardware conservative rasterization mode.
+enum class ConservativeRasterization : gp::UInt8
+{
+    Disabled = 0,
+    Overestimated
+};
+
+/// @brief Pass category hint attached to precached pipeline state initializers.
+enum class PSOPrecacheCompileType : gp::UInt8
+{
+    NotSet = 0,
+    MainPass,
+    PrePass,
+    ShadowPass,
+    Count
+};
+
 /// @brief Total number of enumerators in `SamplerFilter` and minimum bit width required to store them.
 inline constexpr gp::UInt32 kSamplerFilterCount = static_cast<gp::UInt32>(SamplerFilter::AnisotropicLinear) + 1u;
 inline constexpr gp::UInt32 kSamplerFilterNumBits = 3u;
