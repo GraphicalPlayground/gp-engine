@@ -116,6 +116,21 @@ struct BufferCreateDesc;
 /// @brief Move-only RAII initializer granting writable upload access while creating a GPU buffer.
 struct BufferInitializer;
 
+/// @brief Move-only RAII wrapper owning an aligned heap allocation for staged resource initialization.
+struct InitializerScopedMemory;
+
+/// @brief Buffer initializer returning the created buffer directly on finalize.
+struct DefaultBufferInitializer;
+
+/// @brief Buffer initializer locking the buffer on creation and unlocking it on finalize.
+struct LockBufferInitializer;
+
+/// @brief Buffer initializer wrapping a custom backend finalization callback.
+struct CustomBufferInitializer;
+
+/// @brief Placeholder buffer returned when an unhandled `BufferInitAction` is encountered.
+class InvalidBuffer;
+
 /// @brief Identifies a single texture subresource by face, array slice, and mip level.
 struct TextureSubresourceIndex;
 
@@ -136,6 +151,18 @@ struct TextureSubresourceInitializer;
 
 /// @brief Move-only RAII initializer granting writable subresource upload access while creating a GPU texture.
 struct TextureInitializer;
+
+/// @brief Base helper specialization exposing writable staging pointer access on `TextureInitializer`.
+struct BaseTextureInitializer;
+
+/// @brief Texture initializer returning the created texture directly on finalize.
+struct DefaultTextureInitializer;
+
+/// @brief Texture initializer mapping subresources into a contiguous tightly packed staging buffer.
+struct DefaultLayoutTextureInitializer;
+
+/// @brief Texture initializer uploading staged subresources via `lockTexture()` and `unlockTexture()` on finalize.
+struct LockTextureInitializer;
 
 /// @brief Parameters identifying a texture subresource region to lock for CPU access.
 struct TextureLockArgs;
