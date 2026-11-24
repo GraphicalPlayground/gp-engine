@@ -5,6 +5,8 @@
 include(gp-build-tool)
 
 gpStartModule(rhi/null)
+  gpEnableTests()
+
   gpAddDependency(PUBLIC core)
   gpAddDependency(PUBLIC rhi/base)
 gpEndModule()
