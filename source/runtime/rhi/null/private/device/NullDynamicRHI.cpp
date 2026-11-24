@@ -3,7 +3,8 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "device/NullDynamicRHI.hpp"
-#include "device/DynamicRHI.hpp"
+#include "device/DynamicRHI.hpp"   // IWYU pragma: keep
+#include "device/GenericStagingBuffer.hpp"
 #include "device/RHIGlobals.hpp"
 #include "maths/base/Arithmetic.hpp"
 #include "pipeline/BlendState.hpp"

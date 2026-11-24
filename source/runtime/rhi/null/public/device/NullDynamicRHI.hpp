@@ -17,10 +17,11 @@
 #include "CoreMinimal.hpp"
 #include "device/DeviceEnums.hpp"
 #include "device/DynamicRHI.hpp"
+#include "device/DynamicRHIPSOFallback.hpp"
 #include "maths/color/Color.hpp"
 #include "maths/color/LinearColor.hpp"
 #include "maths/vector/Vector4.hpp"
-#include "memory/pointers/RefCountedPtr.hpp"
+#include "memory/pointers/RefCountedPtr.hpp"   // IWYU pragma: keep
 #include "pipeline/BlendStateDesc.hpp"
 #include "pipeline/DepthStencilStateDesc.hpp"
 #include "pipeline/PipelineForward.hpp"
