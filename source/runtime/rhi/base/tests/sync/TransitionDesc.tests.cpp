@@ -3,11 +3,61 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "sync/TransitionDesc.hpp"
+#include "core/ResourceDeletionQueue.hpp"
+#include "CoreMinimal.hpp"
+#include "resources/Buffer.hpp"
+#include "resources/BufferCreateDesc.hpp"
+#include "resources/BufferEnums.hpp"
+#include "resources/Texture.hpp"
+#include "resources/TextureCreateDesc.hpp"
+#include "resources/TextureEnums.hpp"
+#include "resources/TextureReference.hpp"
+#include "RHIPixelFormat.hpp"
 #include "sync/SyncEnums.hpp"
+#include "views/UnorderedAccessView.hpp"
+#include "views/ViewDesc.hpp"
 #include <gtest/gtest.h>
 
 namespace gp::rhi::sync::tests
 {
+
+namespace
+{
+
+/// @brief Minimal concrete buffer used to test getViewableResource() resolution.
+class MockTransitionBuffer final : public resource::Buffer
+{
+public:
+    /// @brief Constructs a mock buffer from a creation descriptor.
+    /// @param[in] desc Creation descriptor.
+    explicit MockTransitionBuffer(const resource::BufferCreateDesc& desc) noexcept
+        : resource::Buffer(desc)
+    {}
+};
+
+/// @brief Minimal concrete texture used to test getViewableResource() resolution.
+class MockTransitionTexture final : public resource::Texture
+{
+public:
+    /// @brief Constructs a mock texture from a creation descriptor.
+    /// @param[in] desc Creation descriptor.
+    explicit MockTransitionTexture(const resource::TextureCreateDesc& desc) noexcept
+        : resource::Texture(desc)
+    {}
+};
+
+/// @brief Minimal concrete texture reference exposing target texture resolution.
+class MockTransitionTextureRef final : public resource::TextureReference
+{
+public:
+    /// @brief Constructs a texture reference wrapping `target`.
+    /// @param[in] target Referenced texture pointer.
+    explicit MockTransitionTextureRef(resource::Texture* const target) noexcept
+        : resource::TextureReference(target)
+    {}
+};
+
+}   // namespace
 
 static_assert(SubresourceRange{}.isWholeResource(), "Default SubresourceRange must cover the whole resource.");
 static_assert(SubresourceRange{}.isAllMips(), "Default SubresourceRange must cover all mips.");
@@ -29,8 +79,13 @@ TEST(TransitionDescTest, SubresourceRangeQueriesAndEquality)
 {
     const SubresourceRange whole{};
     const SubresourceRange mip2Slice3(2u, 3u, SubresourceRange::kAllSubresources);
+    const SubresourceRange mip16(
+        static_cast<gp::UInt16>(2u), static_cast<gp::UInt16>(3u), SubresourceRange::kAllSubresources
+    );
     const SubresourceRange depthOnly(0u, 0u, SubresourceRange::kDepthPlaneSlice);
     const SubresourceRange stencilOnly(0u, 0u, SubresourceRange::kStencilPlaneSlice);
+
+    EXPECT_EQ(mip2Slice3, mip16);
 
     EXPECT_TRUE(whole.isWholeResource());
     EXPECT_FALSE(mip2Slice3.isWholeResource());
@@ -180,6 +235,10 @@ TEST(TransitionDescTest, TrackedAccessAndTrackedAccessInfo)
     EXPECT_EQ(defaultTracked.access, ResourceAccess::Unknown);
     EXPECT_EQ(defaultTracked.pipelines, PipelineStage::None);
 
+    const TrackedAccess accessOnly(ResourceAccess::CopySrc);
+    EXPECT_EQ(accessOnly.access, ResourceAccess::CopySrc);
+    EXPECT_EQ(accessOnly.pipelines, PipelineStage::None);
+
     const TrackedAccessInfo infoA(fakeViewable, ResourceAccess::SRVGraphics, PipelineStage::Graphics);
     const TrackedAccessInfo infoB(fakeViewable, ResourceAccess::SRVGraphics, PipelineStage::Graphics);
     const TrackedAccessInfo infoC(fakeViewable, ResourceAccess::UAVCompute, PipelineStage::AsyncCompute);
@@ -189,6 +248,73 @@ TEST(TransitionDescTest, TrackedAccessAndTrackedAccessInfo)
     EXPECT_EQ(infoA.pipelines, PipelineStage::Graphics);
     EXPECT_EQ(infoA, infoB);
     EXPECT_NE(infoA, infoC);
+}
+
+TEST(TransitionDescTest, ShortConstructorsAliasingFactoriesAndGetViewableResource)
+{
+    resource::BufferCreateDesc bufDesc = resource::BufferCreateDesc::createStructured("TransBuf", 128u, 16u)
+                                             .addUsage(resource::BufferUsageFlags::UnorderedAccess)
+                                             .setInitialState(ResourceAccess::UAVMask);
+    resource::BufferRef buf(new MockTransitionBuffer(bufDesc));
+
+    resource::TextureCreateDesc texDesc =
+        resource::TextureCreateDesc::create2D("TransTex", 32, 32, PixelFormat::R8G8B8A8_UNorm)
+            .addFlags(resource::TextureCreateFlags::ShaderResource | resource::TextureCreateFlags::UAV)
+            .determineInitialState();
+    resource::TextureRef tex(new MockTransitionTexture(texDesc));
+    resource::TextureReferenceRef texRef(new MockTransitionTextureRef(tex.get()));
+
+    const view::ViewDesc uavDesc = view::ViewDesc::createBufferUAV().setTypeFromBuffer(buf.get()).asViewDesc();
+    view::UnorderedAccessViewRef uav(new view::UnorderedAccessView(buf.get(), uavDesc));
+
+    resource::RayTracingAccelerationStructure* const fakeBvh =
+        reinterpret_cast<resource::RayTracingAccelerationStructure*>(static_cast<gp::UIntPtr>(0x6000u));
+
+    const TransitionInfo emptyInfo{};
+    const TransitionInfo bufShort(buf.get(), ResourceAccess::SRVCompute);
+    const TransitionInfo uavShort(uav.get(), ResourceAccess::UAVCompute);
+    const TransitionInfo texInfo(tex.get(), ResourceAccess::SRVGraphics);
+    const TransitionInfo texRefInfo(static_cast<resource::Texture*>(texRef.get()), ResourceAccess::SRVGraphics);
+    const TransitionInfo bvhInfo(fakeBvh, ResourceAccess::BVHWrite, ResourceAccess::BVHRead);
+    const TransitionInfo nullTexInfo(static_cast<resource::Texture*>(nullptr), ResourceAccess::SRVGraphics);
+    const TransitionInfo nullUavInfo(static_cast<view::UnorderedAccessView*>(nullptr), ResourceAccess::UAVCompute);
+
+    EXPECT_EQ(bufShort.accessBefore, ResourceAccess::Unknown);
+    EXPECT_EQ(bufShort.accessAfter, ResourceAccess::SRVCompute);
+    EXPECT_EQ(uavShort.accessBefore, ResourceAccess::Unknown);
+    EXPECT_EQ(uavShort.accessAfter, ResourceAccess::UAVCompute);
+
+    EXPECT_EQ(getViewableResource(emptyInfo), nullptr);
+    EXPECT_EQ(getViewableResource(bufShort), static_cast<resource::ViewableResource*>(buf.get()));
+    EXPECT_EQ(getViewableResource(texInfo), static_cast<resource::ViewableResource*>(tex.get()));
+    EXPECT_EQ(getViewableResource(texRefInfo), static_cast<resource::ViewableResource*>(tex.get()));
+    EXPECT_EQ(getViewableResource(uavShort), static_cast<resource::ViewableResource*>(buf.get()));
+    EXPECT_EQ(getViewableResource(bvhInfo), nullptr);
+    EXPECT_EQ(getViewableResource(nullTexInfo), nullptr);
+    EXPECT_EQ(getViewableResource(nullUavInfo), nullptr);
+
+    // Additional TransientAliasingOverlap and TransientAliasingInfo factories
+    const TransientAliasingOverlap defaultOverlap{};
+    EXPECT_EQ(defaultOverlap.resource, nullptr);
+    EXPECT_TRUE(defaultOverlap.isTexture());
+
+    const TransientAliasingOverlap genericOverlap(buf.get(), TransientAliasingResourceType::Buffer);
+    EXPECT_TRUE(genericOverlap.isBuffer());
+    EXPECT_EQ(genericOverlap, TransientAliasingOverlap(buf.get()));
+
+    const TransientAliasingInfo acqBuf = TransientAliasingInfo::acquire(buf.get());
+    const TransientAliasingInfo disTex = TransientAliasingInfo::discard(tex.get());
+    EXPECT_TRUE(acqBuf.isAcquire());
+    EXPECT_TRUE(acqBuf.isBuffer());
+    EXPECT_TRUE(disTex.isDiscard());
+    EXPECT_TRUE(disTex.isTexture());
+    EXPECT_NE(acqBuf, disTex);
+
+    uav.reset();
+    texRef.reset();
+    tex.reset();
+    buf.reset();
+    resource::ResourceDeletionQueue::flushPendingDeletes(true);
 }
 
 }   // namespace gp::rhi::sync::tests
