@@ -3,14 +3,13 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "core/ResourceEnums.hpp"
+#include "CoreMinimal.hpp"
 #include "pipeline/BlendState.hpp"
-#include "pipeline/BlendStateDesc.hpp"
 #include "pipeline/DepthStencilState.hpp"
-#include "pipeline/DepthStencilStateDesc.hpp"
 #include "pipeline/RasterizerState.hpp"
-#include "pipeline/RasterizerStateDesc.hpp"
 #include "pipeline/SamplerState.hpp"
 #include "pipeline/VertexDeclaration.hpp"
+#include "pipeline/VertexDeclarationDesc.hpp"
 #include "views/DescriptorHandle.hpp"
 
 namespace gp::rhi::pipeline
