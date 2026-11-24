@@ -39,7 +39,10 @@ struct ClearValueBinding
     /// @brief Active payload storage matching `colorBinding`.
     union ClearValue
     {
+        /// @brief Four-channel linear RGBA clear color (`ColorBound`).
         gp::Float32 color[4];
+
+        /// @brief Depth and stencil clear pair (`DepthStencilBound`).
         DepthStencilValue depthStencil;
 
         /// @brief Initializes all four RGBA channels to zero.
