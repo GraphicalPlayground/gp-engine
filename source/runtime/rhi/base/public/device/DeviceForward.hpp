@@ -45,6 +45,12 @@ struct EndFrameArgs;
 /// @brief Display output resolution and refresh rate entry.
 struct ScreenResolution;
 
+/// @brief Configuration descriptor controlling RHI module discovery, feature level selection, and bootstrap.
+struct RHIBootstrapDesc;
+
+/// @brief Result produced by `selectDynamicRHIModule()` identifying the chosen backend module and feature level.
+struct RHISelectionResult;
+
 /// @brief Backend interface that owns GPU device creation, resource factories, and deferred teardown.
 class DynamicRHI;
 
