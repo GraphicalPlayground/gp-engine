@@ -199,7 +199,7 @@ struct UniformBufferLayoutDesc
 
     /// @brief Copies layout contract fields and resource list from `source` into this descriptor.
     /// @param[in] source Source layout descriptor to copy.
-    void copyFrom(const UniformBufferLayoutDesc& source)
+    void copyFrom(const UniformBufferLayoutDesc& source) noexcept
     {
         constantBufferSize = source.constantBufferSize;
         staticSlot = source.staticSlot;
