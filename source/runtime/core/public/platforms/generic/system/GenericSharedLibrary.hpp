@@ -17,7 +17,7 @@ namespace gp::platform::generic
 ///          `macos::SharedLibrary`). On unsupported platforms, all loading and export lookups safely return `nullptr`
 ///          and search-path operations compile down to no-ops.
 /// @see gp::platform::windows::SharedLibrary, gp::platform::linux::SharedLibrary, gp::platform::macos::SharedLibrary
-struct SharedLibrary
+struct GP_CORE_API SharedLibrary
 {
 public:
     SharedLibrary() = delete;
@@ -33,19 +33,19 @@ public:
     ///          must be paired with a corresponding call to `freeHandle()`.
     /// @param[in] filename Shared library filename or path (relative or absolute, UTF-8).
     /// @return Opaque platform module handle on success, or `nullptr` if the library could not be located or loaded.
-    [[nodiscard]] static GP_CORE_API void* getHandle(const gp::StringView filename) noexcept;
+    [[nodiscard]] static void* getHandle(const gp::StringView filename) noexcept;
 
     /// @brief Resolves the address of an exported symbol from a loaded shared library.
     /// @param[in] handle Opaque module handle previously returned by `getHandle()`.
     /// @param[in] procName Exported symbol name (UTF-8 / ASCII; does not need to be null-terminated).
     /// @return Raw pointer to the exported symbol address, or `nullptr` if `handle` is null or the symbol is absent.
-    [[nodiscard]] static GP_CORE_API void* getExport(void* const handle, const gp::StringView procName) noexcept;
+    [[nodiscard]] static void* getExport(void* const handle, const gp::StringView procName) noexcept;
 
     /// @brief Releases a shared library handle previously acquired via `getHandle()`.
     /// @details Decrements the OS loader reference count and unloads the module when its count reaches zero.
     ///          Passing `nullptr` is a safe no-op.
     /// @param[in] handle Opaque module handle to release, or `nullptr`.
-    static GP_CORE_API void freeHandle(void* const handle) noexcept;
+    static void freeHandle(void* const handle) noexcept;
 
     /// @brief Registers a persistent directory to be searched when resolving unqualified shared library names.
     /// @param[in] directory Directory path to register (UTF-8).
