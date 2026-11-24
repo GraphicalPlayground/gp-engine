@@ -12,20 +12,20 @@
 #include "CoreMinimal.hpp"
 #include "device/DeviceForward.hpp"
 #include "memory/MemoryOrder.hpp"
-#include "memory/pointers/PointerEnums.hpp"   // IWYU pragma: keep
 #include "memory/pointers/PointerTypes.hpp"
 #include "RHIBase.hpp"
-#include "threading/atomics/Atomic.hpp"
+#if GP_RHI_ENABLE_RESOURCE_INFO
+    #include "threading/atomics/Atomic.hpp"
+#endif
 
 namespace gp::rhi::resource
 {
 
 /// @brief Intrusively reference-counted base class for all GPU resources managed by the RHI.
-/// @details Models Unreal Engine's `FRHIResource`. Reference counts and deferred-deletion state bits live in a single
-///          32-bit `gp::AtomicRefStateCounter` (30-bit ref count plus `MarkedForDelete` and `Deleting` flags). When
-///          the last CPU reference drops to zero, `release()` pushes the resource onto a lock-free intrusive deletion
-///          queue instead of calling `delete` inline, because the GPU or RHI thread may still be executing commands
-///          that reference the resource.
+/// @details Reference counts and deferred-deletion state bits live in a single 32-bit `gp::AtomicRefStateCounter`
+///          (30-bit ref count plus `MarkedForDelete` and `Deleting` flags). When the last CPU reference drops to zero,
+///          `release()` pushes the resource onto a lock-free intrusive deletion queue instead of calling `delete`
+///          inline, because the GPU or RHI thread may still be executing commands that reference the resource.
 /// @note Subclasses must be destroyed through `ResourceDeletionQueue` (or friend RHI executors). Direct `delete`
 ///       triggers a `GP_CHECK` failure in checked builds unless exit bypass is enabled.
 class GP_RHI_API Resource
@@ -133,7 +133,7 @@ public:
     {
         GP_ENSURE_MSG(
             isValid(),
-            "Resource is already marked for deletion. disableLifetimeExtension() must be called while holding a live " "reference."
+            "Resource is already marked for deletion. disableLifetimeExtension() must be called while holding a live reference."
         );
         m_allowExtendLifetime = 0u;
     }
