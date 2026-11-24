@@ -191,6 +191,8 @@
       "intel": "assembly",
       "vfs": "dump",
       "platforms": "client",
+      "platform": "client",
+      "loader": "packages",
       "es": "i18n",
       "fr": "i18n",
       "en": "i18n",
