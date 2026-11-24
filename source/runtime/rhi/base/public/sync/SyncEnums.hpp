@@ -11,9 +11,9 @@ namespace gp::rhi::sync
 {
 
 /// @brief GPU resource usage and synchronization state flags used by barrier transitions.
-/// @details Mirrors Unreal Engine's `ERHIAccess` model so render passes and transition barriers can validate
-///          exclusive read-only vs. write-only combinations and translate cleanly to Vulkan `synchronization2`,
-///          D3D12 `D3D12_BARRIER_*`, and Metal tracking.
+/// @details Separates exclusive read-only, exclusive write-only, and combinable read-write states so render passes and
+///          transition barriers can validate legal combinations and translate cleanly to Vulkan `synchronization2`,
+///          D3D12 enhanced barriers, and Metal tracking.
 enum class ResourceAccess : gp::UInt32
 {
     /// @brief Previous state is unknown; requires a conservative full GPU cache flush.
@@ -125,7 +125,11 @@ enum class ResourceTransitionFlags : gp::UInt8
     /// @brief Leaves the post-transition state untracked by the state tracker.
     IgnoreAfterState = 1u << 1,
 
-    Mask = (1u << 0) | (1u << 1)
+    /// @brief Highest defined single-bit resource transition flag.
+    Last = IgnoreAfterState,
+
+    /// @brief Bitmask covering every valid resource transition flag.
+    Mask = (Last << 1u) - 1u
 };
 
 /// @brief Metric captured by a GPU render query.
@@ -269,5 +273,87 @@ namespace gp::rhi::sync
 {
     return kPipelineStageCount;
 }
+
+/// @brief Fixed-size array indexed directly by single-bit `PipelineStage` values (`Graphics`, `AsyncCompute`).
+/// @tparam InElementType Element type stored per hardware execution pipeline.
+template <typename InElementType>
+class PipelineArray
+{
+public:
+    /// @brief Default-constructs elements for every hardware execution pipeline.
+    constexpr PipelineArray() noexcept = default;
+
+    /// @brief Returns a mutable reference to the element belonging to `stage`.
+    /// @param[in] stage Single-bit `PipelineStage` selector.
+    /// @return Mutable reference to the pipeline's element.
+    [[nodiscard]] constexpr InElementType& operator[](const PipelineStage stage) noexcept
+    {
+        GP_CHECK(isSinglePipelineStage(stage));
+        return m_elements[getPipelineStageIndex(stage)];
+    }
+
+    /// @brief Returns an immutable reference to the element belonging to `stage`.
+    /// @param[in] stage Single-bit `PipelineStage` selector.
+    /// @return Immutable reference to the pipeline's element.
+    [[nodiscard]] constexpr const InElementType& operator[](const PipelineStage stage) const noexcept
+    {
+        GP_CHECK(isSinglePipelineStage(stage));
+        return m_elements[getPipelineStageIndex(stage)];
+    }
+
+    /// @brief Returns the fixed number of pipeline slots stored in this array.
+    /// @return `kPipelineStageCount`.
+    [[nodiscard]] static constexpr gp::UInt32 size() noexcept
+    {
+        return kPipelineStageCount;
+    }
+
+    /// @brief Returns a pointer to the first element for range-based iteration.
+    /// @return Mutable begin pointer.
+    [[nodiscard]] constexpr InElementType* begin() noexcept
+    {
+        return m_elements;
+    }
+
+    /// @brief Returns a const pointer to the first element for range-based iteration.
+    /// @return Immutable begin pointer.
+    [[nodiscard]] constexpr const InElementType* begin() const noexcept
+    {
+        return m_elements;
+    }
+
+    /// @brief Returns a pointer past the last element for range-based iteration.
+    /// @return Mutable end pointer.
+    [[nodiscard]] constexpr InElementType* end() noexcept
+    {
+        return m_elements + kPipelineStageCount;
+    }
+
+    /// @brief Returns a const pointer past the last element for range-based iteration.
+    /// @return Immutable end pointer.
+    [[nodiscard]] constexpr const InElementType* end() const noexcept
+    {
+        return m_elements + kPipelineStageCount;
+    }
+
+    /// @brief Compares all per-pipeline elements for equality.
+    /// @param[in] rhs Array to compare against.
+    /// @return True when every pipeline slot compares equal.
+    [[nodiscard]] constexpr bool operator==(const PipelineArray& rhs) const noexcept
+    {
+        for (gp::UInt32 i = 0u; i < kPipelineStageCount; ++i)
+        {
+            if (!(m_elements[i] == rhs.m_elements[i]))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+private:
+    /// @brief Per-pipeline element storage indexed by `getPipelineStageIndex()`.
+    InElementType m_elements[kPipelineStageCount]{};
+};
 
 }   // namespace gp::rhi::sync
