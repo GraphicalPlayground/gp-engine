@@ -50,6 +50,27 @@ struct ShaderResourceTable;
 /// @brief Input descriptor carrying shader bytecode and optional library ownership for shader creation.
 struct CreateShaderDesc;
 
+/// @brief Packed 8-byte constant-data parameter span inside a batched shader parameter stream.
+struct ShaderParameter;
+
+/// @brief Resource binding entry inside a batched shader parameter stream.
+struct ShaderParameterResource;
+
+/// @brief Resource unbind entry clearing a shader SRV or UAV slot.
+struct ShaderParameterUnbind;
+
+/// @brief Page-backed linear allocator backing batched shader parameter arrays on a command list.
+class BatchedShaderParametersAllocator;
+
+/// @brief Batched shader parameter collection recorded before dispatching a single RHI parameter update.
+struct BatchedShaderParameters;
+
+/// @brief Batched list of SRV/UAV slot unbinds recorded before dispatching a single RHI unbind call.
+struct BatchedShaderUnbinds;
+
+/// @brief Inline fixed-capacity set of globally bound static uniform buffers.
+class UniformBufferStaticBindings;
+
 /// @brief Collection of compiled shaders loaded from a shared binary archive.
 class ShaderLibrary;
 
