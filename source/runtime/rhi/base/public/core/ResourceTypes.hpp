@@ -7,7 +7,6 @@
 #include "containers/strings/Name.hpp"
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "core/ResourceEnums.hpp"
-#include "core/ResourceForward.hpp"          // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "templates/NumericLimits.hpp"
 
@@ -245,7 +244,12 @@ public:
     explicit constexpr ResourceArrayUploadView(const gp::ConstVectorView<InElementType> elements) noexcept
         : m_data(elements.data())
         , m_sizeBytes(static_cast<gp::UInt32>(elements.size() * sizeof(InElementType)))
-    {}
+    {
+        if !consteval
+        {
+            GP_CHECK_SLOW((elements.size() * sizeof(InElementType)) <= gp::NumericLimits<gp::UInt32>::max());
+        }
+    }
 
     /// @copydoc IResourceArrayUpload::getResourceData()
     [[nodiscard]] virtual const void* getResourceData() const noexcept override
