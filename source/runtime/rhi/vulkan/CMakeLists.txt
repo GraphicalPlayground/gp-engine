@@ -5,8 +5,10 @@
 include(gp-build-tool)
 
 gpStartModule(rhi/vulkan)
+  gpEnableTests(WHITEBOX)
+
   gpAddDependency(PUBLIC core)
   gpAddDependency(PUBLIC rhi/base)
-  gpAddDependency(PUBLIC hal/base)
+  gpAddDependency(PRIVATE hal/base)
   gpAddDependency(PRIVATE gp::thirdparty::vulkan)
 gpEndModule()
