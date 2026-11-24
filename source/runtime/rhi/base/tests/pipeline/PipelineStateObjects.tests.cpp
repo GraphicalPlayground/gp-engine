@@ -21,6 +21,7 @@
 #include "shaders/PixelShader.hpp"
 #include "shaders/ShaderEnums.hpp"
 #include "shaders/VertexShader.hpp"
+#include "shaders/WorkGraphComputeNodeShader.hpp"
 #include "shaders/WorkGraphRootShader.hpp"
 #include "threading/atomics/Atomic.hpp"
 #include <gtest/gtest.h>
@@ -182,12 +183,19 @@ TEST_F(PipelineStateObjectsTestFixture, BoundShaderStateInputVertexMeshAndWorkGr
     EXPECT_EQ(ps->getRefCount(), 1u);
 
     shader::WorkGraphRootShaderRef wg(new shader::WorkGraphRootShader());
+    shader::WorkGraphComputeNodeShaderRef wgc(new shader::WorkGraphComputeNodeShader());
     BoundShaderStateInput workGraphInput{};
     workGraphInput.setWorkGraphShader(wg.get());
     workGraphInput.setPixelShader(ps.get());
     EXPECT_FALSE(workGraphInput.usesMeshPipeline());
     EXPECT_EQ(workGraphInput.getWorkGraphShader(), wg.get());
     EXPECT_EQ(workGraphInput.getShader(shader::ShaderFrequency::WorkGraphRoot), wg.get());
+    EXPECT_EQ(workGraphInput.getShader(shader::ShaderFrequency::WorkGraphComputeNode), nullptr);
+
+    workGraphInput.setWorkGraphShader(wgc.get());
+    EXPECT_EQ(workGraphInput.getShader(shader::ShaderFrequency::WorkGraphComputeNode), wgc.get());
+    EXPECT_EQ(workGraphInput.getShader(shader::ShaderFrequency::WorkGraphRoot), nullptr);
+    workGraphInput.setWorkGraphShader(wg.get());
 
     workGraphInput.addRefResources();
     EXPECT_EQ(wg->getRefCount(), 2u);
@@ -196,6 +204,38 @@ TEST_F(PipelineStateObjectsTestFixture, BoundShaderStateInputVertexMeshAndWorkGr
     workGraphInput.releaseResources();
     EXPECT_EQ(wg->getRefCount(), 1u);
     EXPECT_EQ(ps->getRefCount(), 1u);
+
+    // Exercise individual setters, specialization containers, and partial-stage ref counting.
+    BoundShaderStateInput setterInput{};
+    setterInput.setVertexDeclaration(vertexDecl.get());
+    setterInput.setVertexShader(vs.get());
+    setterInput.setGeometryShader(gs.get());
+    EXPECT_EQ(setterInput.getVertexDeclaration(), vertexDecl.get());
+    EXPECT_EQ(setterInput.getVertexShader(), vs.get());
+    EXPECT_EQ(setterInput.getGeometryShader(), gs.get());
+    EXPECT_EQ(setterInput.getPixelShader(), nullptr);
+    setterInput.addRefResources();
+    EXPECT_EQ(vs->getRefCount(), 2u);
+    EXPECT_EQ(gs->getRefCount(), 2u);
+    EXPECT_EQ(ps->getRefCount(), 1u);
+    setterInput.releaseResources();
+    EXPECT_EQ(vs->getRefCount(), 1u);
+    EXPECT_EQ(gs->getRefCount(), 1u);
+
+    BoundShaderStateInput meshOnlySetter{};
+    meshOnlySetter.setMeshShader(ms.get());
+    meshOnlySetter.setAmplificationShader(as.get());
+    meshOnlySetter.meshShaderSpecializationConstants.emplaceBack(0x1111u);
+    meshOnlySetter.amplificationShaderSpecializationConstants.emplaceBack(0x2222u);
+    meshOnlySetter.vertexShaderSpecializationConstants.emplaceBack(0x3333u);
+    meshOnlySetter.pixelShaderSpecializationConstants.emplaceBack(0x4444u);
+    meshOnlySetter.geometryShaderSpecializationConstants.emplaceBack(0x5555u);
+    EXPECT_TRUE(meshOnlySetter.usesMeshPipeline());
+    EXPECT_EQ(meshOnlySetter.meshShaderSpecializationConstants.size(), 1u);
+    EXPECT_EQ(meshOnlySetter.amplificationShaderSpecializationConstants.size(), 1u);
+    EXPECT_EQ(meshOnlySetter.vertexShaderSpecializationConstants.size(), 1u);
+    EXPECT_EQ(meshOnlySetter.pixelShaderSpecializationConstants.size(), 1u);
+    EXPECT_EQ(meshOnlySetter.geometryShaderSpecializationConstants.size(), 1u);
 
     BoundShaderStateInput meshCopy = meshInput;
     EXPECT_EQ(meshInput, meshCopy);
@@ -236,8 +276,18 @@ TEST_F(PipelineStateObjectsTestFixture, PipelineStateStatsTracksMinMaxFramesAndC
     PipelineStateStats stats{};
     EXPECT_FALSE(stats.hasBeenUsed());
     EXPECT_EQ(stats.firstFrameUsed.load(gp::memory::MemoryOrder::Relaxed), PipelineStateStats::kInvalidFrame);
-    EXPECT_EQ(stats.lastFrameUsed.load(gp::memory::MemoryOrder::Relaxed), 0u);
+    EXPECT_EQ(stats.lastFrameUsed.load(gp::memory::MemoryOrder::Relaxed), PipelineStateStats::kInvalidFrame);
     EXPECT_EQ(stats.totalBindCount.load(gp::memory::MemoryOrder::Relaxed), 0u);
+    EXPECT_EQ(stats.createCount, 0);
+    EXPECT_EQ(stats.psoHash, 0ull);
+
+    // Frame 0 bind must update both firstFrameUsed and lastFrameUsed cleanly from kInvalidFrame.
+    PipelineStateStats frameZeroStats{};
+    frameZeroStats.updateStats(0u);
+    EXPECT_TRUE(frameZeroStats.hasBeenUsed());
+    EXPECT_EQ(frameZeroStats.firstFrameUsed.load(gp::memory::MemoryOrder::Relaxed), 0u);
+    EXPECT_EQ(frameZeroStats.lastFrameUsed.load(gp::memory::MemoryOrder::Relaxed), 0u);
+    EXPECT_EQ(frameZeroStats.totalBindCount.load(gp::memory::MemoryOrder::Relaxed), 1u);
 
     PipelineStateStats::updateStats(&stats, 100u);
     stats.updateStats(50u);
@@ -254,14 +304,16 @@ TEST_F(PipelineStateObjectsTestFixture, PipelineStateStatsTracksMinMaxFramesAndC
 
     for (gp::UInt64 t = 0u; t < kThreadCount; ++t)
     {
-        workers[t] = std::thread([&concurrentStats, t]()
+        workers[t] = std::thread(
+            [&concurrentStats, t]() -> void
         {
             const gp::UInt64 baseFrame = 10u + t * kBindsPerThread;
             for (gp::UInt64 i = 0u; i < kBindsPerThread; ++i)
             {
                 concurrentStats.updateStats(baseFrame + i);
             }
-        });
+        }
+        );
     }
 
     for (gp::UInt64 t = 0u; t < kThreadCount; ++t)
