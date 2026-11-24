@@ -39,7 +39,7 @@ using gp::math::supportsSRGB;
 using gp::math::toString;
 
 /// @brief Runtime hardware usage capabilities supported by an active RHI device for a given `PixelFormat`.
-/// @details Queried per `IDevice` rather than stored in a mutable global table so multiple devices and backend
+/// @details Queried per `DynamicRHI` rather than stored in a mutable global table so multiple devices and backend
 ///          swaps (e.g., `rhi/null` vs `rhi/vulkan`) remain isolated and thread-safe.
 enum class PixelFormatCapabilities : gp::UInt32
 {
