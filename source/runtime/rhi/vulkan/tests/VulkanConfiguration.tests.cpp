@@ -9,11 +9,15 @@
 #include "VulkanThirdParty.hpp"
 #include <gtest/gtest.h>
 
-// Verify Win32 macro hygiene: `HidePlatformTypes.hpp` must run AFTER `<windows.h>` inside `VulkanThirdParty.hpp`.
+// Verify platform macro hygiene: `HidePlatformTypes.hpp` must wrap `<vulkan/vulkan.h>` inside `VulkanThirdParty.hpp`.
 #if GP_PLATFORM_WINDOWS
     #if defined(min) || defined(max) || defined(GetObject) || defined(CreateDirectory) || defined(DeleteFile) || \
         defined(MemoryBarrier) || defined(SendMessage)
         #error "Win32 macros leaked past VulkanThirdParty.hpp HidePlatformTypes bracket."
+    #endif
+#elif GP_PLATFORM_LINUX
+    #if defined(None) || defined(Bool) || defined(Success) || defined(Always) || defined(Status) || defined(CurrentTime)
+        #error "X11 macros leaked past VulkanThirdParty.hpp HidePlatformTypes bracket."
     #endif
 #endif
 
