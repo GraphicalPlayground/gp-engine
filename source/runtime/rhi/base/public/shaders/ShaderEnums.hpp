@@ -13,6 +13,10 @@ namespace gp::rhi::shader
 /// @brief Total number of enumerators in `ShaderFrequency`.
 inline constexpr gp::UInt8 kShaderFrequencyCount = 12u;
 
+/// @brief Minimum bit width required to store any `ShaderFrequency` enumerator.
+inline constexpr gp::UInt32 kShaderFrequencyNumBits = 4u;
+static_assert((1u << kShaderFrequencyNumBits) >= static_cast<gp::UInt32>(kShaderFrequencyCount));
+
 /// @brief Number of graphics pipeline stages in `ShaderFrequency` (Vertex through Geometry).
 inline constexpr gp::UInt8 kGraphicsShaderFrequencyCount = 5u;
 
@@ -67,6 +71,10 @@ enum class ShaderCodeResourceBindingType : gp::UInt8
     RWTexture2DMultiView
 };
 
+/// @brief Total number of enumerators in `ShaderCodeResourceBindingType`.
+inline constexpr gp::UInt32 kShaderCodeResourceBindingTypeCount =
+    static_cast<gp::UInt32>(ShaderCodeResourceBindingType::RWTexture2DMultiView) + 1u;
+
 /// @brief Member types permitted inside a reflected uniform buffer parameter layout.
 enum class UniformBufferBaseType : gp::UInt8
 {
@@ -88,6 +96,12 @@ enum class UniformBufferBaseType : gp::UInt8
     DescriptorRange,
     UniformBlock
 };
+
+/// @brief Total number of enumerators in `UniformBufferBaseType` and minimum bit width to pack it.
+inline constexpr gp::UInt32 kUniformBufferBaseTypeCount =
+    static_cast<gp::UInt32>(UniformBufferBaseType::UniformBlock) + 1u;
+inline constexpr gp::UInt32 kUniformBufferBaseTypeNumBits = 5u;
+static_assert((1u << kUniformBufferBaseTypeNumBits) >= kUniformBufferBaseTypeCount);
 
 /// @brief Binding models permitted for a uniform buffer layout.
 enum class UniformBufferBindingFlags : gp::UInt8
@@ -192,6 +206,59 @@ enum class ShaderBundleMethod : gp::UInt8
 [[nodiscard]] inline constexpr bool isWorkGraphShaderFrequency(const ShaderFrequency frequency) noexcept
 {
     return (frequency == ShaderFrequency::WorkGraphRoot) || (frequency == ShaderFrequency::WorkGraphComputeNode);
+}
+
+/// @brief Returns a human-readable stage name string for `frequency`.
+/// @param[in] frequency Shader stage enumerator.
+/// @param[in] includePrefix When true, prefixes the name with `"SF_"` (e.g. `"SF_Vertex"` vs `"Vertex"`).
+/// @return Static null-terminated string literal.
+[[nodiscard]] inline constexpr const char*
+    getShaderFrequencyString(const ShaderFrequency frequency, const bool includePrefix = true) noexcept
+{
+    const char* name = "SF_NumFrequencies";
+    switch (frequency)
+    {
+    case ShaderFrequency::Vertex:
+        name = "SF_Vertex";
+        break;
+    case ShaderFrequency::Mesh:
+        name = "SF_Mesh";
+        break;
+    case ShaderFrequency::Amplification:
+        name = "SF_Amplification";
+        break;
+    case ShaderFrequency::Pixel:
+        name = "SF_Pixel";
+        break;
+    case ShaderFrequency::Geometry:
+        name = "SF_Geometry";
+        break;
+    case ShaderFrequency::Compute:
+        name = "SF_Compute";
+        break;
+    case ShaderFrequency::RayGen:
+        name = "SF_RayGen";
+        break;
+    case ShaderFrequency::RayMiss:
+        name = "SF_RayMiss";
+        break;
+    case ShaderFrequency::RayHitGroup:
+        name = "SF_RayHitGroup";
+        break;
+    case ShaderFrequency::RayCallable:
+        name = "SF_RayCallable";
+        break;
+    case ShaderFrequency::WorkGraphRoot:
+        name = "SF_WorkGraphRoot";
+        break;
+    case ShaderFrequency::WorkGraphComputeNode:
+        name = "SF_WorkGraphComputeNode";
+        break;
+    default:
+        break;
+    }
+
+    return includePrefix ? name : (name + 3);
 }
 
 /// @brief Checks whether a shader resource binding type represents a read-only shader resource view (SRV).
