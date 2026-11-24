@@ -42,4 +42,28 @@ TEST(DeviceEnumsTest, ConvertToGpuVendorIdMapsUnknownValuesToUnknown)
     EXPECT_EQ(convertToGpuVendorId(0xCAFEBABEu), GpuVendorId::Unknown);
 }
 
+TEST(DeviceEnumsTest, InterfaceFeatureLevelShadingPathAndSupportConstants)
+{
+    EXPECT_NE(InterfaceType::NotSet, InterfaceType::Vulkan);
+    EXPECT_NE(InterfaceType::Metal, InterfaceType::Agx);
+    EXPECT_NE(InterfaceType::Agx, InterfaceType::OpenGL);
+
+    EXPECT_EQ(kFeatureLevelCount, 5u);
+    EXPECT_NE(FeatureLevel::ES3_1, FeatureLevel::SM5);
+    EXPECT_NE(FeatureLevel::SM5, FeatureLevel::SM6);
+
+    EXPECT_EQ(kShadingPathCount, 3u);
+    EXPECT_NE(ShadingPath::Deferred, ShadingPath::Forward);
+    EXPECT_NE(ShadingPath::Forward, ShadingPath::Mobile);
+
+    EXPECT_EQ(kFeatureSupportCount, 3u);
+    EXPECT_EQ(kFeatureSupportNumBits, 2u);
+    EXPECT_NE(FeatureSupport::Unsupported, FeatureSupport::RuntimeDependent);
+    EXPECT_NE(FeatureSupport::RuntimeDependent, FeatureSupport::RuntimeGuaranteed);
+
+    EXPECT_EQ(kStaticShaderBindingLayoutSupportNumBits, 2u);
+    EXPECT_NE(StaticShaderBindingLayoutSupport::Unsupported, StaticShaderBindingLayoutSupport::RayTracingOnly);
+    EXPECT_NE(StaticShaderBindingLayoutSupport::RayTracingOnly, StaticShaderBindingLayoutSupport::AllShaderTypes);
+}
+
 }   // namespace gp::rhi::tests
