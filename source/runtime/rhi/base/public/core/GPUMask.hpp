@@ -32,20 +32,25 @@ struct GPUMask
               )
         {}
 
-        /// @brief Constructs an iterator directly at bit position `inFirstGPUIndex` (used for sentinel `end()`).
-        /// @param[in] inFirstGPUIndex Bit position in `[0, kMaxGPUs]`.
-        explicit constexpr Iterator(const gp::UInt32 inFirstGPUIndex) noexcept
-            : m_mask(0u)
-            , m_firstGPUIndexInMask(inFirstGPUIndex)
+        /// @brief Constructs an iterator positioned at the first set GPU index in raw bitmask `inRawMask`.
+        /// @param[in] inRawMask Bitmask of active GPU nodes (`0` constructs the past-the-end sentinel).
+        explicit constexpr Iterator(const gp::UInt32 inRawMask) noexcept
+            : m_mask(inRawMask)
+            , m_firstGPUIndexInMask(
+                  inRawMask != 0u ? static_cast<gp::UInt32>(gp::math::countTrailingZeros(inRawMask)) : kMaxGPUs
+              )
         {}
 
         /// @brief Advances to the next set GPU bit in the mask.
         /// @return Reference to `*this`.
         constexpr Iterator& operator++() noexcept
         {
-            m_mask &= ~(1u << m_firstGPUIndexInMask);
-            m_firstGPUIndexInMask =
-                (m_mask != 0u) ? static_cast<gp::UInt32>(gp::math::countTrailingZeros(m_mask)) : kMaxGPUs;
+            if (m_firstGPUIndexInMask < kMaxGPUs)
+            {
+                m_mask &= ~(1u << m_firstGPUIndexInMask);
+                m_firstGPUIndexInMask =
+                    (m_mask != 0u) ? static_cast<gp::UInt32>(gp::math::countTrailingZeros(m_mask)) : kMaxGPUs;
+            }
             return *this;
         }
 
@@ -65,20 +70,20 @@ struct GPUMask
             return m_firstGPUIndexInMask;
         }
 
-        /// @brief Compares two iterators for inequality by current bit position.
+        /// @brief Compares two iterators for inequality by remaining active bitmask.
         /// @param[in] rhs Iterator to compare against.
-        /// @return True when positioned at different indices.
+        /// @return True when remaining bitmasks differ.
         [[nodiscard]] constexpr bool operator!=(const Iterator& rhs) const noexcept
         {
-            return m_firstGPUIndexInMask != rhs.m_firstGPUIndexInMask;
+            return m_mask != rhs.m_mask;
         }
 
-        /// @brief Compares two iterators for equality by current bit position.
+        /// @brief Compares two iterators for equality by remaining active bitmask.
         /// @param[in] rhs Iterator to compare against.
-        /// @return True when positioned at the same index.
+        /// @return True when remaining bitmasks match.
         [[nodiscard]] constexpr bool operator==(const Iterator& rhs) const noexcept
         {
-            return m_firstGPUIndexInMask == rhs.m_firstGPUIndexInMask;
+            return m_mask == rhs.m_mask;
         }
 
         /// @brief Reports whether the iterator currently points to a valid GPU index.
@@ -329,7 +334,7 @@ struct GPUMask
     /// @return End `Iterator`.
     [[nodiscard]] friend constexpr Iterator end([[maybe_unused]] const GPUMask inMask) noexcept
     {
-        return Iterator(kMaxGPUs);
+        return Iterator(0u);
     }
 };
 
