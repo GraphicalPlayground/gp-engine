@@ -8,6 +8,7 @@
 #include "backend/ApplicationBackendDesc.hpp"
 #include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
+#include "device/RHIBootstrapDesc.hpp"
 #include "logging/LogDesc.hpp"
 #include "threading/jobs/JobSystemDesc.hpp"
 #include "threading/roles/NamedThreadDispatcherDesc.hpp"
@@ -138,6 +139,13 @@ public:
     /// @brief If true, automatically unloads all modules loaded by this `Application` in reverse-LIFO order during
     ///        `Application::shutdownInternal()` after `JobSystem` workers and named-thread queues drain ([ADR-0061]).
     bool unloadModulesOnShutdown{ true };
+
+    /// @brief Configuration parameters for `IDynamicRHIModule` discovery, feature level negotiation, and `rhiInit()`.
+    rhi::RHIBootstrapDesc rhi{};
+
+    /// @brief If true, initializes the RHI subsystem via `rhiInit()` / `rhiPostInit()` during startup and shuts it
+    ///        down via `rhiExit()` before module unloading (can be disabled via `-no-rhi` on the command line).
+    bool enableRHI{ true };
 
 public:
     /// @brief Appends a module identifier to `startupModules` if capacity permits and not already listed.
