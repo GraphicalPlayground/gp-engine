@@ -323,7 +323,8 @@ TEST_F(GPUFenceAndQueryTestFixture, GPUFencePendingWriteCounterMultiThreaded)
         std::thread workers[kThreadCount];
         for (gp::UInt32 t = 0u; t < kThreadCount; ++t)
         {
-            workers[t] = std::thread([&fence, &readyCount, &startFlag]()
+            workers[t] = std::thread(
+                [&fence, &readyCount, &startFlag]() -> void
             {
                 readyCount.fetchAdd(1u, gp::memory::MemoryOrder::Release);
                 while (!startFlag.load(gp::memory::MemoryOrder::Acquire))
@@ -335,7 +336,8 @@ TEST_F(GPUFenceAndQueryTestFixture, GPUFencePendingWriteCounterMultiThreaded)
                 {
                     fence->incrementPendingWriteCommands();
                 }
-            });
+            }
+            );
         }
 
         while (readyCount.load(gp::memory::MemoryOrder::Acquire) < kThreadCount)
@@ -361,7 +363,8 @@ TEST_F(GPUFenceAndQueryTestFixture, GPUFencePendingWriteCounterMultiThreaded)
         std::thread workers[kThreadCount];
         for (gp::UInt32 t = 0u; t < kThreadCount; ++t)
         {
-            workers[t] = std::thread([&fence, &readyCount, &startFlag]()
+            workers[t] = std::thread(
+                [&fence, &readyCount, &startFlag]() -> void
             {
                 readyCount.fetchAdd(1u, gp::memory::MemoryOrder::Release);
                 while (!startFlag.load(gp::memory::MemoryOrder::Acquire))
@@ -373,7 +376,8 @@ TEST_F(GPUFenceAndQueryTestFixture, GPUFencePendingWriteCounterMultiThreaded)
                 {
                     fence->decrementPendingWriteCommands();
                 }
-            });
+            }
+            );
         }
 
         while (readyCount.load(gp::memory::MemoryOrder::Acquire) < kThreadCount)
@@ -456,9 +460,21 @@ TEST_F(GPUFenceAndQueryTestFixture, PooledRenderQueryDefaultAndUnpooledRelease)
         EXPECT_EQ(unpooled.getQuery(), nullptr);
     }
 
+    // Wrapping a null query with a non-null pool treats the handle as empty and never calls releaseQuery().
+    {
+        MockRenderQueryPool* const rawPool = new MockRenderQueryPool();
+        RenderQueryPoolRef pool(rawPool);
+        PooledRenderQuery emptyWithPool(rawPool, RenderQueryRef{});
+        EXPECT_FALSE(emptyWithPool.isValid());
+        EXPECT_EQ(emptyWithPool.getQuery(), nullptr);
+        emptyWithPool.releaseQuery();
+        EXPECT_EQ(rawPool->getReleaseCallCount(), 0u);
+    }
+
     EXPECT_EQ(MockRenderQuery::s_destructCount.load(gp::memory::MemoryOrder::Acquire), 0u);
     resource::ResourceDeletionQueue::flushPendingDeletes(true);
     EXPECT_EQ(MockRenderQuery::s_destructCount.load(gp::memory::MemoryOrder::Acquire), 1u);
+    EXPECT_EQ(MockRenderQueryPool::s_destructCount.load(gp::memory::MemoryOrder::Acquire), 1u);
 }
 
 TEST_F(GPUFenceAndQueryTestFixture, RenderQueryPoolAllocateReuseAndRAIIAutoReturn)
