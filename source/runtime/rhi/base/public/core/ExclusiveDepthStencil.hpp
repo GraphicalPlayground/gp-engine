@@ -312,22 +312,31 @@ public:
     [[nodiscard]] constexpr bool operator==(const ExclusiveDepthStencil& rhs) const noexcept = default;
 
 private:
+    /// @brief Extracts the depth nibble from `m_value`.
+    /// @return Depth-only `Mode` bits.
     [[nodiscard]] GP_FORCEINLINE_HINT constexpr Mode extractDepth() const noexcept
     {
         return static_cast<Mode>(static_cast<gp::UInt8>(m_value) & static_cast<gp::UInt8>(Mode::DepthMask));
     }
 
+    /// @brief Extracts the stencil nibble from `m_value`.
+    /// @return Stencil-only `Mode` bits.
     [[nodiscard]] GP_FORCEINLINE_HINT constexpr Mode extractStencil() const noexcept
     {
         return static_cast<Mode>(static_cast<gp::UInt8>(m_value) & static_cast<gp::UInt8>(Mode::StencilMask));
     }
 
+    /// @brief Combines separate depth and stencil nibbles into one packed `Mode`.
+    /// @param[in] depth Depth nibble.
+    /// @param[in] stencil Stencil nibble.
+    /// @return Combined `Mode` value.
     [[nodiscard]] GP_FORCEINLINE_HINT static constexpr Mode combine(const Mode depth, const Mode stencil) noexcept
     {
         return static_cast<Mode>(static_cast<gp::UInt8>(depth) | static_cast<gp::UInt8>(stencil));
     }
 
 private:
+    /// @brief Packed depth (low nibble) and stencil (high nibble) access mode.
     Mode m_value{ Mode::DepthNopStencilNop };
 };
 
