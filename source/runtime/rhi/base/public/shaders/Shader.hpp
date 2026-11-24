@@ -12,6 +12,8 @@
 #include "core/Resource.hpp"
 #include "core/ResourceEnums.hpp"
 #include "CoreMinimal.hpp"
+#include "hashing/HashingTypes.hpp"   // IWYU pragma: keep
+#include "memory/MemoryForward.hpp"
 #include "memory/MemoryOrder.hpp"
 #include "RHIBase.hpp"
 #include "shaders/ShaderData.hpp"
@@ -19,6 +21,7 @@
 #include "shaders/ShaderForward.hpp"   // IWYU pragma: keep
 #include "shaders/ShaderTypes.hpp"
 #include "threading/atomics/Atomic.hpp"
+#include <type_traits>
 #include <utility>
 
 namespace gp::rhi::shader
@@ -296,16 +299,29 @@ public:
 
 private:
 #if GP_RHI_INCLUDE_SHADER_DEBUG_DATA
+    /// @brief Debug shader name and reflected uniform buffer slot identifiers.
     struct DebugInfo
     {
+        /// @brief Human-readable debug shader identifier.
         gp::String shaderName{};
+
+        /// @brief Interned uniform buffer names indexed by bind slot.
         gp::Vector<gp::Name> uniformBufferNames{};
     };
 
+    /// @brief Optional shader debug names retained when `GP_RHI_INCLUDE_SHADER_DEBUG_DATA` is active.
     DebugInfo m_debugInfo{};
+
+    /// @brief Expected buffer element strides used for runtime binding validation.
     gp::Vector<ShaderCodeValidationStride> m_debugStrideValidationData{};
+
+    /// @brief Expected SRV binding types used for runtime binding validation.
     gp::Vector<ShaderCodeValidationType> m_debugSRVTypeValidationData{};
+
+    /// @brief Expected UAV binding types used for runtime binding validation.
     gp::Vector<ShaderCodeValidationType> m_debugUAVTypeValidationData{};
+
+    /// @brief Expected uniform buffer byte sizes used for runtime binding validation.
     gp::Vector<ShaderCodeValidationUBSize> m_debugUBSizeValidationData{};
 #endif
 
@@ -331,18 +347,31 @@ private:
     gp::UInt8 m_hasSpecializationConstants : 1 { 0u };
 };
 
-/// @brief Compile-time trait mapping a concrete shader resource class to its `ShaderFrequency`.
-/// @tparam InShaderType Concrete `Shader` subclass exposing `kStaticFrequency`.
+/// @brief Compile-time trait mapping a concrete shader class, pointer, or `RefCountedPtr` to its `ShaderFrequency`.
+/// @tparam InShaderType Concrete `Shader` subclass, raw pointer, or `gp::RefCountedPtr` handle.
 template <typename InShaderType>
 struct ShaderFrequencyOf
 {
     /// @brief Pipeline stage corresponding to `InShaderType`.
-    static constexpr ShaderFrequency kValue = InShaderType::kStaticFrequency;
+    static constexpr ShaderFrequency kValue = std::remove_cv_t<InShaderType>::kStaticFrequency;
 };
 
-/// @brief Shorthand variable template for `ShaderFrequencyOf<InShaderType>::kValue`.
-/// @tparam InShaderType Concrete `Shader` subclass exposing `kStaticFrequency`.
+/// @brief Partial specialization unwrapping raw shader pointers.
+/// @tparam InShaderType Pointed-to `Shader` subclass.
 template <typename InShaderType>
-inline constexpr ShaderFrequency kShaderFrequencyOf = ShaderFrequencyOf<InShaderType>::kValue;
+struct ShaderFrequencyOf<InShaderType*> : ShaderFrequencyOf<InShaderType>
+{};
+
+/// @brief Partial specialization unwrapping intrusive `gp::RefCountedPtr` shader handles.
+/// @tparam InShaderType Managed `Shader` subclass.
+/// @tparam InPolicy Reference counting policy type.
+template <typename InShaderType, typename InPolicy>
+struct ShaderFrequencyOf<gp::RefCountedPtr<InShaderType, InPolicy>> : ShaderFrequencyOf<InShaderType>
+{};
+
+/// @brief Shorthand variable template for `ShaderFrequencyOf<std::remove_cvref_t<InShaderType>>::kValue`.
+/// @tparam InShaderType Concrete `Shader` subclass, raw pointer, or `gp::RefCountedPtr` handle.
+template <typename InShaderType>
+inline constexpr ShaderFrequency kShaderFrequencyOf = ShaderFrequencyOf<std::remove_cvref_t<InShaderType>>::kValue;
 
 }   // namespace gp::rhi::shader
