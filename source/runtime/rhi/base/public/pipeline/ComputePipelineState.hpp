@@ -28,11 +28,17 @@ struct GP_RHI_API PipelineStateStats
     /// @brief Earliest engine frame index on which this pipeline was bound, or `kInvalidFrame` before first use.
     gp::thread::Atomic<gp::UInt64> firstFrameUsed{ kInvalidFrame };
 
-    /// @brief Most recent engine frame index on which this pipeline was bound.
-    gp::thread::Atomic<gp::UInt64> lastFrameUsed{ 0u };
+    /// @brief Most recent engine frame index on which this pipeline was bound, or `kInvalidFrame` before first use.
+    gp::thread::Atomic<gp::UInt64> lastFrameUsed{ kInvalidFrame };
 
     /// @brief Cumulative number of times this pipeline has been bound across all threads.
     gp::thread::Atomic<gp::UInt64> totalBindCount{ 0u };
+
+    /// @brief Number of times this pipeline state has been created or compiled.
+    gp::thread::Atomic<gp::UInt64> createCount{ 0u };
+
+    /// @brief 32-bit pipeline state cache hash associated with this stats record.
+    gp::UInt32 psoHash{ 0u };
 
     /// @brief Records a pipeline bind during `currentFrame` using lock-free atomic updates.
     /// @param[in] currentFrame Monotonic engine frame index.
