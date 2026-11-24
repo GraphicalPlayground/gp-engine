@@ -17,10 +17,12 @@ template <concepts::IsFloatingPoint T> struct Vector2;
 template <concepts::IsFloatingPoint T> struct Vector3;
 template <concepts::IsFloatingPoint T> struct Vector4;
 
-template <concepts::IsFloatingPoint T> struct Matrix2x2;
-template <concepts::IsFloatingPoint T> struct Matrix3x3;
-template <concepts::IsFloatingPoint T> struct Matrix3x4;
-template <concepts::IsFloatingPoint T> struct Matrix4x4;
+template <concepts::IsFloatingPoint T, int R, int C> class Matrix;
+
+template <concepts::IsFloatingPoint T> using Matrix2x2 = Matrix<T, 2, 2>;
+template <concepts::IsFloatingPoint T> using Matrix3x3 = Matrix<T, 3, 3>;
+template <concepts::IsFloatingPoint T> using Matrix3x4 = Matrix<T, 3, 4>;
+template <concepts::IsFloatingPoint T> using Matrix4x4 = Matrix<T, 4, 4>;
 
 template <concepts::IsFloatingPoint T> struct Rotator;
 template <concepts::IsFloatingPoint T> struct Rotator2D;
