@@ -98,10 +98,39 @@ TEST(ClearValueBindingTest, ColorComparisonAndHashUseBitwiseSemantics)
     EXPECT_EQ(gp::hashing::hashOf(clearNanA1), gp::hashing::hashOf(clearNanA2));
     EXPECT_NE(clearNanA1, clearNanB);
     EXPECT_NE(gp::hashing::hashOf(clearNanA1), gp::hashing::hashOf(clearNanB));
+
+    // Streaming hashAppend for ColorBound and NoneBound
+    gp::hashing::Fnv1a64 posStream{};
+    gp::hashing::Fnv1a64 negStream{};
+    posZero.hashAppend(posStream);
+    negZero.hashAppend(negStream);
+    EXPECT_NE(posStream.finalize(), negStream.finalize());
+
+    gp::hashing::Fnv1a64 nanStreamA1{};
+    gp::hashing::Fnv1a64 nanStreamA2{};
+    clearNanA1.hashAppend(nanStreamA1);
+    clearNanA2.hashAppend(nanStreamA2);
+    EXPECT_EQ(nanStreamA1.finalize(), nanStreamA2.finalize());
+
+    const ClearValueBinding explicitNone(ClearBinding::NoneBound);
+    EXPECT_EQ(explicitNone, ClearValueBinding::kNone);
+    EXPECT_EQ(explicitNone.getHash(), ClearValueBinding::kNone.getHash());
+    gp::hashing::Fnv1a64 noneStreamA{};
+    gp::hashing::Fnv1a64 noneStreamB{};
+    explicitNone.hashAppend(noneStreamA);
+    ClearValueBinding::kNone.hashAppend(noneStreamB);
+    EXPECT_EQ(noneStreamA.finalize(), noneStreamB.finalize());
+    EXPECT_NE(noneStreamA.finalize(), posStream.finalize());
 }
 
 TEST(ClearValueBindingTest, DepthStencilComparisonAndHashUseFloatSemantics)
 {
+    const ClearValueBinding depthOnlyDefaultStencil(0.25f);
+    gp::Float32 defaultStencilDepth = 0.0f;
+    gp::UInt32 defaultStencilVal = 99u;
+    depthOnlyDefaultStencil.getDepthStencil(defaultStencilDepth, defaultStencilVal);
+    EXPECT_FLOAT_EQ(defaultStencilDepth, 0.25f);
+    EXPECT_EQ(defaultStencilVal, 0u);
     const ClearValueBinding posZeroDepth(0.0f, 7u);
     const ClearValueBinding negZeroDepth(-0.0f, 7u);
     const ClearValueBinding differentStencil(0.0f, 8u);
