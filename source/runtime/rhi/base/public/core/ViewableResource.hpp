@@ -55,7 +55,8 @@ public:
     }
 
     /// @brief Returns the debug name assigned to this resource.
-    /// @return Interned `gp::Name`, or `"None"` when unnamed or when `GP_RHI_ENABLE_RESOURCE_INFO` is disabled.
+    /// @return Interned `gp::Name`, or `"None"` when unnamed or when constructed with `GP_RHI_ENABLE_RESOURCE_INFO`
+    ///         disabled and not later updated via `setName()`.
     [[nodiscard]] GP_FORCEINLINE_HINT gp::Name getName() const noexcept
     {
         return m_name;
