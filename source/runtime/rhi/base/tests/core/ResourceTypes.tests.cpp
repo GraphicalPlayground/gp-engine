@@ -3,13 +3,16 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "core/ResourceTypes.hpp"
+#include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "core/ResourceEnums.hpp"
+#include "hashing/Fnv1a.hpp"
 #include <gtest/gtest.h>
 
 namespace gp::rhi::resource::tests
 {
 
-static_assert(kResourceTypeCount > 0u, "kResourceTypeCount must be non-zero.");
+static_assert(kResourceTypeCount == 41u, "kResourceTypeCount must cover all 41 ResourceType enumerators.");
+static_assert(kResourceLockModeCount == 3u, "kResourceLockModeCount must cover all 3 ResourceLockMode enumerators.");
 static_assert(
     isPipelineStateResourceType(ResourceType::GraphicsPipelineState),
     "GraphicsPipelineState must classify as a pipeline state."
@@ -98,6 +101,91 @@ TEST(ResourceTypesTest, ResourceInfoDefaultsAndFields)
     EXPECT_TRUE(customInfo.isTransient);
     EXPECT_FALSE(customInfo.isResident);
     EXPECT_NE(customInfo, defaultInfo);
+}
+
+TEST(ResourceTypesTest, GeometryPrimitivesRangesEnumsAndUploadAdapter)
+{
+    EXPECT_NE(ResourceType::RayTracingOpacityMicromapArray, ResourceType::RayTracingScene);
+    EXPECT_NE(ResourceLockMode::ReadOnly, ResourceLockMode::WriteOnly);
+    EXPECT_NE(ResourceLockMode::WriteOnly, ResourceLockMode::WriteOnlyNoOverwrite);
+
+    // IntPoint
+    const IntPoint ptDefault{};
+    const IntPoint ptA(64, 128);
+    const IntPoint ptB(64, 128);
+    const IntPoint ptC(64, 256);
+    EXPECT_EQ(ptDefault.x, 0);
+    EXPECT_EQ(ptDefault.y, 0);
+    EXPECT_EQ(ptA, ptB);
+    EXPECT_NE(ptA, ptC);
+
+    gp::hashing::Fnv1a64 ptHashA{};
+    gp::hashing::Fnv1a64 ptHashB{};
+    gp::hashing::Fnv1a64 ptHashC{};
+    ptA.hashAppend(ptHashA);
+    ptB.hashAppend(ptHashB);
+    ptC.hashAppend(ptHashC);
+    EXPECT_EQ(ptHashA.finalize(), ptHashB.finalize());
+    EXPECT_NE(ptHashA.finalize(), ptHashC.finalize());
+
+    // IntVector
+    const IntVector vecDefault{};
+    const IntVector vecA(16, 32, 64);
+    const IntVector vecB(16, 32, 64);
+    const IntVector vecC(16, 32, 128);
+    EXPECT_EQ(vecDefault.x, 0);
+    EXPECT_EQ(vecDefault.y, 0);
+    EXPECT_EQ(vecDefault.z, 0);
+    EXPECT_EQ(vecA, vecB);
+    EXPECT_NE(vecA, vecC);
+
+    gp::hashing::Fnv1a64 vecHashA{};
+    gp::hashing::Fnv1a64 vecHashB{};
+    gp::hashing::Fnv1a64 vecHashC{};
+    vecA.hashAppend(vecHashA);
+    vecB.hashAppend(vecHashB);
+    vecC.hashAppend(vecHashC);
+    EXPECT_EQ(vecHashA.finalize(), vecHashB.finalize());
+    EXPECT_NE(vecHashA.finalize(), vecHashC.finalize());
+
+    // IntRect
+    const IntRect rectDefault{};
+    EXPECT_EQ(rectDefault.width(), 0);
+    EXPECT_EQ(rectDefault.height(), 0);
+
+    const IntRect rectFromCoords(10, 20, 110, 220);
+    const IntRect rectFromPoints(IntPoint(10, 20), IntPoint(110, 220));
+    EXPECT_EQ(rectFromCoords, rectFromPoints);
+    EXPECT_EQ(rectFromCoords.width(), 100);
+    EXPECT_EQ(rectFromCoords.height(), 200);
+    EXPECT_NE(rectFromCoords, rectDefault);
+
+    // Range8 & Range16
+    const Range8 mipRange(1u, 4u);
+    EXPECT_EQ(mipRange.exclusiveLast(), 5u);
+    EXPECT_EQ(mipRange.inclusiveLast(), 4u);
+    EXPECT_FALSE(mipRange.isInRange(0u));
+    EXPECT_TRUE(mipRange.isInRange(1u));
+    EXPECT_TRUE(mipRange.isInRange(4u));
+    EXPECT_FALSE(mipRange.isInRange(5u));
+    EXPECT_EQ(mipRange, Range8(1u, 4u));
+    EXPECT_NE(mipRange, Range8(1u, 3u));
+
+    const Range16 emptySliceRange{};
+    EXPECT_EQ(emptySliceRange.exclusiveLast(), 0u);
+    EXPECT_FALSE(emptySliceRange.isInRange(0u));
+
+    // ResourceArrayUploadView
+    const gp::UInt32 data[3]{ 7u, 8u, 9u };
+    ResourceArrayUploadView rawUpload(data, static_cast<gp::UInt32>(sizeof(data)));
+    EXPECT_EQ(rawUpload.getResourceData(), static_cast<const void*>(data));
+    EXPECT_EQ(rawUpload.getResourceDataSize(), 12u);
+    rawUpload.discard();
+    EXPECT_EQ(rawUpload.getResourceData(), static_cast<const void*>(data));
+
+    ResourceArrayUploadView spanUpload(gp::ConstVectorView<gp::UInt32>(data, 3u));
+    EXPECT_EQ(spanUpload.getResourceData(), static_cast<const void*>(data));
+    EXPECT_EQ(spanUpload.getResourceDataSize(), 12u);
 }
 
 }   // namespace gp::rhi::resource::tests
