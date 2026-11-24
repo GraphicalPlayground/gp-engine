@@ -45,17 +45,16 @@
     #endif
 #endif
 
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
 // clang-format off
-    #include "platforms/base/AllowPlatformTypes.hpp"
+#include "platforms/base/AllowPlatformTypes.hpp"
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
     #include <windows.h>
-    #include "platforms/base/HidePlatformTypes.hpp"
-// clang-format on
 #endif
-
 GP_THIRD_PARTY_INCLUDES_START
 #include <vulkan/vulkan.h>
 GP_THIRD_PARTY_INCLUDES_END
+#include "platforms/base/HidePlatformTypes.hpp"
+// clang-format on
 
 #if defined(VK_HEADER_VERSION) && VK_HEADER_VERSION >= 141
     // Restore range constants removed from Vulkan headers starting with SDK 1.2.141.
