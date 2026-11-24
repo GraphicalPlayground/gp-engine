@@ -44,11 +44,13 @@ enum class FeatureLevel : gp::Int32
     /// @brief Desktop Shader Model 5 feature tier.
     SM5,
     /// @brief Modern Desktop Shader Model 6 feature tier.
-    SM6
+    SM6,
+    /// @brief Sentinel representing the highest feature level supported by the backend.
+    Count
 };
 
-/// @brief Total number of enumerators defined in `FeatureLevel`.
-inline constexpr gp::UInt32 kFeatureLevelCount = static_cast<gp::UInt32>(FeatureLevel::SM6) + 1u;
+/// @brief Total number of concrete enumerators defined in `FeatureLevel`.
+inline constexpr gp::UInt32 kFeatureLevelCount = static_cast<gp::UInt32>(FeatureLevel::Count);
 
 /// @brief High-level rendering pipeline architecture selected for a target feature level.
 enum class ShadingPath : gp::UInt8
