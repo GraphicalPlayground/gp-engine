@@ -9,16 +9,16 @@
 #include "core/ResourceTypes.hpp"
 #include "CoreMinimal.hpp"
 #include "device/DeviceForward.hpp"
+#include "hashing/Fnv1a.hpp"
+#include "memory/Memory.hpp"
 #include "resources/Buffer.hpp"
 #include "resources/BufferEnums.hpp"
 #include "resources/Texture.hpp"
 #include "resources/TextureEnums.hpp"
 #include "RHIBase.hpp"
-#include "RHIDefinitions.hpp"   // IWYU pragma: keep
 #include "RHIPixelFormat.hpp"
 #include "views/ViewEnums.hpp"
 #include "views/ViewForward.hpp"   // IWYU pragma: keep
-#include <cstring>
 #include <type_traits>
 
 namespace gp::rhi::view
@@ -265,7 +265,23 @@ public:
     /// @return True when all 16 bytes match identically.
     [[nodiscard]] bool operator==(const ViewDesc& rhs) const noexcept
     {
-        return std::memcmp(this, &rhs, sizeof(*this)) == 0;
+        return gp::memory::compareMemory(this, &rhs, sizeof(*this)) == 0;
+    }
+
+    /// @brief Computes a deterministic 64-bit hash over the 16 packed descriptor bytes.
+    /// @return 64-bit hash digest consistent with bytewise `operator==`.
+    [[nodiscard]] gp::UInt64 getHash() const noexcept
+    {
+        return gp::hashing::Fnv1a64::hash(reinterpret_cast<const gp::UInt8*>(this), sizeof(*this));
+    }
+
+    /// @brief Streams the 16 packed descriptor bytes into a streaming hasher.
+    /// @tparam InHasher Streaming hasher type.
+    /// @param[in,out] hasher Target hasher accumulator.
+    template <typename InHasher>
+    void hashAppend(InHasher& hasher) const noexcept
+    {
+        hasher.update(reinterpret_cast<const gp::UInt8*>(this), sizeof(*this));
     }
 
     /// @brief Constructs a zero-initialized `BufferSRV` descriptor.
@@ -278,7 +294,7 @@ protected:
     /// @param[in] viewType View category stored in the common header.
     explicit ViewDesc(const ViewType viewType) noexcept
     {
-        std::memset(this, 0, sizeof(*this));
+        gp::memory::zeroMemory(this, sizeof(*this));
         common.viewType = viewType;
     }
 };
