@@ -75,6 +75,32 @@ TEST(PipelineStateDescTest, SamplerStateDescEqualityAndFloatHashConsistency)
         0xFF0000FFu,
         SamplerCompareFunction::Less
     );
+    const SamplerStateDesc zeroBiasPosMax(
+        SamplerFilter::Point,
+        SamplerAddressMode::Wrap,
+        SamplerAddressMode::Wrap,
+        SamplerAddressMode::Wrap,
+        0.0f,
+        1,
+        0.0f,
+        0.0f,
+        0u,
+        SamplerCompareFunction::Never
+    );
+    const SamplerStateDesc negZeroBiasNegMax(
+        SamplerFilter::Point,
+        SamplerAddressMode::Wrap,
+        SamplerAddressMode::Wrap,
+        SamplerAddressMode::Wrap,
+        -0.0f,
+        1,
+        -0.0f,
+        -0.0f,
+        0u,
+        SamplerCompareFunction::Never
+    );
+    EXPECT_EQ(zeroBiasPosMax, negZeroBiasNegMax);
+    EXPECT_EQ(gp::hashing::hashOf(zeroBiasPosMax), gp::hashing::hashOf(negZeroBiasNegMax));
     const SamplerStateDesc differentAnisotropy(
         SamplerFilter::AnisotropicLinear,
         SamplerAddressMode::Clamp,
@@ -114,6 +140,12 @@ TEST(PipelineStateDescTest, RasterizerStateDescConstructorsEqualityAndHashing)
     EXPECT_EQ(gp::hashing::hashOf(solidCw), gp::hashing::hashOf(solidCwExplicit));
     EXPECT_NE(solidCw, shadowPass);
     EXPECT_NE(gp::hashing::hashOf(solidCw), gp::hashing::hashOf(shadowPass));
+
+    gp::hashing::Fnv1a64 rastStreamA{};
+    gp::hashing::Fnv1a64 rastStreamB{};
+    solidCw.hashAppend(rastStreamA);
+    solidCwExplicit.hashAppend(rastStreamB);
+    EXPECT_EQ(rastStreamA.finalize(), rastStreamB.finalize());
 }
 
 TEST(PipelineStateDescTest, DepthStencilStateDescEqualityAndHashing)
@@ -143,6 +175,12 @@ TEST(PipelineStateDescTest, DepthStencilStateDescEqualityAndHashing)
     EXPECT_NE(gp::hashing::hashOf(defaultDesc), gp::hashing::hashOf(stencilMasking));
     EXPECT_EQ(stencilMasking.stencilReadMask, 0x0Fu);
     EXPECT_EQ(stencilMasking.stencilWriteMask, 0xF0u);
+
+    gp::hashing::Fnv1a64 dsStreamA{};
+    gp::hashing::Fnv1a64 dsStreamB{};
+    stencilMasking.hashAppend(dsStreamA);
+    reversedZReadOnly.hashAppend(dsStreamB);
+    EXPECT_NE(dsStreamA.finalize(), dsStreamB.finalize());
 }
 
 TEST(PipelineStateDescTest, BlendStateDescSingleAndMultiTargetConstruction)
@@ -189,6 +227,29 @@ TEST(PipelineStateDescTest, BlendStateDescSingleAndMultiTargetConstruction)
     EXPECT_EQ(multiTarget.renderTargets[2], RenderTargetBlendDesc{});
     EXPECT_NE(multiTarget, singleTarget);
     EXPECT_NE(gp::hashing::hashOf(multiTarget), gp::hashing::hashOf(singleTarget));
+
+    // Check useAlphaToCoverage mismatch and renderTargets[i] mismatch branches
+    const BlendStateDesc singleNoAlphaToCov(alphaBlend, false);
+    EXPECT_NE(singleTarget, singleNoAlphaToCov);
+
+    const gp::Array<RenderTargetBlendDesc, 2u> multiTargetDiffSecond{
+        { alphaBlend, RenderTargetBlendDesc{} }
+    };
+    const BlendStateDesc multiDiff(multiTargetDiffSecond, false);
+    EXPECT_NE(multiTarget, multiDiff);
+
+    EXPECT_NE(alphaBlend.getHash(), additiveRgb.getHash());
+    gp::hashing::Fnv1a64 rtStreamA{};
+    gp::hashing::Fnv1a64 rtStreamB{};
+    alphaBlend.hashAppend(rtStreamA);
+    additiveRgb.hashAppend(rtStreamB);
+    EXPECT_NE(rtStreamA.finalize(), rtStreamB.finalize());
+
+    gp::hashing::Fnv1a64 blendStreamA{};
+    gp::hashing::Fnv1a64 blendStreamB{};
+    singleTarget.hashAppend(blendStreamA);
+    fromSingleArray.hashAppend(blendStreamB);
+    EXPECT_EQ(blendStreamA.finalize(), blendStreamB.finalize());
 }
 
 TEST(PipelineStateDescTest, VertexElementAndFixedElementList)
@@ -216,6 +277,41 @@ TEST(PipelineStateDescTest, VertexElementAndFixedElementList)
     EXPECT_TRUE(elements[2].isInstanced());
     EXPECT_NE(position, normal);
     EXPECT_NE(gp::hashing::hashOf(position), gp::hashing::hashOf(normal));
+
+    gp::hashing::Fnv1a64 veStreamA{};
+    gp::hashing::Fnv1a64 veStreamB{};
+    position.hashAppend(veStreamA);
+    normal.hashAppend(veStreamB);
+    EXPECT_NE(veStreamA.finalize(), veStreamB.finalize());
+}
+
+TEST(PipelineStateDescTest, PipelineEnumsConstantsAndBitwiseMasks)
+{
+    EXPECT_EQ(ColorWriteMask::Red | ColorWriteMask::Green, ColorWriteMask::RG);
+    EXPECT_EQ(ColorWriteMask::Blue | ColorWriteMask::Alpha, ColorWriteMask::BA);
+    EXPECT_EQ(ColorWriteMask::RG | ColorWriteMask::BA, ColorWriteMask::RGBA);
+    EXPECT_EQ(ColorWriteMask::RGBA & ColorWriteMask::RGB, ColorWriteMask::RGB);
+
+    EXPECT_EQ(CompareFunction::DepthNearOrEqual, CompareFunction::GreaterEqual);
+    EXPECT_EQ(CompareFunction::DepthNear, CompareFunction::Greater);
+    EXPECT_EQ(CompareFunction::DepthFartherOrEqual, CompareFunction::LessEqual);
+    EXPECT_EQ(CompareFunction::DepthFarther, CompareFunction::Less);
+
+    EXPECT_EQ(VRSShadingRate::Last, VRSShadingRate::Rate4x4);
+    EXPECT_EQ(kSamplerFilterCount, 5u);
+    EXPECT_EQ(kSamplerAddressModeCount, 4u);
+    EXPECT_EQ(kRasterizerFillModeCount, 3u);
+    EXPECT_EQ(kRasterizerCullModeCount, 3u);
+    EXPECT_EQ(kRasterizerDepthClipModeCount, 2u);
+    EXPECT_EQ(kColorWriteMaskNumBits, 4u);
+    EXPECT_EQ(kCompareFunctionCount, 8u);
+    EXPECT_EQ(kStencilMaskCount, 10u);
+    EXPECT_EQ(kStencilOpCount, 8u);
+    EXPECT_EQ(kBlendOperationCount, 5u);
+    EXPECT_EQ(kBlendFactorCount, 16u);
+    EXPECT_EQ(kVertexElementTypeCount, 22u);
+    EXPECT_EQ(kPrimitiveTopologyTypeCount, 4u);
+    EXPECT_EQ(kPrimitiveTypeCount, 6u);
 }
 
 }   // namespace gp::rhi::pipeline::tests
