@@ -2,7 +2,7 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "RHINull.hpp"   // IWYU pragma: keep
+#include "device/NullDynamicRHIModule.hpp"
 #include "modules/ModuleMacros.hpp"
 
-GP_IMPLEMENT_DEFAULT_MODULE("rhi/null")
+GP_IMPLEMENT_MODULE(gp::rhi::null::NullDynamicRHIModule, "rhi/null")
