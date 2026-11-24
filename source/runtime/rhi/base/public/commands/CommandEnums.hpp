@@ -6,6 +6,7 @@
 
 #include "core/ExclusiveDepthStencil.hpp"
 #include "CoreMinimal.hpp"
+#include "templates/Enums.hpp"
 
 namespace gp::rhi::command
 {
@@ -42,6 +43,171 @@ inline constexpr gp::UInt32 kRenderTargetStoreActionCount =
     static_cast<gp::UInt32>(RenderTargetStoreAction::MultisampleResolve) + 1u;
 inline constexpr gp::UInt32 kRenderTargetStoreActionNumBits = 2u;
 static_assert((1u << kRenderTargetStoreActionNumBits) >= kRenderTargetStoreActionCount);
+
+/// @brief Combined load and store action packed as `(Load << 2) | Store` for a single attachment.
+enum class RenderTargetActions : gp::UInt8
+{
+    DontLoadDontStore = (static_cast<gp::UInt8>(RenderTargetLoadAction::NoAction) << 2u) |
+                        static_cast<gp::UInt8>(RenderTargetStoreAction::NoAction),
+    DontLoadStore = (static_cast<gp::UInt8>(RenderTargetLoadAction::NoAction) << 2u) |
+                    static_cast<gp::UInt8>(RenderTargetStoreAction::Store),
+    ClearStore = (static_cast<gp::UInt8>(RenderTargetLoadAction::Clear) << 2u) |
+                 static_cast<gp::UInt8>(RenderTargetStoreAction::Store),
+    LoadStore = (static_cast<gp::UInt8>(RenderTargetLoadAction::Load) << 2u) |
+                static_cast<gp::UInt8>(RenderTargetStoreAction::Store),
+    ClearDontStore = (static_cast<gp::UInt8>(RenderTargetLoadAction::Clear) << 2u) |
+                     static_cast<gp::UInt8>(RenderTargetStoreAction::NoAction),
+    LoadDontStore = (static_cast<gp::UInt8>(RenderTargetLoadAction::Load) << 2u) |
+                    static_cast<gp::UInt8>(RenderTargetStoreAction::NoAction),
+    ClearResolve = (static_cast<gp::UInt8>(RenderTargetLoadAction::Clear) << 2u) |
+                   static_cast<gp::UInt8>(RenderTargetStoreAction::MultisampleResolve),
+    LoadResolve = (static_cast<gp::UInt8>(RenderTargetLoadAction::Load) << 2u) |
+                  static_cast<gp::UInt8>(RenderTargetStoreAction::MultisampleResolve)
+};
+
+/// @brief Packs a load action and store action into a single `RenderTargetActions` value.
+/// @param[in] loadAction Pass-entry load policy.
+/// @param[in] storeAction Pass-exit store policy.
+/// @return Combined `RenderTargetActions` enumerator.
+[[nodiscard]] inline constexpr RenderTargetActions
+    makeRenderTargetActions(const RenderTargetLoadAction loadAction, const RenderTargetStoreAction storeAction) noexcept
+{
+    return static_cast<RenderTargetActions>(
+        (static_cast<gp::UInt8>(loadAction) << kRenderTargetStoreActionNumBits) | static_cast<gp::UInt8>(storeAction)
+    );
+}
+
+/// @brief Extracts the `RenderTargetLoadAction` component from a packed `RenderTargetActions`.
+/// @param[in] action Packed attachment action.
+/// @return Unpacked `RenderTargetLoadAction`.
+[[nodiscard]] inline constexpr RenderTargetLoadAction getLoadAction(const RenderTargetActions action) noexcept
+{
+    return static_cast<RenderTargetLoadAction>(static_cast<gp::UInt8>(action) >> kRenderTargetStoreActionNumBits);
+}
+
+/// @brief Extracts the `RenderTargetStoreAction` component from a packed `RenderTargetActions`.
+/// @param[in] action Packed attachment action.
+/// @return Unpacked `RenderTargetStoreAction`.
+[[nodiscard]] inline constexpr RenderTargetStoreAction getStoreAction(const RenderTargetActions action) noexcept
+{
+    return static_cast<RenderTargetStoreAction>(
+        static_cast<gp::UInt8>(action) & ((1u << kRenderTargetStoreActionNumBits) - 1u)
+    );
+}
+
+/// @brief Combined depth and stencil load/store actions packed as `(DepthAction << 4) | StencilAction`.
+enum class DepthStencilTargetActions : gp::UInt8
+{
+    DontLoadDontStore = (static_cast<gp::UInt8>(RenderTargetActions::DontLoadDontStore) << 4u) |
+                        static_cast<gp::UInt8>(RenderTargetActions::DontLoadDontStore),
+    DontLoadStoreDepthStencil = (static_cast<gp::UInt8>(RenderTargetActions::DontLoadStore) << 4u) |
+                                static_cast<gp::UInt8>(RenderTargetActions::DontLoadStore),
+    DontLoadStoreStencilDontStoreDepth = (static_cast<gp::UInt8>(RenderTargetActions::DontLoadDontStore) << 4u) |
+                                         static_cast<gp::UInt8>(RenderTargetActions::DontLoadStore),
+    ClearDepthStencilStoreDepthStencil = (static_cast<gp::UInt8>(RenderTargetActions::ClearStore) << 4u) |
+                                         static_cast<gp::UInt8>(RenderTargetActions::ClearStore),
+    LoadDepthStencilStoreDepthStencil = (static_cast<gp::UInt8>(RenderTargetActions::LoadStore) << 4u) |
+                                        static_cast<gp::UInt8>(RenderTargetActions::LoadStore),
+    LoadDepthNotStencilStoreDepthNotStencil = (static_cast<gp::UInt8>(RenderTargetActions::LoadStore) << 4u) |
+                                              static_cast<gp::UInt8>(RenderTargetActions::DontLoadDontStore),
+    LoadDepthNotStencilDontStore = (static_cast<gp::UInt8>(RenderTargetActions::LoadDontStore) << 4u) |
+                                   static_cast<gp::UInt8>(RenderTargetActions::DontLoadDontStore),
+    LoadDepthStencilStoreDepthNotStencil = (static_cast<gp::UInt8>(RenderTargetActions::LoadStore) << 4u) |
+                                           static_cast<gp::UInt8>(RenderTargetActions::LoadDontStore),
+    LoadDepthStencilStoreStencilNotDepth = (static_cast<gp::UInt8>(RenderTargetActions::LoadDontStore) << 4u) |
+                                           static_cast<gp::UInt8>(RenderTargetActions::LoadStore),
+    ClearDepthStencilStoreDepthNotStencil = (static_cast<gp::UInt8>(RenderTargetActions::ClearStore) << 4u) |
+                                            static_cast<gp::UInt8>(RenderTargetActions::ClearDontStore),
+    ClearDepthStencilStoreStencilNotDepth = (static_cast<gp::UInt8>(RenderTargetActions::ClearDontStore) << 4u) |
+                                            static_cast<gp::UInt8>(RenderTargetActions::ClearStore),
+    ClearDepthStencilDontStoreDepthStencil = (static_cast<gp::UInt8>(RenderTargetActions::ClearDontStore) << 4u) |
+                                             static_cast<gp::UInt8>(RenderTargetActions::ClearDontStore),
+    LoadDepthStencilDontStoreDepthStencil = (static_cast<gp::UInt8>(RenderTargetActions::LoadDontStore) << 4u) |
+                                            static_cast<gp::UInt8>(RenderTargetActions::LoadDontStore),
+    ClearDepthNotStencilStoreDepthNotStencil = (static_cast<gp::UInt8>(RenderTargetActions::ClearStore) << 4u) |
+                                               static_cast<gp::UInt8>(RenderTargetActions::DontLoadDontStore),
+    ClearDepthNotStencilDontStore = (static_cast<gp::UInt8>(RenderTargetActions::ClearDontStore) << 4u) |
+                                    static_cast<gp::UInt8>(RenderTargetActions::DontLoadDontStore),
+    ClearDepthStoreDepthLoadStencilStoreStencil = (static_cast<gp::UInt8>(RenderTargetActions::ClearStore) << 4u) |
+                                                  static_cast<gp::UInt8>(RenderTargetActions::LoadStore),
+    LoadDepthClearStencilStoreDepthStencil = (static_cast<gp::UInt8>(RenderTargetActions::LoadStore) << 4u) |
+                                             static_cast<gp::UInt8>(RenderTargetActions::ClearStore),
+    ClearStencilDontLoadDepthStoreStencilNotDepth =
+        (static_cast<gp::UInt8>(RenderTargetActions::DontLoadDontStore) << 4u) |
+        static_cast<gp::UInt8>(RenderTargetActions::ClearStore),
+    LoadDepthNotStencilResolveDepth = (static_cast<gp::UInt8>(RenderTargetActions::LoadResolve) << 4u) |
+                                      static_cast<gp::UInt8>(RenderTargetActions::DontLoadDontStore),
+    ClearDepthNotStencilResolveDepth = (static_cast<gp::UInt8>(RenderTargetActions::ClearResolve) << 4u) |
+                                       static_cast<gp::UInt8>(RenderTargetActions::DontLoadDontStore),
+    LoadDepthStencilResolveDepth = (static_cast<gp::UInt8>(RenderTargetActions::LoadResolve) << 4u) |
+                                   static_cast<gp::UInt8>(RenderTargetActions::LoadDontStore),
+    ClearDepthStencilResolveDepth = (static_cast<gp::UInt8>(RenderTargetActions::ClearResolve) << 4u) |
+                                    static_cast<gp::UInt8>(RenderTargetActions::ClearDontStore),
+    ClearDepthStencilResolveStencilNotDepth = (static_cast<gp::UInt8>(RenderTargetActions::ClearDontStore) << 4u) |
+                                              static_cast<gp::UInt8>(RenderTargetActions::ClearResolve)
+};
+
+/// @brief Packs separate depth and stencil `RenderTargetActions` into a `DepthStencilTargetActions`.
+/// @param[in] depthAction Load/store policy for the depth plane.
+/// @param[in] stencilAction Load/store policy for the stencil plane.
+/// @return Combined `DepthStencilTargetActions` value.
+[[nodiscard]] inline constexpr DepthStencilTargetActions makeDepthStencilTargetActions(
+    const RenderTargetActions depthAction, const RenderTargetActions stencilAction
+) noexcept
+{
+    return static_cast<DepthStencilTargetActions>(
+        (static_cast<gp::UInt8>(depthAction) << 4u) | static_cast<gp::UInt8>(stencilAction)
+    );
+}
+
+/// @brief Extracts the depth-plane `RenderTargetActions` from `action`.
+/// @param[in] action Combined depth-stencil action.
+/// @return Depth-plane load/store action.
+[[nodiscard]] inline constexpr RenderTargetActions getDepthActions(const DepthStencilTargetActions action) noexcept
+{
+    return static_cast<RenderTargetActions>(static_cast<gp::UInt8>(action) >> 4u);
+}
+
+/// @brief Extracts the stencil-plane `RenderTargetActions` from `action`.
+/// @param[in] action Combined depth-stencil action.
+/// @return Stencil-plane load/store action.
+[[nodiscard]] inline constexpr RenderTargetActions getStencilActions(const DepthStencilTargetActions action) noexcept
+{
+    return static_cast<RenderTargetActions>(static_cast<gp::UInt8>(action) & 0x0Fu);
+}
+
+/// @brief Flush level requested on `CommandListImmediate::immediateFlush()`.
+enum class ImmediateFlushType : gp::UInt8
+{
+    /// @brief Waits only for outstanding parallel command recording tasks without dispatching.
+    WaitForOutstandingTasksOnly = 0,
+    /// @brief Submits recorded command lists for execution without blocking for completion.
+    DispatchToRHIThread = 1,
+    /// @brief Submits recorded command lists and waits until execution completes.
+    FlushRHIThread = 2,
+    /// @brief Submits recorded command lists, waits for completion, and drains deferred resource deletes.
+    FlushRHIThreadFlushResources = 3
+};
+
+/// @brief Bitmask flags controlling `CommandListExecutor::submit()` behavior.
+enum class SubmitFlags : gp::UInt32
+{
+    None = 0u,
+    /// @brief Closes the current batch and submits finalized command lists to the backend.
+    SubmitToGPU = 1u << 0,
+    /// @brief Gathers and destroys deferred resources and runs `DynamicRHI::processDeleteQueue()`.
+    DeleteResources = 1u << 1,
+    /// @brief Blocks until submitted command lists complete translation and submission.
+    FlushRHIThread = 1u << 2,
+    /// @brief Signals end-of-frame to `DynamicRHI::endFrame()`.
+    EndFrame = 1u << 3,
+    /// @brief Requests GPU profiling capture on the next frame.
+    ProfileNextFrame = 1u << 4,
+    /// @brief Switches executor bypass mode on once the pipeline drains.
+    EnableBypass = 1u << 5,
+    /// @brief Switches executor bypass mode off once the pipeline drains.
+    DisableBypass = 1u << 6
+};
 
 /// @brief Preset color and depth-stencil load/store combinations for a render pass.
 enum class SimpleRenderTargetMode : gp::UInt8
@@ -118,6 +284,7 @@ inline constexpr void decodeRenderTargetMode(
     outColorStoreAction = RenderTargetStoreAction::Store;
     outDepthLoadAction = RenderTargetLoadAction::NoAction;
     outDepthStoreAction = RenderTargetStoreAction::Store;
+    outStencilLoadAction = RenderTargetLoadAction::NoAction;
     outStencilStoreAction = RenderTargetStoreAction::Store;
 
     switch (mode)
@@ -125,39 +292,48 @@ inline constexpr void decodeRenderTargetMode(
     case SimpleRenderTargetMode::ExistingColorAndDepth:
         outColorLoadAction = RenderTargetLoadAction::Load;
         outDepthLoadAction = RenderTargetLoadAction::Load;
+        outStencilLoadAction = RenderTargetLoadAction::Load;
         break;
     case SimpleRenderTargetMode::UninitializedColorAndDepth:
         outColorLoadAction = RenderTargetLoadAction::NoAction;
         outDepthLoadAction = RenderTargetLoadAction::NoAction;
+        outStencilLoadAction = RenderTargetLoadAction::NoAction;
         break;
     case SimpleRenderTargetMode::UninitializedColorExistingDepth:
         outColorLoadAction = RenderTargetLoadAction::NoAction;
         outDepthLoadAction = RenderTargetLoadAction::Load;
+        outStencilLoadAction = RenderTargetLoadAction::Load;
         break;
     case SimpleRenderTargetMode::UninitializedColorClearDepth:
         outColorLoadAction = RenderTargetLoadAction::NoAction;
         outDepthLoadAction = RenderTargetLoadAction::Clear;
+        outStencilLoadAction = RenderTargetLoadAction::Clear;
         break;
     case SimpleRenderTargetMode::ClearColorExistingDepth:
         outColorLoadAction = RenderTargetLoadAction::Clear;
         outDepthLoadAction = RenderTargetLoadAction::Load;
+        outStencilLoadAction = RenderTargetLoadAction::Load;
         break;
     case SimpleRenderTargetMode::ClearColorAndDepth:
         outColorLoadAction = RenderTargetLoadAction::Clear;
         outDepthLoadAction = RenderTargetLoadAction::Clear;
+        outStencilLoadAction = RenderTargetLoadAction::Clear;
         break;
     case SimpleRenderTargetMode::ExistingContentsNoDepthStore:
         outColorLoadAction = RenderTargetLoadAction::Load;
         outDepthLoadAction = RenderTargetLoadAction::Load;
+        outStencilLoadAction = RenderTargetLoadAction::Load;
         outDepthStoreAction = RenderTargetStoreAction::NoAction;
         break;
     case SimpleRenderTargetMode::ExistingColorAndClearDepth:
         outColorLoadAction = RenderTargetLoadAction::Load;
         outDepthLoadAction = RenderTargetLoadAction::Clear;
+        outStencilLoadAction = RenderTargetLoadAction::Clear;
         break;
     case SimpleRenderTargetMode::ExistingColorAndDepthAndClearStencil:
         outColorLoadAction = RenderTargetLoadAction::Load;
         outDepthLoadAction = RenderTargetLoadAction::Load;
+        outStencilLoadAction = RenderTargetLoadAction::Clear;
         break;
     default:
         if !consteval
@@ -166,8 +342,6 @@ inline constexpr void decodeRenderTargetMode(
         }
         break;
     }
-
-    outStencilLoadAction = outDepthLoadAction;
 
     if (!depthStencilUsage.isUsingDepth())
     {
@@ -191,3 +365,5 @@ inline constexpr void decodeRenderTargetMode(
 }
 
 }   // namespace gp::rhi::command
+
+GP_ENABLE_ENUM_BITWISE_OPERATIONS(gp::rhi::command::SubmitFlags);
