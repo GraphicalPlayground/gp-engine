@@ -10,6 +10,7 @@
 #include "RHIBase.hpp"
 #include "shaders/ShaderEnums.hpp"
 #include "shaders/ShaderForward.hpp"
+#include "shaders/ShaderTypes.hpp"
 
 namespace gp::rhi::pipeline
 {
@@ -26,8 +27,8 @@ public:
     BoundShaderStateInput() noexcept = default;
 
     /// @brief Constructs a vertex-pipeline bound shader state input.
-    /// @param[in] inVertexDeclaration Vertex input layout resource (may be null for vertex-less draws).
-    /// @param[in] inVertexShader Vertex shader stage.
+    /// @param[in] inVertexDeclaration Non-null vertex input layout resource required by vertex pipelines.
+    /// @param[in] inVertexShader Non-null vertex shader stage.
     /// @param[in] inPixelShader Optional pixel shader stage (null for depth-only passes).
     /// @param[in] inGeometryShader Optional geometry shader stage.
     BoundShaderStateInput(
@@ -145,7 +146,7 @@ public:
         m_geometryShader = inGeometryShader;
     }
 
-    /// @brief Returns the bound work graph mesh shader, or `nullptr`.
+    /// @brief Returns the bound work graph shader, or `nullptr`.
     /// @return Non-owning pointer to `shader::WorkGraphShader`, or `nullptr`.
     [[nodiscard]] GP_FORCEINLINE_HINT shader::WorkGraphShader* getWorkGraphShader() const noexcept
     {
@@ -171,18 +172,47 @@ public:
     /// @return Base `shader::Shader*` for the requested stage, or `nullptr`.
     [[nodiscard]] shader::Shader* getShader(shader::ShaderFrequency frequency) const noexcept;
 
-    /// @brief Default pointerwise equality comparison across all bound stage slots.
+    /// @brief Default memberwise equality comparison across all bound stage slots and specialization constants.
     /// @param[in] rhs Input bundle to compare against.
-    /// @return True when every stage and vertex declaration pointer matches.
-    [[nodiscard]] constexpr bool operator==(const BoundShaderStateInput& rhs) const noexcept = default;
+    /// @return True when every stage pointer, vertex declaration pointer, and specialization array matches.
+    [[nodiscard]] bool operator==(const BoundShaderStateInput& rhs) const noexcept = default;
+
+public:
+    /// @brief Specialization constant keys applied to the bound vertex shader stage.
+    shader::SpecializationContainer vertexShaderSpecializationConstants{};
+
+    /// @brief Specialization constant keys applied to the bound pixel shader stage.
+    shader::SpecializationContainer pixelShaderSpecializationConstants{};
+
+    /// @brief Specialization constant keys applied to the bound mesh shader stage.
+    shader::SpecializationContainer meshShaderSpecializationConstants{};
+
+    /// @brief Specialization constant keys applied to the bound amplification shader stage.
+    shader::SpecializationContainer amplificationShaderSpecializationConstants{};
+
+    /// @brief Specialization constant keys applied to the bound geometry shader stage.
+    shader::SpecializationContainer geometryShaderSpecializationConstants{};
 
 private:
+    /// @brief Vertex input attribute layout bound for traditional vertex pipelines.
     VertexDeclaration* m_vertexDeclaration{ nullptr };
+
+    /// @brief Vertex shader stage pointer.
     shader::VertexShader* m_vertexShader{ nullptr };
+
+    /// @brief Optional pixel shader stage pointer.
     shader::PixelShader* m_pixelShader{ nullptr };
+
+    /// @brief Mesh shader stage pointer (mutually exclusive with vertex and work graph pipelines).
     shader::MeshShader* m_meshShader{ nullptr };
+
+    /// @brief Optional amplification shader stage pointer paired with `m_meshShader`.
     shader::AmplificationShader* m_amplificationShader{ nullptr };
+
+    /// @brief Optional geometry shader stage pointer.
     shader::GeometryShader* m_geometryShader{ nullptr };
+
+    /// @brief Work graph shader stage pointer (mutually exclusive with vertex and mesh pipelines).
     shader::WorkGraphShader* m_workGraphShader{ nullptr };
 };
 
