@@ -12,7 +12,11 @@
 #include "containers/strings/FixedString.hpp"
 #include "input/GenericInputSystem.hpp"
 #include "logging/LogFormatter.hpp"
+#include "memory/GlobalMemory.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "modules/ModuleMacros.hpp"
+#include "modules/ModuleManager.hpp"
+#include "platforms/base/system/Paths.hpp"
 #include "platforms/base/system/PathTypes.hpp"
 #include "profiling/Profiler.hpp"
 #include "profiling/ProfilingControl.hpp"
@@ -110,7 +114,9 @@ Application::Application(
     , m_inputSystem(std::move(customInput))
     , m_clock(desc.clock)
     , m_consoleSink(desc.consoleSink)
-{}
+{
+    gp::memory::setupLocalShadowMalloc();
+}
 
 Application::~Application() noexcept
 {
@@ -132,6 +138,34 @@ void Application::requestQuit() noexcept
 console::IConsoleManager& Application::getConsoleManager() noexcept
 {
     return console::IConsoleManager::get();
+}
+
+modules::ModuleManager& Application::getModuleManager() noexcept
+{
+    return modules::ModuleManager::get();
+}
+
+modules::IModule*
+    Application::loadModule(const gp::StringView name, modules::ModuleLoadResult* const outResult) noexcept
+{
+    return modules::ModuleManager::get().loadModule(name, outResult);
+}
+
+modules::ModuleUnloadResult
+    Application::unloadModule(const gp::StringView name, const modules::ModuleShutdownPhase phase) noexcept
+{
+    return modules::ModuleManager::get().unloadModule(name, phase);
+}
+
+modules::IModule*
+    Application::reloadModule(const gp::StringView name, modules::ModuleLoadResult* const outResult) noexcept
+{
+    return modules::ModuleManager::get().reloadModule(name, outResult);
+}
+
+bool Application::isModuleLoaded(const gp::StringView name) const noexcept
+{
+    return modules::ModuleManager::get().isModuleLoaded(name);
 }
 
 console::ConsoleResult Application::executeConsoleCommand(
@@ -211,6 +245,50 @@ void Application::applyCommandLineOverrides() noexcept
     if (optVfsApp.hasValue() && !optVfsApp->isEmpty())
     {
         m_desc.vfsAppName = *optVfsApp;
+    }
+
+    const Optional<bool> optModules = CommandLine::tryGetBool("modules");
+    if (optModules.hasValue())
+    {
+        m_desc.enableModuleSystem = *optModules;
+    }
+
+    const Optional<StringView> optModuleDir = CommandLine::tryGetString("module-dir");
+    if (optModuleDir.hasValue() && !optModuleDir->isEmpty())
+    {
+        m_desc.addModuleSearchDirectory(*optModuleDir);
+    }
+
+    const auto appendCsvModules = [this](gp::StringView csvList) noexcept -> void
+    {
+        while (!csvList.isEmpty())
+        {
+            const gp::USize commaPos = csvList.find(',');
+            const gp::StringView token =
+                (commaPos == gp::StringView::npos) ? csvList.trim() : csvList.substr(0u, commaPos).trim();
+            if (!token.isEmpty() && !token.equalsIgnoreCase("0") && !token.equalsIgnoreCase("1") &&
+                !token.equalsIgnoreCase("true") && !token.equalsIgnoreCase("false"))
+            {
+                m_desc.addStartupModule(token);
+            }
+            if (commaPos == gp::StringView::npos)
+            {
+                break;
+            }
+            csvList = csvList.substr(commaPos + 1u);
+        }
+    };
+
+    const Optional<StringView> optLoadModule = CommandLine::tryGetString("load-module");
+    if (optLoadModule.hasValue() && !optLoadModule->isEmpty())
+    {
+        appendCsvModules(*optLoadModule);
+    }
+
+    const Optional<StringView> optModulesList = CommandLine::tryGetString("modules");
+    if (optModulesList.hasValue() && !optModulesList->isEmpty())
+    {
+        appendCsvModules(*optModulesList);
     }
 }
 
@@ -642,10 +720,85 @@ void Application::shutdownConsoleInternal() noexcept
     {
         if (obj != nullptr)
         {
-            (void)console.unregisterConsoleObject(obj);
+            console.unregisterConsoleObject(obj);
         }
     }
     m_consoleBindings = ConsoleControlBindings{};
+}
+
+bool Application::initializeModulesInternal() noexcept
+{
+    gp::memory::setupLocalShadowMalloc();
+
+    if (!m_desc.enableModuleSystem)
+    {
+        return true;
+    }
+
+    modules::ModuleManager& moduleMgr = modules::ModuleManager::get();
+    const gp::StringView exeDir = gp::platform::Paths::executableDir();
+    if (!exeDir.isEmpty())
+    {
+        moduleMgr.addModuleSearchDirectory(exeDir);
+    }
+
+    for (gp::UInt32 i = 0u; i < m_desc.moduleSearchDirectoryCount; ++i)
+    {
+        if (!m_desc.moduleSearchDirectories[i].isEmpty())
+        {
+            moduleMgr.addModuleSearchDirectory(m_desc.moduleSearchDirectories[i]);
+        }
+    }
+
+    moduleMgr.drainPendingStaticRegistrants();
+
+    for (gp::UInt32 i = 0u; i < m_desc.startupModuleCount; ++i)
+    {
+        const gp::StringView modName = m_desc.startupModules[i];
+        if (modName.isEmpty())
+        {
+            continue;
+        }
+
+        modules::ModuleLoadResult loadRes = modules::ModuleLoadResult::NotFound;
+        modules::IModule* const loadedInstance = moduleMgr.loadModule(modName, &loadRes);
+        if (loadedInstance == nullptr) [[unlikely]]
+        {
+            GP_LOG_ERROR(
+                LogApplication,
+                "Failed to load startup module '{}' (result={}).",
+                modName,
+                modules::toStringView(loadRes)
+            );
+            if (m_desc.failOnStartupModuleLoadError)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            GP_LOG_INFO(LogApplication, "Loaded startup module '{}'.", modName);
+        }
+    }
+
+    return true;
+}
+
+void Application::shutdownModulesInternal() noexcept
+{
+    if (!m_desc.enableModuleSystem || !m_desc.unloadModulesOnShutdown)
+    {
+        return;
+    }
+
+    modules::ModuleManager& moduleMgr = modules::ModuleManager::get();
+    if (moduleMgr.getLoadedModuleCount() > 0u)
+    {
+        GP_LOG_INFO(
+            LogApplication, "Unloading {} active module(s) in reverse-LIFO order...", moduleMgr.getLoadedModuleCount()
+        );
+        moduleMgr.unloadAllModules(modules::ModuleShutdownPhase::Exit);
+    }
 }
 
 bool Application::rebindFrameGraphToCurrentArena() noexcept
@@ -922,6 +1075,33 @@ bool Application::initializeInternal() noexcept
     }
 
     initializeConsoleInternal();
+
+    if (!initializeModulesInternal()) [[unlikely]]
+    {
+        shutdownModulesInternal();
+        shutdownConsoleInternal();
+        if (m_jobSystem.isInitialized())
+        {
+            m_jobSystem.shutdown();
+        }
+        m_namedThreadDispatcher.shutdown();
+        m_frameGraph.shutdown();
+        m_frameArenas[1].shutdown();
+        m_frameArenas[0].shutdown();
+        if (m_mainWindow.isValid())
+        {
+            m_mainWindow->close();
+            m_mainWindow.reset();
+        }
+        m_inputSystem.reset();
+        m_backend->shutdown();
+        m_eventStream.shutdown();
+        detachThreadRolesInternal();
+        shutdownLoggingInternal();
+        shutdownVirtualFileSystemInternal();
+        return false;
+    }
+
     m_clock.reset();
     m_isInitialized = true;
     GP_LOG_INFO(LogApplication, "Application core subsystems initialized.");
@@ -950,6 +1130,10 @@ void Application::shutdownInternal() noexcept
 
     pumpOwnedNamedThreadQueuesInternal();
     m_namedThreadDispatcher.shutdown();
+
+    // Unload dynamically and statically loaded modules in reverse-LIFO order AFTER all JobSystem fibers and
+    // NamedThreadDispatcher queues have drained, and BEFORE frame arenas, HAL, logging, and VFS shut down.
+    shutdownModulesInternal();
 
     m_frameArenas[1].shutdown();
     m_frameArenas[0].shutdown();

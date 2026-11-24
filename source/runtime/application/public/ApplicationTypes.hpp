@@ -27,6 +27,14 @@ inline constexpr gp::UInt32 kDefaultFrameGraphMaxNodes = 256u;
 /// @brief Default maximum number of outgoing dependent edges per node in `Application::getFrameGraph()`.
 inline constexpr gp::UInt16 kDefaultFrameGraphMaxDependentsPerNode = 16u;
 
+/// @brief Maximum number of startup engine/backend modules configurable in `ApplicationDesc::startupModules`
+///        ([ADR-0061]).
+inline constexpr gp::UInt32 kMaxApplicationStartupModules = 16u;
+
+/// @brief Maximum number of additional module search directories configurable in
+///        `ApplicationDesc::moduleSearchDirectories` ([ADR-0061]).
+inline constexpr gp::UInt32 kMaxApplicationModuleSearchDirectories = 8u;
+
 /// @brief Per-frame execution context passed to `Application` task-graph and frame-boundary hooks ([ADR-0053]).
 /// @details Bundles the current frame's timing snapshot, the active `JobSystem`, the arena-backed `JobGraph`, and
 ///          references to both the current frame's `LinearAllocator` (`Frame N`) and the previous frame's intact

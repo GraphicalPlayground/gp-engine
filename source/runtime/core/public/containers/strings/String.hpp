@@ -2843,6 +2843,15 @@ struct IsBasicString<gp::container::BasicString<InCharT, InAllocator>> : std::tr
 
 }   // namespace detail
 
+/// @brief Specialization enabling bitwise relocation of `gp::container::BasicString` when its allocator is bitwise
+///        relocatable (ADR-0046).
+/// @tparam InCharT Character type.
+/// @tparam InAllocator Allocator type.
+template <IsCharacter InCharT, typename InAllocator>
+struct IsRelocatableTrait<gp::container::BasicString<InCharT, InAllocator>>
+    : std::bool_constant<std::is_move_constructible_v<InAllocator> && IsRelocatable<InAllocator>>
+{};
+
 /// @brief Concept satisfied by any instantiation of `gp::container::BasicString`.
 template <typename InType>
 concept IsString = detail::IsBasicString<std::remove_cvref_t<InType>>::value;

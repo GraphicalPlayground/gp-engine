@@ -39,6 +39,8 @@
 #include "logging/sinks/TracySink.hpp"
 #include "memory/allocators/LinearAllocator.hpp"
 #include "memory/pointers/UniquePtr.hpp"
+#include "modules/ModuleEnums.hpp"
+#include "modules/ModuleForward.hpp"
 #include "templates/Delegate.hpp"
 #include "threading/Atomic.hpp"
 #include "threading/jobs/JobGraph.hpp"
@@ -299,6 +301,38 @@ public:
     /// @return Reference to `gp::console::IConsoleManager::get()`.
     [[nodiscard]] static console::IConsoleManager& getConsoleManager() noexcept;
 
+    /// @brief Retrieves a reference to the process-wide `gp::modules::ModuleManager` registry ([ADR-0061]).
+    /// @return Reference to `gp::modules::ModuleManager::get()`.
+    [[nodiscard]] static modules::ModuleManager& getModuleManager() noexcept;
+
+    /// @brief Dynamically or statically loads an engine/backend module by name via `ModuleManager::get()` ([ADR-0061]).
+    /// @param[in] name Module identifier (e.g., `"rhi/null"`, `"rhi/d3d12"`, `"audio/openal"`).
+    /// @param[out] outResult Optional pointer receiving the `ModuleLoadResult` status code.
+    /// @return Non-null `IModule*` on success (`Success` or `AlreadyLoaded`), or `nullptr` on failure.
+    [[nodiscard]] modules::IModule*
+        loadModule(gp::StringView name, modules::ModuleLoadResult* outResult = nullptr) noexcept;
+
+    /// @brief Shuts down and unloads an active module by name via `ModuleManager::get()` ([ADR-0061]).
+    /// @param[in] name Module identifier to unload.
+    /// @param[in] phase Shutdown context phase (defaults to `ModuleShutdownPhase::Normal`).
+    /// @return `ModuleUnloadResult::Success` if unloaded cleanly, or an explicit error code otherwise.
+    modules::ModuleUnloadResult unloadModule(
+        gp::StringView name, modules::ModuleShutdownPhase phase = modules::ModuleShutdownPhase::Normal
+    ) noexcept;
+
+    /// @brief Hot-reloads an active module by name (`onPreUnloadCallback` -> unload -> load -> `onPostLoadCallback`)
+    ///        ([ADR-0061]).
+    /// @param[in] name Module identifier to reload.
+    /// @param[out] outResult Optional pointer receiving the `ModuleLoadResult` status code.
+    /// @return Non-null `IModule*` of the reloaded instance on success, or `nullptr` on failure.
+    [[nodiscard]] modules::IModule*
+        reloadModule(gp::StringView name, modules::ModuleLoadResult* outResult = nullptr) noexcept;
+
+    /// @brief Queries whether a module is currently loaded and active in `ModuleManager::get()` ([ADR-0061]).
+    /// @param[in] name Module identifier to check.
+    /// @return True if currently in `ModuleState::Loaded`, false otherwise.
+    [[nodiscard]] bool isModuleLoaded(gp::StringView name) const noexcept;
+
     /// @brief Executes a console variable assignment, query, or command string on the global console manager.
     /// @param[in] commandLine Raw UTF-8 command or CVar assignment line (e.g., `"app.TargetFps 60"` or `"t.Paused=1"`).
     /// @param[in] output Optional callback receiving formatted diagnostic lines (`nullptr` logs to `LogConsole`).
@@ -515,6 +549,16 @@ private:
 
     /// @brief Unregisters application-owned console variables, commands, and sink handles before member teardown.
     void shutdownConsoleInternal() noexcept;
+
+    /// @brief Registers configured module search directories, drains pending static registrants, and loads all modules
+    ///        listed in `m_desc.startupModules` ([ADR-0061]).
+    /// @return True if all required startup modules loaded (or `enableModuleSystem` is false), false on fatal load
+    ///         error when `failOnStartupModuleLoadError` is true.
+    [[nodiscard]] bool initializeModulesInternal() noexcept;
+
+    /// @brief Unloads modules in reverse-LIFO order after `JobSystem` workers and named-thread queues have drained,
+    ///        while `Logger` and `VirtualFileSystem` remain active ([ADR-0061]).
+    void shutdownModulesInternal() noexcept;
 
     /// @brief Pulls runtime CVar values from `m_consoleBindings` into `m_desc` and `m_clock`.
     void syncConsoleControlValues() noexcept;

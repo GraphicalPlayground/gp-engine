@@ -73,6 +73,14 @@ support multiple APIs while maintaining a single, unified interface for the engi
 - [**ADR-0007**: Uniform Base+N-Backends Pattern for All Pluralistic Subsystems](./ADR-0007.md)
   > Generalizes the abstract RHI structure to all pluralistic subsystems (Audio, Physics, Parsers),
   > requiring a central `base/` module alongside independent, dynamically loaded backend modules.
+- [**ADR-0061**: Hybrid Static/Dynamic Module Manager and Per-Module Shadow Malloc Binding](
+  ./ADR-0061.md)
+  > Establishes `gp::modules` (`IModule`, `ModuleManager`, `GP_IMPLEMENT_MODULE`) inside `gp::core`
+  > to orchestrate dynamic (`.dll`/`.so`/`.dylib`) and monolithic static engine modules. It enforces
+  > an entry-point ABI handshake (`gpInitializeModule`) that synchronizes each shared library's
+  > image-local `g_localShadowMalloc` pointer prior to module allocation, injects per-DLL
+  > `operator new`/`delete` overrides, and executes lock-free-loader, reverse-LIFO teardown
+  > (amending [ADR-0041](./ADR-0041.md)).
 
 ### Core Systems & Concurrency Primitives
 
@@ -198,6 +206,22 @@ lock-free architectures.
   > integration ([ADR-0042](./ADR-0042.md)), backed by an STL-free `constexpr`
   > `gp::container::CharTraits<CharT>` and a zero-allocation `gp::unicode` UTF-8/16/32 transcoding
   > and codepoint iteration subsystem.
+- [**ADR-0047**: Sharded Global Interned String Pool (`gp::Name`), Split Numeric Instance Suffixes, and `constexpr` Hash Literals](./ADR-0047.md)
+  > Establishes `gp::container::Name` (`gp::Name`) as an 8-byte, trivially copyable, $O(1)$-comparable
+  > interned identifier combining a 32-bit `NameEntryId` handle into a 64-shard, cache-line-isolated
+  > global `NamePool` with an Unreal-inspired 32-bit split numeric instance suffix (`m_number`),
+  > paired with `constexpr` 64-bit FNV-1a `gp::NameHash` (`_nh`) compile-time string literals.
+- [**ADR-0055**: Allocator-Aware Contiguous Dynamic Array (`gp::Vector`) and Trivial Relocatability](./ADR-0055.md)
+  > Establishes `gp::container::Vector<T, Allocator>` (`gp::Vector`, `gp::InlineVector`,
+  > `gp::FixedVector`, `gp::ScratchVector`, `gp::PolymorphicVector`, `gp::AlignedVector`) as a
+  > 24-byte contiguous dynamic array integrating sized `gp::concepts::IsAllocator` arenas
+  > ([ADR-0042](./ADR-0042.md)), bitwise relocation (`gp::concepts::IsRelocatable`),
+  > uninitialized/defaulted construction fast-paths, and $O(1)$ unordered swap-erase semantics.
+- [**ADR-0056**: Contiguous and Byte-Strided Sequence Views (`gp::VectorView` and `gp::StridedView`)](./ADR-0056.md)
+  > Establishes `gp::container::VectorView<T>` (`16 B`) and `gp::container::StridedView<T>` (`24 B`)
+  > as STL-free, `constexpr`, non-owning sequence views standardized on `gp::USize` and signed
+  > `gp::ISize` byte strides, decoupling engine APIs from concrete container allocators and bridging
+  > Array-of-Structures (AoS) and Structure-of-Arrays (SoA) data streams without heap allocations.
 - [**ADR-0047**: Sharded `gp::Name` Pool, Split Numeric Suffixes, and `constexpr` Hash Literals](
   ./ADR-0047.md)
   > Establishes `gp::container::Name` (`gp::Name`) as an 8-byte, trivially copyable,

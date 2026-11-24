@@ -13,6 +13,7 @@
 #include "Launch.hpp"
 #include "logging/LogMacros.hpp"
 #include "miscellaneous/CommandLine.hpp"
+#include "modules/ModuleManager.hpp"
 #include "profiling/Profiler.hpp"
 #include "profiling/ProfilingControl.hpp"
 #include "vfs/VirtualFileSystem.hpp"
@@ -79,6 +80,14 @@ protected:
             consoleMgr.getCommandCount()
         );
 
+        gp::modules::ModuleManager& moduleMgr = getModuleManager();
+        GP_LOG_INFO(
+            LogEditor,
+            "ModuleManager Ready ({} loaded, {} registered).",
+            moduleMgr.getLoadedModuleCount(),
+            moduleMgr.getRegisteredModuleCount()
+        );
+
         const gp::UInt32 argumentCount = CommandLine::getArgumentCount();
         for (gp::UInt32 i = 0u; i < argumentCount; ++i)
         {
@@ -136,7 +145,7 @@ private:
         std::fputs(
             "\n========================================================\n"
             "  [TEMP] Console Stdin Shell Active\n"
-            "  Examples: help | cvar.list | cvar.dump | prof.Status | log.Stats | app.Stats | jobs.Stats | vfs.Status | vfs.Mounts\n"
+            "  Examples: help | cvar.list | cvar.dump | prof.Status | log.Stats | app.Stats | jobs.Stats | vfs.Status | vfs.Mounts | module.Status | module.List\n"
             "  Set CVar: t.TimeScale 0.5  |  app.TargetFps=60  |  log.GlobalLevel Warning\n"
             "  Commands: 'resume' (or Enter) returns to gp-editor | 'quit' / 'app.Quit' exits\n"
             "========================================================\n",

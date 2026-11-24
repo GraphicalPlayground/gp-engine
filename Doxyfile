@@ -4,17 +4,24 @@ PROJECT_BRIEF          = "A C++23 deconstructionist graphics engine for learning
 OUTPUT_DIRECTORY       = docs/
 
 INPUT                  = source
-EXCLUDE_PATTERNS       = */tests/* */test/*
+EXCLUDE_PATTERNS       = *.md *.mdx */tests/* */test/* */benchmarks/* */benchmark/*
 RECURSIVE              = YES
 
 EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = YES
 EXTRACT_STATIC         = YES
 
-HAVE_DOT               = YES
+HAVE_DOT               = NO
 UML_LOOK               = YES
 CALL_GRAPH             = YES
 CALLER_GRAPH           = YES
 
+HTML_EXTRA_STYLESHEET  = toolchain/doxygen/gp-theme.css
+
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
+GENERATE_XML           = NO
+
+XML_OUTPUT             = xml
+
+MARKDOWN_SUPPORT       = NO
