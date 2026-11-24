@@ -14,12 +14,13 @@ namespace gp::rhi::resource
 
 /// @brief Coordinates deferred RHI resource deletion queues and render-thread lifetime extensions.
 /// @details Exposes the batch gather, destroy, flush, and lifetime-extension operations used by `DynamicRHI`,
-///          `CommandListImmediate`, and `CommandListExecutor`. Matches Unreal Engine's two-queue retirement split:
-///          resources that allow lifetime extension wait until `getLifetimeRefCount() == 0`, while resources that
-///          called `disableLifetimeExtension()` drain on every flush.
+///          `CommandListImmediate`, and `CommandListExecutor`. Uses a two-queue retirement split: resources that allow
+///          lifetime extension wait until `getLifetimeRefCount() == 0`, while resources that called
+///          `disableLifetimeExtension()` drain on every flush.
 class GP_RHI_API ResourceDeletionQueue final
 {
 public:
+    /// @brief Deleted default constructor; use the static deletion queue operations.
     ResourceDeletionQueue() = delete;
 
 public:
