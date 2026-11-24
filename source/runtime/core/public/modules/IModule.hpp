@@ -70,6 +70,14 @@ public:
     {
         return false;
     }
+
+    /// @brief Returns a 64-bit tag identifying a specialized `IModule` sub-interface without C++ RTTI.
+    /// @return Non-zero contract tag for specialized module interfaces (such as `IDynamicRHIModule`), or `0` for
+    ///         plain `IModule` implementations.
+    [[nodiscard]] virtual gp::UInt64 getInterfaceTag() const noexcept
+    {
+        return 0ULL;
+    }
 };
 
 /// @brief Minimal concrete `IModule` implementation for modules that require no custom startup or shutdown logic.
