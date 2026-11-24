@@ -58,8 +58,16 @@ inline constexpr gp::UInt32 kMaxMeshLodCount = 8u;
 /// @brief Maximum number of vertex attributes in a single vertex declaration.
 inline constexpr gp::UInt32 kMaxVertexElementCount = 16u;
 
+/// @brief Minimum bit width required to store vertex attribute counts in `[0, kMaxVertexElementCount]`.
+inline constexpr gp::UInt32 kMaxVertexElementCountNumBits = 5u;
+static_assert((1u << kMaxVertexElementCountNumBits) > kMaxVertexElementCount);
+
 /// @brief Maximum number of color render targets bound simultaneously.
 inline constexpr gp::UInt32 kMaxSimultaneousRenderTargets = 8u;
+
+/// @brief Minimum bit width required to index any simultaneous render target slot.
+inline constexpr gp::UInt32 kMaxSimultaneousRenderTargetsNumBits = 3u;
+static_assert((1u << kMaxSimultaneousRenderTargetsNumBits) >= kMaxSimultaneousRenderTargets);
 
 /// @brief Maximum number of global static uniform buffer binding slots.
 inline constexpr gp::UInt8 kMaxUniformBufferStaticSlots = 255u;
