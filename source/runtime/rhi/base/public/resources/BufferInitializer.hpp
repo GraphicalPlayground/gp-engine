@@ -8,6 +8,7 @@
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "core/ResourceForward.hpp"          // IWYU pragma: keep
 #include "CoreMinimal.hpp"
+#include "diagnostics/AssertionMacros.hpp"
 #include "memory/Memory.hpp"
 #include "memory/pointers/RefCountedPtr.hpp"   // IWYU pragma: keep
 #include "resources/Buffer.hpp"                // IWYU pragma: keep
@@ -27,7 +28,7 @@ struct GP_RHI_API BufferInitializer
 {
 public:
     /// @brief Backend callback signature invoked when finalizing the buffer creation.
-    using FinalizeCallback = gp::Function<BufferRef(command::CommandListBase&)>;
+    using FinalizeCallback = gp::UniqueFunction<BufferRef(command::CommandListBase&)>;
 
 public:
     /// @brief Command list associated with this buffer creation and upload.
