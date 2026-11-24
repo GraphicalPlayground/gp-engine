@@ -47,7 +47,11 @@ enum class TextureCreateFlags : gp::UInt64
     UAV = 1ull << 17,
     Presentable = 1ull << 18,
     CPUReadback = 1ull << 19,
+    /// @brief Texture payload was preprocessed offline with platform-specific layout metadata.
+    OfflineProcessed = 1ull << 20,
     FastVRAM = 1ull << 21,
+    /// @brief Debug visualization hint excluding transient internal textures from texture inspection lists.
+    HideInVisualizeTexture = 1ull << 22,
     /// @brief Allocates virtual address space only; physical pages must be mapped separately.
     Virtual = 1ull << 23,
     /// @brief Creates an RTV per array slice; prevents routing slices via SV_RenderTargetArrayIndex.
