@@ -78,6 +78,9 @@ struct SetRenderTargetsInfo;
 /// @brief Complete render pass attachment, resolve, subpass, and VRS descriptor.
 struct RenderPassInfo;
 
+/// @brief Describes a single MSAA source-to-destination resolve extracted from `RenderPassInfo`.
+struct ResolveTextureInfo;
+
 /// @brief Intrusive base node for every recorded RHI command packet.
 struct CommandBase;
 
