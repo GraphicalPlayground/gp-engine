@@ -6,7 +6,11 @@
 #include "memory/GlobalMemory.hpp"
 #include "memory/Memory.hpp"
 #include "memory/MemoryBase.hpp"
+#include "resources/Buffer.hpp"   // IWYU pragma: keep
+#include "resources/Texture.hpp"
+#include "resources/TextureReference.hpp"
 #include "sync/TransitionDesc.hpp"
+#include "views/UnorderedAccessView.hpp"
 #include <new>   // IWYU pragma: keep
 
 namespace gp::rhi::sync
@@ -157,6 +161,31 @@ gp::USize TransitionController::getTotalAllocationSize() noexcept
 gp::USize TransitionController::getAlignment() noexcept
 {
     return Transition::getAlignment();
+}
+
+resource::ViewableResource* getViewableResource(const TransitionInfo& info) noexcept
+{
+    switch (info.type)
+    {
+    case TransitionResourceType::Texture:
+        if (info.texture != nullptr)
+        {
+            resource::TextureReference* const texRef = info.texture->getTextureReference();
+            return (texRef != nullptr) ? texRef->getReferencedTexture() : info.texture;
+        }
+        return nullptr;
+
+    case TransitionResourceType::Buffer:
+        return info.buffer;
+
+    case TransitionResourceType::UAV:
+        return (info.uav != nullptr) ? info.uav->getResource() : nullptr;
+
+    case TransitionResourceType::BVH:
+    case TransitionResourceType::Unknown:
+    default:
+        return nullptr;
+    }
 }
 
 }   // namespace gp::rhi::sync
