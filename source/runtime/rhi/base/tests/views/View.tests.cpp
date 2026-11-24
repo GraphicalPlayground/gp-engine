@@ -3,10 +3,13 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "views/View.hpp"
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "core/ResourceDeletionQueue.hpp"
 #include "core/ResourceEnums.hpp"
 #include "core/ResourceTypes.hpp"
 #include "CoreMinimal.hpp"
+#include "hashing/Fnv1a.hpp"
+#include "hashing/HashOf.hpp"
 #include "memory/MemoryOrder.hpp"
 #include "memory/pointers/PointerConcepts.hpp"
 #include "memory/pointers/RefCountedPtr.hpp"
@@ -27,7 +30,6 @@
 #include "views/ViewDesc.hpp"
 #include "views/ViewEnums.hpp"
 #include <gtest/gtest.h>
-#include <string_view>
 #include <type_traits>
 
 namespace gp::rhi::view::tests
@@ -132,24 +134,44 @@ TEST_F(ViewTestFixture, DescriptorTypeAndStringHelpersMatchAllEnumerators)
     EXPECT_EQ(descriptorTypeFromViewType(ViewType::TextureSRV), DescriptorType::TextureSRV);
     EXPECT_EQ(descriptorTypeFromViewType(ViewType::TextureUAV), DescriptorType::TextureUAV);
 
-    EXPECT_EQ(std::string_view(ViewDesc::getBufferTypeString(BufferViewType::Unknown)), "Unknown");
-    EXPECT_EQ(std::string_view(ViewDesc::getBufferTypeString(BufferViewType::Typed)), "Typed");
-    EXPECT_EQ(std::string_view(ViewDesc::getBufferTypeString(BufferViewType::Structured)), "Structured");
+    EXPECT_EQ(gp::StringView(ViewDesc::getBufferTypeString(BufferViewType::Unknown)), gp::StringView("Unknown"));
+    EXPECT_EQ(gp::StringView(ViewDesc::getBufferTypeString(BufferViewType::Typed)), gp::StringView("Typed"));
+    EXPECT_EQ(gp::StringView(ViewDesc::getBufferTypeString(BufferViewType::Structured)), gp::StringView("Structured"));
     EXPECT_EQ(
-        std::string_view(ViewDesc::getBufferTypeString(BufferViewType::AccelerationStructure)), "AccelerationStructure"
+        gp::StringView(ViewDesc::getBufferTypeString(BufferViewType::AccelerationStructure)),
+        gp::StringView("AccelerationStructure")
     );
-    EXPECT_EQ(std::string_view(ViewDesc::getBufferTypeString(BufferViewType::Raw)), "Raw");
+    EXPECT_EQ(gp::StringView(ViewDesc::getBufferTypeString(BufferViewType::Raw)), gp::StringView("Raw"));
 
-    EXPECT_EQ(std::string_view(ViewDesc::getTextureDimensionString(TextureViewDimension::Texture2D)), "Texture2D");
     EXPECT_EQ(
-        std::string_view(ViewDesc::getTextureDimensionString(TextureViewDimension::Texture2DArray)), "Texture2DArray"
+        gp::StringView(ViewDesc::getTextureDimensionString(TextureViewDimension::Texture2D)),
+        gp::StringView("Texture2D")
     );
-    EXPECT_EQ(std::string_view(ViewDesc::getTextureDimensionString(TextureViewDimension::Texture3D)), "Texture3D");
-    EXPECT_EQ(std::string_view(ViewDesc::getTextureDimensionString(TextureViewDimension::TextureCube)), "TextureCube");
     EXPECT_EQ(
-        std::string_view(ViewDesc::getTextureDimensionString(TextureViewDimension::TextureCubeArray)),
-        "TextureCubeArray"
+        gp::StringView(ViewDesc::getTextureDimensionString(TextureViewDimension::Texture2DArray)),
+        gp::StringView("Texture2DArray")
     );
+    EXPECT_EQ(
+        gp::StringView(ViewDesc::getTextureDimensionString(TextureViewDimension::Texture3D)),
+        gp::StringView("Texture3D")
+    );
+    EXPECT_EQ(
+        gp::StringView(ViewDesc::getTextureDimensionString(TextureViewDimension::TextureCube)),
+        gp::StringView("TextureCube")
+    );
+    EXPECT_EQ(
+        gp::StringView(ViewDesc::getTextureDimensionString(TextureViewDimension::TextureCubeArray)),
+        gp::StringView("TextureCubeArray")
+    );
+
+    EXPECT_EQ(kDescriptorHeapTypeCount, 4u);
+    EXPECT_EQ(static_cast<gp::UInt8>(DescriptorHeapType::Count), 4u);
+
+    const BindlessDescriptorAllocationInfo allocA{ DescriptorTypeMask::SRV, 16u, 1024u, 65536u };
+    const BindlessDescriptorAllocationInfo allocB{ DescriptorTypeMask::SRV, 16u, 1024u, 65536u };
+    const BindlessDescriptorAllocationInfo allocC{ DescriptorTypeMask::UAV, 16u, 1024u, 65536u };
+    EXPECT_EQ(allocA, allocB);
+    EXPECT_NE(allocA, allocC);
 }
 
 TEST_F(ViewTestFixture, BufferSRVAndUAVResolveTypedStructuredRawAccelAndNullViews)
@@ -585,6 +607,93 @@ TEST_F(ViewTestFixture, RangeHelpersAndExhaustiveViewBranches)
                                         .setPlane(resource::TexturePlane::Depth)
                                         .asViewDesc();
     EXPECT_EQ(depthPlaneDesc.texture.srv.getViewInfo(ds32Tex.get()).plane, resource::TexturePlane::Depth);
+
+    // ViewDesc hashing (getHash and hashAppend)
+    const ViewDesc depthPlaneCopy = ViewDesc::createTextureSRV()
+                                        .setDimensionFromTexture(ds32Tex.get())
+                                        .setPlane(resource::TexturePlane::Depth)
+                                        .asViewDesc();
+    EXPECT_EQ(depthPlaneDesc.getHash(), depthPlaneCopy.getHash());
+    EXPECT_EQ(gp::hashing::hashOf(depthPlaneDesc), gp::hashing::hashOf(depthPlaneCopy));
+    EXPECT_NE(depthPlaneDesc.getHash(), htileDesc.getHash());
+
+    gp::hashing::Fnv1a64 hashStreamA{};
+    gp::hashing::Fnv1a64 hashStreamB{};
+    depthPlaneDesc.hashAppend(hashStreamA);
+    depthPlaneCopy.hashAppend(hashStreamB);
+    EXPECT_EQ(hashStreamA.finalize(), hashStreamB.finalize());
+
+    // BufferUAV setTypeFromBuffer for ByteAddressBuffer and AccelerationStructure
+    resource::BufferCreateDesc rawUavBufDesc = resource::BufferCreateDesc::createByteAddress("RawUavBuf", 128u, 4u)
+                                                   .addUsage(resource::BufferUsageFlags::UnorderedAccess)
+                                                   .setInitialState(sync::ResourceAccess::UAVMask);
+    resource::BufferRef rawUavBuf(new MockBuffer(rawUavBufDesc));
+    const ViewDesc rawUavDesc = ViewDesc::createBufferUAV().setTypeFromBuffer(rawUavBuf.get()).asViewDesc();
+    EXPECT_EQ(rawUavDesc.buffer.uav.getViewInfo(rawUavBuf.get()).bufferType, BufferViewType::Raw);
+
+    resource::BufferCreateDesc accelUavBufDesc =
+        resource::BufferCreateDesc::create("AccelUavBuf", 512u, 0u, resource::BufferUsageFlags::AccelerationStructure)
+            .setInitialState(sync::ResourceAccess::BVHWrite);
+    resource::BufferRef accelUavBuf(new MockBuffer(accelUavBufDesc));
+    const ViewDesc accelUavDesc = ViewDesc::createBufferUAV().setTypeFromBuffer(accelUavBuf.get()).asViewDesc();
+    EXPECT_EQ(accelUavDesc.buffer.uav.bufferType, BufferViewType::AccelerationStructure);
+
+    // TextureUAV on Cube and CubeArray dimensions
+    resource::TextureCreateDesc cubeUavTexDesc =
+        resource::TextureCreateDesc::createCubeArray("CubeUavArr", 32u, 2u, PixelFormat::R16G16B16A16_Float)
+            .addFlags(resource::TextureCreateFlags::UAV)
+            .determineInitialState();
+    resource::TextureRef cubeUavTex(new MockTexture(cubeUavTexDesc));
+
+    const ViewDesc cubeUavView =
+        ViewDesc::createTextureUAV().setDimension(resource::TextureDimension::TextureCubeArray).asViewDesc();
+    const ViewDesc::TextureUAV::ViewInfo cubeUavInfo = cubeUavView.texture.uav.getViewInfo(cubeUavTex.get());
+    EXPECT_EQ(cubeUavInfo.dimension, TextureViewDimension::TextureCubeArray);
+    EXPECT_EQ(cubeUavInfo.arrayRange.num, 2u);
+
+    const ViewDesc singleCubeUavView = ViewDesc::createTextureUAV()
+                                           .setDimension(resource::TextureDimension::TextureCube)
+                                           .setArrayRange(0u, 1u)
+                                           .asViewDesc();
+    EXPECT_EQ(singleCubeUavView.texture.uav.getViewInfo(cubeUavTex.get()).dimension, TextureViewDimension::TextureCube);
+
+    // Texture2D view of a single face from a Cube texture
+    const ViewDesc cubeAs2DDesc = ViewDesc::createTextureSRV()
+                                      .setDimension(resource::TextureDimension::Texture2D)
+                                      .setArrayRange(2u, 1u)
+                                      .asViewDesc();
+    const ViewDesc::TextureSRV::ViewInfo cubeAs2DInfo = cubeAs2DDesc.texture.srv.getViewInfo(singleCubeTex.get());
+    EXPECT_EQ(cubeAs2DInfo.dimension, TextureViewDimension::Texture2D);
+    EXPECT_EQ(cubeAs2DInfo.arrayRange.first, 2u);
+    EXPECT_EQ(cubeAs2DInfo.arrayRange.num, 1u);
+
+    // PrimaryCompressed without stencil alias, FMask, CMask, and explicit Stencil format
+    const ViewDesc primaryCompressedDesc = ViewDesc::createTextureSRV()
+                                               .setDimensionFromTexture(ds32Tex.get())
+                                               .setPlane(resource::TexturePlane::PrimaryCompressed)
+                                               .asViewDesc();
+    EXPECT_EQ(
+        primaryCompressedDesc.texture.srv.getViewInfo(ds32Tex.get()).plane, resource::TexturePlane::PrimaryCompressed
+    );
+
+    const ViewDesc fmaskDesc = ViewDesc::createTextureSRV()
+                                   .setDimensionFromTexture(singleCubeTex.get())
+                                   .setPlane(resource::TexturePlane::FMask)
+                                   .asViewDesc();
+    EXPECT_EQ(fmaskDesc.texture.srv.getViewInfo(singleCubeTex.get()).plane, resource::TexturePlane::FMask);
+
+    const ViewDesc cmaskDesc = ViewDesc::createTextureSRV()
+                                   .setDimensionFromTexture(singleCubeTex.get())
+                                   .setPlane(resource::TexturePlane::CMask)
+                                   .asViewDesc();
+    EXPECT_EQ(cmaskDesc.texture.srv.getViewInfo(singleCubeTex.get()).plane, resource::TexturePlane::CMask);
+
+    const ViewDesc explicitStencilDesc = ViewDesc::createTextureSRV()
+                                             .setDimensionFromTexture(ds32Tex.get())
+                                             .setPlane(resource::TexturePlane::Stencil)
+                                             .setFormat(PixelFormat::X32_G8_UInt)
+                                             .asViewDesc();
+    EXPECT_EQ(explicitStencilDesc.texture.srv.getViewInfo(ds32Tex.get()).format, PixelFormat::X32_G8_UInt);
 }
 
 }   // namespace gp::rhi::view::tests
