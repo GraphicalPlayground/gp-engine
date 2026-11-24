@@ -22,6 +22,7 @@
 #include "resources/BufferDesc.hpp"
 #include "resources/BufferEnums.hpp"
 #include "resources/StagingBuffer.hpp"
+#include "resources/StreamSourceSlot.hpp"
 #include "sync/SyncEnums.hpp"
 #include "sync/TransitionDesc.hpp"
 #include "threading/atomics/Atomic.hpp"
@@ -601,9 +602,24 @@ TEST(BufferCreateDescTest, FluentBuildersInitActionsAndTraceClassName)
 
     desc.setInitActionNone();
     EXPECT_EQ(desc.initAction, BufferInitAction::Default);
+    EXPECT_EQ(desc.initialData, nullptr);
+
+    desc.setInitActionResourceArray(&uploadView);
+    desc.setInitActionZeroData();
+    EXPECT_EQ(desc.initAction, BufferInitAction::Zeroed);
+    EXPECT_EQ(desc.initialData, nullptr);
+
+    desc.setInitActionResourceArray(&uploadView);
+    desc.setInitActionInitializer();
+    EXPECT_EQ(desc.initAction, BufferInitAction::Initializer);
+    EXPECT_EQ(desc.initialData, nullptr);
 
     desc.setInitAction(BufferInitAction::Zeroed);
     EXPECT_EQ(desc.initAction, BufferInitAction::Zeroed);
+
+    // Verify NNE and AnyDynamic usage flags.
+    EXPECT_NE(BufferUsageFlags::NNE, BufferUsageFlags::None);
+    EXPECT_EQ(BufferUsageFlags::AnyDynamic, BufferUsageFlags::Dynamic | BufferUsageFlags::Volatile);
 
     // determineInitialState resolves Unknown from usage and preserves explicit states.
     BufferCreateDesc autoState = BufferCreateDesc::createIndex("AutoIndex", 64u, 2u);
@@ -754,6 +770,45 @@ TEST_F(BufferTestFixture, StagingBufferLockUnlockSizeAndDeferredDeletion)
     ResourceDeletionQueue::flushPendingDeletes(true);
     EXPECT_EQ(MockDefaultStagingBuffer::s_constructCount.load(), 1u);
     EXPECT_EQ(MockDefaultStagingBuffer::s_destructCount.load(), 1u);
+}
+
+TEST_F(BufferTestFixture, StreamSourceSlotLifecycleUpdateAndCascadingDeferredDeletion)
+{
+    StreamSourceSlotRef emptySlot = StreamSourceSlot::create(nullptr);
+    ASSERT_TRUE(emptySlot.isValid());
+    EXPECT_EQ(emptySlot->getType(), ResourceType::StreamSourceSlot);
+    EXPECT_EQ(emptySlot->getBuffer(), nullptr);
+    EXPECT_EQ(emptySlot->getOffset(), 0u);
+
+    BufferCreateDesc descA = BufferCreateDesc::createVertex("StreamSlotA", 128u).determineInitialState();
+    BufferCreateDesc descB = BufferCreateDesc::createVertex("StreamSlotB", 256u).determineInitialState();
+    BufferRef bufA(new MockBuffer(descA));
+    BufferRef bufB(new MockBuffer(descB));
+
+    StreamSourceSlotRef slot = StreamSourceSlot::create(bufA.get());
+    EXPECT_EQ(slot->getBuffer(), bufA.get());
+    EXPECT_EQ(slot->getOffset(), 0u);
+    EXPECT_EQ(bufA->getRefCount(), 2u);
+
+    // Release caller ref to bufA; slot keeps bufA alive.
+    bufA.reset();
+    ResourceDeletionQueue::flushPendingDeletes(true);
+    EXPECT_EQ(MockBuffer::s_destructCount.load(), 0u);
+
+    // Updating slot to bufB queues bufA for deferred deletion and stores offset.
+    slot->update(bufB.get(), 64u);
+    EXPECT_EQ(slot->getBuffer(), bufB.get());
+    EXPECT_EQ(slot->getOffset(), 64u);
+    EXPECT_EQ(bufB->getRefCount(), 2u);
+
+    ResourceDeletionQueue::flushPendingDeletes(true);
+    EXPECT_EQ(MockBuffer::s_destructCount.load(), 1u);
+
+    bufB.reset();
+    slot.reset();
+    emptySlot.reset();
+    ResourceDeletionQueue::flushPendingDeletes(true);
+    EXPECT_EQ(MockBuffer::s_destructCount.load(), 2u);
 }
 
 }   // namespace gp::rhi::resource::tests
