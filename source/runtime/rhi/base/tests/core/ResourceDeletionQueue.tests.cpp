@@ -11,7 +11,6 @@
 #include "threading/roles/ThreadRoleEnums.hpp"
 #include <gtest/gtest.h>
 #include <thread>
-#include <vector>
 
 namespace gp::rhi::resource::tests
 {
@@ -115,6 +114,17 @@ TEST_F(ResourceDeletionQueueTestFixture, SeparatesImmediateAndExtendedLifetimeQu
 
     ResourceDeletionQueue::deleteResources(secondBatch);
     EXPECT_EQ(QueueTestResource::s_destructCount.load(), 2u);
+
+    // Verify flushPendingDeletes(false) flushes immediate resources while leaving extended-lifetime resources queued.
+    {
+        ResourceRef flushExtended(new QueueTestResource(ResourceType::Texture));
+        ResourceRef flushImmediate(new QueueTestResource(ResourceType::Buffer));
+        flushImmediate->disableLifetimeExtension();
+    }
+    ResourceDeletionQueue::flushPendingDeletes(false);
+    EXPECT_EQ(QueueTestResource::s_destructCount.load(), 3u);
+    ResourceDeletionQueue::flushPendingDeletes(true);
+    EXPECT_EQ(QueueTestResource::s_destructCount.load(), 4u);
 }
 
 TEST_F(ResourceDeletionQueueTestFixture, GatherDrainsInLifoOrder)
@@ -257,12 +267,12 @@ TEST_F(ResourceDeletionQueueTestFixture, ConcurrencyStressMultiProducerDeferredD
     Resource::startTrackingAllResources();
 #endif
 
-    std::vector<std::thread> producers;
-    producers.reserve(kProducerThreads);
+    std::thread producers[kProducerThreads];
 
     for (gp::UInt32 threadIndex = 0u; threadIndex < kProducerThreads; ++threadIndex)
     {
-        producers.emplace_back([threadIndex, &startLatch, &finishedProducers]()
+        producers[threadIndex] = std::thread(
+            [threadIndex, &startLatch, &finishedProducers]() -> void
         {
             while (!startLatch.load(gp::memory::MemoryOrder::Acquire))
             {
@@ -287,10 +297,12 @@ TEST_F(ResourceDeletionQueueTestFixture, ConcurrencyStressMultiProducerDeferredD
             }
 
             finishedProducers.fetchAdd(1u, gp::memory::MemoryOrder::Release);
-        });
+        }
+        );
     }
 
-    std::thread consumer([&startLatch, &finishedProducers]()
+    std::thread consumer(
+        [&startLatch, &finishedProducers]() -> void
     {
         while (!startLatch.load(gp::memory::MemoryOrder::Acquire))
         {
@@ -313,13 +325,14 @@ TEST_F(ResourceDeletionQueueTestFixture, ConcurrencyStressMultiProducerDeferredD
         }
 
         ResourceDeletionQueue::flushPendingDeletes(true);
-    });
+    }
+    );
 
     startLatch.store(true, gp::memory::MemoryOrder::Release);
 
-    for (std::thread& producer: producers)
+    for (gp::UInt32 threadIndex = 0u; threadIndex < kProducerThreads; ++threadIndex)
     {
-        producer.join();
+        producers[threadIndex].join();
     }
     consumer.join();
 
