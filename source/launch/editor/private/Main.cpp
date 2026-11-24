@@ -10,6 +10,8 @@
 #include "console/IConsoleManager.hpp"
 #include "containers/strings/CharTraits.hpp"
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "device/DynamicRHI.hpp"
+#include "device/RHIGlobals.hpp"
 #include "Launch.hpp"
 #include "logging/LogMacros.hpp"
 #include "miscellaneous/CommandLine.hpp"
@@ -88,6 +90,18 @@ protected:
             moduleMgr.getRegisteredModuleCount()
         );
 
+        if (isRHIInitialized())
+        {
+            const gp::rhi::DynamicRHI* const activeRHI = getDynamicRHI();
+            GP_LOG_INFO(
+                LogEditor,
+                "RHI Backend Ready: {} (module='{}', nullRHI={}).",
+                (activeRHI != nullptr) ? activeRHI->getName() : gp::StringView("None"),
+                getLoadedRHIModuleName(),
+                gp::rhi::getRHIGlobals().usingNullRHI
+            );
+        }
+
         const gp::UInt32 argumentCount = CommandLine::getArgumentCount();
         for (gp::UInt32 i = 0u; i < argumentCount; ++i)
         {
@@ -145,7 +159,7 @@ private:
         std::fputs(
             "\n========================================================\n"
             "  [TEMP] Console Stdin Shell Active\n"
-            "  Examples: help | cvar.list | cvar.dump | prof.Status | log.Stats | app.Stats | jobs.Stats | vfs.Status | vfs.Mounts | module.Status | module.List\n"
+            "  Examples: help | cvar.list | cvar.dump | prof.Status | log.Stats | app.Stats | jobs.Stats | rhi.Status | vfs.Status | vfs.Mounts | module.Status | module.List\n"
             "  Set CVar: t.TimeScale 0.5  |  app.TargetFps=60  |  log.GlobalLevel Warning\n"
             "  Commands: 'resume' (or Enter) returns to gp-editor | 'quit' / 'app.Quit' exits\n"
             "========================================================\n",
@@ -428,6 +442,7 @@ int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     desc.targetForegroundFps = 120.0;
     desc.targetBackgroundFps = 30.0;
     desc.enableFileLogSink = true;
+    desc.rhi.hasEditorToken = true;
 
     EditorApplication app(desc, gp::makeUnique<gp::hal::sdl3::ApplicationBackend>());
     return app.run();
