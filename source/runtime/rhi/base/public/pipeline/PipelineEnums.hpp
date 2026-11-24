@@ -86,10 +86,13 @@ enum class CompareFunction : gp::UInt8
     Never,
     Always,
 
-    /// @brief Reversed-Z depth aliases.
+    /// @brief Reversed-Z depth test alias for closer-or-equal fragments (`GreaterEqual`).
     DepthNearOrEqual = GreaterEqual,
+    /// @brief Reversed-Z depth test alias for strictly closer fragments (`Greater`).
     DepthNear = Greater,
+    /// @brief Reversed-Z depth test alias for farther-or-equal fragments (`LessEqual`).
     DepthFartherOrEqual = LessEqual,
+    /// @brief Reversed-Z depth test alias for strictly farther fragments (`Less`).
     DepthFarther = Less
 };
 
@@ -221,7 +224,9 @@ enum class VRSShadingRate : gp::UInt8
     Rate2x2 = (0x1u << 2) | 0x1u,
     Rate2x4 = (0x1u << 2) | 0x2u,
     Rate4x2 = (0x2u << 2) | 0x1u,
-    Rate4x4 = (0x2u << 2) | 0x2u
+    Rate4x4 = (0x2u << 2) | 0x2u,
+    /// @brief Highest defined Variable Rate Shading rate enumerator.
+    Last = Rate4x4
 };
 
 /// @brief Combiner applied between draw-level, primitive-level, and image-level VRS rates.
@@ -241,6 +246,73 @@ enum class VRSImageDataType : gp::UInt8
     Palette,
     Fractional
 };
+
+/// @brief Total number of enumerators in `SamplerFilter` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kSamplerFilterCount = static_cast<gp::UInt32>(SamplerFilter::AnisotropicLinear) + 1u;
+inline constexpr gp::UInt32 kSamplerFilterNumBits = 3u;
+static_assert((1u << kSamplerFilterNumBits) >= kSamplerFilterCount);
+
+/// @brief Total number of enumerators in `SamplerAddressMode` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kSamplerAddressModeCount = static_cast<gp::UInt32>(SamplerAddressMode::Border) + 1u;
+inline constexpr gp::UInt32 kSamplerAddressModeNumBits = 2u;
+static_assert((1u << kSamplerAddressModeNumBits) >= kSamplerAddressModeCount);
+
+/// @brief Total number of enumerators in `RasterizerFillMode` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kRasterizerFillModeCount = static_cast<gp::UInt32>(RasterizerFillMode::Solid) + 1u;
+inline constexpr gp::UInt32 kRasterizerFillModeNumBits = 2u;
+static_assert((1u << kRasterizerFillModeNumBits) >= kRasterizerFillModeCount);
+
+/// @brief Total number of enumerators in `RasterizerCullMode` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kRasterizerCullModeCount = static_cast<gp::UInt32>(RasterizerCullMode::CCW) + 1u;
+inline constexpr gp::UInt32 kRasterizerCullModeNumBits = 2u;
+static_assert((1u << kRasterizerCullModeNumBits) >= kRasterizerCullModeCount);
+
+/// @brief Total number of enumerators in `RasterizerDepthClipMode` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kRasterizerDepthClipModeCount =
+    static_cast<gp::UInt32>(RasterizerDepthClipMode::DepthClamp) + 1u;
+inline constexpr gp::UInt32 kRasterizerDepthClipModeNumBits = 1u;
+static_assert((1u << kRasterizerDepthClipModeNumBits) >= kRasterizerDepthClipModeCount);
+
+/// @brief Minimum bit width required to store all four `ColorWriteMask` channel bits.
+inline constexpr gp::UInt32 kColorWriteMaskNumBits = 4u;
+
+/// @brief Total number of primary `CompareFunction` enumerators and minimum bit width required to store them.
+inline constexpr gp::UInt32 kCompareFunctionCount = static_cast<gp::UInt32>(CompareFunction::Always) + 1u;
+inline constexpr gp::UInt32 kCompareFunctionNumBits = 3u;
+static_assert((1u << kCompareFunctionNumBits) >= kCompareFunctionCount);
+
+/// @brief Total number of predefined `StencilMask` presets.
+inline constexpr gp::UInt32 kStencilMaskCount = static_cast<gp::UInt32>(StencilMask::Mask128) + 1u;
+
+/// @brief Total number of enumerators in `StencilOp` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kStencilOpCount = static_cast<gp::UInt32>(StencilOp::Decrement) + 1u;
+inline constexpr gp::UInt32 kStencilOpNumBits = 3u;
+static_assert((1u << kStencilOpNumBits) >= kStencilOpCount);
+
+/// @brief Total number of enumerators in `BlendOperation` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kBlendOperationCount = static_cast<gp::UInt32>(BlendOperation::ReverseSubtract) + 1u;
+inline constexpr gp::UInt32 kBlendOperationNumBits = 3u;
+static_assert((1u << kBlendOperationNumBits) >= kBlendOperationCount);
+
+/// @brief Total number of enumerators in `BlendFactor` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kBlendFactorCount = static_cast<gp::UInt32>(BlendFactor::InverseSource1Alpha) + 1u;
+inline constexpr gp::UInt32 kBlendFactorNumBits = 4u;
+static_assert((1u << kBlendFactorNumBits) >= kBlendFactorCount);
+
+/// @brief Total number of enumerators in `VertexElementType` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kVertexElementTypeCount = static_cast<gp::UInt32>(VertexElementType::UInt2) + 1u;
+inline constexpr gp::UInt32 kVertexElementTypeNumBits = 5u;
+static_assert((1u << kVertexElementTypeNumBits) >= kVertexElementTypeCount);
+
+/// @brief Total number of enumerators in `PrimitiveTopologyType` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kPrimitiveTopologyTypeCount = static_cast<gp::UInt32>(PrimitiveTopologyType::Point) + 1u;
+inline constexpr gp::UInt32 kPrimitiveTopologyTypeNumBits = 2u;
+static_assert((1u << kPrimitiveTopologyTypeNumBits) >= kPrimitiveTopologyTypeCount);
+
+/// @brief Total number of enumerators in `PrimitiveType` and minimum bit width required to store them.
+inline constexpr gp::UInt32 kPrimitiveTypeCount = static_cast<gp::UInt32>(PrimitiveType::RectList) + 1u;
+inline constexpr gp::UInt32 kPrimitiveTypeNumBits = 3u;
+static_assert((1u << kPrimitiveTypeNumBits) >= kPrimitiveTypeCount);
 
 }   // namespace gp::rhi::pipeline
 
