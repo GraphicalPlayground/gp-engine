@@ -154,7 +154,7 @@ TEST(CommandEnumsTest, DecodeRenderTargetModeCoversAllModesWithFullWrite)
     );
     EXPECT_EQ(colorLoad, RenderTargetLoadAction::Load);
     EXPECT_EQ(depthLoad, RenderTargetLoadAction::Load);
-    EXPECT_EQ(stencilLoad, RenderTargetLoadAction::Load);
+    EXPECT_EQ(stencilLoad, RenderTargetLoadAction::Clear);
 }
 
 TEST(CommandEnumsTest, DecodeRenderTargetModeMasksUnusedAndReadOnlyPlanes)
