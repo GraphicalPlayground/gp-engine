@@ -19,6 +19,11 @@ namespace gp::rhi
 class GP_RHI_API IDynamicRHIModule : public gp::modules::IModule
 {
 public:
+    /// @brief 64-bit ASCII interface tag (`"GPRHIMOD"`) verifying that a loaded `IModule` implements
+    ///        `IDynamicRHIModule` safely with RTTI disabled.
+    static constexpr gp::UInt64 kInterfaceTag = 0x47505248494D4F44ULL;
+
+public:
     /// @brief Constructs a dynamic RHI module.
     constexpr IDynamicRHIModule() noexcept = default;
 
@@ -31,6 +36,12 @@ public:
     IDynamicRHIModule& operator=(IDynamicRHIModule&&) = delete;
 
 public:
+    /// @copydoc gp::modules::IModule::getInterfaceTag()
+    [[nodiscard]] virtual gp::UInt64 getInterfaceTag() const noexcept override final
+    {
+        return kInterfaceTag;
+    }
+
     /// @brief Checks whether this backend can run on the current operating system, driver, and hardware.
     /// @return True if `createRHI()` can initialize a usable device.
     [[nodiscard]] virtual bool isSupported() const noexcept = 0;
