@@ -4,6 +4,8 @@
 
 #include "core/ResourceDeletionQueue.hpp"
 #include "core/ResourceEnums.hpp"
+#include "CoreMinimal.hpp"
+#include "memory/MemoryOrder.hpp"
 #include "memory/pointers/PointerConcepts.hpp"
 #include "memory/pointers/RefCountedPtr.hpp"
 #include "pipeline/BlendState.hpp"
@@ -256,28 +258,44 @@ TEST_F(PipelineStatesTestFixture, MatchPipelineStateComparesRetrievedInitializer
     EXPECT_FALSE((matchPipelineState<RasterizerState, RasterizerStateDesc>(rastA.get(), rastC.get())));
     EXPECT_TRUE((matchPipelineState<RasterizerState, RasterizerStateDesc>(nullptr, rastDefault.get())));
     EXPECT_FALSE((matchPipelineState<RasterizerState, RasterizerStateDesc>(nullptr, rastA.get())));
+    EXPECT_TRUE((matchPipelineState<RasterizerState, RasterizerStateDesc>(nullptr, nullptr)));
+
+    // Base states return false from getInitializer(), so two base instances compare equal as default initializers.
+    RasterizerStateRef baseRast(new RasterizerState());
+    EXPECT_TRUE((matchPipelineState<RasterizerState, RasterizerStateDesc>(baseRast.get(), nullptr)));
+    EXPECT_FALSE((matchPipelineState<RasterizerState, RasterizerStateDesc>(baseRast.get(), rastA.get())));
 
     const DepthStencilStateDesc dsReadOnly(false, CompareFunction::GreaterEqual);
+    const DepthStencilStateDesc dsLessWrite(true, CompareFunction::Less);
     DepthStencilStateRef dsA(new MockDepthStencilState(dsReadOnly));
     DepthStencilStateRef dsB(new MockDepthStencilState(dsReadOnly));
+    DepthStencilStateRef dsC(new MockDepthStencilState(dsLessWrite));
     EXPECT_TRUE((matchPipelineState<DepthStencilState, DepthStencilStateDesc>(dsA.get(), dsB.get())));
+    EXPECT_FALSE((matchPipelineState<DepthStencilState, DepthStencilStateDesc>(dsA.get(), dsC.get())));
     EXPECT_FALSE((matchPipelineState<DepthStencilState, DepthStencilStateDesc>(dsA.get(), nullptr)));
 
     const BlendStateDesc alphaBlend(
         RenderTargetBlendDesc(BlendOperation::Add, BlendFactor::SourceAlpha, BlendFactor::InverseSourceAlpha)
     );
+    const BlendStateDesc additiveBlend(RenderTargetBlendDesc(BlendOperation::Add, BlendFactor::One, BlendFactor::One));
     BlendStateRef blendA(new MockBlendState(alphaBlend));
     BlendStateRef blendB(new MockBlendState(alphaBlend));
+    BlendStateRef blendC(new MockBlendState(additiveBlend));
     EXPECT_TRUE((matchPipelineState<BlendState, BlendStateDesc>(blendA.get(), blendB.get())));
+    EXPECT_FALSE((matchPipelineState<BlendState, BlendStateDesc>(blendA.get(), blendC.get())));
     EXPECT_FALSE((matchPipelineState<BlendState, BlendStateDesc>(blendA.get(), nullptr)));
 
     VertexDeclarationElementList layout{};
     layout.emplaceBack(0u, 0u, VertexElementType::Float3, 0u, 12u, false);
+    VertexDeclarationElementList otherLayout{};
+    otherLayout.emplaceBack(0u, 0u, VertexElementType::Float4, 0u, 16u, false);
     VertexDeclarationRef vdA(new MockVertexDeclaration(layout, 0x12345678u));
     VertexDeclarationRef vdB(new MockVertexDeclaration(layout, 0x12345678u));
+    VertexDeclarationRef vdC(new MockVertexDeclaration(otherLayout, 0x87654321u));
 
     EXPECT_EQ(vdA->getPrecachePSOHash(), 0x12345678u);
     EXPECT_TRUE((matchPipelineState<VertexDeclaration, VertexDeclarationElementList>(vdA.get(), vdB.get())));
+    EXPECT_FALSE((matchPipelineState<VertexDeclaration, VertexDeclarationElementList>(vdA.get(), vdC.get())));
     EXPECT_FALSE((matchPipelineState<VertexDeclaration, VertexDeclarationElementList>(vdA.get(), nullptr)));
 }
 
