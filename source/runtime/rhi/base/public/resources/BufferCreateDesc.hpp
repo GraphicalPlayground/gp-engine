@@ -353,6 +353,7 @@ struct BufferCreateDesc : public BufferDesc
     /// @return Reference to `*this`.
     BufferCreateDesc& setInitActionNone() noexcept
     {
+        initialData = nullptr;
         return setInitAction(BufferInitAction::Default);
     }
 
@@ -360,6 +361,7 @@ struct BufferCreateDesc : public BufferDesc
     /// @return Reference to `*this`.
     BufferCreateDesc& setInitActionZeroData() noexcept
     {
+        initialData = nullptr;
         return setInitAction(BufferInitAction::Zeroed);
     }
 
@@ -367,6 +369,7 @@ struct BufferCreateDesc : public BufferDesc
     /// @return Reference to `*this`.
     BufferCreateDesc& setInitActionInitializer() noexcept
     {
+        initialData = nullptr;
         return setInitAction(BufferInitAction::Initializer);
     }
 
