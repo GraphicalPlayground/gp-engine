@@ -4,18 +4,26 @@
 
 #pragma once
 
+#include "concepts/Functional.hpp"
 #include "containers/arrays/Vector.hpp"      // IWYU pragma: keep
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
-#include "hashing/HashingTypes.hpp"          // IWYU pragma: keep
 #include "memory/pointers/SharedPtr.hpp"
 #include "shaders/ShaderEnums.hpp"
 #include "shaders/ShaderForward.hpp"   // IWYU pragma: keep
-#include <type_traits>
 #include <utility>
 
 namespace gp::rhi::shader
 {
+
+/// @brief Compact numeric key identifying a shader specialization variant.
+using SpecializationKey = gp::UInt32;
+
+/// @brief Owning list of specialization keys bound to a shader stage.
+using SpecializationContainer = gp::Vector<SpecializationKey>;
+
+/// @brief Non-owning read-only view over a list of specialization keys.
+using SpecializationView = gp::ConstVectorView<SpecializationKey>;
 
 /// @brief Expected element stride at a reflected shader bind point for runtime validation.
 struct ShaderCodeValidationStride
@@ -182,8 +190,7 @@ struct CreateShaderDesc
     /// @param[in] inDeleter Custom deleter responsible for releasing the memory backing `inCode`.
     /// @param[in] inLibrary Optional owning shader library pointer.
     template <typename InDeleterType>
-    requires(!std::is_pointer_v<std::decay_t<InDeleterType>> && std::is_invocable_v<InDeleterType, const void*>)
-    CreateShaderDesc(
+    requires(gp::concepts::IsInvocable<InDeleterType, const void*>) CreateShaderDesc(
         const gp::ConstVectorView<gp::UInt8> inCode, InDeleterType&& inDeleter, ShaderLibrary* const inLibrary = nullptr
     ) noexcept
         : code(inCode)
