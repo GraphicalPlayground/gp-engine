@@ -145,6 +145,91 @@ struct IntRect
     [[nodiscard]] constexpr bool operator==(const IntRect& rhs) const noexcept = default;
 };
 
+/// @brief Four-component unsigned 32-bit integer vector used for UAV clears and shader root constants.
+struct UIntVector4
+{
+    /// @brief X component.
+    gp::UInt32 x{ 0u };
+
+    /// @brief Y component.
+    gp::UInt32 y{ 0u };
+
+    /// @brief Z component.
+    gp::UInt32 z{ 0u };
+
+    /// @brief W component.
+    gp::UInt32 w{ 0u };
+
+    /// @brief Constructs a zero-initialized `(0, 0, 0, 0)` vector.
+    constexpr UIntVector4() noexcept = default;
+
+    /// @brief Constructs a vector with uniform scalar value across all four lanes.
+    /// @param[in] scalar Value assigned to `x`, `y`, `z`, and `w`.
+    constexpr explicit UIntVector4(const gp::UInt32 scalar) noexcept
+        : x(scalar)
+        , y(scalar)
+        , z(scalar)
+        , w(scalar)
+    {}
+
+    /// @brief Constructs a vector with explicit four-lane values.
+    /// @param[in] inX X component.
+    /// @param[in] inY Y component.
+    /// @param[in] inZ Z component.
+    /// @param[in] inW W component.
+    constexpr UIntVector4(
+        const gp::UInt32 inX, const gp::UInt32 inY, const gp::UInt32 inZ, const gp::UInt32 inW
+    ) noexcept
+        : x(inX)
+        , y(inY)
+        , z(inZ)
+        , w(inW)
+    {}
+
+    /// @brief Default memberwise equality comparison.
+    /// @param[in] rhs Vector to compare against.
+    /// @return True when all four components match.
+    [[nodiscard]] constexpr bool operator==(const UIntVector4& rhs) const noexcept = default;
+};
+
+/// @brief Raw 16-bit floating-point RGBA color tuple matching IEEE 754 binary16 storage layout.
+struct Float16Color
+{
+    /// @brief Encoded IEEE 754 half-precision red channel bits.
+    gp::UInt16 r{ 0u };
+
+    /// @brief Encoded IEEE 754 half-precision green channel bits.
+    gp::UInt16 g{ 0u };
+
+    /// @brief Encoded IEEE 754 half-precision blue channel bits.
+    gp::UInt16 b{ 0u };
+
+    /// @brief Encoded IEEE 754 half-precision alpha channel bits.
+    gp::UInt16 a{ 0u };
+
+    /// @brief Constructs a zeroed `(0, 0, 0, 0)` half-float color.
+    constexpr Float16Color() noexcept = default;
+
+    /// @brief Constructs a half-float color from raw 16-bit channel bit patterns.
+    /// @param[in] inR Red channel bits.
+    /// @param[in] inG Green channel bits.
+    /// @param[in] inB Blue channel bits.
+    /// @param[in] inA Alpha channel bits.
+    constexpr Float16Color(
+        const gp::UInt16 inR, const gp::UInt16 inG, const gp::UInt16 inB, const gp::UInt16 inA
+    ) noexcept
+        : r(inR)
+        , g(inG)
+        , b(inB)
+        , a(inA)
+    {}
+
+    /// @brief Default memberwise equality comparison.
+    /// @param[in] rhs Half-float color to compare against.
+    /// @return True when all four channel bit patterns match.
+    [[nodiscard]] constexpr bool operator==(const Float16Color& rhs) const noexcept = default;
+};
+
 /// @brief Compact unsigned `[first, first + num)` subresource range for mip levels or array slices.
 /// @tparam InType Unsigned integer storage type (`gp::UInt8` or `gp::UInt16`).
 template <typename InType>
