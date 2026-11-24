@@ -16,11 +16,11 @@
 #include "memory/pointers/RefCountedPtr.hpp"
 #include "presentation/CustomPresent.hpp"
 #include "presentation/PresentArgs.hpp"
+#include "presentation/PresentationEnums.hpp"
 #include "presentation/PresentationForward.hpp"
 #include "templates/Function.hpp"
 #include "templates/Interval.hpp"
 #include "threading/atomics/Atomic.hpp"
-#include <cstring>
 #include <gtest/gtest.h>
 #include <memory>
 #include <type_traits>
@@ -434,8 +434,11 @@ TEST(PresentArgsTest, EqualityIgnoresUninitializedPaddingBits)
 {
     alignas(PresentArgs) gp::Byte storageAllZero[sizeof(PresentArgs)]{};
     alignas(PresentArgs) gp::Byte storageAllOnes[sizeof(PresentArgs)]{};
-    std::memset(storageAllZero, 0x00, sizeof(storageAllZero));
-    std::memset(storageAllOnes, 0xFF, sizeof(storageAllOnes));
+    for (gp::USize i = 0u; i < sizeof(PresentArgs); ++i)
+    {
+        storageAllZero[i] = static_cast<gp::Byte>(0x00u);
+        storageAllOnes[i] = static_cast<gp::Byte>(0xFFu);
+    }
 
     PresentArgs* const argsZeroPad = std::construct_at(reinterpret_cast<PresentArgs*>(storageAllZero), true, false);
     PresentArgs* const argsOnesPad = std::construct_at(reinterpret_cast<PresentArgs*>(storageAllOnes), true, false);
@@ -448,6 +451,22 @@ TEST(PresentArgsTest, EqualityIgnoresUninitializedPaddingBits)
 
     std::destroy_at(argsOnesPad);
     std::destroy_at(argsZeroPad);
+}
+
+TEST(PresentationEnumsTest, ColorSpaceAndEOTFMasksPresetsAndBitwiseOperations)
+{
+    EXPECT_EQ(ColorSpaceAndEOTF::Unknown, static_cast<ColorSpaceAndEOTF>(0x00u));
+    EXPECT_EQ(ColorSpaceAndEOTF::ColorSpaceRec709 | ColorSpaceAndEOTF::EOTFsRGB, ColorSpaceAndEOTF::Rec709sRGB);
+    EXPECT_EQ(ColorSpaceAndEOTF::ColorSpaceRec709 | ColorSpaceAndEOTF::EOTFLinear, ColorSpaceAndEOTF::Rec709Linear);
+    EXPECT_EQ(ColorSpaceAndEOTF::ColorSpaceRec2020 | ColorSpaceAndEOTF::EOTFPQ, ColorSpaceAndEOTF::Rec2020PQ);
+    EXPECT_EQ(ColorSpaceAndEOTF::ColorSpaceRec2020 | ColorSpaceAndEOTF::EOTFLinear, ColorSpaceAndEOTF::Rec2020Linear);
+    EXPECT_EQ(ColorSpaceAndEOTF::ColorSpaceDCIP3 | ColorSpaceAndEOTF::EOTFPQ, ColorSpaceAndEOTF::DCIP3PQ);
+    EXPECT_EQ(ColorSpaceAndEOTF::ColorSpaceDCIP3 | ColorSpaceAndEOTF::EOTFLinear, ColorSpaceAndEOTF::DCIP3Linear);
+
+    EXPECT_EQ(ColorSpaceAndEOTF::Rec2020PQ & ColorSpaceAndEOTF::ColorSpaceMask, ColorSpaceAndEOTF::ColorSpaceRec2020);
+    EXPECT_EQ(ColorSpaceAndEOTF::Rec2020PQ & ColorSpaceAndEOTF::EOTFMask, ColorSpaceAndEOTF::EOTFPQ);
+    EXPECT_EQ(ColorSpaceAndEOTF::DCIP3Linear & ColorSpaceAndEOTF::ColorSpaceMask, ColorSpaceAndEOTF::ColorSpaceDCIP3);
+    EXPECT_EQ(ColorSpaceAndEOTF::DCIP3Linear & ColorSpaceAndEOTF::EOTFMask, ColorSpaceAndEOTF::EOTFLinear);
 }
 
 TEST(PresentArgsTest, PresentArgsWithStatsPreservesBaseFlagsAndCounters)
