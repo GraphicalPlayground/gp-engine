@@ -8,6 +8,7 @@
 #include "core/ResourceDeletionQueue.hpp"
 #include "core/ResourceEnums.hpp"
 #include "CoreMinimal.hpp"
+#include "memory/Memory.hpp"
 #include "memory/MemoryOrder.hpp"
 #include "memory/pointers/PointerConcepts.hpp"
 #include "memory/pointers/RefCountedPtr.hpp"
@@ -20,7 +21,6 @@
 #include "threading/atomics/Atomic.hpp"
 #include "views/DescriptorHandle.hpp"
 #include "views/ViewEnums.hpp"
-#include <cstring>
 #include <gtest/gtest.h>
 #include <type_traits>
 
@@ -46,41 +46,52 @@ static_assert(!std::is_copy_constructible_v<UniformBuffer>, "UniformBuffer must 
 namespace
 {
 
+/// @brief Concrete UniformBufferLayout subclass tracking destructor calls.
 class MockTrackedLayout final : public UniformBufferLayout
 {
 public:
     static inline gp::thread::Atomic<gp::UInt32> s_destructCount{ 0u };
 
+    /// @brief Constructs a tracked layout from a descriptor.
+    /// @param[in] desc Layout descriptor.
     explicit MockTrackedLayout(const UniformBufferLayoutDesc& desc) noexcept
         : UniformBufferLayout(desc)
     {}
 
+    /// @copydoc UniformBufferLayout::~UniformBufferLayout()
     virtual ~MockTrackedLayout() noexcept override
     {
         s_destructCount.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed);
     }
 };
 
+/// @brief Minimal Resource subclass tracking destructor calls when retained by a uniform buffer.
 class MockBoundResource final : public Resource
 {
 public:
     static inline gp::thread::Atomic<gp::UInt32> s_destructCount{ 0u };
 
+    /// @brief Constructs a mock bound sampler resource.
     MockBoundResource() noexcept
         : Resource(ResourceType::SamplerState)
     {}
 
+    /// @copydoc Resource::~Resource()
     virtual ~MockBoundResource() noexcept override
     {
         s_destructCount.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed);
     }
 };
 
+/// @brief Concrete UniformBuffer subclass exposing resource-table mutation and custom bindless handles.
 class MockUniformBuffer final : public UniformBuffer
 {
 public:
     static inline gp::thread::Atomic<gp::UInt32> s_destructCount{ 0u };
 
+    /// @brief Constructs a mock uniform buffer bound to `layout`.
+    /// @param[in] layout Immutable layout descriptor.
+    /// @param[in] bindlessHandle Optional bindless descriptor handle.
     MockUniformBuffer(
         const UniformBufferLayout* const layout, const view::DescriptorHandle bindlessHandle = view::DescriptorHandle{}
     ) noexcept
@@ -88,11 +99,14 @@ public:
         , m_bindlessHandle(bindlessHandle)
     {}
 
+    /// @copydoc UniformBuffer::~UniformBuffer()
     virtual ~MockUniformBuffer() noexcept override
     {
         s_destructCount.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed);
     }
 
+    /// @brief Appends a resource reference into the uniform buffer's internal resource table.
+    /// @param[in] resource Resource to retain.
     void addResourceEntry(Resource* const resource)
     {
         m_resourceTable.emplaceBack(resource);
@@ -108,13 +122,17 @@ private:
     view::DescriptorHandle m_bindlessHandle{};
 };
 
+/// @brief Concrete UniformBuffer subclass inheriting default getBindlessHandle() behavior.
 class MockDefaultUniformBuffer final : public UniformBuffer
 {
 public:
+    /// @brief Constructs a default uniform buffer bound to `layout`.
+    /// @param[in] layout Immutable layout descriptor.
     explicit MockDefaultUniformBuffer(const UniformBufferLayout* const layout) noexcept
         : UniformBuffer(layout)
     {}
 
+    /// @copydoc UniformBuffer::~UniformBuffer()
     virtual ~MockDefaultUniformBuffer() noexcept override = default;
 };
 
@@ -172,6 +190,19 @@ TEST_F(UniformBufferTestFixture, LayoutDescDefaultsHashFormulaAndCopy)
     const gp::UInt32 hashBase = descA.computeHash();
     EXPECT_NE(hashBase, 0u);
     EXPECT_EQ(descA.getHash(), hashBase);
+    EXPECT_EQ(UniformBufferLayoutDesc::computeHashValue(descA), hashBase);
+
+    // Verify hasRenderTargets() and hasExternalOutputs() true branches on UniformBufferLayoutDesc.
+    UniformBufferLayoutDesc descFlagsTest("FlagsCheck", 64u);
+    descFlagsTest.renderTargetsOffset = 16u;
+    descFlagsTest.flags = UniformBufferFlags::HasNonGraphOutputs;
+    EXPECT_TRUE(descFlagsTest.hasRenderTargets());
+    EXPECT_TRUE(descFlagsTest.hasExternalOutputs());
+
+    // Verify UniformBufferUsage and UniformBufferValidation enumerators are distinct.
+    EXPECT_NE(UniformBufferUsage::SingleDraw, UniformBufferUsage::SingleFrame);
+    EXPECT_NE(UniformBufferUsage::SingleFrame, UniformBufferUsage::MultiFrame);
+    EXPECT_NE(UniformBufferValidation::None, UniformBufferValidation::ValidateResources);
 
     UniformBufferLayoutDesc descB{};
     descB.copyFrom(descA);
@@ -262,6 +293,10 @@ TEST_F(UniformBufferTestFixture, ImmutableLayoutExposesAllFieldsAndComputesMissi
     EXPECT_EQ(layoutA->getUniformBuffers().size(), 1u);
     EXPECT_EQ(layoutA->getHash(), desc.getHash());
     EXPECT_EQ(*layoutA, *layoutB);
+
+    UniformBufferLayoutDesc differentDesc("OtherParams", 64u);
+    UniformBufferLayoutConstRef layoutC(new UniformBufferLayout(differentDesc));
+    EXPECT_NE(*layoutA, *layoutC);
 }
 
 TEST_F(UniformBufferTestFixture, UniformBufferExposesLayoutSizeResourcesAndBindlessHandle)
@@ -313,12 +348,43 @@ TEST_F(UniformBufferTestFixture, UniformBufferContentMapTracksAndCleansUpSnapsho
     uniformBufferContentMap::update(rawPtr, payloadA);
     const void* snapshotA = uniformBufferContentMap::get(rawPtr);
     ASSERT_NE(snapshotA, nullptr);
-    EXPECT_EQ(std::memcmp(snapshotA, payloadA, sizeof(payloadA)), 0);
+    EXPECT_EQ(gp::memory::compareMemory(snapshotA, payloadA, sizeof(payloadA)), 0);
 
     uniformBufferContentMap::update(rawPtr, payloadB);
     const void* snapshotB = uniformBufferContentMap::get(rawPtr);
     ASSERT_NE(snapshotB, nullptr);
-    EXPECT_EQ(std::memcmp(snapshotB, payloadB, sizeof(payloadB)), 0);
+    EXPECT_EQ(gp::memory::compareMemory(snapshotB, payloadB, sizeof(payloadB)), 0);
+
+    // Updating with nullptr or zero-sized buffer clears/empties the stored snapshot bytes.
+    uniformBufferContentMap::update(rawPtr, nullptr);
+    EXPECT_EQ(uniformBufferContentMap::get(rawPtr), nullptr);
+    uniformBufferContentMap::update(rawPtr, payloadB);
+    EXPECT_NE(uniformBufferContentMap::get(rawPtr), nullptr);
+
+    UniformBufferLayoutDesc zeroDesc("ZeroSizeParams", 0u);
+    UniformBufferLayoutConstRef zeroLayout(new UniformBufferLayout(zeroDesc));
+    UniformBufferRef zeroUb(new MockDefaultUniformBuffer(zeroLayout.get()));
+    uniformBufferContentMap::update(zeroUb.get(), payloadA);
+    EXPECT_EQ(uniformBufferContentMap::get(zeroUb.get()), nullptr);
+
+    // Swap-and-pop removal when removing a non-final entry preserves remaining entries.
+    UniformBufferRef ubExtraA(new MockDefaultUniformBuffer(layout.get()));
+    UniformBufferRef ubExtraB(new MockDefaultUniformBuffer(layout.get()));
+    uniformBufferContentMap::update(ubExtraA.get(), payloadA);
+    uniformBufferContentMap::update(ubExtraB.get(), payloadB);
+    uniformBufferContentMap::remove(ubExtraA.get());
+    EXPECT_EQ(uniformBufferContentMap::get(ubExtraA.get()), nullptr);
+    const void* remainingB = uniformBufferContentMap::get(ubExtraB.get());
+    ASSERT_NE(remainingB, nullptr);
+    EXPECT_EQ(gp::memory::compareMemory(remainingB, payloadB, sizeof(payloadB)), 0);
+
+    // clear() removes all stored snapshots while keeping tracking enabled.
+    uniformBufferContentMap::clear();
+    EXPECT_EQ(uniformBufferContentMap::get(rawPtr), nullptr);
+    EXPECT_EQ(uniformBufferContentMap::get(ubExtraB.get()), nullptr);
+    EXPECT_TRUE(uniformBufferContentMap::isEnabled());
+    uniformBufferContentMap::update(rawPtr, payloadA);
+    EXPECT_NE(uniformBufferContentMap::get(rawPtr), nullptr);
 
     // Destroying the UniformBuffer removes its snapshot automatically.
     ub.reset();
