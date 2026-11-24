@@ -31,6 +31,7 @@
 #include "views/ViewEnums.hpp"
 #include <gtest/gtest.h>
 #include <type_traits>
+#include <utility>
 
 namespace gp::rhi::resource::tests
 {
@@ -1554,6 +1555,27 @@ TEST_F(TextureTestFixture, TextureReferenceSwapAndCascadingDeferredDeletion)
     EXPECT_EQ(MockTextureReference::s_destructCount.load(), 2u);
     EXPECT_EQ(MockDefaultTexture::s_constructCount.load(), 4u);
     EXPECT_EQ(MockDefaultTexture::s_destructCount.load(), 4u);
+}
+
+TEST_F(TextureTestFixture, AdditionalFlagsAndTexture2DArrayMipDimensions)
+{
+    EXPECT_NE(TextureCreateFlags::OfflineProcessed, TextureCreateFlags::None);
+    EXPECT_NE(TextureCreateFlags::HideInVisualizeTexture, TextureCreateFlags::None);
+    EXPECT_EQ(
+        (TextureCreateFlags::OfflineProcessed | TextureCreateFlags::HideInVisualizeTexture) &
+            TextureCreateFlags::OfflineProcessed,
+        TextureCreateFlags::OfflineProcessed
+    );
+
+    TextureCreateDesc arrDesc = TextureCreateDesc::create2DArray("MipArray", 64, 32, 6u, PixelFormat::R8G8B8A8_UNorm)
+                                    .setNumMips(4u)
+                                    .addFlags(TextureCreateFlags::ShaderResource)
+                                    .determineInitialState();
+    TextureRef arrTex(new MockDefaultTexture(arrDesc));
+
+    EXPECT_EQ(arrTex->getMipDimensions(0u), IntVector(64, 32, 1));
+    EXPECT_EQ(arrTex->getMipDimensions(1u), IntVector(32, 16, 1));
+    EXPECT_EQ(arrTex->getMipDimensions(3u), IntVector(8, 4, 1));
 }
 
 }   // namespace gp::rhi::resource::tests
