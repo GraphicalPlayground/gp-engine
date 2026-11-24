@@ -27,6 +27,8 @@ enum class BufferUsageFlags : gp::UInt32
     ShaderResource = 1u << 8,
     KeepCPUAccessible = 1u << 9,
     FastVRAM = 1u << 10,
+    /// @brief Hint for neural network / compute acceleration single-device heap placement.
+    NNE = 1u << 11,
     Shared = 1u << 12,
     /// @brief Holds opaque ray tracing acceleration data; cannot bind directly to standard shader stages.
     AccelerationStructure = 1u << 13,
