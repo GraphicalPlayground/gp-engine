@@ -27,6 +27,10 @@ TextureRef& getDefaultTextureStorage() noexcept
     return defaultTexture;
 }
 
+/// @brief Computes ceiling integer division `ceil(dividend / divisor)` for positive divisors.
+/// @param[in] dividend Numerator value.
+/// @param[in] divisor Positive denominator value.
+/// @return Smallest integer greater than or equal to `dividend / divisor`.
 [[nodiscard]] constexpr gp::UInt64 divideAndRoundUp(const gp::UInt64 dividend, const gp::UInt64 divisor) noexcept
 {
     return (dividend + divisor - 1u) / divisor;
@@ -77,7 +81,7 @@ bool TextureDesc::validate(
     const TextureDesc& desc, const gp::StringView debugName, const bool isFatal, const TextureValidationLimits& limits
 ) noexcept
 {
-    auto checkRule = [isFatal, debugName](const bool condition, const char* const message) noexcept -> bool
+    const auto checkRule = [isFatal, debugName](const bool condition, const char* const message) noexcept -> bool
     {
         if (!condition)
         {
@@ -98,11 +102,6 @@ bool TextureDesc::validate(
         return false;
     }
     if (!checkRule(isValidPixelFormat(desc.format), "TextureDesc format is out of valid PixelFormat range."))
-    {
-        return false;
-    }
-    const PixelFormatInfo& formatInfo = getPixelFormatInfo(desc.format);
-    if (!checkRule(formatInfo.isValid(), "TextureDesc pixel format metadata is invalid or unsupported."))
     {
         return false;
     }
@@ -228,8 +227,10 @@ bool TextureDesc::validate(
             if (desc.dimension == TextureDimension::Texture2DArray)
             {
                 const gp::UInt32 mipShift = gp::math::max<gp::UInt32>(1u, static_cast<gp::UInt32>(desc.numMips)) - 1u;
-                const gp::UInt32 smallestX = static_cast<gp::UInt32>(desc.extent.x) >> mipShift;
-                const gp::UInt32 smallestY = static_cast<gp::UInt32>(desc.extent.y) >> mipShift;
+                const gp::UInt32 smallestX =
+                    (mipShift < 32u) ? (static_cast<gp::UInt32>(desc.extent.x) >> mipShift) : 0u;
+                const gp::UInt32 smallestY =
+                    (mipShift < 32u) ? (static_cast<gp::UInt32>(desc.extent.y) >> mipShift) : 0u;
                 if (!checkRule(
                         smallestX >= limits.reservedTextureArrayMinMipDimension &&
                             smallestY >= limits.reservedTextureArrayMinMipDimension,
