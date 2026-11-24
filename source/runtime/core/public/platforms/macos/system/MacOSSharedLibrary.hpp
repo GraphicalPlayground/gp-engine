@@ -10,7 +10,19 @@
 namespace gp::platform::macos
 {
 
-struct SharedLibrary final : public gp::platform::apple::SharedLibrary
-{};
+/// @brief macOS implementation of dynamic shared library (`.dylib` and `.framework`) loading and search-path
+///        management.
+/// @details Inherits Darwin `dlopen`/`dlsym`/`dlclose`, `.framework` bundle resolution, `.app` bundle directory
+///          probing, and dyld shared cache support from `gp::platform::apple::SharedLibrary`.
+struct GP_CORE_API SharedLibrary final : public gp::platform::apple::SharedLibrary
+{
+public:
+    SharedLibrary() = delete;
+    ~SharedLibrary() = delete;
+    SharedLibrary(const SharedLibrary&) = delete;
+    SharedLibrary& operator=(const SharedLibrary&) = delete;
+    SharedLibrary(SharedLibrary&&) = delete;
+    SharedLibrary& operator=(SharedLibrary&&) = delete;
+};
 
 }   // namespace gp::platform::macos
