@@ -1402,6 +1402,7 @@ TEST(ApplicationModuleWiringTest, StartupModulesCliOverridesConsoleCommandsAndRe
     desc.createMainWindow = false;
     desc.enableLogging = false;
     desc.enableJobSystem = false;
+    desc.enableRHI = false;
     desc.targetForegroundFps = 0.0;
     desc.targetBackgroundFps = 0.0;
     EXPECT_TRUE(desc.addStartupModule("rhi/app_test_backend"));
