@@ -4,6 +4,7 @@
 
 #include "core/ExclusiveDepthStencil.hpp"
 #include "containers/arrays/Vector.hpp"
+#include "hashing/Fnv1a.hpp"
 #include "hashing/HashOf.hpp"
 #include "sync/SyncEnums.hpp"
 #include "sync/TransitionDesc.hpp"
@@ -115,10 +116,12 @@ TEST(ExclusiveDepthStencilTest, EnumerateSubresourcesEmitsMinimalPlaneCalls)
     const auto collect = [](const ExclusiveDepthStencil state) -> gp::Vector<SubresourceVisit>
     {
         gp::Vector<SubresourceVisit> visits{};
-        state.enumerateSubresources([&visits](const sync::ResourceAccess access, const gp::UInt16 planeSlice)
+        state.enumerateSubresources(
+            [&visits](const sync::ResourceAccess access, const gp::UInt16 planeSlice) -> void
         {
             visits.emplaceBack(SubresourceVisit{ access, planeSlice });
-        });
+        }
+        );
         return visits;
     };
 
@@ -149,10 +152,52 @@ TEST(ExclusiveDepthStencilTest, EnumerateSubresourcesEmitsMinimalPlaneCalls)
     ASSERT_EQ(stencilOnly.size(), 1u);
     EXPECT_EQ(stencilOnly[0].access, sync::ResourceAccess::DSVRead | sync::ResourceAccess::DSVWrite);
     EXPECT_EQ(stencilOnly[0].planeSlice, sync::SubresourceRange::kStencilPlaneSlice);
+
+    const gp::Vector<SubresourceVisit> depthOnlyWrite = collect(ExclusiveDepthStencil::kDepthWriteStencilNop);
+    ASSERT_EQ(depthOnlyWrite.size(), 1u);
+    EXPECT_EQ(depthOnlyWrite[0].access, sync::ResourceAccess::DSVRead | sync::ResourceAccess::DSVWrite);
+    EXPECT_EQ(depthOnlyWrite[0].planeSlice, sync::SubresourceRange::kDepthPlaneSlice);
+
+    const gp::Vector<SubresourceVisit> depthOnlyRead = collect(ExclusiveDepthStencil::kDepthReadStencilNop);
+    ASSERT_EQ(depthOnlyRead.size(), 1u);
+    EXPECT_EQ(depthOnlyRead[0].access, sync::ResourceAccess::DSVRead);
+    EXPECT_EQ(depthOnlyRead[0].planeSlice, sync::SubresourceRange::kDepthPlaneSlice);
 }
 
 TEST(ExclusiveDepthStencilTest, DeltaTransitionsAndDistinctHashes)
 {
+    const ExclusiveDepthStencil defaultState{};
+    EXPECT_EQ(defaultState, ExclusiveDepthStencil::kDepthNopStencilNop);
+    EXPECT_EQ(defaultState.getValue(), ExclusiveDepthStencilMode::DepthNopStencilNop);
+
+    const ExclusiveDepthStencil fromMode = ExclusiveDepthStencilMode::DepthNopStencilWrite;
+    EXPECT_EQ(fromMode.getValue(), ExclusiveDepthStencilMode::DepthNopStencilWrite);
+    EXPECT_TRUE(fromMode.isUsingDepthStencil());
+    EXPECT_FALSE(fromMode.isUsingDepth());
+    EXPECT_TRUE(fromMode.isUsingStencil());
+    EXPECT_TRUE(fromMode.isStencilWrite());
+    EXPECT_TRUE(fromMode.isAnyWrite());
+    EXPECT_FALSE(fromMode.isDepthRead());
+    EXPECT_TRUE(ExclusiveDepthStencil::kDepthReadStencilNop.isDepthRead());
+
+    sync::ResourceAccess depthAccess = sync::ResourceAccess::Unknown;
+    sync::ResourceAccess stencilAccess = sync::ResourceAccess::Unknown;
+    fromMode.getAccess(depthAccess, stencilAccess);
+    EXPECT_EQ(depthAccess, sync::ResourceAccess::None);
+    EXPECT_EQ(stencilAccess, sync::ResourceAccess::DSVRead | sync::ResourceAccess::DSVWrite);
+
+    EXPECT_EQ(
+        ExclusiveDepthStencil::kDepthNopStencilNop.getReadableTransition(), ExclusiveDepthStencil::kDepthNopStencilNop
+    );
+    EXPECT_EQ(
+        ExclusiveDepthStencil::kDepthNopStencilNop.getWritableTransition(), ExclusiveDepthStencil::kDepthNopStencilNop
+    );
+
+    gp::hashing::Fnv1a64 hashA{};
+    gp::hashing::Fnv1a64 hashB{};
+    fromMode.hashAppend(hashA);
+    ExclusiveDepthStencil::kDepthWriteStencilRead.hashAppend(hashB);
+    EXPECT_NE(hashA.finalize(), hashB.finalize());
     EXPECT_EQ(
         ExclusiveDepthStencil::kDepthWriteStencilWrite.getReadableTransition(),
         ExclusiveDepthStencil::kDepthReadStencilRead
