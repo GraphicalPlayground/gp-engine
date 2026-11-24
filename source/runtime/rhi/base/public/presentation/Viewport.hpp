@@ -91,8 +91,8 @@ public:
     virtual void issueFrameEvent() noexcept;
 
     /// @brief Registers begin and end callbacks invoked around swapchain presentation for latency measurement.
-    /// @param[in] beginCallback Callback invoked right before submitting the present call.
-    /// @param[in] endCallback Callback invoked right after the present call returns.
+    /// @param[in,out] beginCallback Callback invoked right before submitting the present call (moved from).
+    /// @param[in,out] endCallback Callback invoked right after the present call returns (moved from).
     void setPresentLatencyCallbacks(gp::Function<void()>&& beginCallback, gp::Function<void()>&& endCallback) noexcept;
 
 protected:
