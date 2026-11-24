@@ -187,9 +187,20 @@ private:
     /// @brief Invokes the registered backend release hook, destroys this object, and frees its allocation.
     void cleanup() const noexcept;
 
+    /// @brief Returns the registered per-transition backend private payload size in bytes.
+    /// @return Backend private data size in bytes.
     [[nodiscard]] static gp::USize getPrivateDataSizeInBytes() noexcept;
+
+    /// @brief Returns the registered alignment requirement for backend private data.
+    /// @return Backend private data alignment in bytes.
     [[nodiscard]] static gp::USize getPrivateDataAlignInBytes() noexcept;
+
+    /// @brief Returns the combined byte size of a `Transition` header plus its aligned trailing backend payload.
+    /// @return Total allocation size in bytes.
     [[nodiscard]] static gp::USize getTotalAllocationSize() noexcept;
+
+    /// @brief Returns the allocation alignment satisfying both `Transition` and trailing backend private data.
+    /// @return Allocation alignment in bytes.
     [[nodiscard]] static gp::USize getAlignment() noexcept;
 
 private:
