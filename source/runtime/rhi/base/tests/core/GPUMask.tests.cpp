@@ -232,6 +232,50 @@ TEST(GPUMaskTest, IndexRangeIterationInvertFilterAndIntersects)
     EXPECT_EQ(*post, 3u);
     EXPECT_TRUE(!it);
     EXPECT_EQ(it, end(gpu3));
+
+    // Incrementing an exhausted iterator must remain a safe no-op at end().
+    ++it;
+    EXPECT_EQ(it, end(gpu3));
+    EXPECT_TRUE(!it);
+
+    // Iterators over distinct masks sitting on the same first bit must not compare equal.
+    const GPUMask mask0And2(0b0101u);
+    const GPUMask mask0Only(0b0001u);
+    EXPECT_NE(begin(mask0And2), begin(mask0Only));
+    EXPECT_EQ(*begin(mask0And2), *begin(mask0Only));
+    EXPECT_EQ(GPUMask::Iterator(0b0101u), begin(mask0And2));
+
+    // Empty mask range-for emits zero elements and begin() == end().
+    const GPUMask emptyMask(0u);
+    EXPECT_EQ(begin(emptyMask), end(emptyMask));
+    EXPECT_TRUE(!begin(emptyMask));
+    gp::UInt32 emptyCount = 0u;
+    for ([[maybe_unused]] const gp::UInt32 idx: emptyMask)
+    {
+        ++emptyCount;
+    }
+    EXPECT_EQ(emptyCount, 0u);
+
+    // Inverting empty mask against a universe returns the full universe.
+    EXPECT_TRUE(emptyMask.invert(inverse, universe));
+    EXPECT_EQ(inverse, universe);
+
+    // Bit 31 boundary: toIndex(), getLastIndex(), and iteration across full 32-bit mask.
+    const GPUMask gpu31 = GPUMask::fromIndex(31u);
+    EXPECT_EQ(gpu31.toIndex(), 31u);
+    EXPECT_EQ(gpu31.getLastIndex(), 31u);
+    const GPUMask full32(0xFFFFFFFFu);
+    EXPECT_EQ(full32.getLastIndex(), 31u);
+    gp::UInt32 fullCount = 0u;
+    gp::UInt32 lastVisited = 0u;
+    for (const gp::UInt32 idx: full32)
+    {
+        EXPECT_EQ(idx, fullCount);
+        lastVisited = idx;
+        ++fullCount;
+    }
+    EXPECT_EQ(fullCount, 32u);
+    EXPECT_EQ(lastVisited, 31u);
 }
 
 }   // namespace gp::rhi::tests
