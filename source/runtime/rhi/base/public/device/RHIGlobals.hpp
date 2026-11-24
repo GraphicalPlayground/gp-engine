@@ -231,6 +231,10 @@ struct GP_RHI_API RHIGlobals
     /// @brief True when transient memory aliasing heaps are supported.
     bool supportsTransientResourceAliasing{ false };
 
+    /// @brief True when transient `ResourceAccess::Discard` transitions must resolve their prior state from tracked
+    ///        resource state rather than treating discard as an undefined layout transition.
+    bool needsTransientDiscardStateTracking{ false };
+
     /// @brief True when dynamic uniform buffer offset binding is supported.
     bool supportsDynamicUniformBufferOffsets{ false };
 
