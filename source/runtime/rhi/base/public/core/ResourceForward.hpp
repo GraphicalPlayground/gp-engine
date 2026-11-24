@@ -49,6 +49,9 @@ enum class UniformBufferValidation : gp::UInt8;
 /// @brief Behavior and reflection flags for uniform buffer creation.
 enum class UniformBufferFlags : gp::UInt8;
 
+/// @brief Zero-based index identifying a globally bound static uniform buffer slot.
+using UniformBufferStaticSlot = gp::UInt8;
+
 /// @brief Selects whether a render target binds a color clear value, a depth-stencil clear value, or none.
 enum class ClearBinding : gp::UInt8;
 
@@ -113,6 +116,9 @@ struct TextureDataProvider;
 /// @brief Descriptor capturing dimensionality, format, flags, extent, and clear value of a GPU texture.
 struct TextureDesc;
 
+/// @brief Configurable hardware dimension limits used to validate `TextureDesc` parameters.
+struct TextureValidationLimits;
+
 /// @brief Fluent creation parameters for allocating and initializing a GPU texture.
 struct TextureCreateDesc;
 
@@ -139,6 +145,9 @@ class Buffer;
 
 /// @brief CPU-readable staging buffer for GPU-to-CPU readbacks.
 class StagingBuffer;
+
+/// @brief Indirection slot binding a replaceable vertex stream buffer and byte offset.
+class StreamSourceSlot;
 
 /// @brief GPU texture resource.
 class Texture;
@@ -169,6 +178,9 @@ using BufferRef = gp::RefCountedPtr<Buffer, gp::DefaultRefCountPolicy<Buffer>>;
 
 /// @brief Intrusive smart pointer handle to a `StagingBuffer`.
 using StagingBufferRef = gp::RefCountedPtr<StagingBuffer, gp::DefaultRefCountPolicy<StagingBuffer>>;
+
+/// @brief Intrusive smart pointer handle to a `StreamSourceSlot`.
+using StreamSourceSlotRef = gp::RefCountedPtr<StreamSourceSlot, gp::DefaultRefCountPolicy<StreamSourceSlot>>;
 
 /// @brief Intrusive smart pointer handle to a `Texture`.
 using TextureRef = gp::RefCountedPtr<Texture, gp::DefaultRefCountPolicy<Texture>>;
