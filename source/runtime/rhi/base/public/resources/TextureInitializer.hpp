@@ -9,6 +9,7 @@
 #include "core/ResourceForward.hpp"   // IWYU pragma: keep
 #include "core/ResourceTypes.hpp"
 #include "CoreMinimal.hpp"
+#include "diagnostics/AssertionMacros.hpp"
 #include "memory/Memory.hpp"
 #include "memory/pointers/RefCountedPtr.hpp"   // IWYU pragma: keep
 #include "resources/Texture.hpp"
@@ -69,10 +70,10 @@ struct GP_RHI_API TextureInitializer
 {
 public:
     /// @brief Backend callback resolving a writable subresource by `TextureSubresourceIndex`.
-    using SubresourceCallback = gp::Function<TextureSubresourceInitializer(TextureSubresourceIndex)>;
+    using SubresourceCallback = gp::UniqueFunction<TextureSubresourceInitializer(TextureSubresourceIndex)>;
 
     /// @brief Backend callback committing the texture upload and returning the finalized `TextureRef`.
-    using FinalizeCallback = gp::Function<TextureRef(command::CommandListBase&)>;
+    using FinalizeCallback = gp::UniqueFunction<TextureRef(command::CommandListBase&)>;
 
 public:
     /// @brief Command list driving texture creation and upload.
@@ -80,6 +81,12 @@ public:
 
     /// @brief Newly created texture handle (valid until `finalize()`).
     TextureRef texture{};
+
+    /// @brief Optional CPU-writable backing staging buffer owned by the backend or initializer.
+    void* writableData{ nullptr };
+
+    /// @brief Byte capacity of `writableData`, or `0` when unused.
+    gp::UInt64 writableSize{ 0u };
 
     /// @brief Subresource lookup callback supplied by the backend.
     SubresourceCallback subresourceCallback{};
@@ -91,7 +98,7 @@ public:
     /// @brief Constructs an empty, already-finalized texture initializer.
     TextureInitializer() noexcept = default;
 
-    /// @brief Constructs an active texture initializer.
+    /// @brief Constructs an active texture initializer without a direct writable staging buffer pointer.
     /// @param[in] inCmdList Command list driving initialization.
     /// @param[in] inTexture Newly created texture reference.
     /// @param[in] inSubresourceCallback Backend subresource lookup callback.
@@ -108,6 +115,29 @@ public:
         , finalizeCallback(std::move(inFinalizeCallback))
     {}
 
+    /// @brief Constructs an active texture initializer with an associated writable staging buffer span.
+    /// @param[in] inCmdList Command list driving initialization.
+    /// @param[in] inTexture Newly created texture reference.
+    /// @param[in] inWritableData CPU-writable backing buffer pointer, or `nullptr`.
+    /// @param[in] inWritableSize Byte capacity of `inWritableData`.
+    /// @param[in] inSubresourceCallback Backend subresource lookup callback.
+    /// @param[in] inFinalizeCallback Backend finalization callback.
+    TextureInitializer(
+        command::CommandListBase& inCmdList,
+        TextureRef inTexture,
+        void* const inWritableData,
+        const gp::UInt64 inWritableSize,
+        SubresourceCallback inSubresourceCallback,
+        FinalizeCallback inFinalizeCallback
+    ) noexcept
+        : cmdList(&inCmdList)
+        , texture(std::move(inTexture))
+        , writableData(inWritableData)
+        , writableSize(inWritableSize)
+        , subresourceCallback(std::move(inSubresourceCallback))
+        , finalizeCallback(std::move(inFinalizeCallback))
+    {}
+
     TextureInitializer(const TextureInitializer&) = delete;
     TextureInitializer& operator=(const TextureInitializer&) = delete;
 
@@ -116,10 +146,14 @@ public:
     TextureInitializer(TextureInitializer&& other) noexcept
         : cmdList(other.cmdList)
         , texture(std::move(other.texture))
+        , writableData(other.writableData)
+        , writableSize(other.writableSize)
         , subresourceCallback(std::move(other.subresourceCallback))
         , finalizeCallback(std::move(other.finalizeCallback))
     {
         other.cmdList = nullptr;
+        other.writableData = nullptr;
+        other.writableSize = 0u;
     }
 
     /// @brief Move assignment finalizing any active texture before adopting `other`.
@@ -135,9 +169,13 @@ public:
             }
             cmdList = other.cmdList;
             texture = std::move(other.texture);
+            writableData = other.writableData;
+            writableSize = other.writableSize;
             subresourceCallback = std::move(other.subresourceCallback);
             finalizeCallback = std::move(other.finalizeCallback);
             other.cmdList = nullptr;
+            other.writableData = nullptr;
+            other.writableSize = 0u;
         }
         return *this;
     }
@@ -258,6 +296,8 @@ public:
         TextureRef localTexture = std::move(texture);
 
         cmdList = nullptr;
+        writableData = nullptr;
+        writableSize = 0u;
         subresourceCallback = SubresourceCallback{};
 
         if (callback.isBound())
