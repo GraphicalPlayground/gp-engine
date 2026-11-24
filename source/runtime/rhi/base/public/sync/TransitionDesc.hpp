@@ -7,6 +7,7 @@
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "core/ResourceForward.hpp"
 #include "CoreMinimal.hpp"
+#include "RHIBase.hpp"
 #include "sync/SyncEnums.hpp"
 #include "sync/SyncForward.hpp"   // IWYU pragma: keep
 #include "templates/NumericLimits.hpp"
@@ -40,7 +41,7 @@ struct SubresourceRange
     /// @brief Constructs a range covering the entire resource.
     constexpr SubresourceRange() noexcept = default;
 
-    /// @brief Constructs a range addressing specific mip, array, and plane indices.
+    /// @brief Constructs a range addressing specific mip, array, and plane indices with bounds validation.
     /// @param[in] inMipIndex Mip level index, or `kAllSubresources`.
     /// @param[in] inArraySlice Array slice index, or `kAllSubresources`.
     /// @param[in] inPlaneSlice Plane slice index, or `kAllSubresources`.
@@ -645,5 +646,11 @@ struct TrackedAccessInfo : public TrackedAccess
     /// @return True when resource pointer, access state, and pipelines all match.
     [[nodiscard]] constexpr bool operator==(const TrackedAccessInfo& rhs) const noexcept = default;
 };
+
+/// @brief Resolves the underlying `resource::ViewableResource` referenced by `info`, unwrapping texture references and
+///        unordered access views.
+/// @param[in] info Transition descriptor to resolve.
+/// @return Resolved `ViewableResource*`, or `nullptr` for null resources, acceleration structures, or unknown entries.
+[[nodiscard]] GP_RHI_API resource::ViewableResource* getViewableResource(const TransitionInfo& info) noexcept;
 
 }   // namespace gp::rhi::sync
