@@ -257,7 +257,7 @@ struct TextureDesc
     [[nodiscard]] GP_FORCEINLINE_HINT gp::UInt16 getSubresourceCount() const noexcept
     {
         const gp::UInt32 numFaces = isTextureCube() ? kCubeFaceCount : 1u;
-        const gp::UInt32 numPlanes = (isStencilFormat(format) || format == PixelFormat::D24_UNorm_S8_UInt) ? 2u : 1u;
+        const gp::UInt32 numPlanes = isStencilFormat(format) ? 2u : 1u;
         return static_cast<gp::UInt16>(
             static_cast<gp::UInt32>(arraySize) * static_cast<gp::UInt32>(numMips) * numFaces * numPlanes
         );
