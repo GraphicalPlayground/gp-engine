@@ -17,6 +17,7 @@
 #include "RHIPixelFormat.hpp"
 #include "sync/SyncEnums.hpp"
 #include "templates/Function.hpp"
+#include <type_traits>
 #include <utility>
 
 namespace gp::rhi::resource
@@ -75,6 +76,7 @@ struct TextureDataProvider
     /// @tparam InRequesterType Callable matching `SubresourceData(TextureSubresourceIndex)`.
     /// @param[in] inRequester Callback producing subresource upload payloads.
     template <typename InRequesterType>
+    requires(!std::is_same_v<std::decay_t<InRequesterType>, TextureDataProvider>)
     explicit TextureDataProvider(InRequesterType&& inRequester) noexcept
         : requester(std::forward<InRequesterType>(inRequester))
     {}
