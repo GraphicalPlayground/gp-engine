@@ -146,7 +146,8 @@ shader::Shader* BoundShaderStateInput::getShader(const shader::ShaderFrequency f
 
     case shader::ShaderFrequency::WorkGraphRoot:
     case shader::ShaderFrequency::WorkGraphComputeNode:
-        return m_workGraphShader;
+        return (m_workGraphShader != nullptr && m_workGraphShader->getFrequency() == frequency) ? m_workGraphShader
+                                                                                                : nullptr;
 
     default:
         return nullptr;
@@ -176,7 +177,7 @@ void PipelineStateStats::updateStats(const gp::UInt64 currentFrame) noexcept
     }
 
     gp::UInt64 expectedLast = lastFrameUsed.load(gp::memory::MemoryOrder::Relaxed);
-    while (currentFrame > expectedLast &&
+    while ((expectedLast == kInvalidFrame || currentFrame > expectedLast) &&
            !lastFrameUsed.compareExchangeWeak(
                expectedLast, currentFrame, gp::memory::MemoryOrder::Relaxed, gp::memory::MemoryOrder::Relaxed
            ))
