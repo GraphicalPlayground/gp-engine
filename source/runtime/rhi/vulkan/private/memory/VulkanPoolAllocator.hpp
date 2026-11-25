@@ -23,6 +23,13 @@
 namespace gp::rhi::vulkan
 {
 
+/// @brief Returns a new process-unique identifier for a `VkBuffer` handle.
+/// @details Shared by pool-owned buffers and buffers that own their handle (placed and sparse), so descriptor caches
+///          can key on the identifier instead of the handle value, which drivers may recycle.
+/// @note Thread-safe.
+/// @return Non-zero identifier.
+[[nodiscard]] GP_RHI_VULKAN_API gp::UInt32 generateVulkanBufferHandleId() noexcept;
+
 /// @brief Configuration identifying a single `VulkanPoolAllocator` instance and its backing page properties.
 struct VulkanPoolConfig final
 {

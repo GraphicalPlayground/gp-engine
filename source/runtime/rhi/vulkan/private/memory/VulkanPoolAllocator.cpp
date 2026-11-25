@@ -163,7 +163,7 @@ void VulkanMemoryPool::init() noexcept
         [[maybe_unused]] void* const mapped = m_memoryAllocation->map(allocationSize, 0u);
     }
 
-    m_bufferId = g_bufferHandleIdCounter.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed) + 1u;
+    m_bufferId = generateVulkanBufferHandleId();
 
     gp::rhi::allocator::MemoryPool::init();
 }
@@ -668,6 +668,11 @@ bool VulkanPoolAllocator::handleDefragRequest(
     targetToRelease.moveFrom(tmpTargetBlock, true);
     deallocateInternal(targetToRelease);
     return false;
+}
+
+gp::UInt32 generateVulkanBufferHandleId() noexcept
+{
+    return g_bufferHandleIdCounter.fetchAdd(1u, gp::memory::MemoryOrder::Relaxed) + 1u;
 }
 
 }   // namespace gp::rhi::vulkan
