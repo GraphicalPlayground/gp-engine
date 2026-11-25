@@ -14,6 +14,18 @@ namespace gp::rhi::vulkan
 /// @brief Dynamic Vulkan library loader and entry-point resolver.
 class VulkanLoader;
 
+/// @brief Owning wrapper managing `VkInstance` creation, extensions, layers, and debug callbacks.
+class VulkanInstance;
+
+/// @brief Creation parameters for `VulkanInstance::initialize()`.
+struct VulkanInstanceCreateDesc;
+
+/// @brief Inspected properties, memory heaps, UUID/LUID, and vendor metadata for a `VkPhysicalDevice`.
+struct VulkanPhysicalDeviceInfo;
+
+/// @brief Policy controlling physical device adapter selection.
+struct VulkanPhysicalDeviceSelectionDesc;
+
 /// @brief Context payload passed to Vulkan result verification error handlers.
 struct VulkanResultErrorContext;
 
