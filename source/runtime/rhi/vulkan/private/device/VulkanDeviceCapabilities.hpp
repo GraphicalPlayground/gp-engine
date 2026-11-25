@@ -21,7 +21,7 @@ namespace gp::rhi::vulkan
 {
 
 /// @brief Per-`PixelFormat` Vulkan format mapping, component swizzle, and capability table built during device setup.
-struct VulkanFormatSupportTable final
+struct GP_RHI_VULKAN_API VulkanFormatSupportTable final
 {
     /// @brief Selected image `VkFormat` for each engine `PixelFormat` (`VK_FORMAT_UNDEFINED` if unsupported).
     gp::Array<VkFormat, kPixelFormatCount> platformFormats{};
