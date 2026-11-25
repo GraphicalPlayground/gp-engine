@@ -3,6 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "memory/VulkanMemoryManager.hpp"
+#include "allocators/PoolAllocationData.hpp"
 #include "allocators/PoolAllocatorEnums.hpp"
 #include "console/AutoConsoleVariable.hpp"
 #include "console/ConsoleManager.hpp"        // IWYU pragma: keep
@@ -12,6 +13,7 @@
 #include "CoreMinimal.hpp"
 #include "device/RHIGlobals.hpp"
 #include "device/VulkanDevice.hpp"
+#include "diagnostics/AssertionMacros.hpp"
 #include "loader/VulkanCommandWrappers.hpp"
 #include "logging/LogMacros.hpp"
 #include "maths/base/Arithmetic.hpp"
@@ -184,7 +186,10 @@ void finalizePoolConfig(VulkanPoolConfig& config) noexcept
 }   // namespace
 
 VkBuffer createVulkanBuffer(
-    const VulkanDevice& device, const VkDeviceSize size, const VkBufferUsageFlags usageFlags
+    const VulkanDevice& device,
+    const VkDeviceSize size,
+    const VkBufferUsageFlags usageFlags,
+    const VkBufferCreateFlags createFlags
 ) noexcept
 {
     if (!device.isValid() || size == 0u || dynamic_api::vkCreateBuffer == nullptr)
@@ -193,6 +198,7 @@ VkBuffer createVulkanBuffer(
     }
 
     VkBufferCreateInfo createInfo = zeroVulkanStruct<VkBufferCreateInfo>(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+    createInfo.flags = createFlags;
     createInfo.size = size;
     createInfo.usage = usageFlags;
 
@@ -1304,6 +1310,83 @@ VulkanPoolAllocator* VulkanMemoryManager::getPoolAllocator(const gp::UInt32 allo
     gp::thread::SharedLock<gp::thread::SharedMutex> readLock(m_manualPoolsMutex);
     const gp::UInt32 manualIdx = allocatorIndex - dedicatedEnd;
     return (manualIdx < m_manualPoolAllocators.size()) ? m_manualPoolAllocators[manualIdx].get() : nullptr;
+}
+
+void VulkanMemoryManager::setPoolAllocationOwner(
+    const VulkanAllocation& allocation, gp::rhi::allocator::PoolResource* const owner
+) noexcept
+{
+    // Allocations served outside the pool allocators have no block to tag.
+    if ((allocation.isPoolAllocated == 0u) || (allocation.isUnmovable != 0u) || (owner == nullptr))
+    {
+        return;
+    }
+
+    VulkanPoolAllocator* const poolAllocator = getPoolAllocator(allocation.allocatorIndex);
+    if (GP_ENSURE_MSG(poolAllocator != nullptr, "setPoolAllocationOwner(): unknown allocator index."))
+    {
+        poolAllocator->setAllocationOwner(allocation, owner);
+    }
+}
+
+void VulkanMemoryManager::transferPoolAllocationOwner(
+    const VulkanAllocation& allocation, gp::rhi::allocator::PoolResource* const newOwner
+) noexcept
+{
+    if ((allocation.isPoolAllocated == 0u) || (allocation.isUnmovable != 0u) || (newOwner == nullptr))
+    {
+        return;
+    }
+
+    VulkanPoolAllocator* const poolAllocator = getPoolAllocator(allocation.allocatorIndex);
+    if (GP_ENSURE_MSG(poolAllocator != nullptr, "transferPoolAllocationOwner(): unknown allocator index."))
+    {
+        poolAllocator->transferAllocationOwner(allocation, newOwner);
+    }
+}
+
+void VulkanMemoryManager::setAllocationUnmovable(VulkanAllocation& allocation) noexcept
+{
+    allocation.isUnmovable = 1u;
+
+    // Only owned blocks are offered for relocation, so dropping the owner keeps this range out of every defrag pass.
+    if (allocation.isPoolAllocated != 0u)
+    {
+        VulkanPoolAllocator* const poolAllocator = getPoolAllocator(allocation.allocatorIndex);
+        if (GP_ENSURE_MSG(poolAllocator != nullptr, "setAllocationUnmovable(): unknown allocator index."))
+        {
+            poolAllocator->clearAllocationOwner(allocation);
+        }
+    }
+}
+
+void VulkanMemoryManager::initPoolAllocation(
+    VulkanAllocation& outAllocation,
+    const VulkanAllocation& existing,
+    const gp::rhi::allocator::PoolAllocationData& block
+) noexcept
+{
+    GP_CHECK(existing.isPoolAllocated != 0u);
+
+    VulkanPoolAllocator* const poolAllocator = getPoolAllocator(existing.allocatorIndex);
+    GP_CHECK(poolAllocator != nullptr);
+    const VulkanMemoryPool* const pool = poolAllocator->getPoolForBlock(block);
+    GP_CHECK(pool != nullptr);
+
+    outAllocation.init(
+        existing.getType(),
+        existing.metaType,
+        reinterpret_cast<gp::UInt64>(pool->getBufferHandle()),
+        block.getSize(),
+        block.getOffset(),
+        existing.allocatorIndex,
+        existing.allocationIndex,
+        pool->getBufferId()
+    );
+    outAllocation.isPoolAllocated = 1u;
+
+    // Only describes where the resource is moving to; the owning handle stays with the resource.
+    outAllocation.disown();
 }
 
 VulkanDeviceMemoryAllocation*

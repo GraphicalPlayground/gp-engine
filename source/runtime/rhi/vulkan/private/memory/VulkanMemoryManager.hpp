@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "allocators/AllocatorForward.hpp"   // IWYU pragma: keep
 #include "containers/arrays/Array.hpp"
 #include "containers/arrays/Vector.hpp"      // IWYU pragma: keep
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
@@ -26,9 +27,11 @@ namespace gp::rhi::vulkan
 /// @param[in] device Active `VulkanDevice`.
 /// @param[in] size Buffer size in bytes.
 /// @param[in] usageFlags Native `VkBufferUsageFlags`.
+/// @param[in] createFlags Optional `VkBufferCreateFlags` (sparse binding and residency for reserved buffers).
 /// @return Newly created `VkBuffer`, or `VK_NULL_HANDLE` on failure.
-[[nodiscard]] GP_RHI_VULKAN_API VkBuffer
-    createVulkanBuffer(const VulkanDevice& device, VkDeviceSize size, VkBufferUsageFlags usageFlags) noexcept;
+[[nodiscard]] GP_RHI_VULKAN_API VkBuffer createVulkanBuffer(
+    const VulkanDevice& device, VkDeviceSize size, VkBufferUsageFlags usageFlags, VkBufferCreateFlags createFlags = 0u
+) noexcept;
 
 /// @brief Top-level Vulkan GPU memory manager coordinating pool suballocators, dedicated allocations, and deferred
 ///        frees.
@@ -201,6 +204,36 @@ public:
     /// @param[in] allocatorIndex Slot index stored in `VulkanAllocation::allocatorIndex`.
     /// @return Pointer to `VulkanPoolAllocator`, or `nullptr`.
     [[nodiscard]] VulkanPoolAllocator* getPoolAllocator(gp::UInt32 allocatorIndex) noexcept;
+
+    /// @brief Registers `owner` as the defragmentation owner of a pooled, movable `allocation`.
+    /// @details Allocations served outside the pool allocators, pinned allocations, and null owners are ignored.
+    /// @param[in] allocation Live allocation.
+    /// @param[in] owner Resource that will receive relocation callbacks, or `nullptr`.
+    void setPoolAllocationOwner(const VulkanAllocation& allocation, gp::rhi::allocator::PoolResource* owner) noexcept;
+
+    /// @brief Moves the defragmentation ownership of a pooled, movable `allocation` to `newOwner`.
+    /// @param[in] allocation Live allocation.
+    /// @param[in] newOwner Resource that now owns the allocation, or `nullptr` (ignored).
+    void transferPoolAllocationOwner(
+        const VulkanAllocation& allocation, gp::rhi::allocator::PoolResource* newOwner
+    ) noexcept;
+
+    /// @brief Pins `allocation` so defragmentation never relocates it.
+    /// @details Clearing the block owner is what keeps the pool from offering the range for relocation every frame.
+    /// @param[in,out] allocation Live allocation to pin (`isUnmovable` is set).
+    void setAllocationUnmovable(VulkanAllocation& allocation) noexcept;
+
+    /// @brief Describes the destination range of a pooled allocation that is being relocated to `block`.
+    /// @details The returned allocation is disowned: the owning handle stays with the resource, so this one must never
+    ///          free anything.
+    /// @param[out] outAllocation Receives the destination description.
+    /// @param[in] existing Current pooled allocation of the resource.
+    /// @param[in] block Destination pool block.
+    void initPoolAllocation(
+        VulkanAllocation& outAllocation,
+        const VulkanAllocation& existing,
+        const gp::rhi::allocator::PoolAllocationData& block
+    ) noexcept;
 
     /// @brief Resolves the backing `VulkanDeviceMemoryAllocation*` for any live `VulkanAllocation`.
     /// @param[in] allocation Live allocation handle.
