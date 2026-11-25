@@ -12,6 +12,7 @@
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "device/RHIGlobals.hpp"
+#include "diagnostics/AssertionMacros.hpp"
 #include "extensions/VulkanDeviceExtension.hpp"
 #include "instance/VulkanPhysicalDevice.hpp"
 #include "layers/VulkanLayers.hpp"
@@ -338,6 +339,7 @@ void VulkanDevice::destroy() noexcept
     if (m_device != VK_NULL_HANDLE)
     {
         waitUntilIdle();
+        m_barrierEventPool.destroy(m_device);
         if (dynamic_api::vkDestroyDevice != nullptr)
         {
             vkDestroyDevice(m_device, GP_VULKAN_CPU_ALLOCATOR);
@@ -433,6 +435,17 @@ void VulkanDevice::setupFormats() noexcept
 
     populateFormatSupportTable(m_formatSupportTable, m_features, m_renderDocFound, formatQuery, mipQuery);
     populateVertexElementTypeSupport(m_vertexElementSupport, formatQuery);
+}
+
+VkEvent VulkanDevice::getBarrierEvent() noexcept
+{
+    GP_CHECK(supportsParallelRendering());
+    return m_barrierEventPool.acquire(m_device);
+}
+
+void VulkanDevice::releaseBarrierEvent(const VkEvent event) noexcept
+{
+    m_barrierEventPool.release(event);
 }
 
 void VulkanDevice::queryQueueOwnershipTransferSupport() noexcept

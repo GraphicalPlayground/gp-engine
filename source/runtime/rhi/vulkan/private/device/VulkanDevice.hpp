@@ -18,6 +18,7 @@
 #include "extensions/VulkanExtensionTypes.hpp"
 #include "RHIPixelFormat.hpp"
 #include "RHIVulkan.hpp"
+#include "sync/VulkanBarrierEventPool.hpp"
 #include "VulkanThirdParty.hpp"   // IWYU pragma: keep
 
 namespace gp::rhi::vulkan
@@ -188,6 +189,36 @@ public:
                (m_optionalExtensions.hasKHRSynchronization2 != 0u) && (m_optionalExtensions.hasKHRRenderPass2 != 0u);
     }
 
+    /// @brief Reports whether images moved between the graphics and compute queue families need explicit queue
+    ///        family ownership transfers.
+    /// @return True unless `VK_KHR_maintenance9` reports optimal transfers between every active queue family.
+    [[nodiscard]] bool needsQueueFamilyOwnershipTransfers() const noexcept
+    {
+        return m_queueIndices.needsQueueFamilyOwnershipTransfers;
+    }
+
+    /// @brief Takes a device-only `VkEvent` for a split barrier from the device pool, creating one if needed.
+    /// @note Requires `supportsParallelRendering()`; split barriers are recorded with `synchronization2`.
+    /// @return Unsignaled event, or `VK_NULL_HANDLE` if creation failed.
+    [[nodiscard]] VkEvent getBarrierEvent() noexcept;
+
+    /// @brief Returns a split-barrier event to the device pool once the GPU no longer uses it.
+    /// @param[in] event Event previously returned by `getBarrierEvent()`.
+    void releaseBarrierEvent(VkEvent event) noexcept;
+
+    /// @brief Returns the split-barrier event pool owned by this device.
+    /// @return Const reference to the pool.
+    [[nodiscard]] const VulkanBarrierEventPool& getBarrierEventPool() const noexcept
+    {
+        return m_barrierEventPool;
+    }
+
+    /// @copydoc getBarrierEventPool() const
+    [[nodiscard]] VulkanBarrierEventPool& getBarrierEventPool() noexcept
+    {
+        return m_barrierEventPool;
+    }
+
     /// @brief Returns the populated Vulkan pixel format support and capability table.
     /// @return Const reference to `VulkanFormatSupportTable`.
     [[nodiscard]] const VulkanFormatSupportTable& getFormatSupportTable() const noexcept
@@ -293,6 +324,7 @@ private:
     gp::rhi::VertexElementTypeSupportInfo m_vertexElementSupport{};
 
     VulkanDebugMarkers m_debugMarkers{};
+    VulkanBarrierEventPool m_barrierEventPool{};
 };
 
 }   // namespace gp::rhi::vulkan
