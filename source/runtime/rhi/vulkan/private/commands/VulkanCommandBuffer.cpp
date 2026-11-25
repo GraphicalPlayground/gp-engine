@@ -140,6 +140,7 @@ void VulkanCommandBuffer::freeMemory() noexcept
     m_state = VulkanCommandBufferState::NotAllocated;
     m_executedSecondaryBuffers.clear();
     m_endedBarrierEvents.clear();
+    releasePooledBarrierEvents();
     m_waitFlags.clear();
     m_waitSemaphores.clear();
 }
@@ -150,6 +151,15 @@ void VulkanCommandBuffer::resetDynamicState() noexcept
     m_currentGraphicsPipeline = VK_NULL_HANDLE;
     m_currentComputePipeline = VK_NULL_HANDLE;
     m_endedBarrierEvents.clear();
+}
+
+void VulkanCommandBuffer::releasePooledBarrierEvents() noexcept
+{
+    for (gp::USize index = 0u; index < m_pooledBarrierEvents.size(); ++index)
+    {
+        m_device.releaseBarrierEvent(m_pooledBarrierEvents[index]);
+    }
+    m_pooledBarrierEvents.clear();
 }
 
 bool VulkanCommandBuffer::begin(
@@ -296,6 +306,8 @@ void VulkanCommandBuffer::reset() noexcept
     gp::thread::UniqueLock<gp::thread::Mutex> poolLock(m_owner.m_mutex);
     if (m_state == VulkanCommandBufferState::Submitted || m_state == VulkanCommandBufferState::HasEnded)
     {
+        // The GPU is done with this buffer, so its split-barrier events can be reused.
+        releasePooledBarrierEvents();
         m_state = VulkanCommandBufferState::NeedReset;
         m_lastActiveTimestampNs = gp::platform::Time::nowNanoseconds();
         m_owner.recycleCommandBufferLocked(this);
@@ -420,6 +432,34 @@ bool VulkanCommandBuffer::endSplitBarrier(
         m_handle, 1u, &event, srcStageMask, dstStageMask, memoryBarrierCount, memoryBarrier, 0u, nullptr, 0u, nullptr
     );
     m_endedBarrierEvents.pushBack(event);
+    return true;
+}
+
+bool VulkanCommandBuffer::beginSplitBarrier(const VkEvent event, const VkDependencyInfo& dependencyInfo) noexcept
+{
+    if (m_handle == VK_NULL_HANDLE || event == VK_NULL_HANDLE || m_state != VulkanCommandBufferState::IsInsideBegin ||
+        dynamic_api::vkCmdSetEvent2KHR == nullptr)
+    {
+        return false;
+    }
+
+    vkCmdSetEvent2KHR(m_handle, event, &dependencyInfo);
+    return true;
+}
+
+bool VulkanCommandBuffer::endSplitBarrier(const VkEvent event, const VkDependencyInfo& dependencyInfo) noexcept
+{
+    if (m_handle == VK_NULL_HANDLE || event == VK_NULL_HANDLE || m_state != VulkanCommandBufferState::IsInsideBegin ||
+        dynamic_api::vkCmdWaitEvents2KHR == nullptr)
+    {
+        return false;
+    }
+
+    vkCmdWaitEvents2KHR(m_handle, 1u, &event, &dependencyInfo);
+
+    // Reset when the buffer ends, then returned to the device pool when the buffer is recycled.
+    m_endedBarrierEvents.pushBack(event);
+    m_pooledBarrierEvents.pushBack(event);
     return true;
 }
 
@@ -667,6 +707,7 @@ bool VulkanCommandBufferPool::resetPool(const VkCommandPoolResetFlags flags) noe
             cmdBuffer->m_waitFlags.clear();
             cmdBuffer->m_waitSemaphores.clear();
             cmdBuffer->resetDynamicState();
+            cmdBuffer->releasePooledBarrierEvents();
             cmdBuffer->m_state = VulkanCommandBufferState::ReadyForBegin;
             cmdBuffer->m_lastActiveTimestampNs = nowNs;
             recycleCommandBufferLocked(cmdBuffer);

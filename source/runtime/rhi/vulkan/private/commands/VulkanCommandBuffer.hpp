@@ -54,6 +54,13 @@ public:
         return m_commandBufferType;
     }
 
+    /// @brief Returns the device that owns this command buffer.
+    /// @return Owning `VulkanDevice`.
+    [[nodiscard]] VulkanDevice& getDevice() const noexcept
+    {
+        return m_device;
+    }
+
     /// @brief Returns the current recording/submission lifecycle state.
     /// @return `VulkanCommandBufferState`.
     [[nodiscard]] VulkanCommandBufferState getState() const noexcept
@@ -188,6 +195,28 @@ public:
         const VkMemoryBarrier* memoryBarrier = nullptr
     ) noexcept;
 
+    /// @brief Signals a pooled split-barrier event with `vkCmdSetEvent2KHR`, recording the source half of
+    ///        `dependencyInfo`.
+    /// @param[in] event Event obtained from `VulkanDevice::getBarrierEvent()`.
+    /// @param[in] dependencyInfo Barriers describing the first synchronization scope.
+    /// @return True when recorded; false if outside `IsInsideBegin`, the handle is null or the entry point is missing.
+    [[nodiscard]] bool beginSplitBarrier(VkEvent event, const VkDependencyInfo& dependencyInfo) noexcept;
+
+    /// @brief Waits on a pooled split-barrier event with `vkCmdWaitEvents2KHR`.
+    /// @details The event is reset when this command buffer ends and handed back to the device pool once the buffer
+    ///          is recycled after GPU completion.
+    /// @param[in] event Event previously passed to `beginSplitBarrier()`.
+    /// @param[in] dependencyInfo Barriers matching the ones recorded at `beginSplitBarrier()`.
+    /// @return True when recorded; false if outside `IsInsideBegin`, the handle is null or the entry point is missing.
+    [[nodiscard]] bool endSplitBarrier(VkEvent event, const VkDependencyInfo& dependencyInfo) noexcept;
+
+    /// @brief Returns the pooled split-barrier events waiting for this command buffer to be recycled.
+    /// @return Read-only view of the events that will go back to the device pool.
+    [[nodiscard]] gp::ConstVectorView<VkEvent> getPendingPooledBarrierEvents() const noexcept
+    {
+        return gp::ConstVectorView<VkEvent>(m_pooledBarrierEvents.data(), m_pooledBarrierEvents.size());
+    }
+
     /// @brief Appends a semaphore wait dependency to be consumed when this command buffer is submitted.
     /// @param[in] waitFlags Pipeline stage flags at which the wait occurs.
     /// @param[in] semaphore Semaphore to wait on.
@@ -300,6 +329,10 @@ private:
     /// @brief Clears cached dynamic state, pipelines, and split-barrier tracking fields.
     void resetDynamicState() noexcept;
 
+    /// @brief Hands every pooled split-barrier event back to the device pool.
+    /// @note Only call once the GPU is done with this command buffer.
+    void releasePooledBarrierEvents() noexcept;
+
     VulkanDevice& m_device;
     VulkanCommandBufferPool& m_owner;
     VkCommandBuffer m_handle{ VK_NULL_HANDLE };
@@ -314,6 +347,7 @@ private:
     VkPipeline m_currentComputePipeline{ VK_NULL_HANDLE };
 
     gp::Vector<VkEvent> m_endedBarrierEvents{};
+    gp::Vector<VkEvent> m_pooledBarrierEvents{};
     gp::Vector<VulkanCommandBuffer*> m_executedSecondaryBuffers{};
     gp::Vector<VkPipelineStageFlags> m_waitFlags{};
     gp::Vector<VulkanSemaphoreRef> m_waitSemaphores{};
