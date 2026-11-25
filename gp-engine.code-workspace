@@ -204,6 +204,7 @@
       "zh-cn": "i18n",
       "traits": "rules",
       "doxygen": "docs",
+      "barriers": "resolver",
       "mimalloc": "migrations",
       "rapidjson": "json",
       "tbb": "migrations",
