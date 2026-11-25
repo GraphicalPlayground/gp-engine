@@ -193,6 +193,7 @@
       "platforms": "client",
       "platform": "client",
       "loader": "packages",
+      "layers": "element",
       "es": "i18n",
       "fr": "i18n",
       "en": "i18n",
