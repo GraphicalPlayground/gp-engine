@@ -47,6 +47,12 @@ class VulkanCommandBuffer;
 /// @brief Pool allocating and recycling `VulkanCommandBuffer` objects for a queue family.
 class VulkanCommandBufferPool;
 
+/// @brief Batched queue submission payload carrying command buffers, semaphores, sync points, and completion state.
+struct VulkanPayload;
+
+/// @brief Concrete `command::IPlatformCommandList` wrapping a batch of `VulkanPayload` submissions.
+class VulkanPlatformCommandList;
+
 /// @brief Immediate and parallel command recording context targeting Vulkan command buffers.
 class VulkanCommandListContext;
 
