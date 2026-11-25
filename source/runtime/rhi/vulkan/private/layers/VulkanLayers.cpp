@@ -443,8 +443,11 @@ VulkanInstanceLayerSetupResult setupInstanceLayers(
         }
     }
 
-    const bool forceDebugUtils =
-        (GP_VULKAN_ENABLE_DRAW_MARKERS != 0) || gp::CommandLine::hasArgument("vulkandebugutils");
+    #if GP_VULKAN_ENABLE_DRAW_MARKERS
+    const bool forceDebugUtils = true;
+    #else
+    const bool forceDebugUtils = gp::CommandLine::hasArgument("vulkandebugutils");
+    #endif
     if ((useValidation || forceDebugUtils) && !hasTraceLayer)
     {
         const auto activateDebugExtension = [&extensions](const char* const extensionName) noexcept -> bool
