@@ -330,13 +330,19 @@ VulkanDeviceExtensionArray VulkanDeviceExtension::getSupportedDeviceExtensions(
         GP_VK_DEVICE_EXT_FLAG(hasKHRPushDescriptors)
     );
 
+    // Resolved via the preprocessor: a constant ternary makes Clang's -Wunreachable-code fire.
+#if GP_VULKAN_HAS_DEBUGGING_ENABLED || GP_VULKAN_ENABLE_DRAW_MARKERS
+    constexpr auto kDebugExtensionPolicy = kVulkanExtensionEnabled;
+#else
+    constexpr auto kDebugExtensionPolicy = kVulkanExtensionDisabled;
+#endif
+
     // Manually activated legacy debug marker fallback (used only when VK_EXT_debug_utils is unavailable)
     addSimpleDeviceExtension(
         outExtensions,
         inDevice,
         VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
-        (GP_VULKAN_HAS_DEBUGGING_ENABLED || GP_VULKAN_ENABLE_DRAW_MARKERS) ? kVulkanExtensionEnabled
-                                                                           : kVulkanExtensionDisabled,
+        kDebugExtensionPolicy,
         kVulkanExtensionNotPromoted,
         nullptr,
         VulkanExtensionActivation::ManuallyActivate
@@ -355,8 +361,7 @@ VulkanDeviceExtensionArray VulkanDeviceExtension::getSupportedDeviceExtensions(
         outExtensions,
         inDevice,
         VK_EXT_TOOLING_INFO_EXTENSION_NAME,
-        (GP_VULKAN_HAS_DEBUGGING_ENABLED || GP_VULKAN_ENABLE_DRAW_MARKERS) ? kVulkanExtensionEnabled
-                                                                           : kVulkanExtensionDisabled,
+        kDebugExtensionPolicy,
         VK_API_VERSION_1_3,
         GP_VK_DEVICE_EXT_FLAG(hasEXTToolingInfo)
     );
