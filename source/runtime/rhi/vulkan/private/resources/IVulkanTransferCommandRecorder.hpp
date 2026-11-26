@@ -46,6 +46,65 @@ public:
         VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& barrier
     ) noexcept = 0;
 
+    /// @brief Records a buffer-to-image copy.
+    /// @param[in] srcBuffer Source (staging) buffer.
+    /// @param[in] dstImage Destination image.
+    /// @param[in] dstLayout Layout of `dstImage` while the copy executes (`TRANSFER_DST_OPTIMAL` or `GENERAL`).
+    /// @param[in] regions Copy regions.
+    virtual void copyBufferToImage(
+        VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstLayout, gp::ConstVectorView<VkBufferImageCopy> regions
+    ) noexcept = 0;
+
+    /// @brief Records an image-to-buffer copy.
+    /// @param[in] srcImage Source image.
+    /// @param[in] srcLayout Layout of `srcImage` while the copy executes (`TRANSFER_SRC_OPTIMAL` or `GENERAL`).
+    /// @param[in] dstBuffer Destination (readback) buffer.
+    /// @param[in] regions Copy regions.
+    virtual void copyImageToBuffer(
+        VkImage srcImage, VkImageLayout srcLayout, VkBuffer dstBuffer, gp::ConstVectorView<VkBufferImageCopy> regions
+    ) noexcept = 0;
+
+    /// @brief Records an image-to-image copy.
+    /// @param[in] srcImage Source image.
+    /// @param[in] srcLayout Layout of `srcImage` during the copy.
+    /// @param[in] dstImage Destination image.
+    /// @param[in] dstLayout Layout of `dstImage` during the copy.
+    /// @param[in] regions Copy regions.
+    virtual void copyImage(
+        VkImage srcImage,
+        VkImageLayout srcLayout,
+        VkImage dstImage,
+        VkImageLayout dstLayout,
+        gp::ConstVectorView<VkImageCopy> regions
+    ) noexcept = 0;
+
+    /// @brief Records an image layout transition; stage and access masks are derived from the two layouts.
+    /// @param[in] image Target image.
+    /// @param[in] oldLayout Layout before the barrier.
+    /// @param[in] newLayout Layout after the barrier.
+    /// @param[in] range Subresources to transition.
+    virtual void imageLayoutTransition(
+        VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, const VkImageSubresourceRange& range
+    ) noexcept = 0;
+
+    /// @brief Records a color clear of `range`.
+    /// @param[in] image Target image.
+    /// @param[in] layout Layout of `image` during the clear.
+    /// @param[in] color Clear color.
+    /// @param[in] range Subresources to clear.
+    virtual void clearColorImage(
+        VkImage image, VkImageLayout layout, const VkClearColorValue& color, const VkImageSubresourceRange& range
+    ) noexcept = 0;
+
+    /// @brief Records a depth/stencil clear of `range`.
+    /// @param[in] image Target image.
+    /// @param[in] layout Layout of `image` during the clear.
+    /// @param[in] value Clear depth and stencil.
+    /// @param[in] range Subresources to clear.
+    virtual void clearDepthStencilImage(
+        VkImage image, VkImageLayout layout, const VkClearDepthStencilValue& value, const VkImageSubresourceRange& range
+    ) noexcept = 0;
+
     /// @brief Records a full heavyweight barrier when `r.Vulkan.DebugBarrier` enables `categoryMask`.
     /// @param[in] categoryMask Debug category bit of the call site.
     virtual void debugHeavyWeightBarrier(gp::Int32 categoryMask) noexcept = 0;
@@ -60,4 +119,3 @@ public:
 };
 
 }   // namespace gp::rhi::vulkan
-
