@@ -25,7 +25,8 @@ gp::console::AutoConsoleVariable<gp::Int32> g_cvarVulkanDebugBarrier(
     " 4: Enable heavy barriers after upload cmd buffers\n"
     " 8: Enable heavy barriers after active cmd buffers\n"
     " 16: Enable heavy buffer barrier after uploads\n"
-    " 32: Enable heavy buffer barrier between acquiring back buffer and blitting into swapchain\n",
+    " 32: Enable heavy buffer barrier between acquiring back buffer and blitting into swapchain\n"
+    " 64: Enable heavy texture barrier before texture uploads\n",
     gp::console::ConsoleVarFlags::None
 );
 
@@ -84,4 +85,3 @@ void debugHeavyWeightBarrier(const VkCommandBuffer commandBuffer, const gp::Int3
 }
 
 }   // namespace gp::rhi::vulkan
-

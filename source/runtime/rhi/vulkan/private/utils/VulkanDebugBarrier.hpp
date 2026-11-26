@@ -29,6 +29,9 @@ inline constexpr gp::Int32 kVulkanDebugBarrierBufferUpload = 16;
 /// @brief `r.Vulkan.DebugBarrier` bit: heavy barrier between back buffer acquire and the swapchain blit.
 inline constexpr gp::Int32 kVulkanDebugBarrierSwapchainBlit = 32;
 
+/// @brief `r.Vulkan.DebugBarrier` bit: heavy barrier before a texture upload copy.
+inline constexpr gp::Int32 kVulkanDebugBarrierTextureUpload = 64;
+
 /// @brief Builds the memory barrier that makes every access type available and visible to every other.
 /// @return `VkMemoryBarrier` with all read and write access bits set on both sides.
 [[nodiscard]] GP_RHI_VULKAN_API VkMemoryBarrier makeHeavyWeightMemoryBarrier() noexcept;
@@ -50,4 +53,3 @@ GP_RHI_VULKAN_API void recordHeavyWeightBarrier(VkCommandBuffer commandBuffer) n
 GP_RHI_VULKAN_API void debugHeavyWeightBarrier(VkCommandBuffer commandBuffer, gp::Int32 categoryMask) noexcept;
 
 }   // namespace gp::rhi::vulkan
-
