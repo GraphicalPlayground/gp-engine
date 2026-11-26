@@ -98,6 +98,9 @@ class VulkanStagingBuffer;
 /// @brief Pool manager recycling `VulkanStagingBuffer` instances gated by GPU completion sync points.
 class VulkanStagingManager;
 
+/// @brief Ring of host-visible blocks serving volatile sub-allocations such as single-frame uniform buffers.
+class VulkanTempBlockAllocator;
+
 /// @brief Descriptor representing a Vulkan instance extension and its enablement state.
 class VulkanInstanceExtension;
 
