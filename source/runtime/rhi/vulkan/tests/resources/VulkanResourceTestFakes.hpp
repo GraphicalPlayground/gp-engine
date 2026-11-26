@@ -59,7 +59,134 @@ public:
         gp::UInt32 data{ 0u };
     };
 
+    /// @brief One recorded buffer/image copy (either direction) with its first region.
+    struct ImageCopyCall final
+    {
+        VkBuffer buffer{ VK_NULL_HANDLE };
+        VkImage image{ VK_NULL_HANDLE };
+        VkImageLayout layout{ VK_IMAGE_LAYOUT_UNDEFINED };
+        VkBufferImageCopy region{};
+        VkBufferImageCopy lastRegion{};
+        gp::USize regionCount{ 0u };
+    };
+
+    /// @brief One recorded image-to-image copy.
+    struct ImageToImageCall final
+    {
+        VkImage srcImage{ VK_NULL_HANDLE };
+        VkImage dstImage{ VK_NULL_HANDLE };
+        VkImageLayout srcLayout{ VK_IMAGE_LAYOUT_UNDEFINED };
+        VkImageLayout dstLayout{ VK_IMAGE_LAYOUT_UNDEFINED };
+        VkImageCopy region{};
+        gp::USize regionCount{ 0u };
+    };
+
+    /// @brief One recorded image layout transition.
+    struct TransitionCall final
+    {
+        VkImage image{ VK_NULL_HANDLE };
+        VkImageLayout oldLayout{ VK_IMAGE_LAYOUT_UNDEFINED };
+        VkImageLayout newLayout{ VK_IMAGE_LAYOUT_UNDEFINED };
+        VkImageSubresourceRange range{};
+    };
+
+    /// @brief One recorded color or depth/stencil clear.
+    struct ClearCall final
+    {
+        VkImage image{ VK_NULL_HANDLE };
+        VkImageLayout layout{ VK_IMAGE_LAYOUT_UNDEFINED };
+        VkClearColorValue color{};
+        VkClearDepthStencilValue depthStencil{};
+        bool isDepthStencil{ false };
+    };
+
     static constexpr gp::USize kMaxCalls = 8u;
+
+    /// @copydoc IVulkanTransferCommandRecorder::copyBufferToImage()
+    virtual void copyBufferToImage(
+        const VkBuffer srcBuffer,
+        const VkImage dstImage,
+        const VkImageLayout dstLayout,
+        const gp::ConstVectorView<VkBufferImageCopy> regions
+    ) noexcept override
+    {
+        recordImageCopy(bufferToImageCopies, bufferToImageCount, srcBuffer, dstImage, dstLayout, regions);
+    }
+
+    /// @copydoc IVulkanTransferCommandRecorder::copyImageToBuffer()
+    virtual void copyImageToBuffer(
+        const VkImage srcImage,
+        const VkImageLayout srcLayout,
+        const VkBuffer dstBuffer,
+        const gp::ConstVectorView<VkBufferImageCopy> regions
+    ) noexcept override
+    {
+        recordImageCopy(imageToBufferCopies, imageToBufferCount, dstBuffer, srcImage, srcLayout, regions);
+    }
+
+    /// @copydoc IVulkanTransferCommandRecorder::copyImage()
+    virtual void copyImage(
+        const VkImage srcImage,
+        const VkImageLayout srcLayout,
+        const VkImage dstImage,
+        const VkImageLayout dstLayout,
+        const gp::ConstVectorView<VkImageCopy> regions
+    ) noexcept override
+    {
+        if (imageCopyCount < kMaxCalls)
+        {
+            imageCopies[imageCopyCount] = ImageToImageCall{
+                srcImage,      dstImage, srcLayout, dstLayout, regions.isEmpty() ? VkImageCopy{} : regions[0u],
+                regions.size()
+            };
+        }
+        ++imageCopyCount;
+    }
+
+    /// @copydoc IVulkanTransferCommandRecorder::imageLayoutTransition()
+    virtual void imageLayoutTransition(
+        const VkImage image,
+        const VkImageLayout oldLayout,
+        const VkImageLayout newLayout,
+        const VkImageSubresourceRange& range
+    ) noexcept override
+    {
+        if (transitionCount < kMaxCalls)
+        {
+            transitions[transitionCount] = TransitionCall{ image, oldLayout, newLayout, range };
+        }
+        ++transitionCount;
+    }
+
+    /// @copydoc IVulkanTransferCommandRecorder::clearColorImage()
+    virtual void clearColorImage(
+        const VkImage image,
+        const VkImageLayout layout,
+        const VkClearColorValue& color,
+        [[maybe_unused]] const VkImageSubresourceRange& range
+    ) noexcept override
+    {
+        if (clearCount < kMaxCalls)
+        {
+            clears[clearCount] = ClearCall{ image, layout, color, VkClearDepthStencilValue{}, false };
+        }
+        ++clearCount;
+    }
+
+    /// @copydoc IVulkanTransferCommandRecorder::clearDepthStencilImage()
+    virtual void clearDepthStencilImage(
+        const VkImage image,
+        const VkImageLayout layout,
+        const VkClearDepthStencilValue& value,
+        [[maybe_unused]] const VkImageSubresourceRange& range
+    ) noexcept override
+    {
+        if (clearCount < kMaxCalls)
+        {
+            clears[clearCount] = ClearCall{ image, layout, VkClearColorValue{}, value, true };
+        }
+        ++clearCount;
+    }
 
     /// @copydoc IVulkanTransferCommandRecorder::copyBuffer()
     virtual void copyBuffer(
@@ -122,10 +249,11 @@ public:
     }
 
     /// @brief Returns the total number of recorded commands of every kind.
-    /// @return Copy + fill + barrier count.
+    /// @return Copy + fill + barrier + image command count.
     [[nodiscard]] gp::USize totalCommandCount() const noexcept
     {
-        return copyCount + fillCount + barrierCount;
+        return copyCount + fillCount + barrierCount + bufferToImageCount + imageToBufferCount + imageCopyCount +
+               transitionCount + clearCount;
     }
 
     CopyCall copies[kMaxCalls]{};
@@ -134,9 +262,43 @@ public:
     gp::USize copyCount{ 0u };
     gp::USize fillCount{ 0u };
     gp::USize barrierCount{ 0u };
+    ImageCopyCall bufferToImageCopies[kMaxCalls]{};
+    ImageCopyCall imageToBufferCopies[kMaxCalls]{};
+    ImageToImageCall imageCopies[kMaxCalls]{};
+    TransitionCall transitions[kMaxCalls]{};
+    ClearCall clears[kMaxCalls]{};
+    gp::USize bufferToImageCount{ 0u };
+    gp::USize imageToBufferCount{ 0u };
+    gp::USize imageCopyCount{ 0u };
+    gp::USize transitionCount{ 0u };
+    gp::USize clearCount{ 0u };
     gp::USize debugBarrierCount{ 0u };
     gp::Int32 lastDebugCategory{ 0 };
     bool outsideRenderPass{ true };
+
+private:
+    /// @brief Stores one buffer/image copy into `calls`.
+    static void recordImageCopy(
+        ImageCopyCall (&calls)[kMaxCalls],
+        gp::USize& count,
+        const VkBuffer buffer,
+        const VkImage image,
+        const VkImageLayout layout,
+        const gp::ConstVectorView<VkBufferImageCopy> regions
+    ) noexcept
+    {
+        if (count < kMaxCalls)
+        {
+            ImageCopyCall& call = calls[count];
+            call.buffer = buffer;
+            call.image = image;
+            call.layout = layout;
+            call.regionCount = regions.size();
+            call.region = regions.isEmpty() ? VkBufferImageCopy{} : regions[0u];
+            call.lastRegion = regions.isEmpty() ? VkBufferImageCopy{} : regions[regions.size() - 1u];
+        }
+        ++count;
+    }
 };
 
 /// @brief Context provider that hands out two distinct fake recorders and counts GPU flushes.
@@ -335,4 +497,3 @@ protected:
 };
 
 }   // namespace gp::rhi::vulkan::tests
-
