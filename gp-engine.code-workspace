@@ -202,6 +202,7 @@
       "ja": "i18n",
       "de": "i18n",
       "zh-cn": "i18n",
+      "queries": "resolver",
       "traits": "rules",
       "doxygen": "docs",
       "barriers": "resolver",
