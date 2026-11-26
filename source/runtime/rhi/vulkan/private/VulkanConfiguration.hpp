@@ -51,6 +51,11 @@
     #define GP_VULKAN_HASH_POOLS_WITH_TYPES_USAGE_ID 1
 #endif
 
+/// @brief Tracks which descriptor writes were filled and reports missing ones before a set is bound.
+#ifndef GP_VULKAN_VALIDATE_DESCRIPTORS_WRITTEN
+    #define GP_VULKAN_VALIDATE_DESCRIPTORS_WRITTEN (GP_BUILD_DEBUG || GP_BUILD_DEVELOPMENT)
+#endif
+
 /// @brief Forces a dedicated device-memory allocation per Vulkan resource when set to 1 (diagnostics only).
 #ifndef GP_VULKAN_SINGLE_ALLOCATION_PER_RESOURCE
     #define GP_VULKAN_SINGLE_ALLOCATION_PER_RESOURCE 0
