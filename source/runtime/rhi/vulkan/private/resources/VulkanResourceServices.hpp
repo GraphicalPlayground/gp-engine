@@ -34,6 +34,10 @@ struct GP_RHI_VULKAN_API VulkanResourceServices final
     /// @brief Command context seam; required for any operation that records GPU commands.
     IVulkanCommandContextProvider* contextProvider{ nullptr };
 
+    /// @brief Volatile block allocator for single-draw and single-frame uniform buffers.
+    /// @details `nullptr` makes volatile uniform buffers fall back to pooled host-visible memory.
+    VulkanTempBlockAllocator* tempBlockAllocator{ nullptr };
+
     /// @brief Reports whether the device, memory and staging managers are all bound.
     /// @return True when resources can be allocated.
     [[nodiscard]] bool isValid() const noexcept;
