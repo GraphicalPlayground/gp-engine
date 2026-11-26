@@ -54,5 +54,28 @@ class VulkanViewableResource;
 /// @brief Readback buffer handed out by `createStagingBuffer()`.
 class VulkanReadbackStagingBuffer;
 
-}   // namespace gp::rhi::vulkan
+/// @brief Who owns the `VkImage` of a `VulkanTexture`.
+enum class VulkanImageOwnerType : gp::UInt8;
 
+/// @brief Memory accounting bucket a texture's bytes are charged to.
+enum class VulkanTextureStatCategory : gp::UInt8;
+
+/// @brief Image creation parameters with the chained view format list.
+struct VulkanImageCreateInfo;
+
+/// @brief Host-visible buffer replacing the image of a `CPUReadback` texture.
+struct VulkanCpuReadbackBuffer;
+
+/// @brief Bookkeeping for a staging-backed texture lock.
+struct VulkanPendingTextureLock;
+
+/// @brief Process-wide registry of staging-backed texture locks awaiting their unlock.
+class VulkanPendingTextureLockRegistry;
+
+/// @brief Vulkan implementation of a GPU texture.
+class VulkanTexture;
+
+/// @brief Vulkan implementation of a texture reference.
+class VulkanTextureReference;
+
+}   // namespace gp::rhi::vulkan
