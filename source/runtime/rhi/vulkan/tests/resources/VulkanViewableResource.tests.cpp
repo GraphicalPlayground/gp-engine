@@ -207,4 +207,3 @@ TEST(VulkanViewableResourceTest, UpdateWithoutViewsOrListenersIsNoOp)
 }
 
 }   // namespace gp::rhi::vulkan::tests
-
