@@ -205,6 +205,7 @@
       "queries": "resolver",
       "traits": "rules",
       "doxygen": "docs",
+      "descriptors": "meta",
       "barriers": "export",
       "mimalloc": "migrations",
       "rapidjson": "json",
