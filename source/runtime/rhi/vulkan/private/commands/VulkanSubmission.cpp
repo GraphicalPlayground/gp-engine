@@ -8,6 +8,8 @@
 #include "commands/VulkanQueue.hpp"
 #include "CoreMinimal.hpp"
 #include "diagnostics/AssertionMacros.hpp"
+#include "queries/VulkanQueryRecording.hpp"
+#include "queries/VulkanQueryTypes.hpp"
 #include "sync/VulkanFence.hpp"
 #include "sync/VulkanSyncPoint.hpp"
 #include <utility>
@@ -17,6 +19,11 @@ namespace gp::rhi::vulkan
 
 VulkanPayload::~VulkanPayload() noexcept
 {
+    if ((queryPoolManager != nullptr) && !queryPools.isEmpty())
+    {
+        releaseVulkanPayloadQueries(*queryPoolManager, queryPools);
+    }
+
     if (fence != nullptr)
     {
         fence->getOwner().releaseFence(fence);
@@ -58,6 +65,19 @@ void VulkanPayload::merge(VulkanPayload& other) noexcept
         syncPoints.pushBack(std::move(other.syncPoints[index]));
     }
     other.syncPoints.clear();
+
+    if (!other.queryPools.isEmpty())
+    {
+        GP_CHECK(
+            (queryPoolManager == nullptr) || (other.queryPoolManager == nullptr) ||
+            (queryPoolManager == other.queryPoolManager)
+        );
+        if (queryPoolManager == nullptr)
+        {
+            queryPoolManager = other.queryPoolManager;
+        }
+        queryPools.append(other.queryPools);
+    }
 }
 
 void VulkanPayload::complete() noexcept
@@ -71,6 +91,16 @@ void VulkanPayload::complete() noexcept
         }
     }
     commandBuffers.clear();
+
+    // Results must be written before the sync points that publish them are signaled.
+    if (!queryPools.isEmpty())
+    {
+        GP_CHECKF(queryPoolManager != nullptr, "A payload with query pools needs a query pool manager.");
+        if (queryPoolManager != nullptr)
+        {
+            resolveVulkanPayloadQueries(*queryPoolManager, queryPools);
+        }
+    }
 
     for (gp::USize index = 0u; index < syncPoints.size(); ++index)
     {

@@ -5,8 +5,10 @@
 #pragma once
 
 #include "commands/IComputeContext.hpp"
-#include "containers/arrays/Vector.hpp"   // IWYU pragma: keep
+#include "containers/arrays/Vector.hpp"     // IWYU pragma: keep
 #include "CoreMinimal.hpp"
+#include "queries/VulkanQueryForward.hpp"   // IWYU pragma: keep
+#include "queries/VulkanQueryTypes.hpp"
 #include "RHIVulkan.hpp"
 #include "sync/VulkanSemaphore.hpp"
 #include "sync/VulkanSyncPoint.hpp"
@@ -28,7 +30,8 @@ struct GP_RHI_VULKAN_API VulkanPayload final
         : queue(targetQueue)
     {}
 
-    /// @brief Destructor. Releases any attached `VulkanFence` back to its owning `VulkanFenceManager`.
+    /// @brief Destructor. Releases any attached `VulkanFence` back to its owning `VulkanFenceManager`, and gives
+    ///        query pools that were never read back to `queryPoolManager`.
     ~VulkanPayload() noexcept;
 
     VulkanPayload(const VulkanPayload&) = delete;
@@ -66,15 +69,23 @@ struct GP_RHI_VULKAN_API VulkanPayload final
     /// @brief Optional callback executed on the submission thread immediately prior to `vkQueueSubmit`.
     gp::UniqueFunction<void(VkQueue)> preExecuteCallback{};
 
+    /// @brief Query pools recorded into this payload, read back on completion before the sync points are signaled.
+    VulkanPayloadQueryPools queryPools{};
+
+    /// @brief Pool cache that takes `queryPools` back; required when `queryPools` is not empty.
+    VulkanQueryPoolManager* queryPoolManager{ nullptr };
+
     /// @brief Invokes `preExecuteCallback` (if bound) with the target queue's native `VkQueue` handle.
     void preExecute() noexcept;
 
-    /// @brief Merges command buffers and completion sync points from a secondary or parallel payload into this payload.
+    /// @brief Merges command buffers, query pools and completion sync points from a secondary or parallel payload into
+    ///        this payload.
     /// @note `other` must not carry wait or signal semaphores, and must not contain `Primary` command buffers.
     /// @param[in,out] other Source payload whose command buffers and sync points are appended and drained.
     void merge(VulkanPayload& other) noexcept;
 
-    /// @brief Marks this payload finished on the GPU: resets all command buffers and signals every `syncPoints` entry.
+    /// @brief Marks this payload finished on the GPU: resets all command buffers, reads every query back, then signals
+    ///        every `syncPoints` entry.
     void complete() noexcept;
 };
 
