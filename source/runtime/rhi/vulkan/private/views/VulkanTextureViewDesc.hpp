@@ -55,6 +55,11 @@ struct GP_RHI_VULKAN_API VulkanTextureViewDesc final
     /// @brief Computes a hash over every field.
     /// @return 64-bit hash; equal descriptions hash equally.
     [[nodiscard]] gp::UInt64 getHash() const noexcept;
+
+    /// @brief Compares every field.
+    /// @param[in] other Description to compare against.
+    /// @return True when both descriptions create the same native view.
+    [[nodiscard]] bool operator==(const VulkanTextureViewDesc& other) const noexcept = default;
 };
 
 }   // namespace gp::rhi::vulkan
