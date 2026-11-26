@@ -150,7 +150,9 @@ public:
     ///          free list.
     void reset() noexcept;
 
-    /// @brief Begins a legacy Vulkan render pass and transitions state from `IsInsideBegin` to `IsInsideRenderPass`.
+    /// @brief Begins a render pass object and transitions state from `IsInsideBegin` to `IsInsideRenderPass`.
+    /// @details Records `vkCmdBeginRenderPass2` when `VK_KHR_create_renderpass2` is enabled, `vkCmdBeginRenderPass`
+    ///          otherwise, matching the entry point the render pass was created with.
     /// @param[in] beginInfo Populated `VkRenderPassBeginInfo`.
     /// @param[in] contents Inline or secondary command buffer execution mode.
     /// @return True when the command was recorded; false if the command buffer was not in `IsInsideBegin`.
@@ -158,7 +160,8 @@ public:
         const VkRenderPassBeginInfo& beginInfo, VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE
     ) noexcept;
 
-    /// @brief Ends the active legacy Vulkan render pass and transitions state back to `IsInsideBegin`.
+    /// @brief Ends the active render pass object and transitions state back to `IsInsideBegin`.
+    /// @details Records `vkCmdEndRenderPass2` when `VK_KHR_create_renderpass2` is enabled.
     /// @return True when the command was recorded; false if not in `IsInsideRenderPass`.
     [[nodiscard]] bool endRenderPass() noexcept;
 

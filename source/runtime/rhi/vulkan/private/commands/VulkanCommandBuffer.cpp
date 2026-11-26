@@ -7,6 +7,7 @@
 #include "CoreMinimal.hpp"
 #include "device/VulkanDevice.hpp"
 #include "diagnostics/AssertionMacros.hpp"
+#include "extensions/VulkanExtensionTypes.hpp"
 #include "loader/VulkanCommandWrappers.hpp"
 #include "loader/VulkanLoader.hpp"
 #include "logging/LogMacros.hpp"
@@ -23,6 +24,14 @@ namespace gp::rhi::vulkan
 
 namespace
 {
+
+/// @brief Reports whether render passes are created and recorded through `VK_KHR_create_renderpass2`.
+/// @param[in] device Logical device.
+/// @return True when the extension is enabled.
+[[nodiscard]] bool usesRenderPass2(const VulkanDevice& device) noexcept
+{
+    return device.getOptionalExtensions().hasKHRRenderPass2 != 0u;
+}
 
 /// @brief Resolves `vkCmdBeginRenderingKHR` or its Vulkan 1.3 core equivalent for `device`.
 /// @param[in] device Active logical `VkDevice`.
@@ -324,12 +333,28 @@ bool VulkanCommandBuffer::beginRenderPass(
 ) noexcept
 {
     if (m_handle == VK_NULL_HANDLE || m_commandBufferType == VulkanCommandBufferType::Secondary ||
-        m_state != VulkanCommandBufferState::IsInsideBegin || dynamic_api::vkCmdBeginRenderPass == nullptr)
+        m_state != VulkanCommandBufferState::IsInsideBegin)
     {
         return false;
     }
 
-    vkCmdBeginRenderPass(m_handle, &beginInfo, contents);
+    // Render pass 2 is preferred when enabled: it is the only entry point that understands the pNext chains (depth
+    // resolve, shading rate attachments) render passes created through `vkCreateRenderPass2` may carry.
+    if (usesRenderPass2(m_device) && (dynamic_api::vkCmdBeginRenderPass2KHR != nullptr))
+    {
+        VkSubpassBeginInfo subpassBeginInfo;
+        zeroVulkanStruct(subpassBeginInfo, VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO);
+        subpassBeginInfo.contents = contents;
+        vkCmdBeginRenderPass2KHR(m_handle, &beginInfo, &subpassBeginInfo);
+    }
+    else if (dynamic_api::vkCmdBeginRenderPass != nullptr)
+    {
+        vkCmdBeginRenderPass(m_handle, &beginInfo, contents);
+    }
+    else
+    {
+        return false;
+    }
     m_state = VulkanCommandBufferState::IsInsideRenderPass;
     return true;
 }
@@ -337,12 +362,25 @@ bool VulkanCommandBuffer::beginRenderPass(
 bool VulkanCommandBuffer::endRenderPass() noexcept
 {
     if (m_handle == VK_NULL_HANDLE || m_commandBufferType == VulkanCommandBufferType::Secondary ||
-        m_state != VulkanCommandBufferState::IsInsideRenderPass || dynamic_api::vkCmdEndRenderPass == nullptr)
+        m_state != VulkanCommandBufferState::IsInsideRenderPass)
     {
         return false;
     }
 
-    vkCmdEndRenderPass(m_handle);
+    if (usesRenderPass2(m_device) && (dynamic_api::vkCmdEndRenderPass2KHR != nullptr))
+    {
+        VkSubpassEndInfo subpassEndInfo;
+        zeroVulkanStruct(subpassEndInfo, VK_STRUCTURE_TYPE_SUBPASS_END_INFO);
+        vkCmdEndRenderPass2KHR(m_handle, &subpassEndInfo);
+    }
+    else if (dynamic_api::vkCmdEndRenderPass != nullptr)
+    {
+        vkCmdEndRenderPass(m_handle);
+    }
+    else
+    {
+        return false;
+    }
     m_state = VulkanCommandBufferState::IsInsideBegin;
     return true;
 }
