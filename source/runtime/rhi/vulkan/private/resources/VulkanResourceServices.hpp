@@ -56,6 +56,16 @@ struct GP_RHI_VULKAN_API VulkanResourceServices final
     /// @details Goes through the deferred deletion queue when one is bound, otherwise destroys the handle now.
     /// @param[in] imageView Handle to release; ignored when null.
     void enqueueImageViewDeletion(VkImageView imageView) const noexcept;
+
+    /// @brief Releases a `VkBufferView` handle once the GPU is done with it.
+    /// @details Goes through the deferred deletion queue when one is bound, otherwise destroys the handle now.
+    /// @param[in] bufferView Handle to release; ignored when null.
+    void enqueueBufferViewDeletion(VkBufferView bufferView) const noexcept;
+
+    /// @brief Releases a `VkAccelerationStructureKHR` handle once the GPU is done with it.
+    /// @details Goes through the deferred deletion queue when one is bound, otherwise destroys the handle now.
+    /// @param[in] accelerationStructure Handle to release; ignored when null.
+    void enqueueAccelerationStructureDeletion(VkAccelerationStructureKHR accelerationStructure) const noexcept;
 };
 
 }   // namespace gp::rhi::vulkan

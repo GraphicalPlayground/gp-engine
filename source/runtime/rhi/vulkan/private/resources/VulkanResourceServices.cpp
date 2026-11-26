@@ -81,4 +81,48 @@ void VulkanResourceServices::enqueueImageViewDeletion(const VkImageView imageVie
     }
 }
 
+void VulkanResourceServices::enqueueBufferViewDeletion(const VkBufferView bufferView) const noexcept
+{
+    if (bufferView == VK_NULL_HANDLE)
+    {
+        return;
+    }
+
+    if (deferredDeletionQueue != nullptr)
+    {
+        deferredDeletionQueue->enqueueHandle(VulkanDeferredDeletionQueue::EntryType::BufferView, bufferView);
+        return;
+    }
+
+    if ((device != nullptr) && (dynamic_api::vkDestroyBufferView != nullptr))
+    {
+        vkDestroyBufferView(device->getHandle(), bufferView, GP_VULKAN_CPU_ALLOCATOR);
+    }
+}
+
+void VulkanResourceServices::enqueueAccelerationStructureDeletion(
+    const VkAccelerationStructureKHR accelerationStructure
+) const noexcept
+{
+    if (accelerationStructure == VK_NULL_HANDLE)
+    {
+        return;
+    }
+
+    if (deferredDeletionQueue != nullptr)
+    {
+        deferredDeletionQueue->enqueueHandle(
+            VulkanDeferredDeletionQueue::EntryType::AccelerationStructure, accelerationStructure
+        );
+        return;
+    }
+
+    if ((device != nullptr) && (dynamic_api::vkDestroyAccelerationStructureKHR != nullptr))
+    {
+        dynamic_api::vkDestroyAccelerationStructureKHR(
+            device->getHandle(), accelerationStructure, GP_VULKAN_CPU_ALLOCATOR
+        );
+    }
+}
+
 }   // namespace gp::rhi::vulkan
