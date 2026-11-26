@@ -7,7 +7,8 @@
 #include "allocators/PoolMoveRequest.hpp"
 #include "allocators/PoolResource.hpp"
 #include "commands/CommandForward.hpp"
-#include "CoreMinimal.hpp"   // IWYU pragma: keep
+#include "containers/arrays/Vector.hpp"   // IWYU pragma: keep
+#include "CoreMinimal.hpp"                // IWYU pragma: keep
 #include "memory/pointers/RefCountedPtr.hpp"
 #include "memory/pointers/UniquePtr.hpp"
 #include "memory/VulkanAllocation.hpp"
@@ -18,6 +19,9 @@
 #include "resources/VulkanTextureTypes.hpp"
 #include "resources/VulkanViewableResource.hpp"
 #include "RHIVulkan.hpp"
+#include "threading/sync/Mutex.hpp"
+#include "views/VulkanTextureViewDesc.hpp"
+#include "views/VulkanView.hpp"
 #include "VulkanThirdParty.hpp"   // IWYU pragma: keep
 
 namespace gp::rhi::vulkan
@@ -209,6 +213,28 @@ public:
     /// @return Current layout as far as the RHI knows.
     [[nodiscard]] VkImageLayout getTrackedLayout() const noexcept;
 
+    /// @brief Returns the native view type matching the texture dimension.
+    /// @return 2D, 2D array, 3D, cube or cube array view type.
+    [[nodiscard]] VkImageViewType getViewType() const noexcept;
+
+    /// @brief Returns the number of array layers of the image.
+    /// @details Cube faces count as layers, so a cube array of `N` elements has `6 * N` layers; 3D textures have one.
+    /// @return Native layer count.
+    [[nodiscard]] gp::UInt32 getNumberOfArrayLevels() const noexcept;
+
+    /// @brief Returns an internal image view matching `viewDesc`, creating it on first use.
+    /// @details Internal views are the views the backend itself needs on top of the default ones: one mip or one
+    ///          slice of a render target bound as a framebuffer attachment, a depth view without swizzle, and so on.
+    ///          They are keyed by `VulkanTextureViewDesc` and live until the image changes (rename, alias, release).
+    /// @note Thread-safe: render passes may be begun from parallel translation contexts.
+    /// @param[in] viewDesc Backend view description.
+    /// @return Cached view, or `nullptr` when the texture has no image.
+    [[nodiscard]] const VulkanView* findOrAddInternalView(const VulkanTextureViewDesc& viewDesc) noexcept;
+
+    /// @brief Returns the number of cached internal views.
+    /// @return Internal view count.
+    [[nodiscard]] gp::USize getNumInternalViews() const noexcept;
+
     /// @brief Makes this texture point at the image, views and memory of `source`.
     /// @details `source` is kept alive through a reference. The previous storage of this texture is released first.
     /// @note Bottom of pipe. Backs `DynamicRHI::aliasTextureResources()`.
@@ -258,7 +284,22 @@ private:
     /// @return New view, or `VK_NULL_HANDLE`.
     [[nodiscard]] VkImageView createView(VkImageAspectFlags aspectMask) const noexcept;
 
+    /// @brief One cached internal view.
+    struct InternalView final
+    {
+        /// @brief `VulkanTextureViewDesc::getHash()` of `desc`.
+        gp::UInt64 hash{ 0u };
+
+        /// @brief Description the view was created from.
+        VulkanTextureViewDesc desc{};
+
+        /// @brief Owned view; its native object is released through the deferred deletion queue.
+        gp::UniquePtr<VulkanView> view{};
+    };
+
     VulkanResourceServices m_services{};
+    mutable gp::thread::Mutex m_internalViewsMutex{};
+    gp::Vector<InternalView> m_internalViews{};
     VkImage m_image{ VK_NULL_HANDLE };
     VkImageView m_defaultView{ VK_NULL_HANDLE };
     VkImageView m_partialView{ VK_NULL_HANDLE };

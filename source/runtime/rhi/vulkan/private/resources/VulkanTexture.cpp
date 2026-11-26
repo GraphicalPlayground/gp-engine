@@ -27,10 +27,13 @@
 #include "resources/VulkanTextureUsage.hpp"
 #include "RHIDefinitions.hpp"
 #include "sync/SyncEnums.hpp"
+#include "threading/sync/UniqueLock.hpp"
 #include "translation/VulkanPixelFormat.hpp"
 #include "translation/VulkanResourceEnums.hpp"
+#include "views/ViewEnums.hpp"
 #include "VulkanCommon.hpp"
 #include "VulkanConfiguration.hpp"
+#include <utility>
 
 namespace gp::rhi::vulkan
 {
@@ -185,6 +188,48 @@ VkImageLayout VulkanTexture::getTrackedLayout() const noexcept
         return trackedLayout;
     }
     return (m_defaultLayout != VK_IMAGE_LAYOUT_UNDEFINED) ? m_defaultLayout : VK_IMAGE_LAYOUT_GENERAL;
+}
+
+VkImageViewType VulkanTexture::getViewType() const noexcept
+{
+    return textureDimensionToVkImageViewType(getDesc().dimension);
+}
+
+gp::UInt32 VulkanTexture::getNumberOfArrayLevels() const noexcept
+{
+    return getVulkanTextureLayerCount(getDesc());
+}
+
+const VulkanView* VulkanTexture::findOrAddInternalView(const VulkanTextureViewDesc& viewDesc) noexcept
+{
+    if (m_image == VK_NULL_HANDLE)
+    {
+        return nullptr;
+    }
+
+    const gp::UInt64 hash = viewDesc.getHash();
+    gp::thread::UniqueLock<gp::thread::Mutex> lock(m_internalViewsMutex);
+    for (const InternalView& entry: m_internalViews)
+    {
+        // The hash covers every field, so a match only needs the field comparison to settle collisions.
+        if ((entry.hash == hash) && (entry.desc == viewDesc))
+        {
+            return entry.view.get();
+        }
+    }
+
+    // Attachment views never need a bindless slot.
+    gp::UniquePtr<VulkanView> view = gp::makeUnique<VulkanView>(m_services, view::DescriptorType::Invalid);
+    view->createTextureView(m_image, viewDesc);
+    const VulkanView* const result = view.get();
+    m_internalViews.emplaceBack(InternalView{ hash, viewDesc, std::move(view) });
+    return result;
+}
+
+gp::USize VulkanTexture::getNumInternalViews() const noexcept
+{
+    gp::thread::UniqueLock<gp::thread::Mutex> lock(m_internalViewsMutex);
+    return m_internalViews.size();
 }
 
 void VulkanTexture::aliasTextureResources(VulkanTexture& source) noexcept
@@ -540,6 +585,12 @@ void VulkanTexture::createViews() noexcept
 
 void VulkanTexture::destroyViews() noexcept
 {
+    {
+        // Each view hands its native object to the deferred deletion queue.
+        gp::thread::UniqueLock<gp::thread::Mutex> lock(m_internalViewsMutex);
+        m_internalViews.clear();
+    }
+
     if (m_partialView != m_defaultView)
     {
         m_services.enqueueImageViewDeletion(m_partialView);
