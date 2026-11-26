@@ -205,7 +205,7 @@
       "queries": "resolver",
       "traits": "rules",
       "doxygen": "docs",
-      "barriers": "resolver",
+      "barriers": "export",
       "mimalloc": "migrations",
       "rapidjson": "json",
       "tbb": "migrations",
@@ -239,6 +239,8 @@
       "hashing": "secure",
       "manifest": "meta",
       "actions": "tasks",
+      "renderpass": "environment",
+      "states": "atom",
       "fetchcontent": "packages",
       "clangd": "assembly"
     },
