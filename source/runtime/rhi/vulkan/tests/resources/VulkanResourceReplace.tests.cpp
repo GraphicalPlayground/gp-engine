@@ -119,4 +119,3 @@ TEST_F(VulkanResourceReplaceLiveTest, EmptyBatchIsNoOp)
 }
 
 }   // namespace gp::rhi::vulkan::tests
-
