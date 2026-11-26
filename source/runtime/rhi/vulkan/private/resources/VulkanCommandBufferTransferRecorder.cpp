@@ -3,6 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "resources/VulkanCommandBufferTransferRecorder.hpp"
+#include "barriers/VulkanPipelineBarrier.hpp"
 #include "commands/VulkanCommandBuffer.hpp"
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
@@ -54,6 +55,107 @@ void VulkanCommandBufferTransferRecorder::memoryBarrier(
     );
 }
 
+void VulkanCommandBufferTransferRecorder::copyBufferToImage(
+    const VkBuffer srcBuffer,
+    const VkImage dstImage,
+    const VkImageLayout dstLayout,
+    const gp::ConstVectorView<VkBufferImageCopy> regions
+) noexcept
+{
+    GP_CHECK(m_commandBuffer != nullptr);
+    if (regions.isEmpty())
+    {
+        return;
+    }
+    vkCmdCopyBufferToImage(
+        m_commandBuffer->getHandle(),
+        srcBuffer,
+        dstImage,
+        dstLayout,
+        static_cast<gp::UInt32>(regions.size()),
+        regions.data()
+    );
+}
+
+void VulkanCommandBufferTransferRecorder::copyImageToBuffer(
+    const VkImage srcImage,
+    const VkImageLayout srcLayout,
+    const VkBuffer dstBuffer,
+    const gp::ConstVectorView<VkBufferImageCopy> regions
+) noexcept
+{
+    GP_CHECK(m_commandBuffer != nullptr);
+    if (regions.isEmpty())
+    {
+        return;
+    }
+    vkCmdCopyImageToBuffer(
+        m_commandBuffer->getHandle(),
+        srcImage,
+        srcLayout,
+        dstBuffer,
+        static_cast<gp::UInt32>(regions.size()),
+        regions.data()
+    );
+}
+
+void VulkanCommandBufferTransferRecorder::copyImage(
+    const VkImage srcImage,
+    const VkImageLayout srcLayout,
+    const VkImage dstImage,
+    const VkImageLayout dstLayout,
+    const gp::ConstVectorView<VkImageCopy> regions
+) noexcept
+{
+    GP_CHECK(m_commandBuffer != nullptr);
+    if (regions.isEmpty())
+    {
+        return;
+    }
+    vkCmdCopyImage(
+        m_commandBuffer->getHandle(),
+        srcImage,
+        srcLayout,
+        dstImage,
+        dstLayout,
+        static_cast<gp::UInt32>(regions.size()),
+        regions.data()
+    );
+}
+
+void VulkanCommandBufferTransferRecorder::imageLayoutTransition(
+    const VkImage image,
+    const VkImageLayout oldLayout,
+    const VkImageLayout newLayout,
+    const VkImageSubresourceRange& range
+) noexcept
+{
+    GP_CHECK(m_commandBuffer != nullptr);
+    vulkanSetImageLayout(*m_commandBuffer, image, oldLayout, newLayout, range);
+}
+
+void VulkanCommandBufferTransferRecorder::clearColorImage(
+    const VkImage image,
+    const VkImageLayout layout,
+    const VkClearColorValue& color,
+    const VkImageSubresourceRange& range
+) noexcept
+{
+    GP_CHECK(m_commandBuffer != nullptr);
+    vkCmdClearColorImage(m_commandBuffer->getHandle(), image, layout, &color, 1u, &range);
+}
+
+void VulkanCommandBufferTransferRecorder::clearDepthStencilImage(
+    const VkImage image,
+    const VkImageLayout layout,
+    const VkClearDepthStencilValue& value,
+    const VkImageSubresourceRange& range
+) noexcept
+{
+    GP_CHECK(m_commandBuffer != nullptr);
+    vkCmdClearDepthStencilImage(m_commandBuffer->getHandle(), image, layout, &value, 1u, &range);
+}
+
 void VulkanCommandBufferTransferRecorder::debugHeavyWeightBarrier(const gp::Int32 categoryMask) noexcept
 {
     GP_CHECK(m_commandBuffer != nullptr);
@@ -79,4 +181,3 @@ void VulkanCommandBufferTransferRecorder::rebind(
 }
 
 }   // namespace gp::rhi::vulkan
-

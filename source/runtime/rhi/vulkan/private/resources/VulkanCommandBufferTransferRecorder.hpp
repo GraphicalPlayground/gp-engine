@@ -55,6 +55,46 @@ public:
         VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const VkMemoryBarrier& barrier
     ) noexcept override;
 
+    /// @copydoc IVulkanTransferCommandRecorder::copyBufferToImage()
+    /// @note Records `vkCmdCopyBufferToImage`.
+    virtual void copyBufferToImage(
+        VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstLayout, gp::ConstVectorView<VkBufferImageCopy> regions
+    ) noexcept override;
+
+    /// @copydoc IVulkanTransferCommandRecorder::copyImageToBuffer()
+    /// @note Records `vkCmdCopyImageToBuffer`.
+    virtual void copyImageToBuffer(
+        VkImage srcImage, VkImageLayout srcLayout, VkBuffer dstBuffer, gp::ConstVectorView<VkBufferImageCopy> regions
+    ) noexcept override;
+
+    /// @copydoc IVulkanTransferCommandRecorder::copyImage()
+    /// @note Records `vkCmdCopyImage`.
+    virtual void copyImage(
+        VkImage srcImage,
+        VkImageLayout srcLayout,
+        VkImage dstImage,
+        VkImageLayout dstLayout,
+        gp::ConstVectorView<VkImageCopy> regions
+    ) noexcept override;
+
+    /// @copydoc IVulkanTransferCommandRecorder::imageLayoutTransition()
+    /// @note Goes through `vulkanSetImageLayout()`, which picks `synchronization2` when the device supports it.
+    virtual void imageLayoutTransition(
+        VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, const VkImageSubresourceRange& range
+    ) noexcept override;
+
+    /// @copydoc IVulkanTransferCommandRecorder::clearColorImage()
+    /// @note Records `vkCmdClearColorImage`.
+    virtual void clearColorImage(
+        VkImage image, VkImageLayout layout, const VkClearColorValue& color, const VkImageSubresourceRange& range
+    ) noexcept override;
+
+    /// @copydoc IVulkanTransferCommandRecorder::clearDepthStencilImage()
+    /// @note Records `vkCmdClearDepthStencilImage`.
+    virtual void clearDepthStencilImage(
+        VkImage image, VkImageLayout layout, const VkClearDepthStencilValue& value, const VkImageSubresourceRange& range
+    ) noexcept override;
+
     /// @copydoc IVulkanTransferCommandRecorder::debugHeavyWeightBarrier()
     virtual void debugHeavyWeightBarrier(gp::Int32 categoryMask) noexcept override;
 
@@ -75,4 +115,3 @@ private:
 };
 
 }   // namespace gp::rhi::vulkan
-
