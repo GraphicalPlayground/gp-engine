@@ -35,6 +35,7 @@
 #include "pipeline/SamplerStateDesc.hpp"
 #include "pipeline/VertexDeclaration.hpp"
 #include "pipeline/VertexDeclarationDesc.hpp"
+#include "presentation/PresentArgs.hpp"
 #include "presentation/PresentationForward.hpp"
 #include "presentation/Viewport.hpp"
 #include "resources/Buffer.hpp"
@@ -709,11 +710,25 @@ public:
     /// @param[in] renderTarget Optional backbuffer texture override.
     virtual void beginDrawingViewport(presentation::Viewport* viewport, resource::Texture* renderTarget) noexcept = 0;
 
-    /// @brief Finishes drawing into `viewport` and optionally presents the backbuffer.
+    /// @brief Finishes drawing into `viewport` and optionally presents the backbuffer with frame/input telemetry.
+    /// @param[in] viewport Target viewport.
+    /// @param[in] presentArgs Presentation, VSync, frame counter, and input timestamp arguments.
+    virtual void endDrawingViewport(
+        presentation::Viewport* viewport, const presentation::PresentArgsWithStats& presentArgs
+    ) noexcept = 0;
+
+    /// @brief Convenience overload forwarding `(present, lockToVsync)` into `endDrawingViewport(viewport,
+    /// presentArgs)`.
     /// @param[in] viewport Target viewport.
     /// @param[in] present True to present.
     /// @param[in] lockToVsync True to sync to vertical blank.
-    virtual void endDrawingViewport(presentation::Viewport* viewport, bool present, bool lockToVsync) noexcept = 0;
+    void endDrawingViewport(presentation::Viewport* const viewport, const bool present, const bool lockToVsync) noexcept
+    {
+        const presentation::PresentArgsWithStats args(
+            presentation::PresentArgs(present, lockToVsync), m_frameCounter, 0u
+        );
+        endDrawingViewport(viewport, args);
+    }
 
     /// @brief Marks the beginning of a frame on the RHI backend.
     virtual void beginFrame() noexcept
@@ -728,6 +743,13 @@ public:
 
     /// @brief Render-thread end-of-frame hook invoked by `CommandListImmediate::endFrame()`.
     virtual void endFrameRenderThread() noexcept;
+
+    /// @brief Returns the monotonic frame counter incremented by `endFrameRenderThread()`.
+    /// @return Current backend frame counter.
+    [[nodiscard]] GP_FORCEINLINE_HINT gp::UInt64 getFrameCounter() const noexcept
+    {
+        return m_frameCounter;
+    }
 
     /// @brief Enumerates supported display modes into `outResolutions`.
     /// @param[out] outResolutions Destination vector appended with supported resolutions.

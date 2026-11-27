@@ -715,6 +715,8 @@ void rhiExit() noexcept
     command::getCommandListExecutor().reset();
     getRHIGlobals().reset();
     detail::clearLoadedRHIModuleName();
+    g_numExplicitGPUsForRendering = 1u;
+    g_virtualMGPU = 0u;
     g_minClipZ = 0.0f;
     g_projectionSignY = 1.0f;
 }
