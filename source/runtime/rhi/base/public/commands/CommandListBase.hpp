@@ -17,6 +17,7 @@
 #include "core/ResourceForward.hpp"
 #include "core/ResourceTypes.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
+#include "diagnostics/Breadcrumbs.hpp"
 #include "memory/allocators/PagedLinearAllocator.hpp"
 #include "memory/Memory.hpp"                   // IWYU pragma: keep
 #include "memory/pointers/RefCountedPtr.hpp"   // IWYU pragma: keep
@@ -164,6 +165,15 @@ public:
         }
         using CmdType = LambdaCommand<CommandListBase, std::decay_t<InLambdaType>>;
         emplaceCommand<CmdType>(std::forward<InLambdaType>(inLambda));
+    }
+
+    /// @brief Appends a lambda command packet without emitting any implicit breadcrumb marker.
+    /// @tparam InLambdaType Movable callable invocable with `(CommandListBase&)`.
+    /// @param[in,out] inLambda Callable to execute.
+    template <typename InLambdaType>
+    void enqueueLambdaNoMarker(InLambdaType&& inLambda) noexcept
+    {
+        enqueueLambda(std::forward<InLambdaType>(inLambda));
     }
 
     /// @brief Appends a multi-pipe lambda activating `pipelines` and receiving active contexts in a `PipelineArray`.
@@ -370,6 +380,77 @@ public:
     /// @brief Detaches all bound backend contexts and clears `m_activePipelines` after submission.
     void detachContexts() noexcept;
 
+#if GP_WITH_RHI_BREADCRUMBS
+
+public:
+    /// @brief Returns (lazily creating if needed) the `BreadcrumbAllocator` owned by this command list.
+    /// @return Mutable reference to `diagnostics::BreadcrumbAllocator`.
+    [[nodiscard]] diagnostics::BreadcrumbAllocator& getBreadcrumbAllocator() noexcept;
+
+    /// @brief Returns a shared pointer to this command list's `BreadcrumbAllocator` (`nullptr` if none allocated yet).
+    /// @return `gp::SharedPtr<diagnostics::BreadcrumbAllocator>`.
+    [[nodiscard]] const gp::SharedPtr<diagnostics::BreadcrumbAllocator>& getBreadcrumbAllocatorShared() const noexcept
+    {
+        return m_breadcrumbAllocator;
+    }
+
+    /// @brief Exports a reference-counted handle to the currently active CPU breadcrumb node on this command list.
+    /// @return `diagnostics::BreadcrumbNodeRef` keeping the node's allocator alive across threads.
+    [[nodiscard]] diagnostics::BreadcrumbNodeRef getCurrentBreadcrumbRef() const noexcept;
+
+    /// @brief Returns the currently active CPU breadcrumb node on this command list (`nullptr` at root).
+    /// @return Active CPU `diagnostics::BreadcrumbNode*`.
+    [[nodiscard]] GP_FORCEINLINE_HINT diagnostics::BreadcrumbNode* getCurrentBreadcrumbCPU() const noexcept
+    {
+        return m_persistentState.currentBreadcrumbCPU;
+    }
+
+    /// @brief Returns the currently active GPU breadcrumb node on `pipeline` (`nullptr` when none).
+    /// @param[in] pipeline Single-bit `sync::PipelineStage`.
+    /// @return Active GPU `diagnostics::BreadcrumbNode*` for `pipeline`.
+    [[nodiscard]] diagnostics::BreadcrumbNode* getCurrentBreadcrumbGPU(sync::PipelineStage pipeline) const noexcept;
+
+    /// @brief Pushes `node` onto this command list's CPU breadcrumb stack (linking parent/sentinel if needed).
+    /// @param[in] node Non-null breadcrumb node to enter.
+    /// @param[in] execute True when entering at the top of recording; false when replaying pre-linked subtrees.
+    void beginBreadcrumbCPU(diagnostics::BreadcrumbNode* node, bool execute = true) noexcept;
+
+    /// @brief Pops `node` from this command list's CPU breadcrumb stack.
+    /// @param[in] node Breadcrumb node expected at the top of the CPU stack.
+    /// @param[in] execute True when exiting at the top of recording.
+    void endBreadcrumbCPU(diagnostics::BreadcrumbNode* node, bool execute = true) noexcept;
+
+    /// @brief Records or executes a GPU entry marker for `node` on `pipeline` and links `node` into the GPU range.
+    /// @param[in] node Non-null breadcrumb node.
+    /// @param[in] pipeline Single-bit execution pipeline (`Graphics` or `AsyncCompute`).
+    void beginBreadcrumbGPU(diagnostics::BreadcrumbNode* node, sync::PipelineStage pipeline) noexcept;
+
+    /// @brief Records or executes a GPU exit marker for `node` on `pipeline`.
+    /// @param[in] node Non-null breadcrumb node matching the top of `pipeline`'s GPU stack.
+    /// @param[in] pipeline Single-bit execution pipeline (`Graphics` or `AsyncCompute`).
+    void endBreadcrumbGPU(diagnostics::BreadcrumbNode* node, sync::PipelineStage pipeline) noexcept;
+
+    /// @brief Attaches `Sentinel`-rooted breadcrumb nodes from a parallel `childAllocator` under this command list's
+    ///        active CPU breadcrumb and retains `childAllocator`.
+    /// @param[in,out] childAllocator Child command list's breadcrumb allocator.
+    /// @param[in,out] subTreeRoots Unparented/`Sentinel`-rooted child breadcrumb list (unlinked during attachment).
+    void attachBreadcrumbSubTree(
+        diagnostics::BreadcrumbAllocator& childAllocator, diagnostics::BreadcrumbList& subTreeRoots
+    ) noexcept;
+
+    /// @brief Returns the `[first, last]` GPU breadcrumb range recorded on `pipeline` during the current batch.
+    /// @param[in] pipeline Single-bit execution pipeline.
+    /// @return `diagnostics::BreadcrumbRange` for `pipeline`.
+    [[nodiscard]] diagnostics::BreadcrumbRange exportBreadcrumbRange(sync::PipelineStage pipeline) const noexcept;
+
+    /// @brief Returns all `BreadcrumbAllocator` instances referenced by commands recorded on this command list.
+    /// @return Const reference to `diagnostics::BreadcrumbAllocatorArray`.
+    [[nodiscard]] const diagnostics::BreadcrumbAllocatorArray& getBreadcrumbAllocatorRefs() const noexcept
+    {
+        return m_breadcrumbAllocatorRefs;
+    }
+#endif
+
 public:
     /// @brief Returns the scratch `BatchedShaderParameters` builder owned by this command list.
     /// @return Mutable reference to the scratch parameter batch.
@@ -559,7 +640,24 @@ protected:
 
         /// @brief True while inside a `beginDrawingViewport()` / `endDrawingViewport()` scope.
         bool insideDrawingViewport{ false };
+
+#if GP_WITH_RHI_BREADCRUMBS
+        /// @brief Currently active CPU breadcrumb node on this command list (`nullptr` at root).
+        diagnostics::BreadcrumbNode* currentBreadcrumbCPU{ nullptr };
+#endif
     };
+
+#if GP_WITH_RHI_BREADCRUMBS
+    /// @brief Per-pipeline GPU breadcrumb stack and recorded node range.
+    struct GPUBreadcrumbPipelineState
+    {
+        /// @brief Currently active GPU breadcrumb node on this pipeline.
+        diagnostics::BreadcrumbNode* current{ nullptr };
+
+        /// @brief Inclusive range of GPU breadcrumb nodes begun on this pipeline in the current batch.
+        diagnostics::BreadcrumbList list{};
+    };
+#endif
 
     /// @brief Linear page-backed command packet arena (zero heap overhead when idle).
     gp::memory::PagedLinearAllocator m_memManager;
@@ -593,6 +691,20 @@ protected:
 
     /// @brief Persistent recording state (GPU mask, render pass state, static UBs).
     PersistentState m_persistentState{};
+
+#if GP_WITH_RHI_BREADCRUMBS
+    /// @brief Lazily created linear arena owning breadcrumb nodes allocated on this command list.
+    gp::SharedPtr<diagnostics::BreadcrumbAllocator> m_breadcrumbAllocator{};
+
+    /// @brief Retained references to this and any child command lists' breadcrumb allocators until submission retires.
+    diagnostics::BreadcrumbAllocatorArray m_breadcrumbAllocatorRefs{};
+
+    /// @brief Unattached `Sentinel`-parented root nodes recorded on deferred command lists awaiting parent attachment.
+    diagnostics::BreadcrumbList m_unattachedSubTreeRoots{};
+
+    /// @brief Per-pipeline GPU breadcrumb stack and linked range.
+    sync::PipelineArray<GPUBreadcrumbPipelineState> m_gpuBreadcrumbs{};
+#endif
 
     /// @brief Number of queued command packets in `[m_root .. tail]`.
     gp::UInt32 m_numCommands{ 0u };

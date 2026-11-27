@@ -340,6 +340,18 @@ void CommandListBase::reset() noexcept
     m_isFinished = false;
     m_initialPipeline = m_activePipeline;
     m_persistentState.initialGPUMask = m_persistentState.currentGPUMask;
+#if GP_WITH_RHI_BREADCRUMBS
+    if (!m_isExecuting)
+    {
+        m_breadcrumbAllocator.reset();
+        m_breadcrumbAllocatorRefs.clear();
+        m_unattachedSubTreeRoots = diagnostics::BreadcrumbList{};
+        for (GPUBreadcrumbPipelineState& gpuState: m_gpuBreadcrumbs)
+        {
+            gpuState.list = diagnostics::BreadcrumbList{};
+        }
+    }
+#endif
     m_memManager.reset();
 }
 
@@ -692,5 +704,185 @@ void CommandListBase::detachContexts() noexcept
     m_computeContext = nullptr;
     m_activePipelines = sync::PipelineStage::None;
 }
+
+#if GP_WITH_RHI_BREADCRUMBS
+diagnostics::BreadcrumbAllocator& CommandListBase::getBreadcrumbAllocator() noexcept
+{
+    if (!m_breadcrumbAllocator.isValid())
+    {
+        gp::SharedRef<diagnostics::BreadcrumbAllocator> created = diagnostics::BreadcrumbAllocator::create();
+        m_breadcrumbAllocator = gp::SharedPtr<diagnostics::BreadcrumbAllocator>(std::move(created));
+        m_breadcrumbAllocatorRefs.addUnique(m_breadcrumbAllocator);
+    }
+    return *m_breadcrumbAllocator;
+}
+
+diagnostics::BreadcrumbNodeRef CommandListBase::getCurrentBreadcrumbRef() const noexcept
+{
+    return diagnostics::BreadcrumbNodeRef(m_persistentState.currentBreadcrumbCPU);
+}
+
+diagnostics::BreadcrumbNode* CommandListBase::getCurrentBreadcrumbGPU(const sync::PipelineStage pipeline) const noexcept
+{
+    if (!sync::isSinglePipelineStage(pipeline))
+    {
+        return nullptr;
+    }
+    return m_gpuBreadcrumbs[pipeline].current;
+}
+
+void CommandListBase::beginBreadcrumbCPU(diagnostics::BreadcrumbNode* const node, const bool execute) noexcept
+{
+    static_cast<void>(execute);
+    if (node == nullptr || node == diagnostics::BreadcrumbNode::getSentinel())
+    {
+        return;
+    }
+
+    if (node->getAllocator() != nullptr)
+    {
+        m_breadcrumbAllocatorRefs.addUnique(node->getAllocator());
+    }
+
+    diagnostics::BreadcrumbNode* const parent = m_persistentState.currentBreadcrumbCPU;
+    if (parent != nullptr)
+    {
+        if (node->getParent() == nullptr || node->getParent() == diagnostics::BreadcrumbNode::getSentinel())
+        {
+            node->setParent(parent);
+        }
+        if (m_breadcrumbAllocator.isValid() && parent->getAllocator() != nullptr)
+        {
+            m_breadcrumbAllocator->addParentReference(parent->getAllocator());
+        }
+    }
+    else if (!m_isImmediate && node->getParent() == nullptr)
+    {
+        node->setParent(diagnostics::BreadcrumbNode::getSentinel());
+        if (node->getNextPtr() == nullptr)
+        {
+            m_unattachedSubTreeRoots.append(node);
+        }
+    }
+
+    m_persistentState.currentBreadcrumbCPU = node;
+}
+
+void CommandListBase::endBreadcrumbCPU(diagnostics::BreadcrumbNode* const node, const bool execute) noexcept
+{
+    static_cast<void>(execute);
+    if (node == nullptr || node == diagnostics::BreadcrumbNode::getSentinel())
+    {
+        return;
+    }
+
+    GP_CHECKF(
+        m_persistentState.currentBreadcrumbCPU == node,
+        "Mismatched CommandListBase::endBreadcrumbCPU() call: expected top-of-stack breadcrumb node."
+    );
+
+    diagnostics::BreadcrumbNode* const parent = node->getParent();
+    m_persistentState.currentBreadcrumbCPU = (parent == diagnostics::BreadcrumbNode::getSentinel()) ? nullptr : parent;
+}
+
+void CommandListBase::beginBreadcrumbGPU(
+    diagnostics::BreadcrumbNode* const node, const sync::PipelineStage pipeline
+) noexcept
+{
+    if (node == nullptr || node == diagnostics::BreadcrumbNode::getSentinel() || !sync::isSinglePipelineStage(pipeline))
+    {
+        return;
+    }
+
+    GPUBreadcrumbPipelineState& gpuState = m_gpuBreadcrumbs[pipeline];
+    gpuState.current = node;
+    node->begunPipelines |= pipeline;
+
+    // Link into the per-pipeline flat range if not already linked.
+    if (node->getNextPtr() == nullptr && gpuState.list.last != node)
+    {
+        gpuState.list.append(node);
+    }
+
+    const sync::PipelineStage previousPipeline = switchPipeline(pipeline);
+    if (isBottomOfPipe())
+    {
+        IComputeContext& ctx = getComputeContext();
+        if (ctx.shouldEmitBreadcrumbs())
+        {
+            ctx.beginBreadcrumbGPU(node);
+        }
+    }
+    else
+    {
+        emplaceCommand<CommandBeginBreadcrumbGPU>(node);
+    }
+    static_cast<void>(switchPipeline(previousPipeline));
+}
+
+void CommandListBase::endBreadcrumbGPU(
+    diagnostics::BreadcrumbNode* const node, const sync::PipelineStage pipeline
+) noexcept
+{
+    if (node == nullptr || node == diagnostics::BreadcrumbNode::getSentinel() || !sync::isSinglePipelineStage(pipeline))
+    {
+        return;
+    }
+
+    GPUBreadcrumbPipelineState& gpuState = m_gpuBreadcrumbs[pipeline];
+    node->endedPipelines |= pipeline;
+    diagnostics::BreadcrumbNode* const parent = node->getParent();
+    gpuState.current = (parent == diagnostics::BreadcrumbNode::getSentinel()) ? nullptr : parent;
+
+    const sync::PipelineStage previousPipeline = switchPipeline(pipeline);
+    if (isBottomOfPipe())
+    {
+        IComputeContext& ctx = getComputeContext();
+        if (ctx.shouldEmitBreadcrumbs())
+        {
+            ctx.endBreadcrumbGPU(node);
+        }
+    }
+    else
+    {
+        emplaceCommand<CommandEndBreadcrumbGPU>(node);
+    }
+    static_cast<void>(switchPipeline(previousPipeline));
+}
+
+void CommandListBase::attachBreadcrumbSubTree(
+    diagnostics::BreadcrumbAllocator& childAllocator, diagnostics::BreadcrumbList& subTreeRoots
+) noexcept
+{
+    diagnostics::BreadcrumbAllocator& currentAllocator = getBreadcrumbAllocator();
+    currentAllocator.addParentReference(&childAllocator);
+    m_breadcrumbAllocatorRefs.addUnique(&childAllocator);
+
+    diagnostics::BreadcrumbNode* const activeParent = m_persistentState.currentBreadcrumbCPU;
+    if (activeParent != nullptr && activeParent->getAllocator() != nullptr)
+    {
+        childAllocator.addParentReference(activeParent->getAllocator());
+    }
+
+    subTreeRoots.iterateAndUnlink(
+        [activeParent](diagnostics::BreadcrumbNode* const childRoot) noexcept -> void
+    {
+        if (childRoot->getParent() == diagnostics::BreadcrumbNode::getSentinel())
+        {
+            childRoot->setParent(activeParent);
+        }
+    }
+    );
+}
+
+diagnostics::BreadcrumbRange CommandListBase::exportBreadcrumbRange(const sync::PipelineStage pipeline) const noexcept
+{
+    if (!sync::isSinglePipelineStage(pipeline))
+    {
+        return diagnostics::BreadcrumbRange{};
+    }
+    return m_gpuBreadcrumbs[pipeline].list.getRange();
+}
+#endif
 
 }   // namespace gp::rhi::command
