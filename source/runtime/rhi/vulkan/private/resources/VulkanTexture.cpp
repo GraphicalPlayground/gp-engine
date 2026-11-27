@@ -153,6 +153,37 @@ VulkanTexture::VulkanTexture(
     createViews();
 }
 
+VulkanTexture::VulkanTexture(
+    const VulkanResourceServices& services, const resource::TextureCreateDesc& createDesc
+) noexcept
+    : resource::Texture(createDesc)
+    , m_services(services)
+{
+    GP_CHECKF(m_services.isValid(), "VulkanTexture requires a device, a memory manager and a staging manager.");
+
+    const resource::TextureDesc& desc = getDesc();
+    m_statCategory = getVulkanTextureStatCategory(desc);
+
+    if (!generateVulkanImageCreateInfo(
+            *m_services.device,
+            desc,
+            false,
+            supportsMemorylessImages(m_services),
+            m_imageCreateInfo,
+            m_viewFormat,
+            m_storageFormat
+        ))
+    {
+        GP_LOG_ERROR(LogVulkanRHI, "Borrowing texture '{}' does not fit the device limits.", createDesc.debugName);
+        return;
+    }
+
+    m_imageUsageFlags = m_imageCreateInfo.imageCreateInfo.usage;
+    m_tiling = m_imageCreateInfo.imageCreateInfo.tiling;
+    m_fullAspectMask = getVkImageAspectFlags(m_viewFormat, true, true);
+    m_partialAspectMask = getVkImageAspectFlags(m_viewFormat, false, true);
+}
+
 VulkanTexture::~VulkanTexture() noexcept
 {
     releaseStorage();
@@ -207,6 +238,13 @@ const VulkanView* VulkanTexture::findOrAddInternalView(const VulkanTextureViewDe
         return nullptr;
     }
 
+    // A borrowed image changes every frame; its views are cached on the texture that owns the image so they are
+    // neither recreated per frame nor destroyed while the image is still in flight.
+    if ((m_ownerType == VulkanImageOwnerType::Borrowed) && m_aliasedSource.isValid())
+    {
+        return m_aliasedSource->findOrAddInternalView(viewDesc);
+    }
+
     const gp::UInt64 hash = viewDesc.getHash();
     gp::thread::UniqueLock<gp::thread::Mutex> lock(m_internalViewsMutex);
     for (const InternalView& entry: m_internalViews)
@@ -257,6 +295,35 @@ void VulkanTexture::aliasTextureResources(VulkanTexture& source) noexcept
     m_ownerType = VulkanImageOwnerType::Aliased;
 
     createViews();
+}
+
+void VulkanTexture::bindBorrowedImage(VulkanTexture& source) noexcept
+{
+    GP_CHECKF(&source != this, "A texture cannot borrow its own image.");
+    GP_CHECKF(source.m_image != VK_NULL_HANDLE, "Borrowing a texture that has no image.");
+
+    releaseStorage();
+
+    m_aliasedSource = gp::RefCountedPtr<VulkanTexture>(&source);
+    m_image = source.m_image;
+    m_defaultView = source.m_defaultView;
+    m_partialView = source.m_partialView;
+    m_viewFormat = source.m_viewFormat;
+    m_storageFormat = source.m_storageFormat;
+    m_imageUsageFlags = source.m_imageUsageFlags;
+    m_fullAspectMask = source.m_fullAspectMask;
+    m_partialAspectMask = source.m_partialAspectMask;
+    m_tiling = source.m_tiling;
+    m_ownerType = VulkanImageOwnerType::Borrowed;
+}
+
+void VulkanTexture::unbindBorrowedImage() noexcept
+{
+    if (m_ownerType != VulkanImageOwnerType::Borrowed)
+    {
+        return;
+    }
+    releaseStorage();
 }
 
 void VulkanTexture::registerPoolOwner(command::CommandListBase& cmdList) noexcept
@@ -585,6 +652,14 @@ void VulkanTexture::createViews() noexcept
 
 void VulkanTexture::destroyViews() noexcept
 {
+    if (m_ownerType == VulkanImageOwnerType::Borrowed)
+    {
+        // The views belong to the source texture; forgetting them is enough.
+        m_partialView = VK_NULL_HANDLE;
+        m_defaultView = VK_NULL_HANDLE;
+        return;
+    }
+
     {
         // Each view hands its native object to the deferred deletion queue.
         gp::thread::UniqueLock<gp::thread::Mutex> lock(m_internalViewsMutex);

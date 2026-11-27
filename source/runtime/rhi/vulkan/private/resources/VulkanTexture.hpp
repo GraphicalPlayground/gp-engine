@@ -41,8 +41,9 @@ namespace gp::rhi::vulkan
 ///          shader resources, UAVs) or the texture has a fast clear value, the constructor records the transition
 ///          (and clear) on the upload context, which executes before any graphics work that could read it.
 /// @note Constructed on the recording thread; every native command is deferred to the RHI timeline through the
-///       command list it receives.
-class GP_RHI_VULKAN_API VulkanTexture final
+///       command list it receives. Not `final`: a presentation back buffer is a texture whose image changes every
+///       frame (see `bindBorrowedImage()`).
+class GP_RHI_VULKAN_API VulkanTexture
     : public resource::Texture
     , public allocator::PoolResource
     , public VulkanViewableResource
@@ -254,8 +255,26 @@ public:
     [[nodiscard]] bool onAllocationMoved(const allocator::PoolMoveRequest& request) noexcept;
 
 protected:
+    /// @brief Creates a texture that describes an image without having one yet.
+    /// @details Computes the image description and formats from `createDesc` but binds no image; derived classes
+    ///          point the texture at an existing image later with `bindBorrowedImage()`.
+    /// @param[in] services Device, memory and context services.
+    /// @param[in] createDesc Creation description of the images that will be borrowed.
+    VulkanTexture(const VulkanResourceServices& services, const resource::TextureCreateDesc& createDesc) noexcept;
+
     /// @brief Releases the views, the image and its memory, according to the owner type.
     virtual ~VulkanTexture() noexcept override;
+
+    /// @brief Points this texture at the image and views of `source` without taking ownership of anything.
+    /// @details The previous binding is dropped first. `source` is kept alive through a reference; internal views
+    ///          requested on this texture are forwarded to (and cached on) `source`, so they live as long as the image.
+    /// @note Bottom of pipe. Called every frame by a back buffer once its swapchain image has been acquired.
+    /// @param[in,out] source Texture owning (or wrapping) the image to borrow.
+    void bindBorrowedImage(VulkanTexture& source) noexcept;
+
+    /// @brief Drops the borrowed image and views; the texture has no image afterwards.
+    /// @note Bottom of pipe. Nothing is queued for deletion: the source still owns everything.
+    void unbindBorrowedImage() noexcept;
 
 private:
     /// @brief Creates the host-visible readback buffer of a `CPUReadback` texture.
