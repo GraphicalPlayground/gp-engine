@@ -7,6 +7,7 @@
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "diagnostics/AssertionMacros.hpp"
 #include "loader/VulkanCommandWrappers.hpp"
+#include "pipeline/VulkanPipelineDeletionNotifier.hpp"
 #include "VulkanCommon.hpp"
 
 namespace gp::rhi::vulkan
@@ -61,6 +62,9 @@ VulkanGraphicsPipelineState::VulkanGraphicsPipelineState(
 VulkanGraphicsPipelineState::~VulkanGraphicsPipelineState() noexcept
 {
     GP_ASSERT(!m_isInLRU, "A graphics pipeline was destroyed while still linked in the LRU.");
+
+    // Contexts compare raw pointers to skip redundant binds; clear them before this address can be reused.
+    notifyVulkanGraphicsPipelineDeleted(*this);
 }
 
 void VulkanGraphicsPipelineState::bind(VulkanCommandBuffer& commandBuffer) const noexcept

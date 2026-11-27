@@ -7,6 +7,7 @@
 #include "CoreMinimal.hpp"   // IWYU pragma: keep
 #include "hashing/XxHash.hpp"
 #include "loader/VulkanCommandWrappers.hpp"
+#include "pipeline/VulkanPipelineDeletionNotifier.hpp"
 #include "shaders/VulkanBaseShader.hpp"
 
 namespace gp::rhi::vulkan
@@ -27,7 +28,11 @@ VulkanComputePipelineState::VulkanComputePipelineState(
     , m_key(key)
 {}
 
-VulkanComputePipelineState::~VulkanComputePipelineState() noexcept = default;
+VulkanComputePipelineState::~VulkanComputePipelineState() noexcept
+{
+    // Contexts compare raw pointers to skip redundant binds; clear them before this address can be reused.
+    notifyVulkanComputePipelineDeleted(*this);
+}
 
 void VulkanComputePipelineState::bind(VulkanCommandBuffer& commandBuffer) const noexcept
 {
