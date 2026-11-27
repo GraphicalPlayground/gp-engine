@@ -18,6 +18,7 @@
 #include "memory/VulkanDeviceMemory.hpp"
 #include "memory/VulkanMemoryEnums.hpp"
 #include "memory/VulkanMemoryManager.hpp"
+#include "renderpass/VulkanRenderPassManager.hpp"
 #include "resources/IVulkanCommandContextProvider.hpp"
 #include "resources/IVulkanTransferCommandRecorder.hpp"
 #include "resources/TextureDesc.hpp"
@@ -677,6 +678,14 @@ void VulkanTexture::destroyViews() noexcept
 
 void VulkanTexture::releaseStorage() noexcept
 {
+    // Cached framebuffers name the image by handle; drop them before the handle can be recycled by the driver.
+    const bool ownsImageIdentity =
+        (m_ownerType == VulkanImageOwnerType::LocalOwner) || (m_ownerType == VulkanImageOwnerType::ExternalOwner);
+    if (ownsImageIdentity && (m_image != VK_NULL_HANDLE) && (m_services.renderPassManager != nullptr))
+    {
+        m_services.renderPassManager->notifyDeletedImage(m_image, getDesc().flags);
+    }
+
     destroyViews();
 
     if (m_ownerType == VulkanImageOwnerType::LocalOwner)
