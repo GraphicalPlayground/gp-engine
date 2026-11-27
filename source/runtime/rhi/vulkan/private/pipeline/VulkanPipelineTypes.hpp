@@ -32,9 +32,9 @@ inline constexpr gp::UInt32 kMaxNumSpecializationConstants = 32u;
 inline constexpr gp::UInt32 kSpecializationConstantSize = 4u;
 
 /// @brief Upper bound on the dynamic states one graphics pipeline enables.
-/// @details 2 core states, 10 from extended dynamic state 1 (or 2 viewport/scissor without it), 2 from extended
+/// @details 3 core states, 10 from extended dynamic state 1 (or 2 viewport/scissor without it), 2 from extended
 ///          dynamic state 2, 6 from extended dynamic state 3 and 1 vertex input state.
-inline constexpr gp::UInt32 kMaxPipelineDynamicStates = 21u;
+inline constexpr gp::UInt32 kMaxPipelineDynamicStates = 22u;
 
 /// @brief Fallback size, in bytes, charged to the pipeline LRU when the driver reports an empty cache blob.
 inline constexpr gp::UInt32 kDefaultPipelineCacheSize = 20u * 1024u;
