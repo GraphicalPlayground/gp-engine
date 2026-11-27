@@ -182,10 +182,10 @@ public:
     void
         setStaticUniformBuffer(resource::UniformBufferStaticSlot slot, resource::UniformBuffer* uniformBuffer) noexcept;
 
-    /// @brief Sets a dynamic byte offset on `uniformBuffer`.
-    /// @param[in] uniformBuffer Target uniform buffer.
-    /// @param[in] offset Byte offset.
-    void setUniformBlockOffset(resource::UniformBuffer* uniformBuffer, gp::UInt32 offset) noexcept;
+    /// @brief Sets a dynamic byte offset on uniform block `srv`.
+    /// @param[in] srv Shader resource view backing the uniform block.
+    /// @param[in] offset Byte offset into `srv`.
+    void setUniformBlockOffset(view::ShaderResourceView* srv, gp::UInt32 offset) noexcept;
 
     /// @brief Copies GPU buffer bytes into a CPU-readable staging buffer.
     /// @param[in] sourceBuffer Source GPU buffer.

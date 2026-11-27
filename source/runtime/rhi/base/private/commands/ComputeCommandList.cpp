@@ -328,16 +328,14 @@ void ComputeCommandList::setStaticUniformBuffer(
     emplaceCommand<CommandSetStaticUniformBuffer>(slot, uniformBuffer);
 }
 
-void ComputeCommandList::setUniformBlockOffset(
-    resource::UniformBuffer* const uniformBuffer, const gp::UInt32 offset
-) noexcept
+void ComputeCommandList::setUniformBlockOffset(view::ShaderResourceView* const srv, const gp::UInt32 offset) noexcept
 {
     if (isBottomOfPipe())
     {
-        getComputeContext().setUniformBlockOffset(uniformBuffer, offset);
+        getComputeContext().setUniformBlockOffset(srv, offset);
         return;
     }
-    emplaceCommand<CommandSetUniformBlockOffset>(uniformBuffer, offset);
+    emplaceCommand<CommandSetUniformBlockOffset>(srv, offset);
 }
 
 void ComputeCommandList::copyToStagingBuffer(
