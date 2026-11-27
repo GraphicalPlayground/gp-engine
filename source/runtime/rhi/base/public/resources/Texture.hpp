@@ -20,6 +20,9 @@
 #include "RHIPixelFormat.hpp"
 #include "templates/NumericLimits.hpp"
 #include "threading/atomics/Atomic.hpp"
+#if GP_ENABLE_RHI_VALIDATION
+    #include "validation/ValidationResource.hpp"
+#endif
 #include "views/DescriptorHandle.hpp"
 
 namespace gp::rhi::resource
@@ -294,12 +297,24 @@ public:
         return getDesc().clearValue;
     }
 
+#if GP_ENABLE_RHI_VALIDATION
+    /// @copydoc ViewableResource::getValidationTrackerResource()
+    [[nodiscard]] virtual validation::Resource* getValidationTrackerResource() noexcept override
+    {
+        return &m_validationResource;
+    }
+#endif
+
 private:
     /// @brief Immutable layout descriptor for concrete textures (unused on `TextureReference`).
     TextureDesc m_textureDesc{};
 
     /// @brief Atomic last-render timestamp updated during frame submission.
     gp::thread::Atomic<gp::Float64> m_lastRenderTime{ kEmptyLastRenderTime };
+
+#if GP_ENABLE_RHI_VALIDATION
+    validation::TextureResource m_validationResource{};
+#endif
 };
 
 }   // namespace gp::rhi::resource

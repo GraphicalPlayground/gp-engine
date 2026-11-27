@@ -307,7 +307,24 @@ gp::UInt64
 Texture::Texture(const TextureCreateDesc& createDesc) noexcept
     : ViewableResource(ResourceType::Texture, createDesc.initialState, createDesc.debugName, createDesc.ownerName)
     , m_textureDesc(createDesc)
-{}
+{
+#if GP_ENABLE_RHI_VALIDATION
+    const gp::UInt32 numMips = gp::math::max<gp::UInt32>(1u, static_cast<gp::UInt32>(m_textureDesc.numMips));
+    const gp::UInt32 baseArraySlices = gp::math::max<gp::UInt32>(1u, static_cast<gp::UInt32>(m_textureDesc.arraySize));
+    const gp::UInt32 effectiveSlices =
+        m_textureDesc.isTextureCube() ? (baseArraySlices * kCubeFaceCount) : baseArraySlices;
+    const bool isDepthStencil =
+        ((m_textureDesc.flags & TextureCreateFlags::DepthStencilTargetable) != TextureCreateFlags::None) ||
+        (m_textureDesc.format == PixelFormat::D24_UNorm_S8_UInt) ||
+        (m_textureDesc.format == PixelFormat::D32_Float_S8_UInt) || (m_textureDesc.format == PixelFormat::D32_Float) ||
+        (m_textureDesc.format == PixelFormat::D16_UNorm);
+    const gp::UInt32 numPlanes = isDepthStencil ? static_cast<gp::UInt32>(validation::ResourcePlane::Max) : 1u;
+
+    m_validationResource.initBarrierTracking(
+        numMips, effectiveSlices, numPlanes, createDesc.initialState, createDesc.debugName, false
+    );
+#endif
+}
 
 Texture::Texture(const ResourceType resourceType) noexcept
     : ViewableResource(resourceType, sync::ResourceAccess::Unknown, gp::StringView{}, gp::Name{})
@@ -359,6 +376,9 @@ void Texture::getWriteMaskProperties(void*& outData, gp::UInt32& outSize) noexce
 void Texture::setName(const gp::Name inName) noexcept
 {
     ViewableResource::setName(inName);
+#if GP_ENABLE_RHI_VALIDATION
+    m_validationResource.setDebugName(inName.toString().view());
+#endif
 }
 
 TextureReference::TextureReference(Texture* const referencedTexture) noexcept
@@ -432,6 +452,13 @@ void TextureReference::getWriteMaskProperties(void*& outData, gp::UInt32& outSiz
     GP_CHECK(m_referencedTexture.isValid());
     m_referencedTexture->getWriteMaskProperties(outData, outSize);
 }
+
+#if GP_ENABLE_RHI_VALIDATION
+validation::Resource* TextureReference::getValidationTrackerResource() noexcept
+{
+    return m_referencedTexture.isValid() ? m_referencedTexture->getValidationTrackerResource() : nullptr;
+}
+#endif
 
 Texture* TextureReference::getDefaultTexture() noexcept
 {
