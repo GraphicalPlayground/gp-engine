@@ -146,6 +146,8 @@ template <typename InEnumType>
         return "BUF_ByteAddressBuffer";
     case resource::BufferUsageFlags::SourceCopy:
         return "BUF_SourceCopy";
+    case resource::BufferUsageFlags::Transient:
+        return "BUF_Transient";
     case resource::BufferUsageFlags::DrawIndirect:
         return "BUF_DrawIndirect";
     case resource::BufferUsageFlags::ShaderResource:
