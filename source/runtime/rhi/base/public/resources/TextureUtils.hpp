@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "diagnostics/AssertionMacros.hpp"
 #include "maths/base/Arithmetic.hpp"
 #include "resources/TextureDesc.hpp"
 #include "resources/TextureEnums.hpp"
@@ -229,6 +230,38 @@ namespace gp::rhi::resource
         return calculateSubresourceOffset(desc, arrayIndex, 0u, mipIndex, outRowStride, outSubresourceSize);
     }
     return calculateSubresourceOffset(desc, 0u, arrayIndex, mipIndex, outRowStride, outSubresourceSize);
+}
+
+/// @brief Decomposes a linear subresource index into `(outFaceIndex, outArrayIndex, outMipIndex)`.
+/// @details Matches the tightly packed subresource ordering where mip levels vary fastest within a slice, followed by
+///          array slices, followed by cubemap faces or planes (`mip + numMips * (arraySlice + numSlices * face)`).
+/// @param[in] subresourceIndex Zero-based linear subresource index.
+/// @param[in] numMips Number of mip levels per slice (`>= 1`).
+/// @param[in] numSlices Number of array slices per face/plane (`>= 1`).
+/// @param[out] outFaceIndex Receives the zero-based face or plane index.
+/// @param[out] outArrayIndex Receives the zero-based array slice index.
+/// @param[out] outMipIndex Receives the zero-based mip level index.
+inline constexpr void subresourceIndexToIndices(
+    const gp::UInt32 subresourceIndex,
+    const gp::UInt32 numMips,
+    const gp::UInt32 numSlices,
+    gp::UInt32& outFaceIndex,
+    gp::UInt32& outArrayIndex,
+    gp::UInt32& outMipIndex
+) noexcept
+{
+    GP_CHECK(numMips > 0u && numSlices > 0u);
+    if (numMips == 0u || numSlices == 0u)
+    {
+        outFaceIndex = 0u;
+        outArrayIndex = 0u;
+        outMipIndex = 0u;
+        return;
+    }
+
+    outMipIndex = subresourceIndex % numMips;
+    outArrayIndex = (subresourceIndex / numMips) % numSlices;
+    outFaceIndex = subresourceIndex / (numMips * numSlices);
 }
 
 }   // namespace gp::rhi::resource
