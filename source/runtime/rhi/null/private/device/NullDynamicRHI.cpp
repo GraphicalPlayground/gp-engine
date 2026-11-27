@@ -532,12 +532,11 @@ void NullDynamicRHI::beginDrawingViewport(
 }
 
 void NullDynamicRHI::endDrawingViewport(
-    presentation::Viewport* const viewport, const bool present, const bool lockToVsync
+    presentation::Viewport* const viewport, const presentation::PresentArgsWithStats& presentArgs
 ) noexcept
 {
     static_cast<void>(viewport);
-    static_cast<void>(present);
-    static_cast<void>(lockToVsync);
+    static_cast<void>(presentArgs);
 }
 
 void NullDynamicRHI::blockUntilGPUIdle() noexcept

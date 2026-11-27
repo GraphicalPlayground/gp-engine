@@ -28,6 +28,7 @@
 #include "pipeline/RasterizerStateDesc.hpp"
 #include "pipeline/SamplerStateDesc.hpp"
 #include "pipeline/VertexDeclarationDesc.hpp"
+#include "presentation/PresentArgs.hpp"
 #include "presentation/PresentationForward.hpp"
 #include "resources/BufferCreateDesc.hpp"
 #include "resources/BufferInitializer.hpp"
@@ -295,8 +296,12 @@ public:
     virtual void
         beginDrawingViewport(presentation::Viewport* viewport, resource::Texture* renderTarget) noexcept override;
 
-    /// @copydoc DynamicRHI::endDrawingViewport()
-    virtual void endDrawingViewport(presentation::Viewport* viewport, bool present, bool lockToVsync) noexcept override;
+    using DynamicRHI::endDrawingViewport;
+
+    /// @copydoc DynamicRHI::endDrawingViewport(presentation::Viewport*, const presentation::PresentArgsWithStats&)
+    virtual void endDrawingViewport(
+        presentation::Viewport* viewport, const presentation::PresentArgsWithStats& presentArgs
+    ) noexcept override;
 
     /// @copydoc DynamicRHI::blockUntilGPUIdle()
     virtual void blockUntilGPUIdle() noexcept override;
