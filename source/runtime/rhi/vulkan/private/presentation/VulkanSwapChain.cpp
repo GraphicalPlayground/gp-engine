@@ -113,18 +113,27 @@ bool VulkanSwapChain::initialize(
 
     // Reuse the surface of the retired swapchain when one is handed over; it is still bound to the same window.
     VkSwapchainKHR oldSwapChain = VK_NULL_HANDLE;
-    if ((recreateInfo != nullptr) && (recreateInfo->surface != VK_NULL_HANDLE))
+    if (recreateInfo != nullptr)
     {
-        m_surface = recreateInfo->surface;
         oldSwapChain = recreateInfo->swapChain;
-        recreateInfo->surface = VK_NULL_HANDLE;
+        recreateInfo->swapChain = VK_NULL_HANDLE;
+        if (recreateInfo->surface != VK_NULL_HANDLE)
+        {
+            m_surface = recreateInfo->surface;
+            recreateInfo->surface = VK_NULL_HANDLE;
+        }
     }
-    else
+
+    if (m_surface == VK_NULL_HANDLE)
     {
         const VkResult surfaceResult =
             VulkanPlatform::createSurface(m_windowContext, device.getInstanceHandle(), &m_surface);
         if (surfaceResult != VK_SUCCESS)
         {
+            if (oldSwapChain != VK_NULL_HANDLE)
+            {
+                VulkanPlatform::destroySwapchainKHR(device.getHandle(), oldSwapChain, GP_VULKAN_CPU_ALLOCATOR);
+            }
             // A lost or busy window is not fatal: the owner retries later, so this is a warning, not an error.
             GP_LOG_WARNING(
                 LogVulkanRHI, "Creating the window surface failed ({}).", static_cast<gp::Int32>(surfaceResult)
@@ -134,7 +143,15 @@ bool VulkanSwapChain::initialize(
         }
     }
 
-    if (!createSwapChain(oldSwapChain))
+    const bool created = createSwapChain(oldSwapChain);
+    // Passing `oldSwapChain` to `vkCreateSwapchainKHR` only retires it; the application still owns destroying the
+    // retired handle whether creation succeeded or failed.
+    if (oldSwapChain != VK_NULL_HANDLE)
+    {
+        VulkanPlatform::destroySwapchainKHR(device.getHandle(), oldSwapChain, GP_VULKAN_CPU_ALLOCATOR);
+    }
+
+    if (!created)
     {
         destroy(nullptr);
         return false;

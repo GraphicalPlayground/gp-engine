@@ -57,8 +57,9 @@ public:
     ///          `vkCreateSwapchainKHR` (with exclusive fullscreen when available, retried without it), image retrieval
     ///          and one acquire semaphore (and optional fence) per image.
     /// @param[in] windowContext Window the surface is created for.
-    /// @param[in,out] recreateInfo Retired swapchain and surface to reuse, or `nullptr`; the surface is taken.
-    /// @return True on success. On failure every native object created here is released.
+    /// @param[in,out] recreateInfo Retired swapchain and surface to reuse, or `nullptr`; the surface is adopted and
+    ///                             the retired swapchain is destroyed once passed to `vkCreateSwapchainKHR`.
+    /// @return True on success. On failure every native object created or handed over here is released.
     [[nodiscard]] bool initialize(
         const VulkanPlatformWindowContext& windowContext, VulkanSwapChainRecreateInfo* recreateInfo
     ) noexcept;
