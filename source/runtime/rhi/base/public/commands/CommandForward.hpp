@@ -123,4 +123,22 @@ struct CommandEndTransitions;
 /// @brief Command packet executing an immediate resource transition.
 struct CommandResourceTransition;
 
+/// @brief Command packet beginning global UAV overlap on the active context.
+struct CommandBeginUAVOverlap;
+
+/// @brief Command packet ending global UAV overlap on the active context.
+struct CommandEndUAVOverlap;
+
+/// @brief Command packet beginning UAV overlap for an explicit set of UAVs.
+struct CommandBeginSpecificUAVOverlap;
+
+/// @brief Command packet ending UAV overlap for an explicit set of UAVs.
+struct CommandEndSpecificUAVOverlap;
+
+/// @brief Command packet beginning a GPU breadcrumb marker on the active context.
+struct CommandBeginBreadcrumbGPU;
+
+/// @brief Command packet ending a GPU breadcrumb marker on the active context.
+struct CommandEndBreadcrumbGPU;
+
 }   // namespace gp::rhi::command
