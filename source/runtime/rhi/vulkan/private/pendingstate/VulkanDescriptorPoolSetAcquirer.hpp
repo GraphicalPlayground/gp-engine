@@ -52,6 +52,17 @@ public:
     /// @brief Hands the current container back to the manager; the next allocation acquires a new one.
     void release() noexcept;
 
+    /// @brief Hands the current container to the caller without releasing it.
+    /// @details Used when a context finalizes: the container must outlive the GPU work that reads its sets, so its
+    ///          ownership moves into the payload that releases it on completion.
+    /// @return Detached container, or `nullptr` when none was acquired.
+    [[nodiscard]] VulkanDescriptorPoolSetContainer* detachPoolSetContainer() noexcept
+    {
+        VulkanDescriptorPoolSetContainer* const container = m_container;
+        m_container = nullptr;
+        return container;
+    }
+
     /// @brief Reports whether a container is currently held.
     /// @return True between the first allocation of a frame and `release()`.
     [[nodiscard]] bool hasPoolSetContainer() const noexcept
