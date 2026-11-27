@@ -73,7 +73,11 @@ void VulkanGraphicsPipelineState::bind(VulkanCommandBuffer& commandBuffer) const
     {
         return;
     }
-    vkCmdBindPipeline(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+    if (commandBuffer.getCurrentGraphicsPipeline() != m_pipeline)
+    {
+        vkCmdBindPipeline(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+        commandBuffer.setCurrentGraphicsPipeline(m_pipeline);
+    }
 }
 
 shader::GraphicsShader* VulkanGraphicsPipelineState::getShader(const shader::ShaderFrequency frequency) const noexcept

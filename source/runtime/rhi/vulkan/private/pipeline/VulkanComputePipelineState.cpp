@@ -40,7 +40,11 @@ void VulkanComputePipelineState::bind(VulkanCommandBuffer& commandBuffer) const 
     {
         return;
     }
-    vkCmdBindPipeline(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
+    if (commandBuffer.getCurrentComputePipeline() != m_pipeline)
+    {
+        vkCmdBindPipeline(commandBuffer.getHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
+        commandBuffer.setCurrentComputePipeline(m_pipeline);
+    }
 }
 
 shader::ComputeShader* VulkanComputePipelineState::getComputeShader() const noexcept
