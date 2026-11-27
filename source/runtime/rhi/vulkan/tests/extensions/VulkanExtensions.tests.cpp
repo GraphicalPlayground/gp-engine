@@ -2,10 +2,13 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
+#include "console/IConsoleManager.hpp"
+#include "console/IConsoleVariable.hpp"
 #include "containers/arrays/Vector.hpp"      // IWYU pragma: keep
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "extensions/VulkanDeviceExtension.hpp"
+#include "extensions/VulkanDeviceExtensions.hpp"
 #include "extensions/VulkanExtensionBase.hpp"
 #include "extensions/VulkanExtensionTypes.hpp"
 #include "extensions/VulkanInstanceExtension.hpp"
@@ -394,9 +397,25 @@ TEST(VulkanExtensionsTest, DeviceExtensionDiscoveryAndExternalWrapper)
     const gp::Int32 timelineIdx =
         VulkanExtensionBase::findExtension(supported, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
     ASSERT_GE(timelineIdx, 0);
+    VulkanDeviceExtension& timelineExt = *supported[static_cast<gp::USize>(timelineIdx)];
+    VkPhysicalDeviceFeatures2 timelineFeats2 =
+        zeroVulkanStruct<VkPhysicalDeviceFeatures2>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+    timelineExt.prePhysicalDeviceFeatures(timelineFeats2);
+    ASSERT_NE(timelineFeats2.pNext, nullptr);
+    VkPhysicalDeviceTimelineSemaphoreFeatures* const timelineFeats =
+        static_cast<VkPhysicalDeviceTimelineSemaphoreFeatures*>(timelineFeats2.pNext);
+    EXPECT_EQ(timelineFeats->sType, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+    timelineFeats->timelineSemaphore = VK_TRUE;
+
     OptionalVulkanDeviceExtensions devFlags;
-    supported[static_cast<gp::USize>(timelineIdx)]->postPhysicalDeviceFeatures(devFlags);
+    timelineExt.postPhysicalDeviceFeatures(devFlags);
+    EXPECT_TRUE(timelineExt.didRequirementsPass());
     EXPECT_EQ(devFlags.hasKHRTimelineSemaphore, 1u);
+
+    VkDeviceCreateInfo timelineDevCreateInfo =
+        zeroVulkanStruct<VkDeviceCreateInfo>(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+    timelineExt.preCreateDevice(timelineDevCreateInfo);
+    EXPECT_EQ(timelineDevCreateInfo.pNext, timelineFeats);
 
     // Passing external wrapper chains structs and passes requirements.
     const gp::Int32 passingIdx = VulkanExtensionBase::findExtension(supported, "VK_EXT_custom_passing_device_ext");
@@ -471,6 +490,441 @@ TEST(VulkanExtensionsTest, DeviceExtensionDiscoveryAndExternalWrapper)
 
     VulkanDeviceExtension::clearExternalDeviceExtensions();
     EXPECT_EQ(VulkanDeviceExtension::getExternalDeviceExtensions().size(), 0u);
+}
+
+namespace
+{
+
+/// @brief Searches a `pNext` chain for a structure matching `targetType`.
+/// @param[in] head First node in the `pNext` chain.
+/// @param[in] targetType Expected `VkStructureType`.
+/// @return Matching structure pointer, or `nullptr` if absent.
+[[nodiscard]] VkBaseOutStructure* findInPNextChainMutable(void* const head, const VkStructureType targetType) noexcept
+{
+    VkBaseOutStructure* current = static_cast<VkBaseOutStructure*>(head);
+    while (current != nullptr)
+    {
+        if (current->sType == targetType)
+        {
+            return current;
+        }
+        current = current->pNext;
+    }
+    return nullptr;
+}
+
+/// @brief Searches a const `pNext` chain for a structure matching `targetType`.
+/// @param[in] head First node in the `pNext` chain.
+/// @param[in] targetType Expected `VkStructureType`.
+/// @return Matching structure pointer, or `nullptr` if absent.
+[[nodiscard]] const VkBaseInStructure*
+    findInPNextChainConst(const void* const head, const VkStructureType targetType) noexcept
+{
+    const VkBaseInStructure* current = static_cast<const VkBaseInStructure*>(head);
+    while (current != nullptr)
+    {
+        if (current->sType == targetType)
+        {
+            return current;
+        }
+        current = current->pNext;
+    }
+    return nullptr;
+}
+
+/// @brief Counts the number of nodes chained onto `head` (detecting cycles up to `maxNodes`).
+/// @param[in] head First node in the `pNext` chain.
+/// @param[in] maxNodes Cycle safety cap.
+/// @return Node count.
+[[nodiscard]] gp::UInt32 countPNextNodes(const void* const head, const gp::UInt32 maxNodes = 64u) noexcept
+{
+    gp::UInt32 count = 0u;
+    const VkBaseInStructure* current = static_cast<const VkBaseInStructure*>(head);
+    while (current != nullptr && count < maxNodes)
+    {
+        ++count;
+        current = current->pNext;
+    }
+    return count;
+}
+
+/// @brief RAII helper restoring an integer console variable on scope exit.
+struct ScopedConsoleIntOverride final
+{
+    gp::console::IConsoleVariable* m_variable{ nullptr };
+    gp::Int32 m_originalValue{ 0 };
+
+    ScopedConsoleIntOverride(const char* const name, const gp::Int32 tempValue) noexcept
+    {
+        gp::console::IConsoleManager& manager = gp::console::IConsoleManager::get();
+        if (!manager.isInitialized())
+        {
+            static_cast<void>(manager.initialize());
+        }
+        m_variable = manager.findConsoleVariable(name);
+        if (m_variable != nullptr)
+        {
+            m_originalValue = m_variable->getInt();
+            (void)m_variable->set(tempValue);
+        }
+    }
+
+    ~ScopedConsoleIntOverride() noexcept
+    {
+        if (m_variable != nullptr)
+        {
+            (void)m_variable->set(m_originalValue);
+        }
+    }
+};
+
+}   // namespace
+
+TEST(VulkanExtensionsTest, FeatureGatedExtensionsChainIntoFeatures2AndDeviceCreateInfo)
+{
+    VulkanKHRTimelineSemaphoreExtension timelineExt(nullptr);
+    VulkanKHRBufferDeviceAddressExtension bdaExt(nullptr);
+    VulkanKHRSynchronization2Extension sync2Ext(nullptr);
+    VulkanKHRSeparateDepthStencilLayoutsExtension separateDepthStencilExt(nullptr);
+    VulkanKHRDynamicRenderingExtension dynamicRenderingExt(nullptr);
+    VulkanEXTExtendedDynamicStateExtension eds1Ext(nullptr);
+    VulkanEXTExtendedDynamicState2Extension eds2Ext(nullptr);
+    VulkanEXTExtendedDynamicState3Extension eds3Ext(nullptr);
+    VulkanEXTVertexInputDynamicStateExtension vertexInputDynExt(nullptr);
+    VulkanEXTDescriptorIndexingExtension descriptorIndexingExt(nullptr);
+    VulkanKHRMaintenance4Extension maint4Ext(nullptr);
+    VulkanKHRMaintenance5Extension maint5Ext(nullptr);
+    VulkanKHRMaintenance6Extension maint6Ext(nullptr);
+
+    VulkanDeviceExtension* const extensions[] = {
+        &timelineExt, &bdaExt,    &sync2Ext, &separateDepthStencilExt, &dynamicRenderingExt,
+        &eds1Ext,     &eds2Ext,   &eds3Ext,  &vertexInputDynExt,       &descriptorIndexingExt,
+        &maint4Ext,   &maint5Ext, &maint6Ext
+    };
+
+    VkPhysicalDeviceFeatures2 features2 =
+        zeroVulkanStruct<VkPhysicalDeviceFeatures2>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+    for (VulkanDeviceExtension* const ext: extensions)
+    {
+        ext->prePhysicalDeviceFeatures(features2);
+    }
+    EXPECT_EQ(countPNextNodes(features2.pNext), 13u);
+
+    // Populate simulated hardware support for every chained feature struct.
+    reinterpret_cast<VkPhysicalDeviceTimelineSemaphoreFeatures*>(
+        findInPNextChainMutable(features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES)
+    )
+        ->timelineSemaphore = VK_TRUE;
+
+    reinterpret_cast<VkPhysicalDeviceBufferDeviceAddressFeatures*>(
+        findInPNextChainMutable(features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES)
+    )
+        ->bufferDeviceAddress = VK_TRUE;
+
+    reinterpret_cast<VkPhysicalDeviceSynchronization2Features*>(
+        findInPNextChainMutable(features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES)
+    )
+        ->synchronization2 = VK_TRUE;
+
+    reinterpret_cast<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures*>(
+        findInPNextChainMutable(
+            features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES
+        )
+    )
+        ->separateDepthStencilLayouts = VK_TRUE;
+
+    reinterpret_cast<VkPhysicalDeviceDynamicRenderingFeatures*>(
+        findInPNextChainMutable(features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES)
+    )
+        ->dynamicRendering = VK_TRUE;
+
+    reinterpret_cast<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT*>(
+        findInPNextChainMutable(features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT)
+    )
+        ->extendedDynamicState = VK_TRUE;
+
+    reinterpret_cast<VkPhysicalDeviceExtendedDynamicState2FeaturesEXT*>(
+        findInPNextChainMutable(
+            features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT
+        )
+    )
+        ->extendedDynamicState2 = VK_TRUE;
+
+    VkPhysicalDeviceExtendedDynamicState3FeaturesEXT* const eds3Features =
+        reinterpret_cast<VkPhysicalDeviceExtendedDynamicState3FeaturesEXT*>(findInPNextChainMutable(
+            features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT
+        ));
+    ASSERT_NE(eds3Features, nullptr);
+    eds3Features->extendedDynamicState3PolygonMode = VK_TRUE;
+    eds3Features->extendedDynamicState3ColorBlendEnable = VK_TRUE;
+    eds3Features->extendedDynamicState3ColorBlendEquation = VK_TRUE;
+    eds3Features->extendedDynamicState3ColorWriteMask = VK_TRUE;
+    eds3Features->extendedDynamicState3RasterizationSamples = VK_TRUE;
+    eds3Features->extendedDynamicState3AlphaToCoverageEnable = VK_TRUE;
+    // Set an unenabled vendor-extension subfeature to confirm preCreateDevice sanitizes it to VK_FALSE.
+    eds3Features->extendedDynamicState3ShadingRateImageEnable = VK_TRUE;
+
+    reinterpret_cast<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT*>(
+        findInPNextChainMutable(
+            features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT
+        )
+    )
+        ->vertexInputDynamicState = VK_TRUE;
+
+    VkPhysicalDeviceDescriptorIndexingFeatures* const descIndexingFeatures =
+        reinterpret_cast<VkPhysicalDeviceDescriptorIndexingFeatures*>(
+            findInPNextChainMutable(features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES)
+        );
+    ASSERT_NE(descIndexingFeatures, nullptr);
+    descIndexingFeatures->runtimeDescriptorArray = VK_TRUE;
+    descIndexingFeatures->descriptorBindingPartiallyBound = VK_TRUE;
+    descIndexingFeatures->descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
+    descIndexingFeatures->descriptorBindingVariableDescriptorCount = VK_TRUE;
+
+    reinterpret_cast<VkPhysicalDeviceMaintenance4Features*>(
+        findInPNextChainMutable(features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES)
+    )
+        ->maintenance4 = VK_TRUE;
+
+    reinterpret_cast<VkPhysicalDeviceMaintenance5FeaturesKHR*>(
+        findInPNextChainMutable(features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR)
+    )
+        ->maintenance5 = VK_TRUE;
+
+    reinterpret_cast<VkPhysicalDeviceMaintenance6FeaturesKHR*>(
+        findInPNextChainMutable(features2.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR)
+    )
+        ->maintenance6 = VK_TRUE;
+
+    OptionalVulkanDeviceExtensions flags;
+    for (VulkanDeviceExtension* const ext: extensions)
+    {
+        ext->postPhysicalDeviceFeatures(flags);
+        EXPECT_TRUE(ext->didRequirementsPass()) << ext->getExtensionName();
+    }
+
+    EXPECT_EQ(flags.hasKHRTimelineSemaphore, 1u);
+    EXPECT_EQ(flags.hasBufferDeviceAddress, 1u);
+    EXPECT_EQ(flags.hasKHRSynchronization2, 1u);
+    EXPECT_EQ(flags.hasSeparateDepthStencilLayouts, 1u);
+    EXPECT_EQ(flags.hasKHRDynamicRendering, 1u);
+    EXPECT_EQ(flags.hasEXTExtendedDynamicState1, 1u);
+    EXPECT_EQ(flags.hasEXTExtendedDynamicState2, 1u);
+    EXPECT_EQ(flags.hasEXTExtendedDynamicState3, 1u);
+    EXPECT_EQ(flags.hasEXTVertexInputDynamicState, 1u);
+    EXPECT_EQ(flags.hasEXTDescriptorIndexing, 1u);
+    EXPECT_EQ(flags.hasKHRMaintenance4, 1u);
+    EXPECT_EQ(flags.hasKHRMaintenance5, 1u);
+    EXPECT_EQ(flags.hasKHRMaintenance6, 1u);
+
+    VkDeviceCreateInfo deviceInfo = zeroVulkanStruct<VkDeviceCreateInfo>(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+    for (VulkanDeviceExtension* const ext: extensions)
+    {
+        ext->preCreateDevice(deviceInfo);
+    }
+    EXPECT_EQ(countPNextNodes(deviceInfo.pNext), 13u);
+
+    const VkPhysicalDeviceTimelineSemaphoreFeatures* const chainedTimeline =
+        reinterpret_cast<const VkPhysicalDeviceTimelineSemaphoreFeatures*>(
+            findInPNextChainConst(deviceInfo.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES)
+        );
+    ASSERT_NE(chainedTimeline, nullptr);
+    EXPECT_EQ(chainedTimeline->timelineSemaphore, VK_TRUE);
+
+    const VkPhysicalDeviceBufferDeviceAddressFeatures* const chainedBda =
+        reinterpret_cast<const VkPhysicalDeviceBufferDeviceAddressFeatures*>(
+            findInPNextChainConst(deviceInfo.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES)
+        );
+    ASSERT_NE(chainedBda, nullptr);
+    EXPECT_EQ(chainedBda->bufferDeviceAddress, VK_TRUE);
+
+    const VkPhysicalDeviceSynchronization2Features* const chainedSync2 =
+        reinterpret_cast<const VkPhysicalDeviceSynchronization2Features*>(
+            findInPNextChainConst(deviceInfo.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES)
+        );
+    ASSERT_NE(chainedSync2, nullptr);
+    EXPECT_EQ(chainedSync2->synchronization2, VK_TRUE);
+
+    const VkPhysicalDeviceExtendedDynamicState3FeaturesEXT* const chainedEds3 =
+        reinterpret_cast<const VkPhysicalDeviceExtendedDynamicState3FeaturesEXT*>(findInPNextChainConst(
+            deviceInfo.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT
+        ));
+    ASSERT_NE(chainedEds3, nullptr);
+    EXPECT_EQ(chainedEds3->extendedDynamicState3PolygonMode, VK_TRUE);
+    EXPECT_EQ(chainedEds3->extendedDynamicState3ColorBlendEnable, VK_TRUE);
+    EXPECT_EQ(chainedEds3->extendedDynamicState3ShadingRateImageEnable, VK_FALSE);
+
+    const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT* const chainedVertexInput =
+        reinterpret_cast<const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT*>(findInPNextChainConst(
+            deviceInfo.pNext, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT
+        ));
+    ASSERT_NE(chainedVertexInput, nullptr);
+    EXPECT_EQ(chainedVertexInput->vertexInputDynamicState, VK_TRUE);
+}
+
+TEST(VulkanExtensionsTest, FeatureGatedExtensionsRejectMissingFeaturesAndSkipCreateDeviceChain)
+{
+    VulkanKHRTimelineSemaphoreExtension timelineExt(nullptr);
+    VulkanKHRBufferDeviceAddressExtension bdaExt(nullptr);
+    VulkanKHRSynchronization2Extension sync2Ext(nullptr);
+    VulkanEXTExtendedDynamicStateExtension eds1Ext(nullptr);
+    VulkanEXTExtendedDynamicState2Extension eds2Ext(nullptr);
+    VulkanEXTExtendedDynamicState3Extension eds3Ext(nullptr);
+    VulkanEXTVertexInputDynamicStateExtension vertexInputDynExt(nullptr);
+    VulkanEXTMeshShaderExtension meshShaderExt(nullptr);
+    VulkanKHRAccelerationStructureExtension accelStructExt(nullptr);
+    VulkanKHRRayTracingPipelineExtension rtPipelineExt(nullptr);
+    VulkanKHRRayQueryExtension rayQueryExt(nullptr);
+
+    VulkanDeviceExtension* const extensions[] = { &timelineExt,    &bdaExt,        &sync2Ext,          &eds1Ext,
+                                                  &eds2Ext,        &eds3Ext,       &vertexInputDynExt, &meshShaderExt,
+                                                  &accelStructExt, &rtPipelineExt, &rayQueryExt };
+
+    VkPhysicalDeviceFeatures2 features2 =
+        zeroVulkanStruct<VkPhysicalDeviceFeatures2>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+    OptionalVulkanDeviceExtensions flags;
+    VkDeviceCreateInfo deviceInfo = zeroVulkanStruct<VkDeviceCreateInfo>(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+
+    for (VulkanDeviceExtension* const ext: extensions)
+    {
+        ext->prePhysicalDeviceFeatures(features2);
+        ext->postPhysicalDeviceFeatures(flags);
+        EXPECT_FALSE(ext->didRequirementsPass()) << ext->getExtensionName();
+        ext->preCreateDevice(deviceInfo);
+    }
+
+    EXPECT_EQ(deviceInfo.pNext, nullptr);
+    EXPECT_EQ(flags.hasKHRTimelineSemaphore, 0u);
+    EXPECT_EQ(flags.hasBufferDeviceAddress, 0u);
+    EXPECT_EQ(flags.hasKHRSynchronization2, 0u);
+    EXPECT_FALSE(flags.hasAnyExtendedDynamicState());
+    EXPECT_EQ(flags.hasEXTMeshShader, 0u);
+    EXPECT_EQ(flags.hasAccelerationStructure, 0u);
+    EXPECT_EQ(flags.hasRayTracingPipeline, 0u);
+    EXPECT_EQ(flags.hasRayQuery, 0u);
+}
+
+TEST(VulkanExtensionsTest, AllowDynamicStatesBitmaskControlsEachDynamicStateExtension)
+{
+    {
+        const ScopedConsoleIntOverride maskOverride("r.Vulkan.AllowDynamicStates", 0);
+        EXPECT_FALSE(VulkanEXTExtendedDynamicStateExtension(nullptr).isEnabled());
+        EXPECT_FALSE(VulkanEXTExtendedDynamicState2Extension(nullptr).isEnabled());
+        EXPECT_FALSE(VulkanEXTExtendedDynamicState3Extension(nullptr).isEnabled());
+        EXPECT_FALSE(VulkanEXTVertexInputDynamicStateExtension(nullptr).isEnabled());
+    }
+    {
+        const ScopedConsoleIntOverride maskOverride("r.Vulkan.AllowDynamicStates", 5);
+        EXPECT_TRUE(VulkanEXTExtendedDynamicStateExtension(nullptr).isEnabled());
+        EXPECT_FALSE(VulkanEXTExtendedDynamicState2Extension(nullptr).isEnabled());
+        EXPECT_TRUE(VulkanEXTExtendedDynamicState3Extension(nullptr).isEnabled());
+        EXPECT_FALSE(VulkanEXTVertexInputDynamicStateExtension(nullptr).isEnabled());
+    }
+    {
+        const ScopedConsoleIntOverride maskOverride("r.Vulkan.AllowDynamicStates", 10);
+        EXPECT_FALSE(VulkanEXTExtendedDynamicStateExtension(nullptr).isEnabled());
+        EXPECT_TRUE(VulkanEXTExtendedDynamicState2Extension(nullptr).isEnabled());
+        EXPECT_FALSE(VulkanEXTExtendedDynamicState3Extension(nullptr).isEnabled());
+        EXPECT_TRUE(VulkanEXTVertexInputDynamicStateExtension(nullptr).isEnabled());
+    }
+}
+
+TEST(VulkanExtensionsTest, PromotedExtensionsPopulateFlagsFromCoreFeaturesAndOrderingIsPreserved)
+{
+    VkPhysicalDeviceVulkan11Features core11 =
+        zeroVulkanStruct<VkPhysicalDeviceVulkan11Features>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES);
+    core11.multiview = VK_TRUE;
+    core11.storageBuffer16BitAccess = VK_TRUE;
+    core11.uniformAndStorageBuffer16BitAccess = VK_TRUE;
+    core11.storagePushConstant16 = VK_TRUE;
+
+    VkPhysicalDeviceVulkan12Features core12 =
+        zeroVulkanStruct<VkPhysicalDeviceVulkan12Features>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
+    core12.timelineSemaphore = VK_TRUE;
+    core12.bufferDeviceAddress = VK_TRUE;
+    core12.separateDepthStencilLayouts = VK_TRUE;
+    core12.runtimeDescriptorArray = VK_TRUE;
+    core12.descriptorBindingPartiallyBound = VK_TRUE;
+    core12.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
+    core12.descriptorBindingVariableDescriptorCount = VK_TRUE;
+
+    VkPhysicalDeviceVulkan13Features core13 =
+        zeroVulkanStruct<VkPhysicalDeviceVulkan13Features>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES);
+    core13.synchronization2 = VK_TRUE;
+    core13.dynamicRendering = VK_TRUE;
+    core13.maintenance4 = VK_TRUE;
+    core13.subgroupSizeControl = VK_TRUE;
+
+    VkPhysicalDeviceVulkan14Features core14 =
+        zeroVulkanStruct<VkPhysicalDeviceVulkan14Features>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES);
+    core14.maintenance5 = VK_TRUE;
+    core14.maintenance6 = VK_TRUE;
+
+    VulkanCoreFeaturesAndProperties coreData{};
+    coreData.features11 = &core11;
+    coreData.features12 = &core12;
+    coreData.features13 = &core13;
+    coreData.features14 = &core14;
+
+    OptionalVulkanDeviceExtensions flags;
+    VulkanKHRMultiviewExtension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanKHR16BitStorageExtension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanKHRTimelineSemaphoreExtension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanKHRBufferDeviceAddressExtension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanKHRSeparateDepthStencilLayoutsExtension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanEXTDescriptorIndexingExtension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanKHRSynchronization2Extension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanKHRDynamicRenderingExtension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanKHRMaintenance4Extension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanEXTSubgroupSizeControlExtension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanEXTExtendedDynamicStateExtension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanEXTExtendedDynamicState2Extension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanKHRMaintenance5Extension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+    VulkanKHRMaintenance6Extension(nullptr).handleCoreFeaturesAndProperties(coreData, flags);
+
+    EXPECT_EQ(flags.hasKHRMultiview, 1u);
+    EXPECT_EQ(flags.hasKHR16bitStorage, 1u);
+    EXPECT_EQ(flags.hasKHRTimelineSemaphore, 1u);
+    EXPECT_EQ(flags.hasBufferDeviceAddress, 1u);
+    EXPECT_EQ(flags.hasSeparateDepthStencilLayouts, 1u);
+    EXPECT_EQ(flags.hasEXTDescriptorIndexing, 1u);
+    EXPECT_EQ(flags.hasKHRSynchronization2, 1u);
+    EXPECT_EQ(flags.hasKHRDynamicRendering, 1u);
+    EXPECT_EQ(flags.hasKHRMaintenance4, 1u);
+    EXPECT_EQ(flags.hasEXTSubgroupSizeControl, 1u);
+    EXPECT_EQ(flags.hasEXTExtendedDynamicState1, 1u);
+    EXPECT_EQ(flags.hasEXTExtendedDynamicState2, 1u);
+    EXPECT_EQ(flags.hasKHRMaintenance5, 1u);
+    EXPECT_EQ(flags.hasKHRMaintenance6, 1u);
+
+    // Verify dependency ordering in getSupportedDeviceExtensions and KHR calibrated timestamps precedence over EXT.
+    gp::Vector<VkExtensionProperties> driverExts;
+    driverExts.pushBack(makeExtensionProperties(VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME));
+    driverExts.pushBack(makeExtensionProperties(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME));
+
+    VulkanDeviceExtensionArray supported = VulkanDeviceExtension::getSupportedDeviceExtensions(
+        nullptr, VK_API_VERSION_1_3, gp::ConstVectorView<VkExtensionProperties>(driverExts.data(), driverExts.size())
+    );
+    const gp::Int32 fsrIdx = VulkanExtensionBase::findExtension(supported, VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME);
+    const gp::Int32 fdmIdx = VulkanExtensionBase::findExtension(supported, VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME);
+    const gp::Int32 khrCalIdx =
+        VulkanExtensionBase::findExtension(supported, VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+    const gp::Int32 extCalIdx =
+        VulkanExtensionBase::findExtension(supported, VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+    const gp::Int32 storage16Idx = VulkanExtensionBase::findExtension(supported, VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
+    const gp::Int32 float16Idx =
+        VulkanExtensionBase::findExtension(supported, VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
+
+    EXPECT_LT(fsrIdx, fdmIdx);
+    EXPECT_LT(khrCalIdx, extCalIdx);
+    EXPECT_LT(storage16Idx, float16Idx);
+
+    OptionalVulkanDeviceExtensions calFlags;
+    supported[static_cast<gp::USize>(khrCalIdx)]->postPhysicalDeviceFeatures(calFlags);
+    supported[static_cast<gp::USize>(extCalIdx)]->postPhysicalDeviceFeatures(calFlags);
+    EXPECT_EQ(calFlags.hasKHRCalibratedTimestamps, 1u);
+    EXPECT_EQ(calFlags.hasEXTCalibratedTimestamps, 0u);
+    EXPECT_FALSE(supported[static_cast<gp::USize>(extCalIdx)]->didRequirementsPass());
 }
 
 }   // namespace gp::rhi::vulkan::tests
