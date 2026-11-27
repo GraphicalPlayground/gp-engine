@@ -4,13 +4,16 @@
 
 #pragma once
 
-#include "containers/arrays/Vector.hpp"   // IWYU pragma: keep
+#include "containers/arrays/Vector.hpp"      // IWYU pragma: keep
+#include "containers/strings/String.hpp"     // IWYU pragma: keep
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "hashing/HashCombine.hpp"
 #include "hashing/HashMix.hpp"
 #include "hashing/HashOf.hpp"
 #include "pipeline/PipelineEnums.hpp"
 #include "pipeline/PipelineForward.hpp"   // IWYU pragma: keep
+#include "RHIBase.hpp"
 #include "RHIDefinitions.hpp"
 #include <type_traits>
 
@@ -103,6 +106,15 @@ public:
         hasher.append(stride);
         hasher.append(useInstanceIndex);
     }
+
+    /// @brief Serializes this vertex element into `<streamIndex offset type attributeIndex stride useInstanceIndex>`.
+    /// @return Serialized string representation.
+    [[nodiscard]] GP_RHI_API gp::String toString() const noexcept;
+
+    /// @brief Parses a 6-token `<...>` or whitespace-delimited sequence into this vertex element.
+    /// @param[in] src Serialized vertex element text.
+    /// @return True when all 6 fields parsed within valid bounds; false if `src` is malformed.
+    GP_RHI_API bool fromString(gp::StringView src) noexcept;
 };
 
 static_assert(sizeof(VertexElement) == 8u, "VertexElement must be exactly 8 bytes.");
