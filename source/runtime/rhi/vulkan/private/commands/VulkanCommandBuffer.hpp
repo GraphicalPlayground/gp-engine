@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "commands/VulkanCommandBufferDynamicState.hpp"
 #include "commands/VulkanCommandEnums.hpp"
 #include "containers/arrays/Vector.hpp"      // IWYU pragma: keep
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
@@ -260,6 +261,21 @@ public:
     void markDynamicStateDirty() noexcept
     {
         m_needsDynamicStateSet = true;
+        m_dynamicState.needsFullUpdate = true;
+    }
+
+    /// @brief Returns the dynamic state last recorded on this command buffer.
+    /// @return Cache the pending graphics state compares against before recording `vkCmdSet*` commands.
+    [[nodiscard]] VulkanCommandBufferDynamicState& getDynamicState() noexcept
+    {
+        return m_dynamicState;
+    }
+
+    /// @brief Returns the dynamic state last recorded on this command buffer.
+    /// @return Read-only cache.
+    [[nodiscard]] const VulkanCommandBufferDynamicState& getDynamicState() const noexcept
+    {
+        return m_dynamicState;
     }
 
     /// @brief Reports whether cached dynamic state needs to be re-emitted before the next draw.
@@ -344,6 +360,9 @@ private:
 
     gp::UInt64 m_lastActiveTimestampNs{ 0u };
     bool m_needsDynamicStateSet{ true };
+
+    /// @brief Dynamic state last recorded; reset whenever recording restarts.
+    VulkanCommandBufferDynamicState m_dynamicState{};
     bool m_isBoundaryContext{ false };
 
     VkPipeline m_currentGraphicsPipeline{ VK_NULL_HANDLE };

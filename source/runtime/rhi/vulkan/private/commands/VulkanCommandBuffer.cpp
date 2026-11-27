@@ -157,6 +157,7 @@ void VulkanCommandBuffer::freeMemory() noexcept
 void VulkanCommandBuffer::resetDynamicState() noexcept
 {
     m_needsDynamicStateSet = true;
+    m_dynamicState.reset();
     m_currentGraphicsPipeline = VK_NULL_HANDLE;
     m_currentComputePipeline = VK_NULL_HANDLE;
     m_endedBarrierEvents.clear();
