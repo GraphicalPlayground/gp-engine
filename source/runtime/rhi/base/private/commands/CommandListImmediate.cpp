@@ -5,6 +5,7 @@
 #include "commands/CommandListImmediate.hpp"
 #include "commands/CommandListExecutor.hpp"
 #include "device/DynamicRHI.hpp"
+#include "device/RHIGlobals.hpp"
 #include "sync/GPUFence.hpp"
 
 namespace gp::rhi::command
@@ -59,30 +60,46 @@ void CommandListImmediate::beginDrawingViewport(
 }
 
 void CommandListImmediate::endDrawingViewport(
-    presentation::Viewport* const viewport, const bool present, const bool lockToVsync
+    presentation::Viewport* const viewport, const presentation::PresentArgsWithStats& presentArgs
 ) noexcept
 {
     m_persistentState.insideDrawingViewport = false;
+    if (presentArgs.shouldPresent())
+    {
+        ++getRHIGlobals().presentCounter;
+    }
+
     if (isBottomOfPipe())
     {
         if (DynamicRHI* const rhi = getDynamicRHI(); rhi != nullptr)
         {
-            rhi->endDrawingViewport(viewport, present, lockToVsync);
+            rhi->endDrawingViewport(viewport, presentArgs);
         }
         immediateFlush(ImmediateFlushType::DispatchToRHIThread);
         return;
     }
 
     enqueueLambda(
-        [viewport, present, lockToVsync](CommandListImmediate&) noexcept -> void
+        [viewport, presentArgs](CommandListImmediate&) noexcept -> void
     {
         if (DynamicRHI* const rhi = getDynamicRHI(); rhi != nullptr)
         {
-            rhi->endDrawingViewport(viewport, present, lockToVsync);
+            rhi->endDrawingViewport(viewport, presentArgs);
         }
     }
     );
     immediateFlush(ImmediateFlushType::DispatchToRHIThread);
+}
+
+void CommandListImmediate::endDrawingViewport(
+    presentation::Viewport* const viewport, const bool present, const bool lockToVsync
+) noexcept
+{
+    const gp::UInt64 frameCounter = (getDynamicRHI() != nullptr) ? getDynamicRHI()->getFrameCounter() : 0u;
+    const presentation::PresentArgsWithStats presentArgs(
+        presentation::PresentArgs(present, lockToVsync), frameCounter, 0u
+    );
+    endDrawingViewport(viewport, presentArgs);
 }
 
 void CommandListImmediate::beginFrame() noexcept

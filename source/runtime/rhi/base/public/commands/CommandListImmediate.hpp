@@ -16,6 +16,7 @@
 #include "CoreMinimal.hpp"
 #include "maths/color/Color.hpp"
 #include "maths/color/LinearColor.hpp"
+#include "presentation/PresentArgs.hpp"
 #include "presentation/PresentationForward.hpp"
 #include "resources/TextureInitializer.hpp"
 #include "RHIBase.hpp"
@@ -80,6 +81,13 @@ public:
     /// @param[in] viewport Target presentation viewport.
     /// @param[in] renderTarget Optional backbuffer texture override.
     void beginDrawingViewport(presentation::Viewport* viewport, resource::Texture* renderTarget = nullptr) noexcept;
+
+    /// @brief Ends rendering into `viewport` and optionally presents the swapchain with explicit latency telemetry.
+    /// @param[in] viewport Target presentation viewport.
+    /// @param[in] presentArgs Presentation, VSync, frame counter, and input timestamp arguments.
+    void endDrawingViewport(
+        presentation::Viewport* viewport, const presentation::PresentArgsWithStats& presentArgs
+    ) noexcept;
 
     /// @brief Ends rendering into `viewport` and optionally presents the swapchain.
     /// @param[in] viewport Target presentation viewport.
