@@ -291,7 +291,10 @@ public:
     virtual void beginDrawingViewport(presentation::Viewport*, resource::Texture*) noexcept override
     {}
 
-    virtual void endDrawingViewport(presentation::Viewport*, bool, bool) noexcept override
+    using DynamicRHI::endDrawingViewport;
+
+    virtual void
+        endDrawingViewport(presentation::Viewport*, const presentation::PresentArgsWithStats&) noexcept override
     {}
 
     virtual void blockUntilGPUIdle() noexcept override
