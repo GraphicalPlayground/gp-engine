@@ -209,6 +209,20 @@ public:
 
     /// @brief Notifies the backend context to invalidate cached state after external native commands.
     void postExternalCommandsReset() noexcept;
+
+    /// @brief Begins global UAV overlap across subsequent dispatches/draws on the active pipeline.
+    void beginUAVOverlap() noexcept;
+
+    /// @brief Ends global UAV overlap on the active pipeline.
+    void endUAVOverlap() noexcept;
+
+    /// @brief Begins UAV overlap for an explicit list of `uavs` on the active pipeline.
+    /// @param[in] uavs Span of UAVs permitted to overlap writes without implicit barriers.
+    void beginUAVOverlap(gp::ConstVectorView<view::UnorderedAccessView*> uavs) noexcept;
+
+    /// @brief Ends UAV overlap for an explicit list of `uavs` on the active pipeline.
+    /// @param[in] uavs Span of UAVs exiting overlap mode.
+    void endUAVOverlap(gp::ConstVectorView<view::UnorderedAccessView*> uavs) noexcept;
 };
 
 static_assert(
