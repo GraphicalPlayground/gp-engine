@@ -23,6 +23,8 @@ enum class BufferUsageFlags : gp::UInt32
     UnorderedAccess = 1u << 3,
     ByteAddressBuffer = 1u << 4,
     SourceCopy = 1u << 5,
+    /// @brief Allocated from a transient aliasing heap with explicit acquire/discard lifetime.
+    Transient = 1u << 6,
     DrawIndirect = 1u << 7,
     ShaderResource = 1u << 8,
     KeepCPUAccessible = 1u << 9,
