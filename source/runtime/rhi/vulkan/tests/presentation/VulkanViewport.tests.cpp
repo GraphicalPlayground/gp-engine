@@ -8,6 +8,7 @@
 #include "core/ResourceForward.hpp"       // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "device/DeviceTypes.hpp"
+#include "loader/VulkanEntryPoints.hpp"
 #include "maths/color/PixelFormatEnums.hpp"   // IWYU pragma: keep
 #include "platform/VulkanPlatform.hpp"
 #include "presentation/PresentArgs.hpp"
@@ -250,6 +251,202 @@ TEST_F(VulkanViewportLiveTest, BackBufferEntryPointNeedsInitializedViewport)
     ));
 
     EXPECT_FALSE(getVulkanViewportBackBuffer(cmdList(), viewport.get()));
+}
+
+namespace
+{
+
+struct MockSwapChainApiGuard final
+{
+    PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR m_savedGetCaps{ nullptr };
+    PFN_vkGetPhysicalDeviceSurfaceFormatsKHR m_savedGetFormats{ nullptr };
+    PFN_vkGetPhysicalDeviceSurfacePresentModesKHR m_savedGetModes{ nullptr };
+    PFN_vkCreateSwapchainKHR m_savedCreateSwapchain{ nullptr };
+    PFN_vkDestroySwapchainKHR m_savedDestroySwapchain{ nullptr };
+    PFN_vkGetSwapchainImagesKHR m_savedGetImages{ nullptr };
+    PFN_vkDestroySurfaceKHR m_savedDestroySurface{ nullptr };
+
+    static inline VkExtent2D s_surfaceExtent{ 128u, 128u };
+    static inline VkSwapchainKHR s_lastOldSwapchain{ VK_NULL_HANDLE };
+    static inline gp::Vector<VkSwapchainKHR> s_destroyedSwapchains{};
+    static inline gp::Vector<VkSurfaceKHR> s_destroyedSurfaces{};
+
+    static VkResult VKAPI_PTR
+        mockGetCaps(VkPhysicalDevice, VkSurfaceKHR, VkSurfaceCapabilitiesKHR* const outCaps) noexcept
+    {
+        *outCaps = VkSurfaceCapabilitiesKHR{};
+        outCaps->minImageCount = 2u;
+        outCaps->maxImageCount = 4u;
+        outCaps->currentExtent = s_surfaceExtent;
+        outCaps->minImageExtent = s_surfaceExtent;
+        outCaps->maxImageExtent = s_surfaceExtent;
+        outCaps->maxImageArrayLayers = 1u;
+        outCaps->supportedTransforms = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+        outCaps->currentTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+        outCaps->supportedCompositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        outCaps->supportedUsageFlags =
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        return VK_SUCCESS;
+    }
+
+    static VkResult VKAPI_PTR mockGetFormats(
+        VkPhysicalDevice, VkSurfaceKHR, gp::UInt32* const ioCount, VkSurfaceFormatKHR* const outFormats
+    ) noexcept
+    {
+        if (outFormats == nullptr)
+        {
+            *ioCount = 1u;
+            return VK_SUCCESS;
+        }
+        *ioCount = 1u;
+        outFormats[0].format = VK_FORMAT_B8G8R8A8_UNORM;
+        outFormats[0].colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+        return VK_SUCCESS;
+    }
+
+    static VkResult VKAPI_PTR mockGetModes(
+        VkPhysicalDevice, VkSurfaceKHR, gp::UInt32* const ioCount, VkPresentModeKHR* const outModes
+    ) noexcept
+    {
+        if (outModes == nullptr)
+        {
+            *ioCount = 1u;
+            return VK_SUCCESS;
+        }
+        *ioCount = 1u;
+        outModes[0] = VK_PRESENT_MODE_FIFO_KHR;
+        return VK_SUCCESS;
+    }
+
+    static VkResult VKAPI_PTR mockCreateSwapchain(
+        VkDevice,
+        const VkSwapchainCreateInfoKHR* const createInfo,
+        const VkAllocationCallbacks*,
+        VkSwapchainKHR* const outSwapchain
+    ) noexcept
+    {
+        s_lastOldSwapchain = createInfo->oldSwapchain;
+        *outSwapchain = reinterpret_cast<VkSwapchainKHR>(static_cast<gp::UIntPtr>(0xBEEF0002u));
+        return VK_SUCCESS;
+    }
+
+    static void VKAPI_PTR
+        mockDestroySwapchain(VkDevice, const VkSwapchainKHR swapchain, const VkAllocationCallbacks*) noexcept
+    {
+        s_destroyedSwapchains.pushBack(swapchain);
+    }
+
+    static VkResult VKAPI_PTR
+        mockGetImages(VkDevice, VkSwapchainKHR, gp::UInt32* const ioCount, VkImage* const outImages) noexcept
+    {
+        if (outImages == nullptr)
+        {
+            *ioCount = 2u;
+            return VK_SUCCESS;
+        }
+        *ioCount = 2u;
+        outImages[0] = reinterpret_cast<VkImage>(static_cast<gp::UIntPtr>(0x101u));
+        outImages[1] = reinterpret_cast<VkImage>(static_cast<gp::UIntPtr>(0x102u));
+        return VK_SUCCESS;
+    }
+
+    static void VKAPI_PTR
+        mockDestroySurface(VkInstance, const VkSurfaceKHR surface, const VkAllocationCallbacks*) noexcept
+    {
+        s_destroyedSurfaces.pushBack(surface);
+    }
+
+    MockSwapChainApiGuard() noexcept
+        : m_savedGetCaps(dynamic_api::vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
+        , m_savedGetFormats(dynamic_api::vkGetPhysicalDeviceSurfaceFormatsKHR)
+        , m_savedGetModes(dynamic_api::vkGetPhysicalDeviceSurfacePresentModesKHR)
+        , m_savedCreateSwapchain(dynamic_api::vkCreateSwapchainKHR)
+        , m_savedDestroySwapchain(dynamic_api::vkDestroySwapchainKHR)
+        , m_savedGetImages(dynamic_api::vkGetSwapchainImagesKHR)
+        , m_savedDestroySurface(dynamic_api::vkDestroySurfaceKHR)
+    {
+        s_surfaceExtent = VkExtent2D{ 128u, 128u };
+        s_lastOldSwapchain = VK_NULL_HANDLE;
+        s_destroyedSwapchains.clear();
+        s_destroyedSurfaces.clear();
+
+        dynamic_api::vkGetPhysicalDeviceSurfaceCapabilitiesKHR = &mockGetCaps;
+        dynamic_api::vkGetPhysicalDeviceSurfaceFormatsKHR = &mockGetFormats;
+        dynamic_api::vkGetPhysicalDeviceSurfacePresentModesKHR = &mockGetModes;
+        dynamic_api::vkCreateSwapchainKHR = &mockCreateSwapchain;
+        dynamic_api::vkDestroySwapchainKHR = &mockDestroySwapchain;
+        dynamic_api::vkGetSwapchainImagesKHR = &mockGetImages;
+        dynamic_api::vkDestroySurfaceKHR = &mockDestroySurface;
+    }
+
+    ~MockSwapChainApiGuard() noexcept
+    {
+        dynamic_api::vkGetPhysicalDeviceSurfaceCapabilitiesKHR = m_savedGetCaps;
+        dynamic_api::vkGetPhysicalDeviceSurfaceFormatsKHR = m_savedGetFormats;
+        dynamic_api::vkGetPhysicalDeviceSurfacePresentModesKHR = m_savedGetModes;
+        dynamic_api::vkCreateSwapchainKHR = m_savedCreateSwapchain;
+        dynamic_api::vkDestroySwapchainKHR = m_savedDestroySwapchain;
+        dynamic_api::vkGetSwapchainImagesKHR = m_savedGetImages;
+        dynamic_api::vkDestroySurfaceKHR = m_savedDestroySurface;
+        s_destroyedSwapchains.clear();
+        s_destroyedSurfaces.clear();
+    }
+};
+
+}   // namespace
+
+TEST_F(VulkanViewportLiveTest, SwapChainInitializeDestroysRetiredOldSwapChainOnSuccessAndFailure)
+{
+    const MockSwapChainApiGuard apiGuard;
+
+    const VkSwapchainKHR retiredSwapchain = reinterpret_cast<VkSwapchainKHR>(static_cast<gp::UIntPtr>(0xBEEF0001u));
+    const VkSurfaceKHR reusedSurface = reinterpret_cast<VkSurfaceKHR>(static_cast<gp::UIntPtr>(0xCAFE0001u));
+
+    VulkanSwapChainDesc desc{};
+    desc.device = m_device;
+    desc.width = kViewportSize;
+    desc.height = kViewportSize;
+    desc.pixelFormat = PixelFormat::B8G8R8A8_UNorm;
+
+    // 1. Successful recreation passes oldSwapchain to vkCreateSwapchainKHR AND immediately destroys oldSwapchain.
+    {
+        VulkanSwapChainRecreateInfo recreateInfo{};
+        recreateInfo.swapChain = retiredSwapchain;
+        recreateInfo.surface = reusedSurface;
+
+        VulkanSwapChain swapChain(desc);
+        ASSERT_TRUE(swapChain.initialize(VulkanPlatformWindowContext{}, &recreateInfo));
+        EXPECT_EQ(recreateInfo.swapChain, static_cast<VkSwapchainKHR>(VK_NULL_HANDLE));
+        EXPECT_EQ(recreateInfo.surface, static_cast<VkSurfaceKHR>(VK_NULL_HANDLE));
+        EXPECT_EQ(MockSwapChainApiGuard::s_lastOldSwapchain, retiredSwapchain);
+        ASSERT_EQ(MockSwapChainApiGuard::s_destroyedSwapchains.size(), 1u);
+        EXPECT_EQ(MockSwapChainApiGuard::s_destroyedSwapchains[0], retiredSwapchain);
+        EXPECT_TRUE(MockSwapChainApiGuard::s_destroyedSurfaces.isEmpty());
+
+        swapChain.destroy(nullptr);
+        ASSERT_EQ(MockSwapChainApiGuard::s_destroyedSwapchains.size(), 2u);
+        ASSERT_EQ(MockSwapChainApiGuard::s_destroyedSurfaces.size(), 1u);
+        EXPECT_EQ(MockSwapChainApiGuard::s_destroyedSurfaces[0], reusedSurface);
+    }
+
+    // 2. Failed recreation (minimized zero-extent surface) still destroys both retired swapchain and surface.
+    MockSwapChainApiGuard::s_destroyedSwapchains.clear();
+    MockSwapChainApiGuard::s_destroyedSurfaces.clear();
+    MockSwapChainApiGuard::s_surfaceExtent = VkExtent2D{ 0u, 0u };
+    {
+        VulkanSwapChainRecreateInfo recreateInfo{};
+        recreateInfo.swapChain = retiredSwapchain;
+        recreateInfo.surface = reusedSurface;
+
+        VulkanSwapChain swapChain(desc);
+        EXPECT_FALSE(swapChain.initialize(VulkanPlatformWindowContext{}, &recreateInfo));
+        EXPECT_EQ(recreateInfo.swapChain, static_cast<VkSwapchainKHR>(VK_NULL_HANDLE));
+        EXPECT_EQ(recreateInfo.surface, static_cast<VkSurfaceKHR>(VK_NULL_HANDLE));
+        ASSERT_EQ(MockSwapChainApiGuard::s_destroyedSwapchains.size(), 1u);
+        EXPECT_EQ(MockSwapChainApiGuard::s_destroyedSwapchains[0], retiredSwapchain);
+        ASSERT_EQ(MockSwapChainApiGuard::s_destroyedSurfaces.size(), 1u);
+        EXPECT_EQ(MockSwapChainApiGuard::s_destroyedSurfaces[0], reusedSurface);
+    }
 }
 
 }   // namespace gp::rhi::vulkan::tests
