@@ -386,4 +386,44 @@ void CommandEndRenderQuery::execute(CommandListBase& cmdList) noexcept
     cmdList.getContext().endRenderQuery(renderQuery);
 }
 
+void CommandBeginUAVOverlap::execute(CommandListBase& cmdList) noexcept
+{
+    cmdList.getComputeContext().beginUAVOverlap();
+}
+
+void CommandEndUAVOverlap::execute(CommandListBase& cmdList) noexcept
+{
+    cmdList.getComputeContext().endUAVOverlap();
+}
+
+void CommandBeginSpecificUAVOverlap::execute(CommandListBase& cmdList) noexcept
+{
+    cmdList.getComputeContext().beginUAVOverlap(uavs);
+}
+
+void CommandEndSpecificUAVOverlap::execute(CommandListBase& cmdList) noexcept
+{
+    cmdList.getComputeContext().endUAVOverlap(uavs);
+}
+
+#if GP_WITH_RHI_BREADCRUMBS
+void CommandBeginBreadcrumbGPU::execute(CommandListBase& cmdList) noexcept
+{
+    IComputeContext& ctx = cmdList.getComputeContext();
+    if (ctx.shouldEmitBreadcrumbs())
+    {
+        ctx.beginBreadcrumbGPU(node);
+    }
+}
+
+void CommandEndBreadcrumbGPU::execute(CommandListBase& cmdList) noexcept
+{
+    IComputeContext& ctx = cmdList.getComputeContext();
+    if (ctx.shouldEmitBreadcrumbs())
+    {
+        ctx.endBreadcrumbGPU(node);
+    }
+}
+#endif
+
 }   // namespace gp::rhi::command

@@ -989,4 +989,66 @@ struct GP_RHI_API CommandEndRenderQuery final : public Command<CommandEndRenderQ
     void execute(CommandListBase& cmdList) noexcept;
 };
 
+/// @brief Recorded packet beginning global UAV overlap on the active compute context.
+struct GP_RHI_API CommandBeginUAVOverlap final : public Command<CommandBeginUAVOverlap>
+{
+    void execute(CommandListBase& cmdList) noexcept;
+};
+
+/// @brief Recorded packet ending global UAV overlap on the active compute context.
+struct GP_RHI_API CommandEndUAVOverlap final : public Command<CommandEndUAVOverlap>
+{
+    void execute(CommandListBase& cmdList) noexcept;
+};
+
+/// @brief Recorded packet beginning UAV overlap for an explicit set of UAVs.
+struct GP_RHI_API CommandBeginSpecificUAVOverlap final : public Command<CommandBeginSpecificUAVOverlap>
+{
+    gp::ConstVectorView<view::UnorderedAccessView*> uavs{};
+
+    explicit CommandBeginSpecificUAVOverlap(const gp::ConstVectorView<view::UnorderedAccessView*> inUavs) noexcept
+        : uavs(inUavs)
+    {}
+
+    void execute(CommandListBase& cmdList) noexcept;
+};
+
+/// @brief Recorded packet ending UAV overlap for an explicit set of UAVs.
+struct GP_RHI_API CommandEndSpecificUAVOverlap final : public Command<CommandEndSpecificUAVOverlap>
+{
+    gp::ConstVectorView<view::UnorderedAccessView*> uavs{};
+
+    explicit CommandEndSpecificUAVOverlap(const gp::ConstVectorView<view::UnorderedAccessView*> inUavs) noexcept
+        : uavs(inUavs)
+    {}
+
+    void execute(CommandListBase& cmdList) noexcept;
+};
+
+#if GP_WITH_RHI_BREADCRUMBS
+/// @brief Recorded packet emitting a GPU entry marker for `node` on the active compute context.
+struct GP_RHI_API CommandBeginBreadcrumbGPU final : public Command<CommandBeginBreadcrumbGPU>
+{
+    diagnostics::BreadcrumbNode* node{ nullptr };
+
+    explicit CommandBeginBreadcrumbGPU(diagnostics::BreadcrumbNode* const inNode) noexcept
+        : node(inNode)
+    {}
+
+    void execute(CommandListBase& cmdList) noexcept;
+};
+
+/// @brief Recorded packet emitting a GPU exit marker for `node` on the active compute context.
+struct GP_RHI_API CommandEndBreadcrumbGPU final : public Command<CommandEndBreadcrumbGPU>
+{
+    diagnostics::BreadcrumbNode* node{ nullptr };
+
+    explicit CommandEndBreadcrumbGPU(diagnostics::BreadcrumbNode* const inNode) noexcept
+        : node(inNode)
+    {}
+
+    void execute(CommandListBase& cmdList) noexcept;
+};
+#endif
+
 }   // namespace gp::rhi::command
