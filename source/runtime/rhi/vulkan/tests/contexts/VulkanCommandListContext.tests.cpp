@@ -3,25 +3,53 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "contexts/VulkanCommandListContext.hpp"
+#include "../pipeline/VulkanPipelineTestFakes.hpp"
+#include "commands/CommandEnums.hpp"
 #include "commands/CommandTypes.hpp"
+#include "commands/RenderPassInfo.hpp"
 #include "commands/VulkanCommandEnums.hpp"
+#include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "contexts/VulkanCommandContextProvider.hpp"
 #include "contexts/VulkanContextEnums.hpp"
 #include "contexts/VulkanContextTypes.hpp"
+#include "core/ResourceDeletionQueue.hpp"
 #include "CoreMinimal.hpp"
 #include "maths/color/LinearColor.hpp"
 #include "pendingstate/VulkanPendingGfxState.hpp"
 #include "pendingstate/VulkanPendingStateTypes.hpp"   // IWYU pragma: keep
+#include "pipeline/BlendState.hpp"                    // IWYU pragma: keep
+#include "pipeline/BlendStateDesc.hpp"
+#include "pipeline/BoundShaderState.hpp"
+#include "pipeline/DepthStencilState.hpp"       // IWYU pragma: keep
+#include "pipeline/DepthStencilStateDesc.hpp"
+#include "pipeline/GraphicsPipelineState.hpp"   // IWYU pragma: keep
+#include "pipeline/GraphicsPipelineStateDesc.hpp"
+#include "pipeline/PipelineEnums.hpp"
+#include "pipeline/RasterizerState.hpp"   // IWYU pragma: keep
+#include "pipeline/RasterizerStateDesc.hpp"
+#include "pipeline/SamplerState.hpp"      // IWYU pragma: keep
+#include "pipeline/VulkanGraphicsPipelineState.hpp"
+#include "pipeline/VulkanPipelineStateCacheManager.hpp"
+#include "pipeline/VulkanWrappedPipelineStates.hpp"
+#include "renderpass/VulkanRenderPassManager.hpp"
+#include "renderpass/VulkanRenderTargetCaps.hpp"
 #include "resources/BufferEnums.hpp"
 #include "resources/IVulkanTransferCommandRecorder.hpp"
 #include "resources/StagingBuffer.hpp"
+#include "resources/TextureEnums.hpp"
 #include "resources/VulkanReadbackStagingBuffer.hpp"
 #include "RHIPixelFormat.hpp"
-#include "shaders/ShaderEnums.hpp"         // IWYU pragma: keep
+#include "shaders/ShaderEnums.hpp"    // IWYU pragma: keep
+#include "shaders/VertexShader.hpp"   // IWYU pragma: keep
+#include "shaders/VulkanBaseShader.hpp"
+#include "shaders/VulkanShaderFactory.hpp"
+#include "states/VulkanSamplerState.hpp"
+#include "states/VulkanStateRHI.hpp"
 #include "views/UnorderedAccessView.hpp"   // IWYU pragma: keep
 #include "views/ViewDesc.hpp"
 #include "views/ViewEnums.hpp"
 #include "views/VulkanUnorderedAccessView.hpp"
+#include "views/VulkanViewTypes.hpp"
 #include "VulkanContextTestFixture.hpp"
 #include "VulkanThirdParty.hpp"   // IWYU pragma: keep
 #include <gtest/gtest.h>
@@ -243,6 +271,91 @@ TEST_F(VulkanCommandListContextLiveTest, ProviderResolvesTheContextRecorder)
     IVulkanTransferCommandRecorder* const recorder = provider.getContextRecorder(&context);
     ASSERT_NE(recorder, nullptr);
     EXPECT_EQ(recorder, context.getTransferRecorder());
+}
+
+TEST_F(VulkanCommandListContextLiveTest, SetGraphicsPipelineAndDrawPrimitiveExecutesAcrossCommandBuffers)
+{
+    const VulkanViewTestTextureRef colorTarget = makeTexture2D(resource::TextureCreateFlags::RenderTargetable);
+    ASSERT_NE(colorTarget.get(), nullptr);
+
+    VulkanRenderPassManager renderPassManager(*m_device, nullptr, makeVulkanRenderTargetCaps(*m_device), false);
+
+    VulkanShaderFactory shaderFactory{};
+    const gp::Vector<gp::UInt8> vertexBlob =
+        makeTestShaderBlob(kSpirvExecutionModelVertex, 0x3579bdf1u, "ContextDrawVS");
+    gp::RefCountedPtr<VulkanVertexShader> vertexShader =
+        shaderFactory.createShader<VulkanVertexShader>(*m_device, nullptr, gp::ConstVectorView<gp::UInt8>(vertexBlob));
+    ASSERT_NE(vertexShader.get(), nullptr);
+
+    pipeline::RasterizerStateDesc rasterizerDesc{};
+    rasterizerDesc.fillMode = pipeline::RasterizerFillMode::Solid;
+    pipeline::BlendStateRef blendState = createVulkanBlendState(pipeline::BlendStateDesc{});
+    pipeline::RasterizerStateRef rasterizerState = createVulkanRasterizerState(rasterizerDesc);
+    pipeline::DepthStencilStateRef depthStencilState = createVulkanDepthStencilState(pipeline::DepthStencilStateDesc{});
+
+    VulkanPipelineStateCacheManager pipelineCache(*m_device, nullptr, &renderPassManager);
+
+    pipeline::GraphicsPipelineStateInitializer psoInit{};
+    psoInit.boundShaderState = pipeline::BoundShaderStateInput(nullptr, vertexShader.get(), nullptr);
+    psoInit.blendState = blendState.get();
+    psoInit.rasterizerState = rasterizerState.get();
+    psoInit.depthStencilState = depthStencilState.get();
+    psoInit.primitiveType = pipeline::PrimitiveType::TriangleList;
+    psoInit.renderTargetsEnabled = 1u;
+    psoInit.renderTargetFormats[0] = PixelFormat::R8G8B8A8_UNorm;
+    psoInit.renderTargetFlags[0] = resource::TextureCreateFlags::RenderTargetable;
+    psoInit.numSamples = 1u;
+
+    pipeline::GraphicsPipelineStateRef pso = pipelineCache.createGraphicsPipelineState(psoInit);
+    ASSERT_TRUE(pso.isValid());
+    const VulkanGraphicsPipelineState* const innerPso =
+        static_cast<VulkanWrappedGraphicsPipelineState*>(pso.get())->getState();
+    ASSERT_NE(innerPso, nullptr);
+    ASSERT_NE(innerPso->getPipelineHandle(), VK_NULL_HANDLE);
+
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.maxLod = 1.0f;
+    pipeline::SamplerStateRef defaultSampler(new VulkanSamplerState(*m_device, samplerInfo, nullptr));
+    VulkanTextureView defaultImageView{};
+    defaultImageView.view = colorTarget->getDefaultView();
+    defaultImageView.image = colorTarget->getImage();
+    defaultImageView.viewId = 1u;
+
+    VulkanDescriptorDefaults defaults{};
+    defaults.defaultSampler = static_cast<const VulkanSamplerState*>(defaultSampler.get());
+    defaults.defaultImageView = &defaultImageView;
+
+    VulkanContextServices drawServices = m_contextServices;
+    drawServices.renderPassManager = &renderPassManager;
+    drawServices.descriptorDefaults = &defaults;
+    {
+        VulkanCommandListContext context(drawServices);
+        const command::RenderPassInfo rpInfo(colorTarget.get(), command::RenderTargetActions::ClearStore);
+
+        // Pass 1 on initial command buffer: setGraphicsPipelineState + drawPrimitive binds VkPipeline cleanly.
+        context.beginRenderPass(rpInfo, "Pass1");
+        context.setGraphicsPipelineState(pso.get(), 0u, true);
+        EXPECT_EQ(context.getPendingGfxState().getCurrentPipeline(), innerPso);
+        context.drawPrimitive(0u, 1u, 1u);
+        context.endRenderPass();
+        ASSERT_TRUE(context.flushCommands(VulkanFlushFlags::WaitForCompletion));
+
+        // Pass 2 on a fresh command buffer after flush: re-setting the same PSO forces a re-bind on the new handle.
+        context.beginRenderPass(rpInfo, "Pass2");
+        context.setGraphicsPipelineState(pso.get(), 0u, true);
+        context.drawPrimitive(0u, 1u, 1u);
+        context.endRenderPass();
+        ASSERT_TRUE(context.flushCommands(VulkanFlushFlags::WaitForCompletion));
+    }
+
+    pso.reset();
+    vertexShader.reset();
+    blendState.reset();
+    rasterizerState.reset();
+    depthStencilState.reset();
+    defaultSampler = pipeline::SamplerStateRef();
+    resource::ResourceDeletionQueue::flushPendingDeletes(true);
 }
 
 }   // namespace gp::rhi::vulkan::tests
