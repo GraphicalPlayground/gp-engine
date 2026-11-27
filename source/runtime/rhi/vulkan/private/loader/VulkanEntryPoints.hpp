@@ -8,8 +8,9 @@
 #include "RHIVulkan.hpp"
 #include "VulkanThirdParty.hpp"          // IWYU pragma: keep
 
-/// @brief Enumerates required core instance, physical device, device, queue, and command-buffer Vulkan entry points.
-#define GP_ENUM_VK_ENTRYPOINTS_INSTANCE(EnumMacro)                                                                   \
+/// @brief Enumerates required core instance-level and physical-device Vulkan entry points resolved via
+///        `vkGetInstanceProcAddr` (not valid targets for `vkGetDeviceProcAddr`).
+#define GP_ENUM_VK_ENTRYPOINTS_INSTANCE_ONLY(EnumMacro)                                                              \
     EnumMacro(PFN_vkDestroyInstance, vkDestroyInstance)                                                              \
     EnumMacro(PFN_vkEnumeratePhysicalDevices, vkEnumeratePhysicalDevices)                                            \
     EnumMacro(PFN_vkGetPhysicalDeviceFeatures, vkGetPhysicalDeviceFeatures)                                          \
@@ -25,9 +26,14 @@
     EnumMacro(PFN_vkGetPhysicalDeviceFeatures2, vkGetPhysicalDeviceFeatures2)                                        \
     EnumMacro(PFN_vkGetPhysicalDeviceMemoryProperties2, vkGetPhysicalDeviceMemoryProperties2)                        \
     EnumMacro(PFN_vkCreateDevice, vkCreateDevice)                                                                    \
-    EnumMacro(PFN_vkDestroyDevice, vkDestroyDevice)                                                                  \
     EnumMacro(PFN_vkEnumerateDeviceExtensionProperties, vkEnumerateDeviceExtensionProperties)                        \
     EnumMacro(PFN_vkEnumerateDeviceLayerProperties, vkEnumerateDeviceLayerProperties)                                \
+    EnumMacro(PFN_vkGetPhysicalDeviceSparseImageFormatProperties, vkGetPhysicalDeviceSparseImageFormatProperties)
+
+/// @brief Enumerates required core device, queue, and command-buffer Vulkan entry points that can be upgraded to
+///        direct ICD dispatch pointers via `vkGetDeviceProcAddr`.
+#define GP_ENUM_VK_ENTRYPOINTS_DEVICE(EnumMacro)                                                                     \
+    EnumMacro(PFN_vkDestroyDevice, vkDestroyDevice)                                                                  \
     EnumMacro(PFN_vkGetDeviceQueue, vkGetDeviceQueue)                                                                \
     EnumMacro(PFN_vkQueueSubmit, vkQueueSubmit)                                                                      \
     EnumMacro(PFN_vkQueueWaitIdle, vkQueueWaitIdle)                                                                  \
@@ -48,7 +54,6 @@
     EnumMacro(PFN_vkGetImageSparseMemoryRequirements, vkGetImageSparseMemoryRequirements)                            \
     EnumMacro(PFN_vkGetImageMemoryRequirements2, vkGetImageMemoryRequirements2)                                      \
     EnumMacro(PFN_vkGetBufferMemoryRequirements2, vkGetBufferMemoryRequirements2)                                    \
-    EnumMacro(PFN_vkGetPhysicalDeviceSparseImageFormatProperties, vkGetPhysicalDeviceSparseImageFormatProperties)    \
     EnumMacro(PFN_vkQueueBindSparse, vkQueueBindSparse)                                                              \
     EnumMacro(PFN_vkCreateFence, vkCreateFence)                                                                      \
     EnumMacro(PFN_vkDestroyFence, vkDestroyFence)                                                                    \
@@ -162,6 +167,11 @@
     EnumMacro(PFN_vkCreateSamplerYcbcrConversion, vkCreateSamplerYcbcrConversion)                                    \
     EnumMacro(PFN_vkDestroySamplerYcbcrConversion, vkDestroySamplerYcbcrConversion)
 
+/// @brief Enumerates required core instance, physical device, device, queue, and command-buffer Vulkan entry points.
+#define GP_ENUM_VK_ENTRYPOINTS_INSTANCE(EnumMacro)  \
+    GP_ENUM_VK_ENTRYPOINTS_INSTANCE_ONLY(EnumMacro) \
+    GP_ENUM_VK_ENTRYPOINTS_DEVICE(EnumMacro)
+
 /// @brief Enumerates WSI surface instance entry points loaded via `vkGetInstanceProcAddr`.
 #define GP_ENUM_VK_ENTRYPOINTS_SURFACE_INSTANCE(EnumMacro)                                                           \
     EnumMacro(PFN_vkDestroySurfaceKHR, vkDestroySurfaceKHR)                                                          \
@@ -203,9 +213,19 @@
     EnumMacro(PFN_vkCmdWriteAccelerationStructuresPropertiesKHR, vkCmdWriteAccelerationStructuresPropertiesKHR)      \
     EnumMacro(PFN_vkCmdCopyAccelerationStructureKHR, vkCmdCopyAccelerationStructureKHR)
 
-/// @brief Enumerates optional instance and device extension entry points loaded via `vkGetInstanceProcAddr` /
-///        `vkGetDeviceProcAddr`.
-#define GP_ENUM_VK_ENTRYPOINTS_OPTIONAL_INSTANCE(EnumMacro)                                                          \
+/// @brief Enumerates optional physical-device extension entry points loaded via `vkGetInstanceProcAddr` (not valid
+///        targets for `vkGetDeviceProcAddr`).
+#define GP_ENUM_VK_ENTRYPOINTS_OPTIONAL_INSTANCE_ONLY(EnumMacro)                                                     \
+    EnumMacro(PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)    \
+    EnumMacro(PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsKHR, vkGetPhysicalDeviceCalibrateableTimeDomainsKHR)    \
+    EnumMacro(PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR, vkGetPhysicalDeviceSurfaceCapabilities2KHR)            \
+    EnumMacro(PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR, vkGetPhysicalDeviceFragmentShadingRatesKHR)            \
+    EnumMacro(PFN_vkGetPhysicalDeviceToolPropertiesEXT, vkGetPhysicalDeviceToolPropertiesEXT)                        \
+    EnumMacro(PFN_vkGetPhysicalDeviceDescriptorSizeEXT, vkGetPhysicalDeviceDescriptorSizeEXT)
+
+/// @brief Enumerates optional device, queue, and command-buffer extension entry points loaded via
+///        `vkGetInstanceProcAddr` and upgraded via `vkGetDeviceProcAddr`.
+#define GP_ENUM_VK_ENTRYPOINTS_OPTIONAL_DEVICE(EnumMacro)                                                            \
     GP_ENUM_VK_ENTRYPOINTS_RAYTRACING(EnumMacro)                                                                     \
     EnumMacro(PFN_vkCreateRenderPass2KHR, vkCreateRenderPass2KHR)                                                    \
     EnumMacro(PFN_vkCmdBeginRenderPass2KHR, vkCmdBeginRenderPass2KHR)                                                \
@@ -221,11 +241,8 @@
     EnumMacro(PFN_vkCmdWaitEvents2KHR, vkCmdWaitEvents2KHR)                                                          \
     EnumMacro(PFN_vkQueueSubmit2KHR, vkQueueSubmit2KHR)                                                              \
     EnumMacro(PFN_vkCreateSharedSwapchainsKHR, vkCreateSharedSwapchainsKHR)                                          \
-    EnumMacro(PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)    \
     EnumMacro(PFN_vkGetCalibratedTimestampsEXT, vkGetCalibratedTimestampsEXT)                                        \
-    EnumMacro(PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsKHR, vkGetPhysicalDeviceCalibrateableTimeDomainsKHR)    \
     EnumMacro(PFN_vkGetCalibratedTimestampsKHR, vkGetCalibratedTimestampsKHR)                                        \
-    EnumMacro(PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR, vkGetPhysicalDeviceSurfaceCapabilities2KHR)            \
     EnumMacro(PFN_vkGetBufferDeviceAddressKHR, vkGetBufferDeviceAddressKHR)                                          \
     EnumMacro(PFN_vkGetDescriptorSetLayoutSizeEXT, vkGetDescriptorSetLayoutSizeEXT)                                  \
     EnumMacro(PFN_vkGetDescriptorSetLayoutBindingOffsetEXT, vkGetDescriptorSetLayoutBindingOffsetEXT)                \
@@ -244,9 +261,7 @@
     EnumMacro(PFN_vkCmdWriteBufferMarkerAMD, vkCmdWriteBufferMarkerAMD)                                              \
     EnumMacro(PFN_vkCmdSetCheckpointNV, vkCmdSetCheckpointNV)                                                        \
     EnumMacro(PFN_vkGetQueueCheckpointDataNV, vkGetQueueCheckpointDataNV)                                            \
-    EnumMacro(PFN_vkGetPhysicalDeviceFragmentShadingRatesKHR, vkGetPhysicalDeviceFragmentShadingRatesKHR)            \
     EnumMacro(PFN_vkGetDeviceFaultInfoEXT, vkGetDeviceFaultInfoEXT)                                                  \
-    EnumMacro(PFN_vkGetPhysicalDeviceToolPropertiesEXT, vkGetPhysicalDeviceToolPropertiesEXT)                        \
     EnumMacro(PFN_vkGetImageSubresourceLayout2EXT, vkGetImageSubresourceLayout2EXT)                                  \
     EnumMacro(PFN_vkGetImageSubresourceLayout2KHR, vkGetImageSubresourceLayout2KHR)                                  \
     EnumMacro(PFN_vkGetSemaphoreCounterValue, vkGetSemaphoreCounterValueKHR)                                         \
@@ -303,7 +318,6 @@
     EnumMacro(PFN_vkCmdBindResourceHeapEXT, vkCmdBindResourceHeapEXT)                                                \
     EnumMacro(PFN_vkCmdBindSamplerHeapEXT, vkCmdBindSamplerHeapEXT)                                                  \
     EnumMacro(PFN_vkCmdPushDataEXT, vkCmdPushDataEXT)                                                                \
-    EnumMacro(PFN_vkGetPhysicalDeviceDescriptorSizeEXT, vkGetPhysicalDeviceDescriptorSizeEXT)                        \
     EnumMacro(PFN_vkWriteResourceDescriptorsEXT, vkWriteResourceDescriptorsEXT)                                      \
     EnumMacro(PFN_vkWriteSamplerDescriptorsEXT, vkWriteSamplerDescriptorsEXT)                                        \
     EnumMacro(PFN_vkCmdSetRenderingAttachmentLocationsKHR, vkCmdSetRenderingAttachmentLocationsKHR)                  \
@@ -315,6 +329,12 @@
     EnumMacro(PFN_vkGetPipelineBinaryDataKHR, vkGetPipelineBinaryDataKHR)                                            \
     EnumMacro(PFN_vkReleaseCapturedPipelineDataKHR, vkReleaseCapturedPipelineDataKHR)                                \
     EnumMacro(PFN_vkSetDeviceMemoryPriorityEXT, vkSetDeviceMemoryPriorityEXT)
+
+/// @brief Enumerates optional instance and device extension entry points loaded via `vkGetInstanceProcAddr` /
+///        `vkGetDeviceProcAddr`.
+#define GP_ENUM_VK_ENTRYPOINTS_OPTIONAL_INSTANCE(EnumMacro)  \
+    GP_ENUM_VK_ENTRYPOINTS_OPTIONAL_INSTANCE_ONLY(EnumMacro) \
+    GP_ENUM_VK_ENTRYPOINTS_OPTIONAL_DEVICE(EnumMacro)
 
 /// @brief Enumerates every dynamically resolved Vulkan entry point across base, instance, surface, optional, and
 ///        platform categories.
