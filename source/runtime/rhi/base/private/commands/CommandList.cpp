@@ -216,15 +216,15 @@ void CommandList::setDepthBounds(const gp::Float32 minDepth, const gp::Float32 m
 }
 
 void CommandList::setShadingRate(
-    const pipeline::VRSShadingRate shadingRate, const pipeline::VRSRateCombiner (&combiners)[2]
+    const pipeline::VRSShadingRate shadingRate, const pipeline::VRSRateCombiner combiner
 ) noexcept
 {
     if (isBottomOfPipe())
     {
-        getContext().setShadingRate(shadingRate, combiners);
+        getContext().setShadingRate(shadingRate, combiner);
         return;
     }
-    emplaceCommand<CommandSetShadingRate>(shadingRate, combiners);
+    emplaceCommand<CommandSetShadingRate>(shadingRate, combiner);
 }
 
 void CommandList::drawPrimitive(

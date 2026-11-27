@@ -161,10 +161,13 @@ public:
     /// @param[in] maxDepth Maximum passing depth.
     void setDepthBounds(gp::Float32 minDepth, gp::Float32 maxDepth) noexcept;
 
-    /// @brief Sets per-draw Variable Rate Shading coarse pixel rate and combiner modes.
+    /// @brief Sets per-draw Variable Rate Shading coarse pixel rate and combiner mode.
     /// @param[in] shadingRate Coarse pixel rate.
-    /// @param[in] combiners Two-stage combiner array.
-    void setShadingRate(pipeline::VRSShadingRate shadingRate, const pipeline::VRSRateCombiner (&combiners)[2]) noexcept;
+    /// @param[in] combiner VRS rate combiner operation.
+    void setShadingRate(
+        pipeline::VRSShadingRate shadingRate,
+        pipeline::VRSRateCombiner combiner = pipeline::VRSRateCombiner::Passthrough
+    ) noexcept;
 
     /// @brief Draws non-indexed primitives from bound vertex streams.
     /// @param[in] baseVertexIndex First vertex index.
