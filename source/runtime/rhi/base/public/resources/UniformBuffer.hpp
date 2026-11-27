@@ -4,14 +4,17 @@
 
 #pragma once
 
-#include "containers/arrays/Vector.hpp"
-#include "containers/views/VectorView.hpp"
+#include "containers/arrays/Vector.hpp"        // IWYU pragma: keep
+#include "containers/views/VectorView.hpp"     // IWYU pragma: keep
 #include "core/Resource.hpp"
-#include "core/ResourceForward.hpp"   // IWYU pragma: keep
+#include "core/ResourceForward.hpp"            // IWYU pragma: keep
 #include "CoreMinimal.hpp"
-#include "memory/pointers/RefCountedPtr.hpp"
+#include "memory/pointers/RefCountedPtr.hpp"   // IWYU pragma: keep
 #include "resources/UniformBufferLayout.hpp"
 #include "RHIBase.hpp"
+#if GP_ENABLE_RHI_VALIDATION
+    #include "validation/ValidationResource.hpp"
+#endif
 #include "views/DescriptorHandle.hpp"
 
 namespace gp::rhi::resource
@@ -74,6 +77,22 @@ public:
     /// @return Bindless descriptor handle, or an invalid handle if unsupported or non-bindless.
     [[nodiscard]] virtual view::DescriptorHandle getBindlessHandle() const noexcept;
 
+#if GP_ENABLE_RHI_VALIDATION
+    /// @brief Returns the mutable uniform buffer lifetime validator embedded in this instance.
+    /// @return Mutable reference to `validation::UniformBufferResource`.
+    [[nodiscard]] GP_FORCEINLINE_HINT validation::UniformBufferResource& getValidationResource() noexcept
+    {
+        return m_validationResource;
+    }
+
+    /// @brief Returns the read-only uniform buffer lifetime validator embedded in this instance.
+    /// @return Const reference to `validation::UniformBufferResource`.
+    [[nodiscard]] GP_FORCEINLINE_HINT const validation::UniformBufferResource& getValidationResource() const noexcept
+    {
+        return m_validationResource;
+    }
+#endif
+
 protected:
     /// @brief RHI resources referenced by this uniform buffer, kept alive for the buffer's lifetime.
     gp::Vector<ResourceRef> m_resourceTable{};
@@ -84,6 +103,10 @@ private:
 
     /// @brief Cached copy of `m_layout->getConstantBufferSize()` to avoid pointer chasing in bind hot paths.
     gp::UInt32 m_layoutConstantBufferSize{ 0u };
+
+#if GP_ENABLE_RHI_VALIDATION
+    validation::UniformBufferResource m_validationResource{};
+#endif
 };
 
 #if GP_RHI_INCLUDE_SHADER_DEBUG_DATA
