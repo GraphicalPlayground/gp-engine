@@ -265,10 +265,7 @@ void VulkanCommandListContext::endActiveRenderPass(VulkanCommandBuffer& commandB
 void VulkanCommandListContext::onCommandBufferBegun(VulkanCommandBuffer& commandBuffer) noexcept
 {
     static_cast<void>(commandBuffer);
-    if (m_gfxState->getCurrentState() != nullptr)
-    {
-        m_gfxState->getCurrentState()->markDirty();
-    }
+    m_gfxState->onCommandBufferBegun();
     if (m_computeState->getCurrentState() != nullptr)
     {
         m_computeState->getCurrentState()->markDirty();
@@ -902,7 +899,13 @@ void VulkanCommandListContext::setGraphicsPipelineState(
     VulkanCommandBuffer* const commandBuffer = getCommandBuffer();
     const bool forceReset =
         (commandBuffer != nullptr) && (commandBuffer->getCurrentGraphicsPipeline() == VK_NULL_HANDLE);
-    static_cast<void>(m_gfxState->setGfxPipeline(*pipeline, forceReset));
+    if (m_gfxState->setGfxPipeline(*pipeline, forceReset) || forceReset)
+    {
+        if (commandBuffer != nullptr)
+        {
+            m_gfxState->bind(*commandBuffer);
+        }
+    }
     m_currentTopology = static_cast<VkPrimitiveTopology>(pipeline->getDesc().topology);
 
     VulkanGraphicsPipelineDescriptorState* const state = m_gfxState->getCurrentState();
