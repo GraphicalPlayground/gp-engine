@@ -436,11 +436,11 @@ struct GP_RHI_API CommandSetStaticUniformBuffer final : public Command<CommandSe
 /// @brief Recorded packet setting a uniform block dynamic offset.
 struct GP_RHI_API CommandSetUniformBlockOffset final : public Command<CommandSetUniformBlockOffset>
 {
-    resource::UniformBuffer* uniformBuffer{ nullptr };
+    view::ShaderResourceView* srv{ nullptr };
     gp::UInt32 offset{ 0u };
 
-    CommandSetUniformBlockOffset(resource::UniformBuffer* const inBuffer, const gp::UInt32 inOffset) noexcept
-        : uniformBuffer(inBuffer)
+    CommandSetUniformBlockOffset(view::ShaderResourceView* const inSrv, const gp::UInt32 inOffset) noexcept
+        : srv(inSrv)
         , offset(inOffset)
     {}
 
@@ -721,21 +721,16 @@ struct GP_RHI_API CommandSetDepthBounds final : public Command<CommandSetDepthBo
     void execute(CommandListBase& cmdList) noexcept;
 };
 
-/// @brief Recorded packet setting per-draw Variable Rate Shading rate and combiners.
+/// @brief Recorded packet setting per-draw Variable Rate Shading rate and combiner.
 struct GP_RHI_API CommandSetShadingRate final : public Command<CommandSetShadingRate>
 {
     pipeline::VRSShadingRate shadingRate{ pipeline::VRSShadingRate::Rate1x1 };
-    pipeline::VRSRateCombiner combiners[2]{ pipeline::VRSRateCombiner::Passthrough,
-                                            pipeline::VRSRateCombiner::Passthrough };
+    pipeline::VRSRateCombiner combiner{ pipeline::VRSRateCombiner::Passthrough };
 
-    CommandSetShadingRate(
-        const pipeline::VRSShadingRate inRate, const pipeline::VRSRateCombiner (&inCombiners)[2]
-    ) noexcept
+    CommandSetShadingRate(const pipeline::VRSShadingRate inRate, const pipeline::VRSRateCombiner inCombiner) noexcept
         : shadingRate(inRate)
-    {
-        combiners[0] = inCombiners[0];
-        combiners[1] = inCombiners[1];
-    }
+        , combiner(inCombiner)
+    {}
 
     void execute(CommandListBase& cmdList) noexcept;
 };

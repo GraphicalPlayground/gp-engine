@@ -174,7 +174,7 @@ void CommandSetStaticUniformBuffer::execute(CommandListBase& cmdList) noexcept
 
 void CommandSetUniformBlockOffset::execute(CommandListBase& cmdList) noexcept
 {
-    cmdList.getComputeContext().setUniformBlockOffset(uniformBuffer, offset);
+    cmdList.getComputeContext().setUniformBlockOffset(srv, offset);
 }
 
 void CommandCopyToStagingBuffer::execute(CommandListBase& cmdList) noexcept
@@ -297,7 +297,7 @@ void CommandSetDepthBounds::execute(CommandListBase& cmdList) noexcept
 
 void CommandSetShadingRate::execute(CommandListBase& cmdList) noexcept
 {
-    cmdList.getContext().setShadingRate(shadingRate, combiners);
+    cmdList.getContext().setShadingRate(shadingRate, combiner);
 }
 
 void CommandDrawPrimitive::execute(CommandListBase& cmdList) noexcept
