@@ -89,50 +89,51 @@ gp::console::AutoConsoleVariable<gp::Int32> g_cvarEditorFpsLogInterval(
     gp::console::ConsoleVarFlags::None
 );
 
-/// @brief Interleaved vertex record consumed by `Cube.vert` (`location 0`: position, `location 1`: color).
+/// @brief Interleaved vertex record consumed by `Cube.vert` (`0`: position, `1`: color, `2`: normal).
 struct CubeVertex
 {
     gp::Float32 position[3];
     gp::Float32 color[3];
+    gp::Float32 normal[3];
 };
 
-/// @brief 24-vertex unit cube (4 distinct vertices per face for crisp per-face colors).
+/// @brief 24-vertex unit cube (4 distinct vertices per face with crisp per-face colors and normals).
 constexpr CubeVertex kCubeVertices[24u] = {
     // +Z Front face (coral red)
-    {  { -0.5f, -0.5f, 0.5f }, { 0.95f, 0.25f, 0.25f } },
-    {   { 0.5f, -0.5f, 0.5f }, { 0.95f, 0.35f, 0.25f } },
-    {    { 0.5f, 0.5f, 0.5f }, { 1.00f, 0.45f, 0.35f } },
-    {   { -0.5f, 0.5f, 0.5f }, { 0.90f, 0.25f, 0.35f } },
+    {  { -0.5f, -0.5f, 0.5f }, { 0.95f, 0.25f, 0.25f },  { 0.0f, 0.0f, 1.0f } },
+    {   { 0.5f, -0.5f, 0.5f }, { 0.95f, 0.35f, 0.25f },  { 0.0f, 0.0f, 1.0f } },
+    {    { 0.5f, 0.5f, 0.5f }, { 1.00f, 0.45f, 0.35f },  { 0.0f, 0.0f, 1.0f } },
+    {   { -0.5f, 0.5f, 0.5f }, { 0.90f, 0.25f, 0.35f },  { 0.0f, 0.0f, 1.0f } },
 
     // -Z Back face (teal)
-    {  { 0.5f, -0.5f, -0.5f }, { 0.15f, 0.75f, 0.80f } },
-    { { -0.5f, -0.5f, -0.5f }, { 0.15f, 0.80f, 0.70f } },
-    {  { -0.5f, 0.5f, -0.5f }, { 0.25f, 0.90f, 0.85f } },
-    {   { 0.5f, 0.5f, -0.5f }, { 0.20f, 0.70f, 0.85f } },
+    {  { 0.5f, -0.5f, -0.5f }, { 0.15f, 0.75f, 0.80f }, { 0.0f, 0.0f, -1.0f } },
+    { { -0.5f, -0.5f, -0.5f }, { 0.15f, 0.80f, 0.70f }, { 0.0f, 0.0f, -1.0f } },
+    {  { -0.5f, 0.5f, -0.5f }, { 0.25f, 0.90f, 0.85f }, { 0.0f, 0.0f, -1.0f } },
+    {   { 0.5f, 0.5f, -0.5f }, { 0.20f, 0.70f, 0.85f }, { 0.0f, 0.0f, -1.0f } },
 
     // +X Right face (emerald green)
-    {   { 0.5f, -0.5f, 0.5f }, { 0.20f, 0.85f, 0.35f } },
-    {  { 0.5f, -0.5f, -0.5f }, { 0.20f, 0.75f, 0.30f } },
-    {   { 0.5f, 0.5f, -0.5f }, { 0.35f, 0.95f, 0.45f } },
-    {    { 0.5f, 0.5f, 0.5f }, { 0.30f, 0.90f, 0.40f } },
+    {   { 0.5f, -0.5f, 0.5f }, { 0.20f, 0.85f, 0.35f },  { 1.0f, 0.0f, 0.0f } },
+    {  { 0.5f, -0.5f, -0.5f }, { 0.20f, 0.75f, 0.30f },  { 1.0f, 0.0f, 0.0f } },
+    {   { 0.5f, 0.5f, -0.5f }, { 0.35f, 0.95f, 0.45f },  { 1.0f, 0.0f, 0.0f } },
+    {    { 0.5f, 0.5f, 0.5f }, { 0.30f, 0.90f, 0.40f },  { 1.0f, 0.0f, 0.0f } },
 
     // -X Left face (amber orange)
-    { { -0.5f, -0.5f, -0.5f }, { 0.95f, 0.60f, 0.15f } },
-    {  { -0.5f, -0.5f, 0.5f }, { 0.95f, 0.55f, 0.15f } },
-    {   { -0.5f, 0.5f, 0.5f }, { 1.00f, 0.75f, 0.25f } },
-    {  { -0.5f, 0.5f, -0.5f }, { 0.90f, 0.65f, 0.20f } },
+    { { -0.5f, -0.5f, -0.5f }, { 0.95f, 0.60f, 0.15f }, { -1.0f, 0.0f, 0.0f } },
+    {  { -0.5f, -0.5f, 0.5f }, { 0.95f, 0.55f, 0.15f }, { -1.0f, 0.0f, 0.0f } },
+    {   { -0.5f, 0.5f, 0.5f }, { 1.00f, 0.75f, 0.25f }, { -1.0f, 0.0f, 0.0f } },
+    {  { -0.5f, 0.5f, -0.5f }, { 0.90f, 0.65f, 0.20f }, { -1.0f, 0.0f, 0.0f } },
 
     // +Y Top face (royal blue)
-    {   { -0.5f, 0.5f, 0.5f }, { 0.25f, 0.45f, 0.95f } },
-    {    { 0.5f, 0.5f, 0.5f }, { 0.30f, 0.50f, 1.00f } },
-    {   { 0.5f, 0.5f, -0.5f }, { 0.40f, 0.65f, 1.00f } },
-    {  { -0.5f, 0.5f, -0.5f }, { 0.25f, 0.55f, 0.90f } },
+    {   { -0.5f, 0.5f, 0.5f }, { 0.25f, 0.45f, 0.95f },  { 0.0f, 1.0f, 0.0f } },
+    {    { 0.5f, 0.5f, 0.5f }, { 0.30f, 0.50f, 1.00f },  { 0.0f, 1.0f, 0.0f } },
+    {   { 0.5f, 0.5f, -0.5f }, { 0.40f, 0.65f, 1.00f },  { 0.0f, 1.0f, 0.0f } },
+    {  { -0.5f, 0.5f, -0.5f }, { 0.25f, 0.55f, 0.90f },  { 0.0f, 1.0f, 0.0f } },
 
     // -Y Bottom face (violet)
-    { { -0.5f, -0.5f, -0.5f }, { 0.65f, 0.25f, 0.85f } },
-    {  { 0.5f, -0.5f, -0.5f }, { 0.70f, 0.30f, 0.90f } },
-    {   { 0.5f, -0.5f, 0.5f }, { 0.75f, 0.40f, 0.95f } },
-    {  { -0.5f, -0.5f, 0.5f }, { 0.60f, 0.25f, 0.80f } }
+    { { -0.5f, -0.5f, -0.5f }, { 0.65f, 0.25f, 0.85f }, { 0.0f, -1.0f, 0.0f } },
+    {  { 0.5f, -0.5f, -0.5f }, { 0.70f, 0.30f, 0.90f }, { 0.0f, -1.0f, 0.0f } },
+    {   { 0.5f, -0.5f, 0.5f }, { 0.75f, 0.40f, 0.95f }, { 0.0f, -1.0f, 0.0f } },
+    {  { -0.5f, -0.5f, 0.5f }, { 0.60f, 0.25f, 0.80f }, { 0.0f, -1.0f, 0.0f } }
 };
 
 /// @brief 36 triangle-list indices (12 triangles across 6 cube faces).
@@ -242,25 +243,85 @@ struct OrbitMat4
     return out;
 }
 
-/// @brief Computes the combined model-view-projection matrix for the orbit camera around the cube.
+/// @brief Packed `std140` uniform buffer matching `Globals` in `Cube.vert`.
+struct OrbitGlobals
+{
+    OrbitMat4 mvp{};
+    OrbitMat4 model{};
+    gp::Float32 lightPosAndIntensity[4]{};
+    gp::Float32 cameraPosAndMode[4]{};
+};
+
+/// @brief Builds a Y-axis rotation matrix.
+/// @param[in] angleRadians Rotation angle in radians.
+/// @return Column-major rotation matrix.
+[[nodiscard]] OrbitMat4 makeRotationY(const gp::Float32 angleRadians) noexcept
+{
+    const gp::Float32 c = std::cos(angleRadians);
+    const gp::Float32 s = std::sin(angleRadians);
+    OrbitMat4 out{};
+    out.m[0] = c;
+    out.m[2] = -s;
+    out.m[5] = 1.0f;
+    out.m[8] = s;
+    out.m[10] = c;
+    out.m[15] = 1.0f;
+    return out;
+}
+
+/// @brief Builds a translation + non-uniform scale matrix.
+/// @param[in] tx World X translation.
+/// @param[in] ty World Y translation.
+/// @param[in] tz World Z translation.
+/// @param[in] sx Scale along X.
+/// @param[in] sy Scale along Y.
+/// @param[in] sz Scale along Z.
+/// @return Column-major TRS matrix.
+[[nodiscard]] OrbitMat4 makeTranslationScale(
+    const gp::Float32 tx,
+    const gp::Float32 ty,
+    const gp::Float32 tz,
+    const gp::Float32 sx,
+    const gp::Float32 sy,
+    const gp::Float32 sz
+) noexcept
+{
+    OrbitMat4 out{};
+    out.m[0] = sx;
+    out.m[5] = sy;
+    out.m[10] = sz;
+    out.m[12] = tx;
+    out.m[13] = ty;
+    out.m[14] = tz;
+    out.m[15] = 1.0f;
+    return out;
+}
+
+/// @brief Computes the combined view-projection matrix and camera eye position for the orbit camera.
 /// @param[in] yawRadians Horizontal orbit azimuth in radians.
 /// @param[in] pitchRadians Vertical orbit elevation in radians.
 /// @param[in] distance Orbit radius from the cube center.
 /// @param[in] aspectRatio Viewport width divided by height.
-/// @return Column-major `projection * view` matrix (model is identity).
-[[nodiscard]] OrbitMat4 buildCubeMvpMatrix(
+/// @param[out] outEyeX Camera world X coordinate.
+/// @param[out] outEyeY Camera world Y coordinate.
+/// @param[out] outEyeZ Camera world Z coordinate.
+/// @return Column-major `projection * view` matrix.
+[[nodiscard]] OrbitMat4 buildViewProjMatrix(
     const gp::Float32 yawRadians,
     const gp::Float32 pitchRadians,
     const gp::Float32 distance,
-    const gp::Float32 aspectRatio
+    const gp::Float32 aspectRatio,
+    gp::Float32& outEyeX,
+    gp::Float32& outEyeY,
+    gp::Float32& outEyeZ
 ) noexcept
 {
     const gp::Float32 cosPitch = std::cos(pitchRadians);
-    const gp::Float32 eyeX = distance * cosPitch * std::sin(yawRadians);
-    const gp::Float32 eyeY = distance * std::sin(pitchRadians);
-    const gp::Float32 eyeZ = distance * cosPitch * std::cos(yawRadians);
+    outEyeX = distance * cosPitch * std::sin(yawRadians);
+    outEyeY = distance * std::sin(pitchRadians);
+    outEyeZ = distance * cosPitch * std::cos(yawRadians);
 
-    const OrbitMat4 view = makeLookAtOrigin(eyeX, eyeY, eyeZ);
+    const OrbitMat4 view = makeLookAtOrigin(outEyeX, outEyeY, outEyeZ);
     const OrbitMat4 proj = makePerspectiveZeroToOne(0.78539816f, aspectRatio, 0.1f, 100.0f);
     return multiplyMat4(proj, view);
 }
@@ -415,7 +476,7 @@ protected:
 
         GP_LOG_INFO(
             LogEditor,
-            "Controls: Arrow keys / Mouse left-drag orbit cube | Mouse wheel zoom | 'ESC'/'Q' exit | 'F1'/'`' console shell."
+            "Controls: Arrow keys / Mouse left-drag orbit cube | Mouse wheel zoom | 'Space' wireframe | 'ESC'/'Q' exit | 'F1'/'`' console shell."
         );
         return true;
     }
@@ -469,8 +530,15 @@ protected:
             );
         }
 
-        // Orbit camera controls (Arrow keys + Mouse left-drag + Mouse wheel zoom)
+        // Orbit camera controls (Arrow keys + Mouse left-drag + Mouse wheel zoom) and wireframe toggle
         const gp::Float32 dt = timeStats.unscaledDeltaTime;
+        m_elapsedTime += dt;
+
+        if (input.wasKeyJustPressed(gp::hal::input::Keycode::Space))
+        {
+            m_wireframeEnabled = !m_wireframeEnabled;
+            GP_LOG_INFO(LogEditor, "[TEMP] Wireframe mode: {}", m_wireframeEnabled ? "ON" : "OFF");
+        }
         constexpr gp::Float32 kKeyOrbitSpeed = 1.8f;
         constexpr gp::Float32 kMouseSensitivity = 0.008f;
         constexpr gp::Float32 kWheelZoomSpeed = 0.35f;
@@ -773,6 +841,9 @@ private:
         vertexElements.pushBack(
             gp::rhi::pipeline::VertexElement(0u, 12u, gp::rhi::pipeline::VertexElementType::Float3, 1u, vertexStride)
         );
+        vertexElements.pushBack(
+            gp::rhi::pipeline::VertexElement(0u, 24u, gp::rhi::pipeline::VertexElementType::Float3, 2u, vertexStride)
+        );
         m_vertexDeclaration = activeRHI->createVertexDeclaration(vertexElements);
 
         gp::rhi::resource::ResourceArrayUploadView vertexUpload(
@@ -792,9 +863,14 @@ private:
         m_indexBuffer = gp::rhi::command::getImmediateCommandList().createBuffer(indexBufferDesc);
 
         m_blendState = activeRHI->createBlendState(gp::rhi::pipeline::BlendStateDesc{});
-        m_rasterizerState = activeRHI->createRasterizerState(
+        m_rasterizerStateSolid = activeRHI->createRasterizerState(
             gp::rhi::pipeline::RasterizerStateDesc(
                 gp::rhi::pipeline::RasterizerFillMode::Solid, gp::rhi::pipeline::RasterizerCullMode::None, false
+            )
+        );
+        m_rasterizerStateWireframe = activeRHI->createRasterizerState(
+            gp::rhi::pipeline::RasterizerStateDesc(
+                gp::rhi::pipeline::RasterizerFillMode::Wireframe, gp::rhi::pipeline::RasterizerCullMode::None, false
             )
         );
         m_depthStencilState = activeRHI->createDepthStencilState(
@@ -803,8 +879,8 @@ private:
 
         if (!createOrResizeDepthTexture(initialWidth, initialHeight) || !m_vertexDeclaration.isValid() ||
             !m_vertexShader.isValid() || !m_pixelShader.isValid() || !m_vertexBuffer.isValid() ||
-            !m_indexBuffer.isValid() || !m_blendState.isValid() || !m_rasterizerState.isValid() ||
-            !m_depthStencilState.isValid())
+            !m_indexBuffer.isValid() || !m_blendState.isValid() || !m_rasterizerStateSolid.isValid() ||
+            !m_rasterizerStateWireframe.isValid() || !m_depthStencilState.isValid())
         {
             GP_LOG_ERROR(LogEditor, "Failed to create Vulkan Cube pipeline or geometry resources.");
             shutdownCubeRenderer();
@@ -888,42 +964,86 @@ private:
             cmdList.beginRenderPass(renderPassInfo, "OrbitCube");
 
             const gp::rhi::PixelFormat backBufferFormat = backBuffer->getFormat();
-            if (!m_pipelineState.isValid() || m_cachedBackBufferFormat != backBufferFormat)
+            if (!m_pipelineStateSolid.isValid() || !m_pipelineStateWireframe.isValid() ||
+                m_cachedBackBufferFormat != backBufferFormat)
             {
                 gp::rhi::pipeline::GraphicsPipelineStateInitializer psoInit{};
                 psoInit.boundShaderState = gp::rhi::pipeline::BoundShaderStateInput(
                     m_vertexDeclaration.get(), m_vertexShader.get(), m_pixelShader.get()
                 );
                 psoInit.blendState = m_blendState.get();
-                psoInit.rasterizerState = m_rasterizerState.get();
                 psoInit.depthStencilState = m_depthStencilState.get();
                 psoInit.primitiveType = gp::rhi::pipeline::PrimitiveType::TriangleList;
                 cmdList.applyCachedRenderTargets(psoInit);
 
-                m_pipelineState = activeRHI->createGraphicsPipelineState(psoInit);
+                psoInit.rasterizerState = m_rasterizerStateSolid.get();
+                m_pipelineStateSolid = activeRHI->createGraphicsPipelineState(psoInit);
+
+                psoInit.rasterizerState = m_rasterizerStateWireframe.get();
+                m_pipelineStateWireframe = activeRHI->createGraphicsPipelineState(psoInit);
+
                 m_cachedBackBufferFormat = backBufferFormat;
             }
 
-            if (m_pipelineState.isValid())
+            gp::rhi::pipeline::GraphicsPipelineState* const activePso =
+                m_wireframeEnabled ? m_pipelineStateWireframe.get() : m_pipelineStateSolid.get();
+            if (activePso != nullptr)
             {
                 const gp::UInt32 rtWidth = (backBuffer->getSizeX() > 0u) ? backBuffer->getSizeX() : m_viewportWidth;
                 const gp::UInt32 rtHeight = (backBuffer->getSizeY() > 0u) ? backBuffer->getSizeY() : m_viewportHeight;
                 const gp::Float32 aspectRatio =
                     static_cast<gp::Float32>(rtWidth) / static_cast<gp::Float32>((rtHeight > 0u) ? rtHeight : 1u);
 
-                const OrbitMat4 mvp = buildCubeMvpMatrix(m_cameraYaw, m_cameraPitch, m_cameraDistance, aspectRatio);
+                gp::Float32 eyeX = 0.0f;
+                gp::Float32 eyeY = 0.0f;
+                gp::Float32 eyeZ = 0.0f;
+                const OrbitMat4 viewProj =
+                    buildViewProjMatrix(m_cameraYaw, m_cameraPitch, m_cameraDistance, aspectRatio, eyeX, eyeY, eyeZ);
 
-                cmdList.setGraphicsPipelineState(m_pipelineState.get(), 0u, true);
+                const gp::Float32 lightAngle = m_elapsedTime * 0.9f;
+                const gp::Float32 lightX = 2.1f * std::cos(lightAngle);
+                const gp::Float32 lightY = 1.25f + 0.35f * std::sin(m_elapsedTime * 1.4f);
+                const gp::Float32 lightZ = 2.1f * std::sin(lightAngle);
+
+                cmdList.setGraphicsPipelineState(activePso, 0u, true);
                 cmdList.setViewport(
                     0.0f, 0.0f, 0.0f, static_cast<gp::Float32>(rtWidth), static_cast<gp::Float32>(rtHeight), 1.0f
                 );
-
-                gp::rhi::shader::BatchedShaderParameters& shaderParams = cmdList.getScratchShaderParameters();
-                shaderParams.setShaderParameter(0u, 0u, static_cast<gp::UInt32>(sizeof(OrbitMat4)), mvp.m);
-                cmdList.setBatchedShaderParameters(m_vertexShader.get(), shaderParams);
-
                 cmdList.setStreamSource(0u, m_vertexBuffer.get(), 0u);
-                cmdList.drawIndexedPrimitive(m_indexBuffer.get(), 0, 0u, 24u, 0u, 12u, 1u);
+
+                const gp::Float32 modeFlag = m_wireframeEnabled ? 1.0f : 0.0f;
+
+                struct CubeDrawItem
+                {
+                    OrbitMat4 model;
+                    gp::Float32 mode;
+                };
+
+                const CubeDrawItem drawItems[3u] = {
+                    { makeRotationY(m_elapsedTime * 0.35f), modeFlag },
+                    { makeTranslationScale(0.0f, -1.05f, 0.0f, 3.8f, 0.08f, 3.8f), modeFlag },
+                    { makeTranslationScale(lightX, lightY, lightZ, 0.14f, 0.14f, 0.14f), 1.0f }
+                };
+
+                for (const CubeDrawItem& item: drawItems)
+                {
+                    OrbitGlobals globals{};
+                    globals.mvp = multiplyMat4(viewProj, item.model);
+                    globals.model = item.model;
+                    globals.lightPosAndIntensity[0] = lightX;
+                    globals.lightPosAndIntensity[1] = lightY;
+                    globals.lightPosAndIntensity[2] = lightZ;
+                    globals.lightPosAndIntensity[3] = 2.4f;
+                    globals.cameraPosAndMode[0] = eyeX;
+                    globals.cameraPosAndMode[1] = eyeY;
+                    globals.cameraPosAndMode[2] = eyeZ;
+                    globals.cameraPosAndMode[3] = item.mode;
+
+                    gp::rhi::shader::BatchedShaderParameters& shaderParams = cmdList.getScratchShaderParameters();
+                    shaderParams.setShaderParameter(0u, 0u, static_cast<gp::UInt32>(sizeof(OrbitGlobals)), &globals);
+                    cmdList.setBatchedShaderParameters(m_vertexShader.get(), shaderParams);
+                    cmdList.drawIndexedPrimitive(m_indexBuffer.get(), 0, 0u, 24u, 0u, 12u, 1u);
+                }
             }
 
             cmdList.endRenderPass();
@@ -947,7 +1067,8 @@ private:
             gp::rhi::command::getImmediateCommandList().blockUntilGPUIdle(true);
         }
 
-        m_pipelineState.reset();
+        m_pipelineStateSolid.reset();
+        m_pipelineStateWireframe.reset();
         m_vertexBuffer.reset();
         m_indexBuffer.reset();
         m_depthTexture.reset();
@@ -955,7 +1076,8 @@ private:
         m_vertexShader.reset();
         m_pixelShader.reset();
         m_blendState.reset();
-        m_rasterizerState.reset();
+        m_rasterizerStateSolid.reset();
+        m_rasterizerStateWireframe.reset();
         m_depthStencilState.reset();
         m_viewport.reset();
 
@@ -1076,16 +1198,22 @@ private:
     /// @brief Immutable opaque color blend state.
     gp::rhi::pipeline::BlendStateRef m_blendState{};
 
-    /// @brief Immutable solid, unculled rasterizer state.
-    gp::rhi::pipeline::RasterizerStateRef m_rasterizerState{};
+    /// @brief Immutable solid, back-face culled rasterizer state.
+    gp::rhi::pipeline::RasterizerStateRef m_rasterizerStateSolid{};
+
+    /// @brief Immutable wireframe, unculled rasterizer state.
+    gp::rhi::pipeline::RasterizerStateRef m_rasterizerStateWireframe{};
 
     /// @brief Immutable depth-testing (`LessEqual`) depth-stencil state.
     gp::rhi::pipeline::DepthStencilStateRef m_depthStencilState{};
 
-    /// @brief Cached monolithic graphics pipeline state matching `m_cachedBackBufferFormat`.
-    gp::rhi::pipeline::GraphicsPipelineStateRef m_pipelineState{};
+    /// @brief Cached solid graphics pipeline state matching `m_cachedBackBufferFormat`.
+    gp::rhi::pipeline::GraphicsPipelineStateRef m_pipelineStateSolid{};
 
-    /// @brief Backbuffer pixel format compiled into `m_pipelineState`.
+    /// @brief Cached wireframe graphics pipeline state matching `m_cachedBackBufferFormat`.
+    gp::rhi::pipeline::GraphicsPipelineStateRef m_pipelineStateWireframe{};
+
+    /// @brief Backbuffer pixel format compiled into the cached pipeline states.
     gp::rhi::PixelFormat m_cachedBackBufferFormat{ gp::rhi::PixelFormat::Unknown };
 
     /// @brief Last applied swapchain width in pixels.
@@ -1099,6 +1227,12 @@ private:
 
     /// @brief True once all Cube RHI resources have been created and validated.
     bool m_cubeRendererReady{ false };
+
+    /// @brief True when wireframe rasterization is active (`Space` toggles).
+    bool m_wireframeEnabled{ false };
+
+    /// @brief Elapsed unscaled time in seconds driving light orbit and cube rotation.
+    gp::Float32 m_elapsedTime{ 0.0f };
 
     /// @brief Orbit camera horizontal azimuth in radians.
     gp::Float32 m_cameraYaw{ 0.65f };
