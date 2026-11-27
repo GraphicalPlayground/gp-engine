@@ -64,11 +64,12 @@ TEST(VulkanPipelineDynamicStatesTest, BaselineUsesStaticViewportCountStates)
 {
     const VulkanDynamicStateList list = fillVulkanDynamicStates(VulkanDynamicStateFeatures{}, makeColorDesc());
 
-    EXPECT_EQ(list.count, 4u);
+    EXPECT_EQ(list.count, 5u);
     EXPECT_TRUE(list.contains(VK_DYNAMIC_STATE_VIEWPORT));
     EXPECT_TRUE(list.contains(VK_DYNAMIC_STATE_SCISSOR));
     EXPECT_TRUE(list.contains(VK_DYNAMIC_STATE_STENCIL_REFERENCE));
     EXPECT_TRUE(list.contains(VK_DYNAMIC_STATE_DEPTH_BOUNDS));
+    EXPECT_TRUE(list.contains(VK_DYNAMIC_STATE_BLEND_CONSTANTS));
     EXPECT_FALSE(list.contains(VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT));
 }
 
@@ -79,7 +80,7 @@ TEST(VulkanPipelineDynamicStatesTest, ExtendedDynamicState1ReplacesViewportState
 
     const VulkanDynamicStateList list = fillVulkanDynamicStates(features, makeColorDesc());
 
-    EXPECT_EQ(list.count, 12u);
+    EXPECT_EQ(list.count, 13u);
     EXPECT_FALSE(list.contains(VK_DYNAMIC_STATE_VIEWPORT));
     EXPECT_FALSE(list.contains(VK_DYNAMIC_STATE_SCISSOR));
     EXPECT_TRUE(list.contains(VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT));
@@ -96,7 +97,7 @@ TEST(VulkanPipelineDynamicStatesTest, ExtendedDynamicState2AddsDepthBias)
 
     const VulkanDynamicStateList list = fillVulkanDynamicStates(features, makeColorDesc());
 
-    EXPECT_EQ(list.count, 6u);
+    EXPECT_EQ(list.count, 7u);
     EXPECT_TRUE(list.contains(VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE));
     EXPECT_TRUE(list.contains(VK_DYNAMIC_STATE_DEPTH_BIAS));
 }
@@ -111,11 +112,11 @@ TEST(VulkanPipelineDynamicStatesTest, ExtendedDynamicState3BlendStatesNeedColorA
     depthOnly.colorAttachmentStates.clear();
     const VulkanDynamicStateList withoutColor = fillVulkanDynamicStates(features, depthOnly);
 
-    EXPECT_EQ(withColor.count, 10u);
+    EXPECT_EQ(withColor.count, 11u);
     EXPECT_TRUE(withColor.contains(VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT));
     EXPECT_TRUE(withColor.contains(VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT));
     EXPECT_TRUE(withColor.contains(VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT));
-    EXPECT_EQ(withoutColor.count, 7u);
+    EXPECT_EQ(withoutColor.count, 8u);
     EXPECT_FALSE(withoutColor.contains(VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT));
     EXPECT_TRUE(withoutColor.contains(VK_DYNAMIC_STATE_POLYGON_MODE_EXT));
     EXPECT_TRUE(withoutColor.contains(VK_DYNAMIC_STATE_RASTERIZATION_SAMPLES_EXT));
