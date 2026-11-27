@@ -161,6 +161,15 @@ public:
 #endif
     }
 
+    /// @brief Creates an Android (`VK_KHR_android_surface`) `VkSurfaceKHR` for `windowContext`.
+    /// @param[in] windowContext Native window context carrying the `ANativeWindow*`.
+    /// @param[in] instance Owning `VkInstance`.
+    /// @param[out] outSurface Receives the created surface, or `VK_NULL_HANDLE` on failure.
+    /// @return `VK_SUCCESS` on success, or the failing `VkResult`.
+    [[nodiscard]] static VkResult createSurface(
+        const VulkanGenericPlatformWindowContext& windowContext, VkInstance instance, VkSurfaceKHR* outSurface
+    ) noexcept;
+
     /// @brief Reports whether BC1..BC7 texture formats are supported on Android (false by default on mobile GPUs).
     /// @return Always `false`.
     [[nodiscard]] static constexpr bool supportsBCTextureFormats() noexcept
