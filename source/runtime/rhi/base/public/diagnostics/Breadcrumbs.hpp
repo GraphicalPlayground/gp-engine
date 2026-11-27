@@ -5,12 +5,12 @@
 #pragma once
 
 #include "commands/CommandForward.hpp"
-#include "containers/arrays/Vector.hpp"
+#include "containers/arrays/Vector.hpp"         // IWYU pragma: keep
 #include "containers/strings/Name.hpp"
-#include "containers/strings/String.hpp"
-#include "containers/views/StringView.hpp"
+#include "containers/strings/String.hpp"        // IWYU pragma: keep
+#include "containers/views/StringView.hpp"      // IWYU pragma: keep
 #include "CoreMinimal.hpp"
-#include "diagnostics/BreadcrumbEnums.hpp"
+#include "diagnostics/BreadcrumbEnums.hpp"      // IWYU pragma: keep
 #include "diagnostics/BreadcrumbTypes.hpp"
 #include "diagnostics/DiagnosticsForward.hpp"   // IWYU pragma: keep
 #include "memory/allocators/PagedLinearAllocator.hpp"
@@ -353,13 +353,13 @@ struct LiteralBreadcrumbNode final : public BreadcrumbNode
 };
 
 /// @brief Normalizes printf arguments so `gp::String`, `gp::StringView`, and `gp::Name` convert cleanly to C strings.
-[[nodiscard]] GP_FORCEINLINE_HINT inline const char* normalizePrintfArg(const gp::String& str) noexcept
+[[nodiscard]] GP_FORCEINLINE_HINT const char* normalizePrintfArg(const gp::String& str) noexcept
 {
     return str.cString();
 }
 
 /// @brief Normalizes `gp::Name` to its interned null-terminated base C string.
-[[nodiscard]] GP_FORCEINLINE_HINT inline const char* normalizePrintfArg(const gp::Name name) noexcept
+[[nodiscard]] GP_FORCEINLINE_HINT const char* normalizePrintfArg(const gp::Name name) noexcept
 {
     return name.baseCString();
 }
@@ -456,12 +456,15 @@ public:
             }
             else
             {
+                GP_GCC_WARNING_PUSH()
+                GP_GCC_WARNING_DISABLE("-Wformat-nonliteral")
                 const int written = std::snprintf(
                     scratch.data,
                     BreadcrumbBuffer::kCapacity,
                     inData.dynamicFormat,
                     detail::normalizePrintfArg(std::forward<InArgs>(args))...
                 );
+                GP_GCC_WARNING_POP()
                 if (written > 0)
                 {
                     const gp::USize clampedLen = (static_cast<gp::USize>(written) < BreadcrumbBuffer::kCapacity)
