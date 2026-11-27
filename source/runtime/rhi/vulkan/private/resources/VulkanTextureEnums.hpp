@@ -16,12 +16,15 @@ namespace gp::rhi::vulkan
 ///          - `LocalOwner`: the texture created the image and its memory, and destroys both.
 ///          - `ExternalOwner`: the image belongs to someone else (a swapchain); only the views are destroyed.
 ///          - `Aliased`: the texture borrows the image, views and memory of another texture it keeps alive.
+///          - `Borrowed`: the texture temporarily points at the image and views of another texture (the swapchain image
+///            a back buffer acquired this frame); it releases nothing and switches source every frame.
 enum class VulkanImageOwnerType : gp::UInt8
 {
     None = 0u,
     LocalOwner,
     ExternalOwner,
-    Aliased
+    Aliased,
+    Borrowed
 };
 
 /// @brief Memory accounting bucket a texture's bytes are charged to.
