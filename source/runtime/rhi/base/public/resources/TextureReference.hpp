@@ -69,6 +69,11 @@ public:
     /// @copydoc Texture::getWriteMaskProperties()
     virtual void getWriteMaskProperties(void*& outData, gp::UInt32& outSize) noexcept override;
 
+#if GP_ENABLE_RHI_VALIDATION
+    /// @copydoc ViewableResource::getValidationTrackerResource()
+    [[nodiscard]] virtual validation::Resource* getValidationTrackerResource() noexcept override;
+#endif
+
 public:
     /// @brief Returns the target `Texture` currently referenced by this indirection wrapper.
     /// @return Non-owning pointer to the active target `Texture`.
