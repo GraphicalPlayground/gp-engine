@@ -12,9 +12,11 @@
 #include "diagnostics/AssertionMacros.hpp"
 #include "memory/Memory.hpp"
 #include "memory/pointers/RefCountedPtr.hpp"   // IWYU pragma: keep
+#include "resources/ResourceReplace.hpp"       // IWYU pragma: export
 #include "resources/Texture.hpp"
 #include "resources/TextureCreateDesc.hpp"
 #include "resources/TextureEnums.hpp"
+#include "resources/TextureMemoryStats.hpp"   // IWYU pragma: export
 #include "RHIBase.hpp"
 #include "templates/Function.hpp"
 #include <utility>
@@ -621,70 +623,6 @@ struct UpdateTexture3DData
 
     /// @brief Opaque inline scratch bytes reserved for concrete backends to carry staging allocation handles.
     gp::UInt8 platformData[64]{};
-};
-
-/// @brief Pairs a destination and source resource for atomic backing-memory replacement via `replaceResources()`.
-struct ResourceReplaceInfo
-{
-    /// @brief Concrete resource kind stored by this replacement entry.
-    enum class StorageType : gp::UInt8
-    {
-        Buffer = 0,
-        RTGeometry
-    };
-
-    /// @brief Active resource pair kind.
-    StorageType storageType{ StorageType::Buffer };
-
-    /// @brief Destination buffer receiving backing memory from `srcBuffer`.
-    Buffer* dstBuffer{ nullptr };
-
-    /// @brief Source buffer donating backing memory to `dstBuffer`.
-    Buffer* srcBuffer{ nullptr };
-
-    /// @brief Constructs an empty replacement record.
-    constexpr ResourceReplaceInfo() noexcept = default;
-
-    /// @brief Constructs a buffer replacement record.
-    /// @param[in] inDstBuffer Destination buffer.
-    /// @param[in] inSrcBuffer Source buffer.
-    constexpr ResourceReplaceInfo(Buffer* const inDstBuffer, Buffer* const inSrcBuffer) noexcept
-        : storageType(StorageType::Buffer)
-        , dstBuffer(inDstBuffer)
-        , srcBuffer(inSrcBuffer)
-    {}
-};
-
-/// @brief Snapshot of GPU video memory budgets and current texture pool utilization.
-struct TextureMemoryStats
-{
-    /// @brief Dedicated local video memory reported by the adapter in bytes.
-    gp::Int64 dedicatedVideoMemory{ 0 };
-
-    /// @brief Dedicated system memory reported by the adapter in bytes.
-    gp::Int64 dedicatedSystemMemory{ 0 };
-
-    /// @brief Shared system memory accessible to the GPU in bytes.
-    gp::Int64 sharedSystemMemory{ 0 };
-
-    /// @brief Total graphics memory available for texture streaming in bytes.
-    gp::Int64 totalGraphicsMemory{ 0 };
-
-    /// @brief Memory currently consumed by streaming textures in bytes.
-    gp::Int64 streamingMemorySize{ 0 };
-
-    /// @brief Memory currently consumed by non-streaming textures in bytes.
-    gp::Int64 nonStreamingMemorySize{ 0 };
-
-    /// @brief Configured texture pool budget in bytes.
-    gp::Int64 texturePoolSize{ 0 };
-
-    /// @brief Reports whether any memory budget fields were populated by the backend.
-    /// @return True when `totalGraphicsMemory > 0` or `dedicatedVideoMemory > 0`.
-    [[nodiscard]] constexpr bool areHardwareStatsValid() const noexcept
-    {
-        return (totalGraphicsMemory > 0) || (dedicatedVideoMemory > 0);
-    }
 };
 
 /// @brief Options controlling cubemap face, mip level, array slice, and GPU index for surface readback.
