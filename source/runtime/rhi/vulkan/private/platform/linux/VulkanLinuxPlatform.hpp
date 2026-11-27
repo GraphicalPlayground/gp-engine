@@ -175,6 +175,15 @@ public:
         outExtensions.pushBack(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
     }
 
+    /// @brief Creates a Xlib or Wayland `VkSurfaceKHR` for `windowContext`.
+    /// @param[in] windowContext Native window context carrying the OS handles.
+    /// @param[in] instance Owning `VkInstance`.
+    /// @param[out] outSurface Receives the created surface, or `VK_NULL_HANDLE` on failure.
+    /// @return `VK_SUCCESS` on success, or the failing `VkResult`.
+    [[nodiscard]] static VkResult createSurface(
+        const VulkanGenericPlatformWindowContext& windowContext, VkInstance instance, VkSurfaceKHR* outSurface
+    ) noexcept;
+
     /// @brief Returns `VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR` matching Linux monotonic clock queries.
     /// @return Calibrated timestamp domain for Linux.
     [[nodiscard]] static constexpr VkTimeDomainKHR getTimeDomain() noexcept
