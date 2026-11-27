@@ -5,11 +5,15 @@
 #pragma once
 
 #include "containers/arrays/Array.hpp"
+#include "containers/strings/String.hpp"     // IWYU pragma: keep
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
+#include "containers/views/VectorView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "hashing/HashCombine.hpp"
 #include "hashing/HashOf.hpp"
 #include "pipeline/PipelineEnums.hpp"
 #include "pipeline/PipelineForward.hpp"   // IWYU pragma: keep
+#include "RHIBase.hpp"
 #include "RHIDefinitions.hpp"
 #include <type_traits>
 
@@ -19,6 +23,9 @@ namespace gp::rhi::pipeline
 /// @brief Blend equations, blend factors, and color write mask for one color render target slot.
 struct RenderTargetBlendDesc
 {
+    /// @brief Number of space-separated scalar fields emitted by `toString()`.
+    static constexpr gp::USize kNumStringFields = 7u;
+
     /// @brief Arithmetic operation combining source and destination RGB channels.
     BlendOperation colorBlendOp{ BlendOperation::Add };
 
@@ -100,6 +107,20 @@ public:
         hasher.append(alphaDestBlend);
         hasher.append(colorWriteMask);
     }
+
+    /// @brief Serializes this render-target blend descriptor into 7 space-separated integer tokens.
+    /// @return Serialized string representation with trailing space.
+    [[nodiscard]] GP_RHI_API gp::String toString() const noexcept;
+
+    /// @brief Parses exactly `kNumStringFields` pre-tokenized string views into this render-target blend descriptor.
+    /// @param[in] parts Span of 7 string tokens.
+    /// @return True when all 7 fields parsed within valid bounds; false otherwise.
+    GP_RHI_API bool fromString(gp::ConstVectorView<gp::StringView> parts) noexcept;
+
+    /// @brief Parses a 7-token string into this render-target blend descriptor.
+    /// @param[in] src Serialized render-target blend descriptor text.
+    /// @return True when all 7 fields parsed within valid bounds; false otherwise.
+    GP_RHI_API bool fromString(gp::StringView src) noexcept;
 };
 
 static_assert(
@@ -209,6 +230,16 @@ public:
             renderTargets[i].hashAppend(hasher);
         }
     }
+
+    /// @brief Serializes all 8 render-target blend slots plus `useIndependentRenderTargetBlendStates` and
+    ///        `useAlphaToCoverage` into `<...>`.
+    /// @return Serialized string representation.
+    [[nodiscard]] GP_RHI_API gp::String toString() const noexcept;
+
+    /// @brief Parses a `<...>` blend state string (accepting both 58-token and legacy 57-token formats).
+    /// @param[in] src Serialized blend state text.
+    /// @return True when all fields parsed within valid bounds; false if `src` is malformed (leaves `*this` unchanged).
+    GP_RHI_API bool fromString(gp::StringView src) noexcept;
 };
 
 }   // namespace gp::rhi::pipeline
