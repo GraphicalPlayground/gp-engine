@@ -232,6 +232,17 @@ public:
         static_cast<void>(message);
     }
 
+    /// @brief Creates the platform WSI `VkSurfaceKHR` backing `windowContext`.
+    /// @details The generic implementation has no window-system integration and reports
+    ///          `VK_ERROR_EXTENSION_NOT_PRESENT`; platform layers hide this method with their own WSI path.
+    /// @param[in] windowContext Native window context carrying the OS handles.
+    /// @param[in] instance Owning `VkInstance` (must have the platform surface extension enabled).
+    /// @param[out] outSurface Receives the created surface, or `VK_NULL_HANDLE` on failure.
+    /// @return `VK_SUCCESS` on success, or the failing `VkResult`.
+    [[nodiscard]] static VkResult createSurface(
+        const VulkanGenericPlatformWindowContext& windowContext, VkInstance instance, VkSurfaceKHR* outSurface
+    ) noexcept;
+
     /// @brief Destroys a platform `VkSurfaceKHR` via `vkDestroySurfaceKHR`.
     /// @param[in] windowId Immutable platform window identifier (unused on generic platforms).
     /// @param[in] instance Owning `VkInstance`.

@@ -111,6 +111,19 @@ void VulkanGenericPlatform::freeVulkanLibrary() noexcept
     VulkanLoader::freeLibrary();
 }
 
+VkResult VulkanGenericPlatform::createSurface(
+    const VulkanGenericPlatformWindowContext& windowContext, const VkInstance instance, VkSurfaceKHR* const outSurface
+) noexcept
+{
+    static_cast<void>(windowContext);
+    static_cast<void>(instance);
+    if (outSurface != nullptr)
+    {
+        *outSurface = VK_NULL_HANDLE;
+    }
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+
 void VulkanGenericPlatform::destroySurface(
     const gp::UInt32 windowId, const VkInstance instance, const VkSurfaceKHR surface
 ) noexcept
