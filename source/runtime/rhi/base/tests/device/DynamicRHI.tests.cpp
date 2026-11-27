@@ -20,10 +20,12 @@
 #include "pipeline/RasterizerState.hpp"
 #include "pipeline/SamplerState.hpp"
 #include "pipeline/VertexDeclaration.hpp"
+#include "presentation/PresentArgs.hpp"
 #include "presentation/Viewport.hpp"
 #include "resources/Buffer.hpp"
 #include "resources/BufferCreateDesc.hpp"
 #include "resources/BufferInitializer.hpp"
+#include "resources/ResourceReplace.hpp"
 #include "resources/Texture.hpp"
 #include "resources/TextureCreateDesc.hpp"
 #include "resources/TextureInitializer.hpp"
@@ -123,6 +125,10 @@ public:
     gp::UInt32 updateTex3DCalls{ 0u };
     gp::UInt32 createTransitionCalls{ 0u };
     gp::UInt32 releaseTransitionCalls{ 0u };
+    gp::UInt32 endViewportCalls{ 0u };
+    gp::UInt32 replaceResourcesCalls{ 0u };
+    gp::USize lastReplacedCount{ 0u };
+    presentation::PresentArgsWithStats lastPresentArgs{};
     gp::Vector<gp::UInt8> backingBuffer{};
 
     virtual void init() noexcept override
@@ -425,8 +431,23 @@ public:
     virtual void beginDrawingViewport(presentation::Viewport*, resource::Texture*) noexcept override
     {}
 
-    virtual void endDrawingViewport(presentation::Viewport*, bool, bool) noexcept override
-    {}
+    using DynamicRHI::endDrawingViewport;
+
+    virtual void endDrawingViewport(
+        presentation::Viewport*, const presentation::PresentArgsWithStats& presentArgs
+    ) noexcept override
+    {
+        ++endViewportCalls;
+        lastPresentArgs = presentArgs;
+    }
+
+    virtual void replaceResources(
+        command::CommandListBase&, const gp::ConstVectorView<resource::ResourceReplaceInfo> replaceInfos
+    ) noexcept override
+    {
+        ++replaceResourcesCalls;
+        lastReplacedCount = replaceInfos.size();
+    }
 
     virtual void blockUntilGPUIdle() noexcept override
     {}
@@ -728,6 +749,86 @@ TEST(DynamicRHITest, DefaultHelpersQueryPoolStagingTextureRefAndPrecacheHash)
     psoB.primitiveType = pipeline::PrimitiveType::LineList;
     EXPECT_NE(mock->computeStatePrecachePSOHash(psoA), mock->computeStatePrecachePSOHash(psoB));
     EXPECT_FALSE(mock->matchPrecachePSOInitializers(psoA, psoB));
+
+    rhiExit();
+}
+
+TEST(DynamicRHITest, PresentArgsWithStatsAndResourceReplaceBatcher)
+{
+    DeviceMockRHI* const mock = new DeviceMockRHI();
+    rhiInit(mock);
+    command::CommandListImmediate& cmdList = command::getImmediateCommandList();
+
+    presentation::ViewportRef vp = mock->createViewport(nullptr, 128u, 128u, false, PixelFormat::B8G8R8A8_UNorm);
+    const gp::UInt64 initialPresentCounter = getRHIGlobals().presentCounter;
+
+    // Explicit PresentArgsWithStats propagates frameCounter and inputCycles and increments presentCounter on present.
+    cmdList.beginDrawingViewport(vp.get(), nullptr);
+    const presentation::PresentArgsWithStats explicitArgs(presentation::PresentArgs(true, true), 42u, 987654321ull);
+    cmdList.endDrawingViewport(vp.get(), explicitArgs);
+    EXPECT_EQ(mock->endViewportCalls, 1u);
+    EXPECT_EQ(mock->lastPresentArgs, explicitArgs);
+    EXPECT_EQ(getRHIGlobals().presentCounter, initialPresentCounter + 1u);
+
+    // Skipping presentation (shouldPresent() == false) must not increment presentCounter.
+    cmdList.beginDrawingViewport(vp.get(), nullptr);
+    const presentation::PresentArgsWithStats noPresentArgs(presentation::PresentArgs(false, false), 43u, 12345ull);
+    cmdList.endDrawingViewport(vp.get(), noPresentArgs);
+    EXPECT_EQ(mock->endViewportCalls, 2u);
+    EXPECT_EQ(mock->lastPresentArgs, noPresentArgs);
+    EXPECT_EQ(getRHIGlobals().presentCounter, initialPresentCounter + 1u);
+
+    // Advance backend frame counter and verify legacy (present, lockToVsync) overload populates m_frameCounter.
+    cmdList.beginFrame();
+    cmdList.endFrame();
+    EXPECT_EQ(mock->getFrameCounter(), 1u);
+    cmdList.beginDrawingViewport(vp.get(), nullptr);
+    cmdList.endDrawingViewport(vp.get(), true, false);
+    EXPECT_EQ(mock->endViewportCalls, 3u);
+    EXPECT_TRUE(mock->lastPresentArgs.shouldPresent());
+    EXPECT_FALSE(mock->lastPresentArgs.isLockedToVsync());
+    EXPECT_EQ(mock->lastPresentArgs.frameCounter, 1u);
+    EXPECT_EQ(mock->lastPresentArgs.inputCycles, 0u);
+    EXPECT_EQ(getRHIGlobals().presentCounter, initialPresentCounter + 2u);
+
+    // ResourceReplaceInfo typed pair contracts and ResourceReplaceBatcher flush semantics.
+    const resource::BufferCreateDesc bufDesc =
+        resource::BufferCreateDesc::create("ReplaceBuf", 32u, 4u, resource::BufferUsageFlags::Static);
+    resource::BufferRef dstA = cmdList.createBuffer(bufDesc);
+    resource::BufferRef srcA = cmdList.createBuffer(bufDesc);
+    resource::BufferRef dstB = cmdList.createBuffer(bufDesc);
+
+    const resource::ResourceReplaceInfo bufInfo(dstA.get(), srcA.get());
+    EXPECT_EQ(bufInfo.getType(), resource::ResourceReplaceInfo::Type::Buffer);
+    EXPECT_EQ(bufInfo.getBuffer().dst, dstA.get());
+    EXPECT_EQ(bufInfo.getBuffer().src, srcA.get());
+
+    resource::RayTracingGeometry* const dummyGeom = nullptr;
+    const resource::ResourceReplaceInfo rtInfo(dummyGeom, dummyGeom);
+    EXPECT_EQ(rtInfo.getType(), resource::ResourceReplaceInfo::Type::RTGeometry);
+    EXPECT_EQ(rtInfo.getRTGeometry().dst, nullptr);
+    EXPECT_NE(bufInfo, rtInfo);
+
+    // Empty batcher must not dispatch replaceResources on destruction or manual flush.
+    {
+        resource::ResourceReplaceBatcher emptyBatcher(cmdList, 4u);
+        EXPECT_TRUE(emptyBatcher.isEmpty());
+        emptyBatcher.flush();
+    }
+    cmdList.immediateFlush(command::ImmediateFlushType::FlushRHIThread);
+    EXPECT_EQ(mock->replaceResourcesCalls, 0u);
+
+    // Queued entries flush automatically on scope exit in a single batch.
+    {
+        resource::ResourceReplaceBatcher batcher(cmdList, 2u);
+        batcher.enqueueReplace(dstA.get(), srcA.get());
+        batcher.enqueueReplace(dstB.get(), static_cast<resource::Buffer*>(nullptr));
+        EXPECT_EQ(batcher.size(), 2u);
+        EXPECT_FALSE(batcher.isEmpty());
+    }
+    cmdList.immediateFlush(command::ImmediateFlushType::FlushRHIThread);
+    EXPECT_EQ(mock->replaceResourcesCalls, 1u);
+    EXPECT_EQ(mock->lastReplacedCount, 2u);
 
     rhiExit();
 }
