@@ -278,4 +278,50 @@ TEST(GPUMaskTest, IndexRangeIterationInvertFilterAndIntersects)
     EXPECT_EQ(lastVisited, 31u);
 }
 
+TEST(GPUMaskTest, ExplicitMultiGPURuntimeAllMaskAndVirtualMGPU)
+{
+    struct ScopedGPUGlobalReset final
+    {
+        ~ScopedGPUGlobalReset() noexcept
+        {
+            setVirtualMGPU(0u);
+            setNumExplicitGPUsForRendering(1u);
+        }
+    } const resetGuard{};
+
+    EXPECT_EQ(getNumExplicitGPUsForRendering(), 1u);
+    EXPECT_EQ(getVirtualMGPU(), 0u);
+    EXPECT_EQ(GPUMask::fromCount(0u), GPUMask::gpu0());
+    EXPECT_EQ(GPUMask::fromCount(1u), GPUMask::gpu0());
+    EXPECT_EQ(GPUMask::fromCount(4u).getNative(), 0b1111u);
+    EXPECT_EQ(GPUMask::fromCount(32u).getNative(), 0xFFFFFFFFu);
+
+    setNumExplicitGPUsForRendering(0u);
+    EXPECT_EQ(getNumExplicitGPUsForRendering(), 1u);
+    EXPECT_EQ(GPUMask::all(), GPUMask::gpu0());
+
+    setNumExplicitGPUsForRendering(4u);
+    EXPECT_EQ(getNumExplicitGPUsForRendering(), 4u);
+    EXPECT_EQ(GPUMask::all().getNative(), 0b1111u);
+    EXPECT_EQ(GPUMask::all().getNumGPUs(), 4u);
+    EXPECT_EQ(GPUMask::filterGPUsBefore(2u).getNative(), 0b1100u);
+
+    GPUMask inverse{};
+    EXPECT_TRUE(GPUMask::fromIndex(1u).invert(inverse));
+    EXPECT_EQ(inverse.getNative(), 0b1101u);
+    EXPECT_FALSE(GPUMask::all().invert(inverse));
+    EXPECT_EQ(inverse, GPUMask::gpu0());
+
+    setNumExplicitGPUsForRendering(64u);
+    EXPECT_EQ(getNumExplicitGPUsForRendering(), 32u);
+    EXPECT_EQ(GPUMask::all().getNative(), 0xFFFFFFFFu);
+
+    // Virtual multi-GPU collapses getNative() to GPU 0 while getForDisplay() preserves logical bits.
+    setVirtualMGPU(2u);
+    EXPECT_EQ(getVirtualMGPU(), 2u);
+    const GPUMask logicalPair = GPUMask::fromIndex(0u) | GPUMask::fromIndex(1u);
+    EXPECT_EQ(logicalPair.getNative(), 1u);
+    EXPECT_EQ(logicalPair.getForDisplay(), 0b0011u);
+}
+
 }   // namespace gp::rhi::tests
