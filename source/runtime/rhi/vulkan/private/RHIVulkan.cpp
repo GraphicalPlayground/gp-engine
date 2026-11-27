@@ -3,6 +3,7 @@
 // mailto:support AT graphical-playground DOT com
 
 #include "RHIVulkan.hpp"
+#include "device/VulkanDynamicRHIModule.hpp"
 #include "logging/LogEnums.hpp"
 #include "modules/ModuleMacros.hpp"
 
@@ -14,4 +15,4 @@ GP_DEFINE_LOG_CATEGORY(LogVulkan, gp::log::LogLevel::Info, gp::log::LogLevel::Tr
 
 }   // namespace gp
 
-GP_IMPLEMENT_DEFAULT_MODULE("rhi/vulkan")
+GP_IMPLEMENT_MODULE(gp::rhi::vulkan::VulkanDynamicRHIModule, "rhi/vulkan")
