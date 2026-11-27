@@ -11,6 +11,9 @@
 #include "CoreMinimal.hpp"
 #include "memory/pointers/RefCountedPtr.hpp"   // IWYU pragma: keep
 #include "RHIBase.hpp"
+#if GP_ENABLE_RHI_VALIDATION
+    #include "validation/ValidationTypes.hpp"
+#endif
 #include "views/DescriptorHandle.hpp"
 #include "views/ViewDesc.hpp"
 #include "views/ViewForward.hpp"   // IWYU pragma: keep
@@ -95,6 +98,15 @@ public:
         return m_viewDesc;
     }
 
+#if GP_ENABLE_RHI_VALIDATION
+    /// @brief Returns the validation `ViewIdentity` tracking the exact subresource range covered by this view.
+    /// @return Const reference to `validation::ViewIdentity`.
+    [[nodiscard]] GP_FORCEINLINE_HINT const validation::ViewIdentity& getViewIdentity() const noexcept
+    {
+        return m_viewIdentity;
+    }
+#endif
+
 private:
     /// @brief Strong reference keeping the underlying buffer or texture alive.
     resource::ViewableResourceRef m_resource{};
@@ -102,6 +114,10 @@ private:
 protected:
     /// @brief Immutable 16-byte descriptor capturing the view configuration.
     const ViewDesc m_viewDesc{};
+
+#if GP_ENABLE_RHI_VALIDATION
+    validation::ViewIdentity m_viewIdentity{};
+#endif
 };
 
 }   // namespace gp::rhi::view

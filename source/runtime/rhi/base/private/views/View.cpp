@@ -415,6 +415,9 @@ View::View(
     : resource::Resource(resourceType)
     , m_resource(targetResource)
     , m_viewDesc(viewDesc)
+#if GP_ENABLE_RHI_VALIDATION
+    , m_viewIdentity(targetResource, viewDesc)
+#endif
 {
     GP_CHECKF(targetResource != nullptr, "Cannot create a view of a null ViewableResource.");
 }
