@@ -17,6 +17,8 @@
 #include "maths/base/Arithmetic.hpp"
 #include "memory/GlobalMemory.hpp"
 #include "memory/Memory.hpp"
+#include "profiling/GPUProfiler.hpp"
+#include "profiling/RHIStats.hpp"
 #include "resources/TextureUtils.hpp"
 #include "sync/SyncEnums.hpp"
 #include "sync/Transition.hpp"
@@ -335,6 +337,11 @@ void DynamicRHI::getTextureMemoryStats(resource::TextureMemoryStats& outStats) n
     outStats = resource::TextureMemoryStats{};
 }
 
+void DynamicRHI::getMemoryStats(profiling::RHIMemoryStats& outStats) noexcept
+{
+    outStats = profiling::RHIMemoryStats{};
+}
+
 resource::UpdateTexture3DData DynamicRHI::beginUpdateTexture3D(
     command::CommandListBase& cmdList,
     resource::Texture* const texture,
@@ -555,6 +562,16 @@ void DynamicRHI::endFrameRenderThread() noexcept
     ++m_frameCounter;
     EndFrameArgs args{};
     args.frameNumber = m_frameCounter;
+    args.statsFrame = static_cast<gp::Int64>(m_frameCounter);
+    args.profileNextFrame = profiling::consumeShouldProfileNextFrame();
+#if GP_WITH_RHI_BREADCRUMBS
+    command::CommandListImmediate& immediateCmdList = command::getImmediateCommandList();
+    args.gpuBreadcrumbs[sync::PipelineStage::Graphics] =
+        immediateCmdList.getCurrentBreadcrumbGPU(sync::PipelineStage::Graphics);
+    args.gpuBreadcrumbs[sync::PipelineStage::AsyncCompute] =
+        immediateCmdList.getCurrentBreadcrumbGPU(sync::PipelineStage::AsyncCompute);
+#endif
+    profiling::DrawStatsCategory::getManager().latchFrameCounters();
     endFrame(args);
 }
 

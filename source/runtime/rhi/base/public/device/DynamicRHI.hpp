@@ -38,6 +38,7 @@
 #include "presentation/PresentArgs.hpp"
 #include "presentation/PresentationForward.hpp"
 #include "presentation/Viewport.hpp"
+#include "profiling/ProfilingForward.hpp"
 #include "resources/Buffer.hpp"
 #include "resources/BufferCreateDesc.hpp"
 #include "resources/BufferInitializer.hpp"
@@ -434,6 +435,10 @@ public:
     /// @brief Populates hardware texture memory statistics into `outStats`.
     /// @param[out] outStats Destination memory statistics struct.
     virtual void getTextureMemoryStats(resource::TextureMemoryStats& outStats) noexcept;
+
+    /// @brief Populates adapter video/system memory budget and usage metrics into `outStats`.
+    /// @param[out] outStats Destination adapter memory statistics struct.
+    virtual void getMemoryStats(profiling::RHIMemoryStats& outStats) noexcept;
 
     /// @brief Maps a texture subresource for CPU read or write access.
     /// @param[in,out] cmdList Immediate command list.
