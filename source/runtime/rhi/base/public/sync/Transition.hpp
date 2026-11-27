@@ -12,6 +12,9 @@
 #include "sync/SyncEnums.hpp"
 #include "sync/SyncForward.hpp"   // IWYU pragma: keep
 #include "threading/atomics/Atomic.hpp"
+#if GP_ENABLE_RHI_VALIDATION
+    #include "validation/ValidationResource.hpp"
+#endif
 
 namespace gp::rhi::sync
 {
@@ -108,6 +111,15 @@ public:
     {
         return m_state.load(gp::memory::MemoryOrder::Acquire);
     }
+
+#if GP_ENABLE_RHI_VALIDATION
+    /// @brief Returns the mutable validation operations attached to this transition.
+    /// @return Mutable reference to `validation::TransitionResource`.
+    [[nodiscard]] GP_FORCEINLINE_HINT validation::TransitionResource& getValidationData() const noexcept
+    {
+        return m_validationData;
+    }
+#endif
 
 private:
     /// @brief Constructs a transition tracking pending begin bits for `srcPipelines` and end bits for `dstPipelines`.
@@ -214,6 +226,10 @@ private:
 #if GP_DO_CHECK
     mutable PipelineStage m_allowedSrc{ PipelineStage::None };
     mutable PipelineStage m_allowedDst{ PipelineStage::None };
+#endif
+
+#if GP_ENABLE_RHI_VALIDATION
+    mutable validation::TransitionResource m_validationData{};
 #endif
 };
 
