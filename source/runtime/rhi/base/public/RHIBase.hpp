@@ -41,3 +41,32 @@
 #else
     #define GP_RHI_IF_SHADER_DEBUG_DATA(...)
 #endif
+
+/// @brief Controls whether hierarchical CPU/GPU RHI breadcrumb scopes and crash markers are compiled in.
+#ifndef GP_WITH_RHI_BREADCRUMBS
+    #define GP_WITH_RHI_BREADCRUMBS (!GP_BUILD_SHIPPING)
+#endif
+
+/// @brief Conditionally compiles expressions that depend on RHI breadcrumb support.
+#if GP_WITH_RHI_BREADCRUMBS
+    #define GP_RHI_IF_BREADCRUMBS(...) __VA_ARGS__
+#else
+    #define GP_RHI_IF_BREADCRUMBS(...)
+#endif
+
+/// @brief Controls whether the RHI validation wrapper layer and resource barrier tracker are compiled in.
+#ifndef GP_ENABLE_RHI_VALIDATION
+    #define GP_ENABLE_RHI_VALIDATION (!GP_BUILD_SHIPPING)
+#endif
+
+/// @brief Conditionally compiles expressions that depend on RHI validation support.
+#if GP_ENABLE_RHI_VALIDATION
+    #define GP_RHI_IF_VALIDATION(...) __VA_ARGS__
+#else
+    #define GP_RHI_IF_VALIDATION(...)
+#endif
+
+/// @brief Controls whether GPU draw/dispatch stats and frame profiler streams are compiled in.
+#ifndef GP_HAS_GPU_STATS
+    #define GP_HAS_GPU_STATS (!GP_BUILD_SHIPPING)
+#endif
