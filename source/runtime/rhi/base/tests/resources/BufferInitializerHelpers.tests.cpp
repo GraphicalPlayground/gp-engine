@@ -285,7 +285,10 @@ struct MockLockBufferDynamicRHI final : public DynamicRHI
     virtual void beginDrawingViewport(presentation::Viewport*, Texture*) noexcept override
     {}
 
-    virtual void endDrawingViewport(presentation::Viewport*, bool, bool) noexcept override
+    using DynamicRHI::endDrawingViewport;
+
+    virtual void
+        endDrawingViewport(presentation::Viewport*, const presentation::PresentArgsWithStats&) noexcept override
     {}
 
     [[nodiscard]] virtual TextureRef getViewportBackBuffer(presentation::Viewport*) noexcept override
