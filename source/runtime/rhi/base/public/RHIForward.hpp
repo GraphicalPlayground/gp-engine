@@ -9,11 +9,14 @@
 #include "core/ResourceForward.hpp"               // IWYU pragma: export
 #include "CoreMinimal.hpp"                        // IWYU pragma: keep
 #include "device/DeviceForward.hpp"               // IWYU pragma: export
+#include "diagnostics/DiagnosticsForward.hpp"     // IWYU pragma: export
 #include "maths/color/PixelFormatForward.hpp"     // IWYU pragma: export
 #include "pipeline/PipelineForward.hpp"           // IWYU pragma: export
 #include "presentation/PresentationForward.hpp"   // IWYU pragma: export
+#include "profiling/ProfilingForward.hpp"         // IWYU pragma: export
 #include "shaders/ShaderForward.hpp"              // IWYU pragma: export
 #include "sync/SyncForward.hpp"                   // IWYU pragma: export
+#include "validation/ValidationForward.hpp"       // IWYU pragma: export
 #include "views/ViewForward.hpp"                  // IWYU pragma: export
 
 namespace gp::rhi
