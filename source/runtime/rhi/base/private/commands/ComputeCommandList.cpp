@@ -200,7 +200,7 @@ void ComputeCommandList::setTrackedAccess(
     tracked.reserve(infos.size());
     for (const sync::TransitionInfo& info: infos)
     {
-        if (info.resource != nullptr && info.accessAfter != sync::ResourceAccess::Unknown &&
+        if (info.resource != nullptr && info.accessAfter != sync::ResourceAccess::Unknown && info.isWholeResource() &&
             (info.type == sync::TransitionResourceType::Texture || info.type == sync::TransitionResourceType::Buffer))
         {
             tracked.emplaceBack(static_cast<resource::ViewableResource*>(info.resource), info.accessAfter, pipelines);
@@ -400,6 +400,54 @@ void ComputeCommandList::postExternalCommandsReset() noexcept
         return;
     }
     emplaceCommand<CommandPostExternalCommandsReset>();
+}
+
+void ComputeCommandList::beginUAVOverlap() noexcept
+{
+    if (isBottomOfPipe())
+    {
+        getComputeContext().beginUAVOverlap();
+        return;
+    }
+    emplaceCommand<CommandBeginUAVOverlap>();
+}
+
+void ComputeCommandList::endUAVOverlap() noexcept
+{
+    if (isBottomOfPipe())
+    {
+        getComputeContext().endUAVOverlap();
+        return;
+    }
+    emplaceCommand<CommandEndUAVOverlap>();
+}
+
+void ComputeCommandList::beginUAVOverlap(const gp::ConstVectorView<view::UnorderedAccessView*> uavs) noexcept
+{
+    if (uavs.isEmpty())
+    {
+        return;
+    }
+    if (isBottomOfPipe())
+    {
+        getComputeContext().beginUAVOverlap(uavs);
+        return;
+    }
+    emplaceCommand<CommandBeginSpecificUAVOverlap>(allocArray(uavs));
+}
+
+void ComputeCommandList::endUAVOverlap(const gp::ConstVectorView<view::UnorderedAccessView*> uavs) noexcept
+{
+    if (uavs.isEmpty())
+    {
+        return;
+    }
+    if (isBottomOfPipe())
+    {
+        getComputeContext().endUAVOverlap(uavs);
+        return;
+    }
+    emplaceCommand<CommandEndSpecificUAVOverlap>(allocArray(uavs));
 }
 
 }   // namespace gp::rhi::command
