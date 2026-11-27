@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include "barriers/VulkanBarrierTypes.hpp"
 #include "commands/IComputeContext.hpp"
-#include "containers/arrays/Vector.hpp"     // IWYU pragma: keep
+#include "containers/arrays/Vector.hpp"                  // IWYU pragma: keep
 #include "CoreMinimal.hpp"
-#include "queries/VulkanQueryForward.hpp"   // IWYU pragma: keep
+#include "descriptors/VulkanDescriptorSetsForward.hpp"   // IWYU pragma: keep
+#include "queries/VulkanQueryForward.hpp"                // IWYU pragma: keep
 #include "queries/VulkanQueryTypes.hpp"
 #include "RHIVulkan.hpp"
 #include "sync/VulkanSemaphore.hpp"
@@ -75,6 +77,18 @@ struct GP_RHI_VULKAN_API VulkanPayload final
     /// @brief Pool cache that takes `queryPools` back; required when `queryPools` is not empty.
     VulkanQueryPoolManager* queryPoolManager{ nullptr };
 
+    /// @brief Descriptor pool set containers whose sets this payload's command buffers reference.
+    /// @details Released back to `descriptorPoolsManager` on completion (or destruction), so their pools are only
+    ///          recycled once the GPU no longer reads the sets.
+    gp::Vector<VulkanDescriptorPoolSetContainer*> descriptorPoolSetContainers{};
+
+    /// @brief Manager that takes `descriptorPoolSetContainers` back; required when the list is not empty.
+    VulkanDescriptorPoolsManager* descriptorPoolsManager{ nullptr };
+
+    /// @brief Reserved (sparse) buffer commits requested by transitions recorded into this payload.
+    /// @note Recorded for the UpdateReservedResources phase; sparse binding submission is not processed yet.
+    gp::Vector<VulkanCommitReservedResourceDesc> reservedResourceCommits{};
+
     /// @brief Invokes `preExecuteCallback` (if bound) with the target queue's native `VkQueue` handle.
     void preExecute() noexcept;
 
@@ -85,8 +99,11 @@ struct GP_RHI_VULKAN_API VulkanPayload final
     void merge(VulkanPayload& other) noexcept;
 
     /// @brief Marks this payload finished on the GPU: resets all command buffers, reads every query back, then signals
-    ///        every `syncPoints` entry.
+    ///        every `syncPoints` entry. Descriptor pool set containers go back to their manager last.
     void complete() noexcept;
+
+    /// @brief Returns every descriptor pool set container to `descriptorPoolsManager`.
+    void releaseDescriptorPoolSets() noexcept;
 };
 
 /// @brief Concrete `gp::rhi::command::IPlatformCommandList` carrying a batch of finalized `VulkanPayload` objects.

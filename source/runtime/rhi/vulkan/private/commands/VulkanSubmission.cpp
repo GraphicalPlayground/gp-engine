@@ -7,6 +7,7 @@
 #include "commands/VulkanCommandEnums.hpp"
 #include "commands/VulkanQueue.hpp"
 #include "CoreMinimal.hpp"
+#include "descriptors/VulkanDescriptorPoolsManager.hpp"
 #include "diagnostics/AssertionMacros.hpp"
 #include "queries/VulkanQueryRecording.hpp"
 #include "queries/VulkanQueryTypes.hpp"
@@ -24,10 +25,33 @@ VulkanPayload::~VulkanPayload() noexcept
         releaseVulkanPayloadQueries(*queryPoolManager, queryPools);
     }
 
+    releaseDescriptorPoolSets();
+
     if (fence != nullptr)
     {
         fence->getOwner().releaseFence(fence);
     }
+}
+
+void VulkanPayload::releaseDescriptorPoolSets() noexcept
+{
+    if (descriptorPoolSetContainers.isEmpty())
+    {
+        return;
+    }
+
+    GP_CHECKF(descriptorPoolsManager != nullptr, "A payload with descriptor pool sets needs a pools manager.");
+    if (descriptorPoolsManager != nullptr)
+    {
+        for (VulkanDescriptorPoolSetContainer* const container: descriptorPoolSetContainers)
+        {
+            if (container != nullptr)
+            {
+                descriptorPoolsManager->releasePoolSet(*container);
+            }
+        }
+    }
+    descriptorPoolSetContainers.clear();
 }
 
 void VulkanPayload::preExecute() noexcept
@@ -78,6 +102,29 @@ void VulkanPayload::merge(VulkanPayload& other) noexcept
         }
         queryPools.append(other.queryPools);
     }
+
+    if (!other.descriptorPoolSetContainers.isEmpty())
+    {
+        GP_CHECK(
+            (descriptorPoolsManager == nullptr) || (other.descriptorPoolsManager == nullptr) ||
+            (descriptorPoolsManager == other.descriptorPoolsManager)
+        );
+        if (descriptorPoolsManager == nullptr)
+        {
+            descriptorPoolsManager = other.descriptorPoolsManager;
+        }
+        for (VulkanDescriptorPoolSetContainer* const container: other.descriptorPoolSetContainers)
+        {
+            descriptorPoolSetContainers.pushBack(container);
+        }
+        other.descriptorPoolSetContainers.clear();
+    }
+
+    for (const VulkanCommitReservedResourceDesc& commit: other.reservedResourceCommits)
+    {
+        reservedResourceCommits.pushBack(commit);
+    }
+    other.reservedResourceCommits.clear();
 }
 
 void VulkanPayload::complete() noexcept
@@ -110,6 +157,8 @@ void VulkanPayload::complete() noexcept
         }
     }
     syncPoints.clear();
+
+    releaseDescriptorPoolSets();
 }
 
 VulkanPlatformCommandList::~VulkanPlatformCommandList() noexcept
