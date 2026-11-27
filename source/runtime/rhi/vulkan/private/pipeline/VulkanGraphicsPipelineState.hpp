@@ -19,6 +19,7 @@
 #include "shaders/ShaderForward.hpp"
 #include "shaders/ShaderTypes.hpp"
 #include "threading/sync/Mutex.hpp"
+#include "VulkanCommon.hpp"
 #include "VulkanForward.hpp"   // IWYU pragma: keep
 
 namespace gp::rhi::vulkan
@@ -67,6 +68,17 @@ public:
     /// @param[in] frequency Graphics stage (vertex, mesh, amplification, pixel or geometry).
     /// @return Shader, or null when the stage is unused or `frequency` is not a graphics stage.
     [[nodiscard]] shader::GraphicsShader* getShader(shader::ShaderFrequency frequency) const noexcept;
+
+    /// @brief Returns the backend shader of one pipeline stage.
+    /// @details The pending state reads the shader code headers through this accessor to find packed globals, global
+    ///          samplers and input attachments without going back through the RHI shader objects.
+    /// @param[in] stage Graphics pipeline stage.
+    /// @return Shader, or null when the stage is unused or out of range.
+    [[nodiscard]] VulkanShader* getVulkanShader(const shader_stage::Stage stage) const noexcept
+    {
+        const gp::USize index = static_cast<gp::USize>(stage);
+        return (index < static_cast<gp::USize>(kNumGraphicsPipelineStages)) ? m_shaders[index] : nullptr;
+    }
 
     /// @brief Returns the native description.
     /// @return Description the pipeline is (re)created from.

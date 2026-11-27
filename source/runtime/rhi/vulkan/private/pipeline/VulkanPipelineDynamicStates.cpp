@@ -33,6 +33,7 @@ VulkanDynamicStateList
     // Core: the state cache sets these per draw on every device.
     list.add(VK_DYNAMIC_STATE_STENCIL_REFERENCE);
     list.add(VK_DYNAMIC_STATE_DEPTH_BOUNDS);
+    list.add(VK_DYNAMIC_STATE_BLEND_CONSTANTS);
 
     if (features.hasExtendedDynamicState1)
     {
