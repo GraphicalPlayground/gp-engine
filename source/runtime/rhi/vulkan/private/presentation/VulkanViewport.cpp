@@ -521,20 +521,21 @@ bool VulkanViewport::recreateSwapChain(const bool recreateSurface) noexcept
     const bool created = createSwapChain(recreateSurface ? nullptr : &recreateInfo);
     ++m_recreateCount;
 
+    // Destroy any retired swapchain or un-adopted surface not already consumed during `createSwapChain`.
+    VulkanDevice& device = *m_services.resourceServices.device;
+    if (recreateInfo.swapChain != VK_NULL_HANDLE)
+    {
+        VulkanPlatform::destroySwapchainKHR(device.getHandle(), recreateInfo.swapChain, GP_VULKAN_CPU_ALLOCATOR);
+        recreateInfo.swapChain = VK_NULL_HANDLE;
+    }
+    if (recreateInfo.surface != VK_NULL_HANDLE)
+    {
+        VulkanPlatform::destroySurface(m_windowContext.getWindowId(), device.getInstanceHandle(), recreateInfo.surface);
+        recreateInfo.surface = VK_NULL_HANDLE;
+    }
+
     if (!created)
     {
-        // The retired handles were not consumed: destroy them.
-        VulkanDevice& device = *m_services.resourceServices.device;
-        if (recreateInfo.swapChain != VK_NULL_HANDLE)
-        {
-            VulkanPlatform::destroySwapchainKHR(device.getHandle(), recreateInfo.swapChain, GP_VULKAN_CPU_ALLOCATOR);
-        }
-        if (recreateInfo.surface != VK_NULL_HANDLE)
-        {
-            VulkanPlatform::destroySurface(
-                m_windowContext.getWindowId(), device.getInstanceHandle(), recreateInfo.surface
-            );
-        }
         return false;
     }
 
