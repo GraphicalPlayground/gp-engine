@@ -278,7 +278,7 @@ public:
         ++m_log.staticUBCalls;
     }
 
-    virtual void setUniformBlockOffset(resource::UniformBuffer*, gp::UInt32) noexcept override
+    virtual void setUniformBlockOffset(view::ShaderResourceView*, gp::UInt32) noexcept override
     {
         ++m_log.uniformOffsetCalls;
     }
@@ -558,7 +558,10 @@ public:
         ++beginViewportCalls;
     }
 
-    virtual void endDrawingViewport(presentation::Viewport*, bool, bool) noexcept override
+    using DynamicRHI::endDrawingViewport;
+
+    virtual void
+        endDrawingViewport(presentation::Viewport*, const presentation::PresentArgsWithStats&) noexcept override
     {
         ++endViewportCalls;
     }
@@ -682,7 +685,7 @@ public:
         ++graphicsLog.staticUBCalls;
     }
 
-    virtual void setUniformBlockOffset(resource::UniformBuffer*, gp::UInt32) noexcept override
+    virtual void setUniformBlockOffset(view::ShaderResourceView*, gp::UInt32) noexcept override
     {
         ++graphicsLog.uniformOffsetCalls;
     }
@@ -859,7 +862,7 @@ public:
         ++graphicsLog.depthBoundsCalls;
     }
 
-    virtual void setShadingRate(pipeline::VRSShadingRate, const pipeline::VRSRateCombiner (&)[2]) noexcept override
+    virtual void setShadingRate(pipeline::VRSShadingRate, pipeline::VRSRateCombiner) noexcept override
     {
         ++graphicsLog.shadingRateCalls;
     }
@@ -971,6 +974,9 @@ protected:
         resource::TextureRef texA = cmdList.createTexture(texDesc);
         resource::TextureRef texB = cmdList.createTexture(texDesc);
 
+        view::ShaderResourceViewRef srv = cmdList.createShaderResourceView(
+            bufA.get(), view::ViewDesc::createBufferSRV().setType(view::BufferViewType::Raw).asViewDesc()
+        );
         view::UnorderedAccessViewRef uav = cmdList.createUnorderedAccessView(
             bufA.get(), view::ViewDesc::createBufferUAV().setType(view::BufferViewType::Raw).asViewDesc()
         );
@@ -1023,7 +1029,7 @@ protected:
         EXPECT_FALSE(computeUnbinds.hasParameters());
 
         cmdList.setStaticUniformBuffer(0u, ub.get());
-        cmdList.setUniformBlockOffset(ub.get(), 16u);
+        cmdList.setUniformBlockOffset(srv.get(), 16u);
         cmdList.copyToStagingBuffer(bufA.get(), staging.get(), 0u, 64u);
         cmdList.writeGPUFence(fence.get());
         cmdList.postExternalCommandsReset();
@@ -1075,9 +1081,7 @@ protected:
         cmdList.setMultipleViewports(2u, multiVP);
         cmdList.setScissorRect(true, 0u, 0u, 64u, 64u);
         cmdList.setDepthBounds(0.1f, 0.9f);
-        const pipeline::VRSRateCombiner combiners[2] = { pipeline::VRSRateCombiner::Passthrough,
-                                                         pipeline::VRSRateCombiner::Override };
-        cmdList.setShadingRate(pipeline::VRSShadingRate::Rate2x2, combiners);
+        cmdList.setShadingRate(pipeline::VRSShadingRate::Rate2x2, pipeline::VRSRateCombiner::Override);
 
         cmdList.beginRenderQuery(query.get());
         cmdList.drawPrimitive(0u, 12u, 1u);
