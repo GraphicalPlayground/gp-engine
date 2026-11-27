@@ -65,12 +65,46 @@ void CommandListExecutor::submit(
 {
     FinalizeContextsArgs finalizeArgs{};
     bool executedImmediate = false;
+#if GP_WITH_RHI_BREADCRUMBS
+    diagnostics::BreadcrumbAllocatorArray submittedBreadcrumbAllocators{};
+    sync::PipelineArray<diagnostics::BreadcrumbRange> submittedBreadcrumbRanges{};
+    const auto captureBreadcrumbs = [&submittedBreadcrumbAllocators,
+                                     &submittedBreadcrumbRanges](CommandListBase& list) noexcept -> void
+    {
+        submittedBreadcrumbAllocators.appendUnique(list.m_breadcrumbAllocatorRefs);
+        const sync::PipelineStage kStages[sync::kPipelineStageCount] = { sync::PipelineStage::Graphics,
+                                                                         sync::PipelineStage::AsyncCompute };
+        for (const sync::PipelineStage stage: kStages)
+        {
+            const diagnostics::BreadcrumbRange range = list.exportBreadcrumbRange(stage);
+            if (range)
+            {
+                submittedBreadcrumbRanges[stage].insertAfter(range, submittedBreadcrumbRanges[stage].last);
+            }
+        }
+    };
+#endif
 
     if (m_commandListImmediate.hasCommands())
     {
+#if GP_WITH_RHI_BREADCRUMBS
+        captureBreadcrumbs(m_commandListImmediate);
+#endif
         executeList(m_commandListImmediate);
         executedImmediate = true;
     }
+#if GP_WITH_RHI_BREADCRUMBS
+    else if (m_commandListImmediate.m_activePipelines != sync::PipelineStage::None)
+    {
+        captureBreadcrumbs(m_commandListImmediate);
+        m_commandListImmediate.m_breadcrumbAllocatorRefs.clear();
+        m_commandListImmediate.m_breadcrumbAllocator.reset();
+        for (CommandListBase::GPUBreadcrumbPipelineState& gpuState: m_commandListImmediate.m_gpuBreadcrumbs)
+        {
+            gpuState.list = diagnostics::BreadcrumbList{};
+        }
+    }
+#endif
 
     // Gather active contexts from the immediate list in both queued and bypass modes.
     if (executedImmediate || m_commandListImmediate.m_activePipelines != sync::PipelineStage::None)
@@ -86,6 +120,15 @@ void CommandListExecutor::submit(
     {
         if (cmdList != nullptr && cmdList->hasCommands())
         {
+#if GP_WITH_RHI_BREADCRUMBS
+            if (cmdList->m_breadcrumbAllocator.isValid() && cmdList->m_unattachedSubTreeRoots.first != nullptr)
+            {
+                m_commandListImmediate.attachBreadcrumbSubTree(
+                    *cmdList->m_breadcrumbAllocator, cmdList->m_unattachedSubTreeRoots
+                );
+            }
+            captureBreadcrumbs(*cmdList);
+#endif
             executeList(*cmdList);
             for (IComputeContext* const ctx: cmdList->m_contexts)
             {
@@ -104,6 +147,28 @@ void CommandListExecutor::submit(
             rhi->finalizeContexts(std::move(finalizeArgs), finalizeResult);
             if (!finalizeResult.commandLists.isEmpty())
             {
+#if GP_WITH_RHI_BREADCRUMBS
+                for (IPlatformCommandList* const platformCmdList: finalizeResult.commandLists)
+                {
+                    if (platformCmdList != nullptr)
+                    {
+                        platformCmdList->breadcrumbAllocators.appendUnique(submittedBreadcrumbAllocators);
+                        if (!platformCmdList->breadcrumbRange &&
+                            submittedBreadcrumbRanges[sync::PipelineStage::Graphics])
+                        {
+                            platformCmdList->breadcrumbRange = submittedBreadcrumbRanges[sync::PipelineStage::Graphics];
+                        }
+                        else if (
+                            !platformCmdList->breadcrumbRange &&
+                            submittedBreadcrumbRanges[sync::PipelineStage::AsyncCompute]
+                        )
+                        {
+                            platformCmdList->breadcrumbRange =
+                                submittedBreadcrumbRanges[sync::PipelineStage::AsyncCompute];
+                        }
+                    }
+                }
+#endif
                 SubmitCommandListsArgs submitArgs{};
                 submitArgs.commandLists = std::move(finalizeResult.commandLists);
                 submitArgs.flags = submitFlags;
