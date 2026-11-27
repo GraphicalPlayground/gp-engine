@@ -28,6 +28,34 @@ gp::console::AutoConsoleVariable<gp::Int32> g_cvarNumFramesToWaitForDescriptorDe
     gp::console::ConsoleVarFlags::ReadOnly
 );
 
+gp::console::AutoConsoleVariable<gp::Int32> g_cvarDescriptorSetCache(
+    "r.Vulkan.DescriptorSetCache",
+    0,
+    "1 to deduplicate descriptor sets by content and reuse them across draws, 0 to rewrite per-frame sets (default).",
+    gp::console::ConsoleVarFlags::ReadOnly | gp::console::ConsoleVarFlags::RenderThreadSafe
+);
+
+gp::console::AutoConsoleVariable<gp::Int32> g_cvarDSetCacheTargetSetsPerPool(
+    "r.Vulkan.DSetCacheTargetSetsPerPool",
+    4096,
+    "Target number of descriptor set allocations per single cached pool.",
+    gp::console::ConsoleVarFlags::ReadOnly | gp::console::ConsoleVarFlags::RenderThreadSafe
+);
+
+gp::console::AutoConsoleVariable<gp::Int32> g_cvarDSetCacheMaxPoolLookups(
+    "r.Vulkan.DSetCacheMaxPoolLookups",
+    2,
+    "Maximum number of cached pools searched before a new descriptor set is created.",
+    gp::console::ConsoleVarFlags::ReadOnly | gp::console::ConsoleVarFlags::RenderThreadSafe
+);
+
+gp::console::AutoConsoleVariable<gp::Int32> g_cvarAlwaysWriteDS(
+    "r.Vulkan.AlwaysWriteDS",
+    0,
+    "1 to rewrite descriptor sets on every draw even when no binding changed (debugging aid).",
+    gp::console::ConsoleVarFlags::RenderThreadSafe
+);
+
 }   // namespace
 
 VulkanDynamicUniformBufferMode getVulkanDynamicUniformBufferMode() noexcept
@@ -48,6 +76,32 @@ gp::UInt32 getVulkanNumFramesToWaitForDescriptorDelete() noexcept
 {
     const gp::Int32 value = g_cvarNumFramesToWaitForDescriptorDelete.getValueOnAnyThread();
     return (value > 0) ? static_cast<gp::UInt32>(value) : 0u;
+}
+
+bool useVulkanDescriptorCache() noexcept
+{
+    return g_cvarDescriptorSetCache.getValueOnAnyThread() != 0;
+}
+
+gp::UInt32 getVulkanDescriptorSetCacheTargetSetsPerPool() noexcept
+{
+    const gp::Int32 value = g_cvarDSetCacheTargetSetsPerPool.getValueOnAnyThread();
+    return (value > 0) ? static_cast<gp::UInt32>(value) : 1u;
+}
+
+gp::UInt32 getVulkanDescriptorSetCacheMaxPoolLookups() noexcept
+{
+    const gp::Int32 value = g_cvarDSetCacheMaxPoolLookups.getValueOnAnyThread();
+    return (value > 0) ? static_cast<gp::UInt32>(value) : 1u;
+}
+
+bool shouldVulkanAlwaysWriteDescriptors() noexcept
+{
+#if GP_BUILD_DEBUG || GP_BUILD_DEVELOPMENT
+    return g_cvarAlwaysWriteDS.getValueOnAnyThread() != 0;
+#else
+    return false;
+#endif
 }
 
 }   // namespace gp::rhi::vulkan

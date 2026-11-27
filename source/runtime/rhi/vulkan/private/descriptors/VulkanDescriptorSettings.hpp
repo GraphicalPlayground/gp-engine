@@ -22,4 +22,26 @@ namespace gp::rhi::vulkan
 /// @return Frame count; 2 by default. Negative values read as 0.
 [[nodiscard]] GP_RHI_VULKAN_API gp::UInt32 getVulkanNumFramesToWaitForDescriptorDelete() noexcept;
 
+/// @brief Reports whether descriptor sets are deduplicated through `VulkanDescriptorSetCache`
+/// (`r.Vulkan.DescriptorSetCache`).
+/// @details With the cache, a descriptor set is keyed by the hash of everything written into it and reused across
+///          draws and frames; without it, sets are allocated per draw from the per-frame pool sets and rewritten.
+/// @return True when the cache is enabled; false by default.
+[[nodiscard]] GP_RHI_VULKAN_API bool useVulkanDescriptorCache() noexcept;
+
+/// @brief Returns the number of descriptor sets one cached pool should hold (`r.Vulkan.DSetCacheTargetSetsPerPool`).
+/// @return Target set count; 4096 by default, at least 1.
+[[nodiscard]] GP_RHI_VULKAN_API gp::UInt32 getVulkanDescriptorSetCacheTargetSetsPerPool() noexcept;
+
+/// @brief Returns how many cached pools are searched before a new set is created
+/// (`r.Vulkan.DSetCacheMaxPoolLookups`).
+/// @return Lookup count; 2 by default, at least 1.
+[[nodiscard]] GP_RHI_VULKAN_API gp::UInt32 getVulkanDescriptorSetCacheMaxPoolLookups() noexcept;
+
+/// @brief Reports whether descriptor sets are rewritten on every draw, even when nothing changed
+/// (`r.Vulkan.AlwaysWriteDS`).
+/// @details Debugging aid: it rules out stale descriptor state at the cost of one `vkUpdateDescriptorSets` per draw.
+/// @return True when forced; false by default.
+[[nodiscard]] GP_RHI_VULKAN_API bool shouldVulkanAlwaysWriteDescriptors() noexcept;
+
 }   // namespace gp::rhi::vulkan
