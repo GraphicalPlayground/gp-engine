@@ -96,6 +96,15 @@ public:
         outExtensions.pushBack(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
     }
 
+    /// @brief Creates a Win32 (`VK_KHR_win32_surface`) `VkSurfaceKHR` for `windowContext`.
+    /// @param[in] windowContext Native window context carrying the OS handles.
+    /// @param[in] instance Owning `VkInstance`.
+    /// @param[out] outSurface Receives the created surface, or `VK_NULL_HANDLE` on failure.
+    /// @return `VK_SUCCESS` on success, or the failing `VkResult`.
+    [[nodiscard]] static VkResult createSurface(
+        const VulkanGenericPlatformWindowContext& windowContext, VkInstance instance, VkSurfaceKHR* outSurface
+    ) noexcept;
+
     /// @brief Returns `VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR`, matching Win32 QPC ticks directly.
     /// @return Calibrated timestamp domain for Windows.
     [[nodiscard]] static constexpr VkTimeDomainKHR getTimeDomain() noexcept
