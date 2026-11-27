@@ -215,8 +215,6 @@ private:
 
 }   // namespace
 
-// --- Lifecycle -------------------------------------------------------------------------------------------------------
-
 VulkanCommandListContext::VulkanCommandListContext(const VulkanContextServices& services) noexcept
     : VulkanContextCommon(services, VulkanCommandBufferType::Primary)
     , m_barrierDevice(makeVulkanBarrierDeviceDesc(*services.device))
@@ -335,8 +333,6 @@ VulkanStageUniformBuffers&
     GP_CHECK(index < kNumGraphicsStages);
     return m_graphicsUniformBuffers[index];
 }
-
-// --- Shader parameters -----------------------------------------------------------------------------------------------
 
 void VulkanCommandListContext::bindUniformBuffer(
     VulkanCommonPipelineDescriptorState& descriptorState,
@@ -581,8 +577,6 @@ void VulkanCommandListContext::commitComputeResourceTables() noexcept
     ));
 }
 
-// --- Compute ---------------------------------------------------------------------------------------------------------
-
 void VulkanCommandListContext::setComputePipelineState(
     pipeline::ComputePipelineState* const computePipelineState
 ) noexcept
@@ -652,8 +646,6 @@ void VulkanCommandListContext::dispatchIndirectComputeShader(
     recordDispatchStats();
 }
 
-// --- Transitions -----------------------------------------------------------------------------------------------------
-
 void VulkanCommandListContext::beginTransitions(const gp::ConstVectorView<const sync::Transition*> transitions) noexcept
 {
     VulkanCommandBuffer* const commandBuffer = getCommandBuffer();
@@ -707,8 +699,6 @@ void VulkanCommandListContext::endTransitions(const gp::ConstVectorView<const sy
         }
     }
 }
-
-// --- Clears and copies -----------------------------------------------------------------------------------------------
 
 void VulkanCommandListContext::clearUAV(
     view::UnorderedAccessView* const unorderedAccessView,
@@ -893,8 +883,6 @@ void VulkanCommandListContext::copyBufferRegion(
     recordVulkanBufferCopy(*recorder, source.getHandle(), dest.getHandle(), region);
 }
 
-// --- Graphics state --------------------------------------------------------------------------------------------------
-
 void VulkanCommandListContext::setGraphicsPipelineState(
     pipeline::GraphicsPipelineState* const graphicsState, const gp::UInt32 stencilRef, const bool applyAdditionalState
 ) noexcept
@@ -1004,8 +992,6 @@ void VulkanCommandListContext::setDepthBounds(const gp::Float32 minDepth, const 
     m_gfxState->setDepthBounds(minDepth, maxDepth);
 }
 
-// --- Draws -----------------------------------------------------------------------------------------------------------
-
 void VulkanCommandListContext::drawPrimitive(
     const gp::UInt32 baseVertexIndex, const gp::UInt32 numPrimitives, const gp::UInt32 numInstances
 ) noexcept
@@ -1113,8 +1099,6 @@ void VulkanCommandListContext::drawIndexedPrimitiveIndirect(
     );
     recordDrawStats(1u, 0u);
 }
-
-// --- Render passes ---------------------------------------------------------------------------------------------------
 
 void VulkanCommandListContext::resetViewportToRenderArea(const VkRect2D& renderArea) noexcept
 {
@@ -1266,8 +1250,6 @@ void VulkanCommandListContext::nextSubpass() noexcept
     vkCmdNextSubpass(commandBuffer->getHandle(), VK_SUBPASS_CONTENTS_INLINE);
 }
 
-// --- Queries ---------------------------------------------------------------------------------------------------------
-
 void VulkanCommandListContext::beginRenderQuery(sync::RenderQuery* const renderQuery) noexcept
 {
     if (renderQuery == nullptr)
@@ -1307,8 +1289,6 @@ void VulkanCommandListContext::endRenderQuery(sync::RenderQuery* const renderQue
         m_renderPassInfo.multiViewCount
     );
 }
-
-// --- IVulkanPendingStateContext --------------------------------------------------------------------------------------
 
 bool VulkanCommandListContext::acquirePoolSetAndDescriptorsIfNeeded(
     const VulkanDescriptorSetsLayout& layout, const bool needDescriptors, VkDescriptorSet* const outSets

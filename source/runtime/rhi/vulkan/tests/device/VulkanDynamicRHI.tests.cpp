@@ -128,8 +128,6 @@ protected:
 
 }   // namespace
 
-// --- Uninitialized RHI -----------------------------------------------------------------------------------------------
-
 TEST(VulkanDynamicRHITest, UninitializedRHIReportsItsIdentity)
 {
     VulkanDynamicRHI rhi{};
@@ -253,8 +251,6 @@ TEST(VulkanDynamicRHITest, InterfaceLookupFindsOnlyAnInstalledVulkanRHI)
 
     setDynamicRHI(previous);
 }
-
-// --- Live RHI --------------------------------------------------------------------------------------------------------
 
 TEST_F(VulkanDynamicRHILiveTest, InitCreatesTheDeviceAndEveryService)
 {

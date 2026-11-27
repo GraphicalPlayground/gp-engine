@@ -79,8 +79,6 @@ public:
     VulkanCommandListContext& operator=(VulkanCommandListContext&&) = delete;
 
 public:
-    // --- Compute -----------------------------------------------------------------------------------------------------
-
     /// @copydoc command::IComputeContext::setComputePipelineState()
     /// @note Applies the current static uniform buffers to the compute shader.
     virtual void setComputePipelineState(pipeline::ComputePipelineState* computePipelineState) noexcept override;
@@ -150,8 +148,6 @@ public:
     /// @note GPU fences are written top of pipe by `writeVulkanGPUFenceTopOfPipe()`; reaching this is a misuse that
     ///       is reported and ignored.
     virtual void writeGPUFence(sync::GPUFence* fence) noexcept override;
-
-    // --- Graphics ----------------------------------------------------------------------------------------------------
 
     /// @copydoc command::ICommandContext::beginRenderPass()
     /// @note Uses dynamic rendering when the render pass manager does, `VkRenderPass` objects otherwise. Starts the
@@ -260,8 +256,6 @@ public:
         gp::UInt64 numBytes
     ) noexcept override;
 
-    // --- IVulkanPendingStateContext ----------------------------------------------------------------------------------
-
     /// @copydoc IVulkanPendingStateContext::acquirePoolSetAndDescriptorsIfNeeded()
     [[nodiscard]] virtual bool acquirePoolSetAndDescriptorsIfNeeded(
         const VulkanDescriptorSetsLayout& layout, bool needDescriptors, VkDescriptorSet* outSets
@@ -282,8 +276,6 @@ public:
     [[nodiscard]] virtual bool getInputAttachmentView(
         VulkanShaderAttachmentType type, VulkanTextureView& outView, VkImageLayout& outLayout
     ) const noexcept override;
-
-    // --- Context queries ---------------------------------------------------------------------------------------------
 
     /// @brief Sets the frame number descriptor pool sets are stamped with.
     /// @param[in] frame Frame counter of the RHI.
