@@ -185,6 +185,9 @@ struct UpdateTexture3DData;
 /// @brief Pairs a destination and source resource for atomic backing-memory replacement.
 struct ResourceReplaceInfo;
 
+/// @brief RAII helper batching multiple `ResourceReplaceInfo` records onto a command list.
+class ResourceReplaceBatcher;
+
 /// @brief Snapshot of dedicated, streaming, and pool GPU texture memory budgets.
 struct TextureMemoryStats;
 
@@ -226,6 +229,9 @@ class TextureReference;
 
 /// @brief Ray tracing acceleration structure resource.
 class RayTracingAccelerationStructure;
+
+/// @brief Bottom-level ray tracing geometry acceleration structure resource.
+class RayTracingGeometry;
 
 /// @brief Top-level ray tracing acceleration structure scene resource.
 class RayTracingScene;
