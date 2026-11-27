@@ -18,11 +18,13 @@
 #include "pipeline/DepthStencilStateDesc.hpp"
 #include "pipeline/GraphicsPipelineState.hpp"
 #include "pipeline/GraphicsPipelineStateDesc.hpp"
+#include "pipeline/IVulkanPipelineDeletionListener.hpp"
 #include "pipeline/PipelineEnums.hpp"
 #include "pipeline/RasterizerState.hpp"   // IWYU pragma: keep
 #include "pipeline/RasterizerStateDesc.hpp"
 #include "pipeline/VulkanComputePipelineState.hpp"
 #include "pipeline/VulkanGraphicsPipelineState.hpp"
+#include "pipeline/VulkanPipelineDeletionNotifier.hpp"
 #include "pipeline/VulkanPipelineSettings.hpp"
 #include "pipeline/VulkanWrappedPipelineStates.hpp"
 #include "shaders/ComputeShader.hpp"   // IWYU pragma: keep
@@ -152,6 +154,37 @@ public:
 
     /// @brief Manager under test.
     VulkanPipelineStateCacheManager* m_manager{ nullptr };
+};
+
+/// @brief Listener recording every pipeline deletion it is told about.
+class RecordingPipelineDeletionListener final : public IVulkanPipelineDeletionListener
+{
+public:
+    /// @copydoc IVulkanPipelineDeletionListener::onGraphicsPipelineDeleted()
+    virtual void onGraphicsPipelineDeleted(const VulkanGraphicsPipelineState& pipeline) noexcept override
+    {
+        ++numGraphicsDeleted;
+        lastGraphics = &pipeline;
+    }
+
+    /// @copydoc IVulkanPipelineDeletionListener::onComputePipelineDeleted()
+    virtual void onComputePipelineDeleted(const VulkanComputePipelineState& pipeline) noexcept override
+    {
+        ++numComputeDeleted;
+        lastCompute = &pipeline;
+    }
+
+    /// @brief Number of graphics deletions received.
+    gp::UInt32 numGraphicsDeleted{ 0u };
+
+    /// @brief Number of compute deletions received.
+    gp::UInt32 numComputeDeleted{ 0u };
+
+    /// @brief Last graphics pipeline reported.
+    const VulkanGraphicsPipelineState* lastGraphics{ nullptr };
+
+    /// @brief Last compute pipeline reported.
+    const VulkanComputePipelineState* lastCompute{ nullptr };
 };
 
 /// @brief Offline fixture: a device without native handles, so no native object is ever created.
@@ -447,6 +480,60 @@ TEST_F(VulkanPipelineStateCacheManagerLiveTest, LRUEvictsAndRecreatesPipelines)
 
     EXPECT_EQ(m_state.m_manager->getLRUCount(), 0u);
     EXPECT_EQ(m_state.m_manager->getNumGraphicsPipelines(), 0u);
+}
+
+TEST(VulkanPipelineDeletionNotifierTest, InstallingAListenerReturnsThePreviousOne)
+{
+    RecordingPipelineDeletionListener first{};
+    RecordingPipelineDeletionListener second{};
+    IVulkanPipelineDeletionListener* const original = setVulkanPipelineDeletionListener(&first);
+
+    EXPECT_EQ(getVulkanPipelineDeletionListener(), &first);
+    EXPECT_EQ(setVulkanPipelineDeletionListener(&second), &first);
+    EXPECT_EQ(getVulkanPipelineDeletionListener(), &second);
+    EXPECT_EQ(setVulkanPipelineDeletionListener(nullptr), &second);
+    EXPECT_EQ(getVulkanPipelineDeletionListener(), nullptr);
+
+    static_cast<void>(setVulkanPipelineDeletionListener(original));
+}
+
+TEST_F(VulkanPipelineStateCacheManagerTest, DestroyedComputePipelineNotifiesTheListener)
+{
+    RecordingPipelineDeletionListener listener{};
+    IVulkanPipelineDeletionListener* const original = setVulkanPipelineDeletionListener(&listener);
+
+    pipeline::ComputePipelineStateInitializer initializer{};
+    initializer.computeShader = m_state.m_computeShader.get();
+    const VulkanComputePipelineState* inner = nullptr;
+    {
+        const pipeline::ComputePipelineStateRef pipeline = m_state.m_manager->createComputePipelineState(initializer);
+        ASSERT_TRUE(pipeline.isValid());
+        inner = getInnerState(pipeline);
+        EXPECT_EQ(listener.numComputeDeleted, 0u);
+    }
+    resource::ResourceDeletionQueue::flushPendingDeletes(true);
+
+    EXPECT_EQ(listener.numComputeDeleted, 1u);
+    EXPECT_EQ(listener.lastCompute, inner);
+    EXPECT_EQ(listener.numGraphicsDeleted, 0u);
+
+    static_cast<void>(setVulkanPipelineDeletionListener(original));
+}
+
+TEST_F(VulkanPipelineStateCacheManagerTest, DeletionWithoutAListenerIsSilent)
+{
+    IVulkanPipelineDeletionListener* const original = setVulkanPipelineDeletionListener(nullptr);
+
+    pipeline::ComputePipelineStateInitializer initializer{};
+    initializer.computeShader = m_state.m_computeShader.get();
+    {
+        const pipeline::ComputePipelineStateRef pipeline = m_state.m_manager->createComputePipelineState(initializer);
+        ASSERT_TRUE(pipeline.isValid());
+    }
+    resource::ResourceDeletionQueue::flushPendingDeletes(true);
+
+    EXPECT_EQ(m_state.m_manager->getNumComputePipelines(), 0u);
+    static_cast<void>(setVulkanPipelineDeletionListener(original));
 }
 
 }   // namespace gp::rhi::vulkan::tests
