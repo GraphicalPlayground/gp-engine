@@ -12,17 +12,20 @@
 #include "console/ConsoleEnums.hpp"
 #include "console/ConsoleTypes.hpp"
 #include "console/IConsoleManager.hpp"
+#include "containers/arrays/Vector.hpp"      // IWYU pragma: keep
 #include "containers/strings/CharTraits.hpp"
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
+#include "core/ClearValueBinding.hpp"
 #include "core/ResourceDeletionQueue.hpp"
-#include "core/ResourceTypes.hpp"            // IWYU pragma: keep
-#include "CoreMinimal.hpp"                   // IWYU pragma: keep
+#include "core/ResourceTypes.hpp"   // IWYU pragma: keep
+#include "CoreMinimal.hpp"          // IWYU pragma: keep
 #include "device/DeviceEnums.hpp"
 #include "device/DynamicRHI.hpp"
 #include "device/RHIGlobals.hpp"
 #include "device/RHIModuleDiscovery.hpp"
 #include "Launch.hpp"
 #include "logging/LogMacros.hpp"
+#include "maths/base/Arithmetic.hpp"
 #include "miscellaneous/CommandLine.hpp"
 #include "modules/ModuleManager.hpp"
 #include "pipeline/BlendState.hpp"   // IWYU pragma: keep
@@ -41,15 +44,21 @@
 #include "presentation/Viewport.hpp"   // IWYU pragma: keep
 #include "profiling/Profiler.hpp"
 #include "profiling/ProfilingControl.hpp"
+#include "resources/Buffer.hpp"   // IWYU pragma: keep
+#include "resources/BufferCreateDesc.hpp"
 #include "resources/Texture.hpp"
+#include "resources/TextureCreateDesc.hpp"
+#include "resources/TextureEnums.hpp"
 #include "RHIPixelFormat.hpp"
-#include "shaders/PixelShader.hpp"    // IWYU pragma: keep
+#include "shaders/PixelShader.hpp"   // IWYU pragma: keep
 #include "shaders/ShaderForward.hpp"
+#include "shaders/ShaderParameters.hpp"
 #include "shaders/VertexShader.hpp"   // IWYU pragma: keep
 #include "sync/SyncEnums.hpp"
 #include "sync/TransitionDesc.hpp"
 #include "vfs/VirtualFileSystem.hpp"
 #include "window/NativeWindow.hpp"
+#include <cmath>
 #include <cstdio>
 
 namespace gp
@@ -67,7 +76,7 @@ GP_DEFINE_LOG_CATEGORY_INLINE(LogClipboard, gp::log::LogLevel::Info, gp::log::Lo
 /// @brief Toggles keyboard, mouse, and gamepad input polling diagnostics in `EditorApplication`.
 gp::console::AutoConsoleVariable<bool> g_cvarEditorLogInput(
     "editor.LogInput",
-    true,
+    false,
     "Logs keyboard, mouse, and gamepad input polling diagnostics from EditorApplication.",
     gp::console::ConsoleVarFlags::None
 );
@@ -80,156 +89,230 @@ gp::console::AutoConsoleVariable<gp::Int32> g_cvarEditorFpsLogInterval(
     gp::console::ConsoleVarFlags::None
 );
 
-// TEMP: Pre-compiled Vulkan RHI ('GPVS' v1) shader blobs for Hello Triangle verification.
-//
-// Vertex Shader GLSL 450 (entry point 'main_00000464_b487c9c6', inOutMask = 0x0):
-//   out gl_PerVertex { vec4 gl_Position; };
-//   layout(location = 0) out vec3 outColor;
-//   void main() {
-//       const vec2 kPos[3] = vec2[3](vec2(0.0, 0.5), vec2(0.5, -0.5), vec2(-0.5, -0.5));
-//       const vec3 kCol[3] = vec3[3](vec3(1.0, 0.2, 0.2), vec3(0.2, 1.0, 0.3), vec3(0.2, 0.4, 1.0));
-//       gl_Position = vec4(kPos[gl_VertexIndex], 0.0, 1.0);
-//       outColor = kCol[gl_VertexIndex];
-//   }
-//
-// Pixel Shader GLSL 450 (entry point 'main_000001c0_ffca31e2', inOutMask = 0x1):
-//   layout(location = 0) in vec3 inColor;
-//   layout(location = 0) out vec4 outFragColor;
-//   void main() { outFragColor = vec4(inColor, 1.0); }
-
-/// @brief 128-bit content hash for `kHelloTriangleVertexShaderBlob`.
-constexpr gp::rhi::shader::ShaderHash kHelloTriangleVertexShaderHash(0xD81AC0B022F6E85Cull, 0x60D6FBCD4166CA0Bull);
-
-/// @brief Pre-compiled serialized `'GPVS'` v1 Vulkan vertex shader blob generating a procedural RGB triangle.
-constexpr gp::UInt8 kHelloTriangleVertexShaderBlob[1263u] = {
-    0x47u, 0x50u, 0x56u, 0x53u, 0x01u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x5Cu, 0xE8u, 0xF6u, 0x22u, 0xB0u, 0xC0u, 0x1Au, 0xD8u,
-    0x0Bu, 0xCAu, 0x66u, 0x41u, 0xCDu, 0xFBu, 0xD6u, 0x60u, 0xC6u, 0xC9u, 0x87u, 0xB4u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x0Fu, 0x00u, 0x00u, 0x00u, 0x48u, 0x65u, 0x6Cu, 0x6Cu, 0x6Fu, 0x54u, 0x72u, 0x69u, 0x61u, 0x6Eu, 0x67u, 0x6Cu,
-    0x65u, 0x56u, 0x53u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x64u, 0x04u, 0x00u, 0x00u, 0x03u, 0x02u, 0x23u, 0x07u, 0x00u,
-    0x03u, 0x01u, 0x00u, 0x0Bu, 0x00u, 0x0Du, 0x00u, 0x37u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x11u,
-    0x00u, 0x02u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x0Bu, 0x00u, 0x06u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x47u,
-    0x4Cu, 0x53u, 0x4Cu, 0x2Eu, 0x73u, 0x74u, 0x64u, 0x2Eu, 0x34u, 0x35u, 0x30u, 0x00u, 0x00u, 0x00u, 0x00u, 0x0Eu,
-    0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x0Fu, 0x00u, 0x0Cu, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x04u, 0x00u, 0x00u, 0x00u, 0x6Du, 0x61u, 0x69u, 0x6Eu, 0x5Fu, 0x30u, 0x30u, 0x30u, 0x30u,
-    0x30u, 0x34u, 0x36u, 0x34u, 0x5Fu, 0x62u, 0x34u, 0x38u, 0x37u, 0x63u, 0x39u, 0x63u, 0x36u, 0x00u, 0x00u, 0x0Au,
-    0x00u, 0x00u, 0x00u, 0x19u, 0x00u, 0x00u, 0x00u, 0x28u, 0x00u, 0x00u, 0x00u, 0x47u, 0x00u, 0x03u, 0x00u, 0x08u,
-    0x00u, 0x00u, 0x00u, 0x02u, 0x00u, 0x00u, 0x00u, 0x48u, 0x00u, 0x05u, 0x00u, 0x08u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x0Bu, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x47u, 0x00u, 0x04u, 0x00u, 0x19u,
-    0x00u, 0x00u, 0x00u, 0x0Bu, 0x00u, 0x00u, 0x00u, 0x2Au, 0x00u, 0x00u, 0x00u, 0x47u, 0x00u, 0x04u, 0x00u, 0x28u,
-    0x00u, 0x00u, 0x00u, 0x1Eu, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x13u, 0x00u, 0x02u, 0x00u, 0x02u,
-    0x00u, 0x00u, 0x00u, 0x21u, 0x00u, 0x03u, 0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0x02u, 0x00u, 0x00u, 0x00u, 0x16u,
-    0x00u, 0x03u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x00u, 0x00u, 0x17u, 0x00u, 0x04u, 0x00u, 0x07u,
-    0x00u, 0x00u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x04u, 0x00u, 0x00u, 0x00u, 0x1Eu, 0x00u, 0x03u, 0x00u, 0x08u,
-    0x00u, 0x00u, 0x00u, 0x07u, 0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x04u, 0x00u, 0x09u, 0x00u, 0x00u, 0x00u, 0x03u,
-    0x00u, 0x00u, 0x00u, 0x08u, 0x00u, 0x00u, 0x00u, 0x3Bu, 0x00u, 0x04u, 0x00u, 0x09u, 0x00u, 0x00u, 0x00u, 0x0Au,
-    0x00u, 0x00u, 0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0x15u, 0x00u, 0x04u, 0x00u, 0x0Bu, 0x00u, 0x00u, 0x00u, 0x20u,
-    0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x04u, 0x00u, 0x0Bu, 0x00u, 0x00u, 0x00u, 0x0Cu,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x17u, 0x00u, 0x04u, 0x00u, 0x0Du, 0x00u, 0x00u, 0x00u, 0x06u,
-    0x00u, 0x00u, 0x00u, 0x02u, 0x00u, 0x00u, 0x00u, 0x15u, 0x00u, 0x04u, 0x00u, 0x0Eu, 0x00u, 0x00u, 0x00u, 0x20u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x04u, 0x00u, 0x0Eu, 0x00u, 0x00u, 0x00u, 0x0Fu,
-    0x00u, 0x00u, 0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0x1Cu, 0x00u, 0x04u, 0x00u, 0x10u, 0x00u, 0x00u, 0x00u, 0x0Du,
-    0x00u, 0x00u, 0x00u, 0x0Fu, 0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x04u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x11u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x04u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x12u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x3Fu, 0x2Cu, 0x00u, 0x05u, 0x00u, 0x0Du, 0x00u, 0x00u, 0x00u, 0x13u,
-    0x00u, 0x00u, 0x00u, 0x11u, 0x00u, 0x00u, 0x00u, 0x12u, 0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x04u, 0x00u, 0x06u,
-    0x00u, 0x00u, 0x00u, 0x14u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0xBFu, 0x2Cu, 0x00u, 0x05u, 0x00u, 0x0Du,
-    0x00u, 0x00u, 0x00u, 0x15u, 0x00u, 0x00u, 0x00u, 0x12u, 0x00u, 0x00u, 0x00u, 0x14u, 0x00u, 0x00u, 0x00u, 0x2Cu,
-    0x00u, 0x05u, 0x00u, 0x0Du, 0x00u, 0x00u, 0x00u, 0x16u, 0x00u, 0x00u, 0x00u, 0x14u, 0x00u, 0x00u, 0x00u, 0x14u,
-    0x00u, 0x00u, 0x00u, 0x2Cu, 0x00u, 0x06u, 0x00u, 0x10u, 0x00u, 0x00u, 0x00u, 0x17u, 0x00u, 0x00u, 0x00u, 0x13u,
-    0x00u, 0x00u, 0x00u, 0x15u, 0x00u, 0x00u, 0x00u, 0x16u, 0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x04u, 0x00u, 0x18u,
-    0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x0Bu, 0x00u, 0x00u, 0x00u, 0x3Bu, 0x00u, 0x04u, 0x00u, 0x18u,
-    0x00u, 0x00u, 0x00u, 0x19u, 0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x04u, 0x00u, 0x1Bu,
-    0x00u, 0x00u, 0x00u, 0x07u, 0x00u, 0x00u, 0x00u, 0x10u, 0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x04u, 0x00u, 0x1Du,
-    0x00u, 0x00u, 0x00u, 0x07u, 0x00u, 0x00u, 0x00u, 0x0Du, 0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x04u, 0x00u, 0x06u,
-    0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x80u, 0x3Fu, 0x20u, 0x00u, 0x04u, 0x00u, 0x24u,
-    0x00u, 0x00u, 0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0x07u, 0x00u, 0x00u, 0x00u, 0x17u, 0x00u, 0x04u, 0x00u, 0x26u,
-    0x00u, 0x00u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x04u, 0x00u, 0x27u,
-    0x00u, 0x00u, 0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0x26u, 0x00u, 0x00u, 0x00u, 0x3Bu, 0x00u, 0x04u, 0x00u, 0x27u,
-    0x00u, 0x00u, 0x00u, 0x28u, 0x00u, 0x00u, 0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0x1Cu, 0x00u, 0x04u, 0x00u, 0x29u,
-    0x00u, 0x00u, 0x00u, 0x26u, 0x00u, 0x00u, 0x00u, 0x0Fu, 0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x04u, 0x00u, 0x06u,
-    0x00u, 0x00u, 0x00u, 0x2Au, 0x00u, 0x00u, 0x00u, 0xCDu, 0xCCu, 0x4Cu, 0x3Eu, 0x2Cu, 0x00u, 0x06u, 0x00u, 0x26u,
-    0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x00u, 0x00u, 0x2Au, 0x00u, 0x00u, 0x00u, 0x2Au,
-    0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x04u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x2Cu, 0x00u, 0x00u, 0x00u, 0x9Au,
-    0x99u, 0x99u, 0x3Eu, 0x2Cu, 0x00u, 0x06u, 0x00u, 0x26u, 0x00u, 0x00u, 0x00u, 0x2Du, 0x00u, 0x00u, 0x00u, 0x2Au,
-    0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x00u, 0x00u, 0x2Cu, 0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x04u, 0x00u, 0x06u,
-    0x00u, 0x00u, 0x00u, 0x2Eu, 0x00u, 0x00u, 0x00u, 0xCDu, 0xCCu, 0xCCu, 0x3Eu, 0x2Cu, 0x00u, 0x06u, 0x00u, 0x26u,
-    0x00u, 0x00u, 0x00u, 0x2Fu, 0x00u, 0x00u, 0x00u, 0x2Au, 0x00u, 0x00u, 0x00u, 0x2Eu, 0x00u, 0x00u, 0x00u, 0x20u,
-    0x00u, 0x00u, 0x00u, 0x2Cu, 0x00u, 0x06u, 0x00u, 0x29u, 0x00u, 0x00u, 0x00u, 0x30u, 0x00u, 0x00u, 0x00u, 0x2Bu,
-    0x00u, 0x00u, 0x00u, 0x2Du, 0x00u, 0x00u, 0x00u, 0x2Fu, 0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x04u, 0x00u, 0x32u,
-    0x00u, 0x00u, 0x00u, 0x07u, 0x00u, 0x00u, 0x00u, 0x29u, 0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x04u, 0x00u, 0x34u,
-    0x00u, 0x00u, 0x00u, 0x07u, 0x00u, 0x00u, 0x00u, 0x26u, 0x00u, 0x00u, 0x00u, 0x36u, 0x00u, 0x05u, 0x00u, 0x02u,
-    0x00u, 0x00u, 0x00u, 0x04u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0xF8u,
-    0x00u, 0x02u, 0x00u, 0x05u, 0x00u, 0x00u, 0x00u, 0x3Bu, 0x00u, 0x04u, 0x00u, 0x1Bu, 0x00u, 0x00u, 0x00u, 0x1Cu,
-    0x00u, 0x00u, 0x00u, 0x07u, 0x00u, 0x00u, 0x00u, 0x3Bu, 0x00u, 0x04u, 0x00u, 0x32u, 0x00u, 0x00u, 0x00u, 0x33u,
-    0x00u, 0x00u, 0x00u, 0x07u, 0x00u, 0x00u, 0x00u, 0x3Du, 0x00u, 0x04u, 0x00u, 0x0Bu, 0x00u, 0x00u, 0x00u, 0x1Au,
-    0x00u, 0x00u, 0x00u, 0x19u, 0x00u, 0x00u, 0x00u, 0x3Eu, 0x00u, 0x03u, 0x00u, 0x1Cu, 0x00u, 0x00u, 0x00u, 0x17u,
-    0x00u, 0x00u, 0x00u, 0x41u, 0x00u, 0x05u, 0x00u, 0x1Du, 0x00u, 0x00u, 0x00u, 0x1Eu, 0x00u, 0x00u, 0x00u, 0x1Cu,
-    0x00u, 0x00u, 0x00u, 0x1Au, 0x00u, 0x00u, 0x00u, 0x3Du, 0x00u, 0x04u, 0x00u, 0x0Du, 0x00u, 0x00u, 0x00u, 0x1Fu,
-    0x00u, 0x00u, 0x00u, 0x1Eu, 0x00u, 0x00u, 0x00u, 0x51u, 0x00u, 0x05u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x21u,
-    0x00u, 0x00u, 0x00u, 0x1Fu, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x51u, 0x00u, 0x05u, 0x00u, 0x06u,
-    0x00u, 0x00u, 0x00u, 0x22u, 0x00u, 0x00u, 0x00u, 0x1Fu, 0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x50u,
-    0x00u, 0x07u, 0x00u, 0x07u, 0x00u, 0x00u, 0x00u, 0x23u, 0x00u, 0x00u, 0x00u, 0x21u, 0x00u, 0x00u, 0x00u, 0x22u,
-    0x00u, 0x00u, 0x00u, 0x11u, 0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x00u, 0x00u, 0x41u, 0x00u, 0x05u, 0x00u, 0x24u,
-    0x00u, 0x00u, 0x00u, 0x25u, 0x00u, 0x00u, 0x00u, 0x0Au, 0x00u, 0x00u, 0x00u, 0x0Cu, 0x00u, 0x00u, 0x00u, 0x3Eu,
-    0x00u, 0x03u, 0x00u, 0x25u, 0x00u, 0x00u, 0x00u, 0x23u, 0x00u, 0x00u, 0x00u, 0x3Eu, 0x00u, 0x03u, 0x00u, 0x33u,
-    0x00u, 0x00u, 0x00u, 0x30u, 0x00u, 0x00u, 0x00u, 0x41u, 0x00u, 0x05u, 0x00u, 0x34u, 0x00u, 0x00u, 0x00u, 0x35u,
-    0x00u, 0x00u, 0x00u, 0x33u, 0x00u, 0x00u, 0x00u, 0x1Au, 0x00u, 0x00u, 0x00u, 0x3Du, 0x00u, 0x04u, 0x00u, 0x26u,
-    0x00u, 0x00u, 0x00u, 0x36u, 0x00u, 0x00u, 0x00u, 0x35u, 0x00u, 0x00u, 0x00u, 0x3Eu, 0x00u, 0x03u, 0x00u, 0x28u,
-    0x00u, 0x00u, 0x00u, 0x36u, 0x00u, 0x00u, 0x00u, 0xFDu, 0x00u, 0x01u, 0x00u, 0x38u, 0x00u, 0x01u, 0x00u
+/// @brief Interleaved vertex record consumed by `Cube.vert` (`location 0`: position, `location 1`: color).
+struct CubeVertex
+{
+    gp::Float32 position[3];
+    gp::Float32 color[3];
 };
 
-/// @brief 128-bit content hash for `kHelloTrianglePixelShaderBlob`.
-constexpr gp::rhi::shader::ShaderHash kHelloTrianglePixelShaderHash(0xAFFBA83EA3812F9Dull, 0x0D10BC44A9E43B0Full);
+/// @brief 24-vertex unit cube (4 distinct vertices per face for crisp per-face colors).
+constexpr CubeVertex kCubeVertices[24u] = {
+    // +Z Front face (coral red)
+    {  { -0.5f, -0.5f, 0.5f }, { 0.95f, 0.25f, 0.25f } },
+    {   { 0.5f, -0.5f, 0.5f }, { 0.95f, 0.35f, 0.25f } },
+    {    { 0.5f, 0.5f, 0.5f }, { 1.00f, 0.45f, 0.35f } },
+    {   { -0.5f, 0.5f, 0.5f }, { 0.90f, 0.25f, 0.35f } },
 
-/// @brief Pre-compiled serialized `'GPVS'` v1 Vulkan pixel shader blob outputting interpolated vertex RGB color.
-constexpr gp::UInt8 kHelloTrianglePixelShaderBlob[587u] = {
-    0x47u, 0x50u, 0x56u, 0x53u, 0x01u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x9Du, 0x2Fu, 0x81u, 0xA3u, 0x3Eu, 0xA8u, 0xFBu, 0xAFu,
-    0x0Fu, 0x3Bu, 0xE4u, 0xA9u, 0x44u, 0xBCu, 0x10u, 0x0Du, 0xE2u, 0x31u, 0xCAu, 0xFFu, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x0Fu, 0x00u, 0x00u, 0x00u, 0x48u, 0x65u, 0x6Cu, 0x6Cu, 0x6Fu, 0x54u, 0x72u, 0x69u, 0x61u, 0x6Eu, 0x67u, 0x6Cu,
-    0x65u, 0x50u, 0x53u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0xC0u, 0x01u, 0x00u, 0x00u, 0x03u, 0x02u, 0x23u, 0x07u, 0x00u,
-    0x03u, 0x01u, 0x00u, 0x0Bu, 0x00u, 0x0Du, 0x00u, 0x13u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x11u,
-    0x00u, 0x02u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x0Bu, 0x00u, 0x06u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x47u,
-    0x4Cu, 0x53u, 0x4Cu, 0x2Eu, 0x73u, 0x74u, 0x64u, 0x2Eu, 0x34u, 0x35u, 0x30u, 0x00u, 0x00u, 0x00u, 0x00u, 0x0Eu,
-    0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x0Fu, 0x00u, 0x0Bu, 0x00u, 0x04u,
-    0x00u, 0x00u, 0x00u, 0x04u, 0x00u, 0x00u, 0x00u, 0x6Du, 0x61u, 0x69u, 0x6Eu, 0x5Fu, 0x30u, 0x30u, 0x30u, 0x30u,
-    0x30u, 0x31u, 0x63u, 0x30u, 0x5Fu, 0x66u, 0x66u, 0x63u, 0x61u, 0x33u, 0x31u, 0x65u, 0x32u, 0x00u, 0x00u, 0x09u,
-    0x00u, 0x00u, 0x00u, 0x0Cu, 0x00u, 0x00u, 0x00u, 0x10u, 0x00u, 0x03u, 0x00u, 0x04u, 0x00u, 0x00u, 0x00u, 0x07u,
-    0x00u, 0x00u, 0x00u, 0x47u, 0x00u, 0x04u, 0x00u, 0x09u, 0x00u, 0x00u, 0x00u, 0x1Eu, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x47u, 0x00u, 0x04u, 0x00u, 0x0Cu, 0x00u, 0x00u, 0x00u, 0x1Eu, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x13u, 0x00u, 0x02u, 0x00u, 0x02u, 0x00u, 0x00u, 0x00u, 0x21u, 0x00u, 0x03u, 0x00u, 0x03u,
-    0x00u, 0x00u, 0x00u, 0x02u, 0x00u, 0x00u, 0x00u, 0x16u, 0x00u, 0x03u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x20u,
-    0x00u, 0x00u, 0x00u, 0x17u, 0x00u, 0x04u, 0x00u, 0x07u, 0x00u, 0x00u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x04u,
-    0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x04u, 0x00u, 0x08u, 0x00u, 0x00u, 0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0x07u,
-    0x00u, 0x00u, 0x00u, 0x3Bu, 0x00u, 0x04u, 0x00u, 0x08u, 0x00u, 0x00u, 0x00u, 0x09u, 0x00u, 0x00u, 0x00u, 0x03u,
-    0x00u, 0x00u, 0x00u, 0x17u, 0x00u, 0x04u, 0x00u, 0x0Au, 0x00u, 0x00u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x03u,
-    0x00u, 0x00u, 0x00u, 0x20u, 0x00u, 0x04u, 0x00u, 0x0Bu, 0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x0Au,
-    0x00u, 0x00u, 0x00u, 0x3Bu, 0x00u, 0x04u, 0x00u, 0x0Bu, 0x00u, 0x00u, 0x00u, 0x0Cu, 0x00u, 0x00u, 0x00u, 0x01u,
-    0x00u, 0x00u, 0x00u, 0x2Bu, 0x00u, 0x04u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x0Eu, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x80u, 0x3Fu, 0x36u, 0x00u, 0x05u, 0x00u, 0x02u, 0x00u, 0x00u, 0x00u, 0x04u, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x03u, 0x00u, 0x00u, 0x00u, 0xF8u, 0x00u, 0x02u, 0x00u, 0x05u, 0x00u, 0x00u, 0x00u, 0x3Du,
-    0x00u, 0x04u, 0x00u, 0x0Au, 0x00u, 0x00u, 0x00u, 0x0Du, 0x00u, 0x00u, 0x00u, 0x0Cu, 0x00u, 0x00u, 0x00u, 0x51u,
-    0x00u, 0x05u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x0Fu, 0x00u, 0x00u, 0x00u, 0x0Du, 0x00u, 0x00u, 0x00u, 0x00u,
-    0x00u, 0x00u, 0x00u, 0x51u, 0x00u, 0x05u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x10u, 0x00u, 0x00u, 0x00u, 0x0Du,
-    0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x51u, 0x00u, 0x05u, 0x00u, 0x06u, 0x00u, 0x00u, 0x00u, 0x11u,
-    0x00u, 0x00u, 0x00u, 0x0Du, 0x00u, 0x00u, 0x00u, 0x02u, 0x00u, 0x00u, 0x00u, 0x50u, 0x00u, 0x07u, 0x00u, 0x07u,
-    0x00u, 0x00u, 0x00u, 0x12u, 0x00u, 0x00u, 0x00u, 0x0Fu, 0x00u, 0x00u, 0x00u, 0x10u, 0x00u, 0x00u, 0x00u, 0x11u,
-    0x00u, 0x00u, 0x00u, 0x0Eu, 0x00u, 0x00u, 0x00u, 0x3Eu, 0x00u, 0x03u, 0x00u, 0x09u, 0x00u, 0x00u, 0x00u, 0x12u,
-    0x00u, 0x00u, 0x00u, 0xFDu, 0x00u, 0x01u, 0x00u, 0x38u, 0x00u, 0x01u, 0x00u
+    // -Z Back face (teal)
+    {  { 0.5f, -0.5f, -0.5f }, { 0.15f, 0.75f, 0.80f } },
+    { { -0.5f, -0.5f, -0.5f }, { 0.15f, 0.80f, 0.70f } },
+    {  { -0.5f, 0.5f, -0.5f }, { 0.25f, 0.90f, 0.85f } },
+    {   { 0.5f, 0.5f, -0.5f }, { 0.20f, 0.70f, 0.85f } },
+
+    // +X Right face (emerald green)
+    {   { 0.5f, -0.5f, 0.5f }, { 0.20f, 0.85f, 0.35f } },
+    {  { 0.5f, -0.5f, -0.5f }, { 0.20f, 0.75f, 0.30f } },
+    {   { 0.5f, 0.5f, -0.5f }, { 0.35f, 0.95f, 0.45f } },
+    {    { 0.5f, 0.5f, 0.5f }, { 0.30f, 0.90f, 0.40f } },
+
+    // -X Left face (amber orange)
+    { { -0.5f, -0.5f, -0.5f }, { 0.95f, 0.60f, 0.15f } },
+    {  { -0.5f, -0.5f, 0.5f }, { 0.95f, 0.55f, 0.15f } },
+    {   { -0.5f, 0.5f, 0.5f }, { 1.00f, 0.75f, 0.25f } },
+    {  { -0.5f, 0.5f, -0.5f }, { 0.90f, 0.65f, 0.20f } },
+
+    // +Y Top face (royal blue)
+    {   { -0.5f, 0.5f, 0.5f }, { 0.25f, 0.45f, 0.95f } },
+    {    { 0.5f, 0.5f, 0.5f }, { 0.30f, 0.50f, 1.00f } },
+    {   { 0.5f, 0.5f, -0.5f }, { 0.40f, 0.65f, 1.00f } },
+    {  { -0.5f, 0.5f, -0.5f }, { 0.25f, 0.55f, 0.90f } },
+
+    // -Y Bottom face (violet)
+    { { -0.5f, -0.5f, -0.5f }, { 0.65f, 0.25f, 0.85f } },
+    {  { 0.5f, -0.5f, -0.5f }, { 0.70f, 0.30f, 0.90f } },
+    {   { 0.5f, -0.5f, 0.5f }, { 0.75f, 0.40f, 0.95f } },
+    {  { -0.5f, -0.5f, 0.5f }, { 0.60f, 0.25f, 0.80f } }
 };
+
+/// @brief 36 triangle-list indices (12 triangles across 6 cube faces).
+constexpr gp::UInt16 kCubeIndices[36u] = {
+    0u,  1u,  2u,  0u,  2u,  3u,    // +Z
+    4u,  5u,  6u,  4u,  6u,  7u,    // -Z
+    8u,  9u,  10u, 8u,  10u, 11u,   // +X
+    12u, 13u, 14u, 12u, 14u, 15u,   // -X
+    16u, 17u, 18u, 16u, 18u, 19u,   // +Y
+    20u, 21u, 22u, 20u, 22u, 23u    // -Y
+};
+
+/// @brief Column-major 4x4 matrix matching GLSL `mat4` memory layout.
+struct OrbitMat4
+{
+    gp::Float32 m[16]{};
+};
+
+/// @brief Multiplies two column-major 4x4 matrices (`lhs * rhs`).
+/// @param[in] lhs Left-hand matrix.
+/// @param[in] rhs Right-hand matrix.
+/// @return Product matrix `lhs * rhs`.
+[[nodiscard]] OrbitMat4 multiplyMat4(const OrbitMat4& lhs, const OrbitMat4& rhs) noexcept
+{
+    OrbitMat4 out{};
+    for (gp::UInt32 col = 0u; col < 4u; ++col)
+    {
+        for (gp::UInt32 row = 0u; row < 4u; ++row)
+        {
+            gp::Float32 sum = 0.0f;
+            for (gp::UInt32 k = 0u; k < 4u; ++k)
+            {
+                sum += lhs.m[k * 4u + row] * rhs.m[col * 4u + k];
+            }
+            out.m[col * 4u + row] = sum;
+        }
+    }
+    return out;
+}
+
+/// @brief Builds a right-handed perspective projection matrix mapping depth to `[0, 1]`.
+/// @param[in] fovYRadians Vertical field of view in radians.
+/// @param[in] aspectRatio Viewport width divided by height.
+/// @param[in] nearPlane Near clip plane distance (`> 0`).
+/// @param[in] farPlane Far clip plane distance (`> nearPlane`).
+/// @return Column-major perspective projection matrix.
+[[nodiscard]] OrbitMat4 makePerspectiveZeroToOne(
+    const gp::Float32 fovYRadians,
+    const gp::Float32 aspectRatio,
+    const gp::Float32 nearPlane,
+    const gp::Float32 farPlane
+) noexcept
+{
+    const gp::Float32 f = 1.0f / std::tan(fovYRadians * 0.5f);
+    const gp::Float32 invDepthRange = 1.0f / (nearPlane - farPlane);
+
+    OrbitMat4 out{};
+    out.m[0] = f / aspectRatio;
+    out.m[5] = f;
+    out.m[10] = farPlane * invDepthRange;
+    out.m[11] = -1.0f;
+    out.m[14] = (nearPlane * farPlane) * invDepthRange;
+    return out;
+}
+
+/// @brief Builds a right-handed look-at view matrix toward `(0, 0, 0)` with `+Y` up.
+/// @param[in] eyeX Camera X position.
+/// @param[in] eyeY Camera Y position.
+/// @param[in] eyeZ Camera Z position.
+/// @return Column-major view matrix.
+[[nodiscard]] OrbitMat4
+    makeLookAtOrigin(const gp::Float32 eyeX, const gp::Float32 eyeY, const gp::Float32 eyeZ) noexcept
+{
+    const gp::Float32 fLen = gp::math::sqrt(eyeX * eyeX + eyeY * eyeY + eyeZ * eyeZ);
+    const gp::Float32 fx = -eyeX / fLen;
+    const gp::Float32 fy = -eyeY / fLen;
+    const gp::Float32 fz = -eyeZ / fLen;
+
+    const gp::Float32 sxRaw = -fz;
+    const gp::Float32 szRaw = fx;
+    const gp::Float32 sLen = gp::math::sqrt(sxRaw * sxRaw + szRaw * szRaw);
+    const gp::Float32 sx = (sLen > 1e-6f) ? (sxRaw / sLen) : 1.0f;
+    const gp::Float32 sy = 0.0f;
+    const gp::Float32 sz = (sLen > 1e-6f) ? (szRaw / sLen) : 0.0f;
+
+    const gp::Float32 ux = sy * fz - sz * fy;
+    const gp::Float32 uy = sz * fx - sx * fz;
+    const gp::Float32 uz = sx * fy - sy * fx;
+
+    OrbitMat4 out{};
+    out.m[0] = sx;
+    out.m[4] = sy;
+    out.m[8] = sz;
+    out.m[12] = -(sx * eyeX + sy * eyeY + sz * eyeZ);
+
+    out.m[1] = ux;
+    out.m[5] = uy;
+    out.m[9] = uz;
+    out.m[13] = -(ux * eyeX + uy * eyeY + uz * eyeZ);
+
+    out.m[2] = -fx;
+    out.m[6] = -fy;
+    out.m[10] = -fz;
+    out.m[14] = (fx * eyeX + fy * eyeY + fz * eyeZ);
+
+    out.m[15] = 1.0f;
+    return out;
+}
+
+/// @brief Computes the combined model-view-projection matrix for the orbit camera around the cube.
+/// @param[in] yawRadians Horizontal orbit azimuth in radians.
+/// @param[in] pitchRadians Vertical orbit elevation in radians.
+/// @param[in] distance Orbit radius from the cube center.
+/// @param[in] aspectRatio Viewport width divided by height.
+/// @return Column-major `projection * view` matrix (model is identity).
+[[nodiscard]] OrbitMat4 buildCubeMvpMatrix(
+    const gp::Float32 yawRadians,
+    const gp::Float32 pitchRadians,
+    const gp::Float32 distance,
+    const gp::Float32 aspectRatio
+) noexcept
+{
+    const gp::Float32 cosPitch = std::cos(pitchRadians);
+    const gp::Float32 eyeX = distance * cosPitch * std::sin(yawRadians);
+    const gp::Float32 eyeY = distance * std::sin(pitchRadians);
+    const gp::Float32 eyeZ = distance * cosPitch * std::cos(yawRadians);
+
+    const OrbitMat4 view = makeLookAtOrigin(eyeX, eyeY, eyeZ);
+    const OrbitMat4 proj = makePerspectiveZeroToOne(0.78539816f, aspectRatio, 0.1f, 100.0f);
+    return multiplyMat4(proj, view);
+}
+
+/// @brief Computes a deterministic 128-bit FNV-1a content hash over a `'GPVS'` shader payload.
+/// @param[in] bytes Loaded bytecode buffer.
+/// @return 128-bit `ShaderHash` key for RHI shader creation.
+[[nodiscard]] gp::rhi::shader::ShaderHash computeShaderHash(const gp::ConstVectorView<gp::UInt8> bytes) noexcept
+{
+    gp::UInt64 low = 14695981039346656037ull;
+    gp::UInt64 high = 1099511628211ull;
+    for (gp::USize i = 0u; i < bytes.size(); ++i)
+    {
+        const gp::UInt64 b = bytes[i];
+        low ^= b;
+        low *= 1099511628211ull;
+        high ^= (b + static_cast<gp::UInt64>(i));
+        high *= 14695981039346656037ull;
+    }
+    return gp::rhi::shader::ShaderHash(low, high);
+}
+
+/// @brief Loads a pre-compiled `'GPVS'` shader file via VFS and computes its 128-bit hash.
+/// @param[in] virtualUri Virtual URI (e.g. `"game://shaders/Cube.vert.gpvs"`).
+/// @param[out] outBytes Loaded raw `'GPVS'` bytecode bytes.
+/// @param[out] outHash Computed 128-bit shader hash.
+/// @return True if the file was read and non-empty.
+[[nodiscard]] bool loadShaderBytecode(
+    const gp::StringView virtualUri, gp::Vector<gp::UInt8>& outBytes, gp::rhi::shader::ShaderHash& outHash
+) noexcept
+{
+    const gp::Expected<gp::USize, gp::vfs::VfsError> readResult =
+        gp::vfs::VirtualFileSystem::readAllBytes(virtualUri, outBytes);
+    if (!readResult.hasValue() || outBytes.isEmpty())
+    {
+        GP_LOG_ERROR(
+            LogEditor,
+            "Failed to load pre-compiled shader '{}' (VfsError={}).",
+            virtualUri,
+            static_cast<gp::Int32>(readResult.error())
+        );
+        return false;
+    }
+
+    outHash = computeShaderHash(gp::ConstVectorView<gp::UInt8>(outBytes.data(), outBytes.size()));
+    GP_LOG_INFO(LogEditor, "Loaded pre-compiled shader '{}' ({} bytes).", virtualUri, outBytes.size());
+    return true;
+}
 
 }   // namespace
 
-/// @brief Sandbox editor host application driving HAL subsystems and a temporary Vulkan Hello Triangle renderer.
+/// @brief Sandbox editor host application driving HAL subsystems and a temporary Vulkan 3D Cube renderer.
 class EditorApplication : public Application
 {
 public:
@@ -325,14 +408,14 @@ protected:
             GP_LOG_INFO(LogEditor, "File log sink active: {}", getFileSink().getFilePath());
         }
 
-        if (!initializeHelloTriangleRenderer())
+        if (!initializeCubeRenderer())
         {
             return false;
         }
 
         GP_LOG_INFO(
             LogEditor,
-            "Controls: 'ESC'/'Q' exit | 'F1'/'`' temporary stdin console shell | WASD, mouse, gamepad test input."
+            "Controls: Arrow keys / Mouse left-drag orbit cube | Mouse wheel zoom | 'ESC'/'Q' exit | 'F1'/'`' console shell."
         );
         return true;
     }
@@ -386,9 +469,47 @@ protected:
             );
         }
 
-        // Query Mouse State (Position and relative motion deltas)
-        const auto mousePos = input.getMouse().getPosition();
-        const auto mouseDelta = input.getMouse().getDelta();
+        // Orbit camera controls (Arrow keys + Mouse left-drag + Mouse wheel zoom)
+        const gp::Float32 dt = timeStats.unscaledDeltaTime;
+        constexpr gp::Float32 kKeyOrbitSpeed = 1.8f;
+        constexpr gp::Float32 kMouseSensitivity = 0.008f;
+        constexpr gp::Float32 kWheelZoomSpeed = 0.35f;
+        constexpr gp::Float32 kMaxPitchRadians = 1.48f;
+
+        if (input.isScancodeDown(gp::hal::input::Scancode::Left))
+        {
+            m_cameraYaw -= kKeyOrbitSpeed * dt;
+        }
+        if (input.isScancodeDown(gp::hal::input::Scancode::Right))
+        {
+            m_cameraYaw += kKeyOrbitSpeed * dt;
+        }
+        if (input.isScancodeDown(gp::hal::input::Scancode::Up))
+        {
+            m_cameraPitch += kKeyOrbitSpeed * dt;
+        }
+        if (input.isScancodeDown(gp::hal::input::Scancode::Down))
+        {
+            m_cameraPitch -= kKeyOrbitSpeed * dt;
+        }
+
+        const gp::hal::input::IMouse& mouse = input.getMouse();
+        const gp::hal::input::Stick2D mousePos = mouse.getPosition();
+        const gp::hal::input::Stick2D mouseDelta = mouse.getDelta();
+        if (mouse.isButtonDown(gp::hal::input::MouseButton::Left))
+        {
+            m_cameraYaw -= mouseDelta.x * kMouseSensitivity;
+            m_cameraPitch += mouseDelta.y * kMouseSensitivity;
+        }
+
+        const gp::hal::input::Stick2D wheelDelta = mouse.getWheelDelta();
+        if (wheelDelta.y != 0.0f)
+        {
+            m_cameraDistance = gp::math::clamp(m_cameraDistance - wheelDelta.y * kWheelZoomSpeed, 1.5f, 12.0f);
+        }
+
+        m_cameraPitch = gp::math::clamp(m_cameraPitch, -kMaxPitchRadians, kMaxPitchRadians);
+
         if (logInputDiagnostics && mouseDelta.lengthSquared() > 0.0f)
         {
             GP_LOG_INFO(
@@ -517,7 +638,7 @@ protected:
     }
 
     /// @copydoc gp::Application::onRender()
-    /// @note Records a single-pass Vulkan Hello Triangle frame onto `CommandListImmediate` and presents the swapchain.
+    /// @note Records a single-pass Vulkan 3D Cube frame onto `CommandListImmediate` and presents the swapchain.
     virtual void onRender(const gp::time::FrameTimeStats& timeStats) noexcept override
     {
         GP_PROFILE_SCOPE_NC_ACTIVE(
@@ -525,7 +646,7 @@ protected:
         );
 
         [[maybe_unused]] const gp::Float32 alpha = timeStats.fixedStep.interpolationAlpha;
-        renderHelloTriangle();
+        renderCube();
     }
 
     /// @copydoc gp::Application::onShutdown()
@@ -537,21 +658,49 @@ protected:
             "EditorApplication::OnShutdown", GP_U32_COLOR_RED, profiling::ProfilingControl::isZonesEnabled()
         );
 
-        shutdownHelloTriangleRenderer();
+        shutdownCubeRenderer();
         GP_LOG_INFO(LogEditor, "Application shut down cleanly.");
     }
 
 private:
-    /// @brief Creates the temporary Vulkan swapchain viewport, fixed-function states, and pre-compiled shaders.
-    /// @details Gracefully skips setup and returns `true` when running headless (`usingNullRHI`) or when a non-Vulkan
-    ///          backend was forced via command-line flags, because the embedded `'GPVS'` shader blobs are Vulkan-only.
+    /// @brief Creates or recreates the depth buffer matching `width x height` and transitions it to `DSVWrite`.
+    /// @param[in] width Target width in pixels.
+    /// @param[in] height Target height in pixels.
+    /// @return True if `m_depthTexture` is valid after the call.
+    [[nodiscard]] bool createOrResizeDepthTexture(const gp::UInt32 width, const gp::UInt32 height) noexcept
+    {
+        const gp::rhi::resource::TextureCreateDesc depthDesc =
+            gp::rhi::resource::TextureCreateDesc::create2D(
+                "CubeDepthBuffer",
+                static_cast<gp::Int32>(width),
+                static_cast<gp::Int32>(height),
+                gp::rhi::PixelFormat::D32_Float
+            )
+                .setFlags(gp::rhi::resource::TextureCreateFlags::DepthStencilTargetable)
+                .setClearValue(gp::rhi::resource::ClearValueBinding::kDepthOne);
+
+        gp::rhi::command::CommandListImmediate& cmdList = gp::rhi::command::getImmediateCommandList();
+        m_depthTexture = cmdList.createTexture(depthDesc);
+        if (!m_depthTexture.isValid())
+        {
+            GP_LOG_ERROR(LogEditor, "Failed to create Cube depth buffer ({}x{}).", width, height);
+            return false;
+        }
+
+        cmdList.immediateFlush(gp::rhi::command::ImmediateFlushType::FlushRHIThread);
+        return true;
+    }
+
+    /// @brief Creates the Vulkan swapchain viewport, cube geometry buffers, depth buffer, states, and file-loaded
+    /// shaders.
+    /// @details Loads `game://shaders/Cube.vert.gpvs` and `game://shaders/Cube.frag.gpvs` via `VirtualFileSystem`.
     /// @note Must be executed on the main OS / render thread during `onInitialize()`.
     /// @return True if initialization succeeded or was intentionally skipped; false if Vulkan resource creation failed.
-    [[nodiscard]] bool initializeHelloTriangleRenderer() noexcept
+    [[nodiscard]] bool initializeCubeRenderer() noexcept
     {
         if (!isRHIInitialized() || gp::rhi::getRHIGlobals().usingNullRHI)
         {
-            GP_LOG_INFO(LogEditor, "Hello Triangle renderer skipped (RHI inactive or running NullRHI).");
+            GP_LOG_INFO(LogEditor, "Cube renderer skipped (RHI inactive or running NullRHI).");
             return true;
         }
 
@@ -560,7 +709,7 @@ private:
         {
             GP_LOG_WARNING(
                 LogEditor,
-                "Hello Triangle renderer skipped: embedded 'GPVS' shader blobs require Vulkan RHI (active='{}').",
+                "Cube renderer skipped: pre-compiled 'GPVS' shader files require Vulkan RHI (active='{}').",
                 (activeRHI != nullptr) ? activeRHI->getName() : gp::StringView("None")
             );
             return true;
@@ -569,7 +718,7 @@ private:
         gp::hal::IWindow* const mainWindow = getMainWindow();
         if (mainWindow == nullptr)
         {
-            GP_LOG_INFO(LogEditor, "Hello Triangle renderer skipped (no main window).");
+            GP_LOG_INFO(LogEditor, "Cube renderer skipped (no main window).");
             return true;
         }
 
@@ -598,17 +747,49 @@ private:
             gp::rhi::command::ImmediateFlushType::FlushRHIThread
         );
 
-        const gp::rhi::pipeline::VertexDeclarationElementList emptyElements{};
-        m_vertexDeclaration = activeRHI->createVertexDeclaration(emptyElements);
+        gp::Vector<gp::UInt8> vertexShaderBytes{};
+        gp::Vector<gp::UInt8> pixelShaderBytes{};
+        gp::rhi::shader::ShaderHash vertexShaderHash{};
+        gp::rhi::shader::ShaderHash pixelShaderHash{};
+        if (!loadShaderBytecode("game://shaders/Cube.vert.gpvs", vertexShaderBytes, vertexShaderHash) ||
+            !loadShaderBytecode("game://shaders/Cube.frag.gpvs", pixelShaderBytes, pixelShaderHash))
+        {
+            shutdownCubeRenderer();
+            return false;
+        }
 
         m_vertexShader = activeRHI->createVertexShader(
-            gp::ConstVectorView<gp::UInt8>(kHelloTriangleVertexShaderBlob, sizeof(kHelloTriangleVertexShaderBlob)),
-            kHelloTriangleVertexShaderHash
+            gp::ConstVectorView<gp::UInt8>(vertexShaderBytes.data(), vertexShaderBytes.size()), vertexShaderHash
         );
         m_pixelShader = activeRHI->createPixelShader(
-            gp::ConstVectorView<gp::UInt8>(kHelloTrianglePixelShaderBlob, sizeof(kHelloTrianglePixelShaderBlob)),
-            kHelloTrianglePixelShaderHash
+            gp::ConstVectorView<gp::UInt8>(pixelShaderBytes.data(), pixelShaderBytes.size()), pixelShaderHash
         );
+
+        gp::rhi::pipeline::VertexDeclarationElementList vertexElements{};
+        const gp::UInt16 vertexStride = static_cast<gp::UInt16>(sizeof(CubeVertex));
+        vertexElements.pushBack(
+            gp::rhi::pipeline::VertexElement(0u, 0u, gp::rhi::pipeline::VertexElementType::Float3, 0u, vertexStride)
+        );
+        vertexElements.pushBack(
+            gp::rhi::pipeline::VertexElement(0u, 12u, gp::rhi::pipeline::VertexElementType::Float3, 1u, vertexStride)
+        );
+        m_vertexDeclaration = activeRHI->createVertexDeclaration(vertexElements);
+
+        gp::rhi::resource::ResourceArrayUploadView vertexUpload(
+            kCubeVertices, static_cast<gp::UInt32>(sizeof(kCubeVertices))
+        );
+        gp::rhi::resource::BufferCreateDesc vertexBufferDesc =
+            gp::rhi::resource::BufferCreateDesc::createVertex<CubeVertex>("CubeVertexBuffer", 24u);
+        vertexBufferDesc.setInitActionResourceArray(&vertexUpload);
+        m_vertexBuffer = gp::rhi::command::getImmediateCommandList().createBuffer(vertexBufferDesc);
+
+        gp::rhi::resource::ResourceArrayUploadView indexUpload(
+            kCubeIndices, static_cast<gp::UInt32>(sizeof(kCubeIndices))
+        );
+        gp::rhi::resource::BufferCreateDesc indexBufferDesc =
+            gp::rhi::resource::BufferCreateDesc::createIndex<gp::UInt16>("CubeIndexBuffer", 36u);
+        indexBufferDesc.setInitActionResourceArray(&indexUpload);
+        m_indexBuffer = gp::rhi::command::getImmediateCommandList().createBuffer(indexBufferDesc);
 
         m_blendState = activeRHI->createBlendState(gp::rhi::pipeline::BlendStateDesc{});
         m_rasterizerState = activeRHI->createRasterizerState(
@@ -617,35 +798,34 @@ private:
             )
         );
         m_depthStencilState = activeRHI->createDepthStencilState(
-            gp::rhi::pipeline::DepthStencilStateDesc(false, gp::rhi::pipeline::CompareFunction::Always)
+            gp::rhi::pipeline::DepthStencilStateDesc(true, gp::rhi::pipeline::CompareFunction::LessEqual)
         );
 
-        if (!m_vertexDeclaration.isValid() || !m_vertexShader.isValid() || !m_pixelShader.isValid() ||
-            !m_blendState.isValid() || !m_rasterizerState.isValid() || !m_depthStencilState.isValid())
+        if (!createOrResizeDepthTexture(initialWidth, initialHeight) || !m_vertexDeclaration.isValid() ||
+            !m_vertexShader.isValid() || !m_pixelShader.isValid() || !m_vertexBuffer.isValid() ||
+            !m_indexBuffer.isValid() || !m_blendState.isValid() || !m_rasterizerState.isValid() ||
+            !m_depthStencilState.isValid())
         {
-            GP_LOG_ERROR(LogEditor, "Failed to create Vulkan Hello Triangle pipeline state prerequisites.");
-            shutdownHelloTriangleRenderer();
+            GP_LOG_ERROR(LogEditor, "Failed to create Vulkan Cube pipeline or geometry resources.");
+            shutdownCubeRenderer();
             return false;
         }
 
         m_viewportWidth = initialWidth;
         m_viewportHeight = initialHeight;
         m_viewportFullscreen = initialFullscreen;
-        m_helloTriangleReady = true;
+        m_cubeRendererReady = true;
 
         GP_LOG_INFO(
-            LogEditor, "[TEMP] Hello Triangle Vulkan renderer initialized ({}x{}).", m_viewportWidth, m_viewportHeight
+            LogEditor, "[TEMP] 3D Cube Vulkan renderer initialized ({}x{}).", m_viewportWidth, m_viewportHeight
         );
         return true;
     }
 
-    /// @brief Records and presents one frame of the procedural RGB Hello Triangle through `CommandListImmediate`.
-    /// @details Synchronizes swapchain extent against OS framebuffer resizes, transitions the swapchain backbuffer
-    ///          `Present -> RTV -> Present` outside the render pass, lazily compiles/caches the `GraphicsPipelineState`
-    ///          against the active backbuffer format, and issues a 3-vertex `TriangleList` draw call.
-    void renderHelloTriangle() noexcept
+    /// @brief Records and presents one frame of the orbit-camera 3D Cube through `CommandListImmediate`.
+    void renderCube() noexcept
     {
-        if (!m_helloTriangleReady || !m_viewport.isValid() || !isRHIInitialized())
+        if (!m_cubeRendererReady || !m_viewport.isValid() || !isRHIInitialized())
         {
             return;
         }
@@ -678,6 +858,12 @@ private:
             m_viewportWidth = fbSize.width;
             m_viewportHeight = fbSize.height;
             m_viewportFullscreen = isFullscreen;
+            (void)createOrResizeDepthTexture(m_viewportWidth, m_viewportHeight);
+        }
+
+        if (!m_depthTexture.isValid())
+        {
+            return;
         }
 
         gp::rhi::command::CommandListImmediate& cmdList = gp::rhi::command::getImmediateCommandList();
@@ -694,9 +880,12 @@ private:
             );
 
             const gp::rhi::command::RenderPassInfo renderPassInfo(
-                backBuffer.get(), gp::rhi::command::RenderTargetActions::ClearStore
+                backBuffer.get(),
+                gp::rhi::command::RenderTargetActions::ClearStore,
+                m_depthTexture.get(),
+                gp::rhi::command::DepthStencilTargetActions::ClearDepthNotStencilDontStore
             );
-            cmdList.beginRenderPass(renderPassInfo, "HelloTriangle");
+            cmdList.beginRenderPass(renderPassInfo, "OrbitCube");
 
             const gp::rhi::PixelFormat backBufferFormat = backBuffer->getFormat();
             if (!m_pipelineState.isValid() || m_cachedBackBufferFormat != backBufferFormat)
@@ -719,12 +908,22 @@ private:
             {
                 const gp::UInt32 rtWidth = (backBuffer->getSizeX() > 0u) ? backBuffer->getSizeX() : m_viewportWidth;
                 const gp::UInt32 rtHeight = (backBuffer->getSizeY() > 0u) ? backBuffer->getSizeY() : m_viewportHeight;
+                const gp::Float32 aspectRatio =
+                    static_cast<gp::Float32>(rtWidth) / static_cast<gp::Float32>((rtHeight > 0u) ? rtHeight : 1u);
+
+                const OrbitMat4 mvp = buildCubeMvpMatrix(m_cameraYaw, m_cameraPitch, m_cameraDistance, aspectRatio);
 
                 cmdList.setGraphicsPipelineState(m_pipelineState.get(), 0u, true);
                 cmdList.setViewport(
                     0.0f, 0.0f, 0.0f, static_cast<gp::Float32>(rtWidth), static_cast<gp::Float32>(rtHeight), 1.0f
                 );
-                cmdList.drawPrimitive(0u, 1u, 1u);
+
+                gp::rhi::shader::BatchedShaderParameters& shaderParams = cmdList.getScratchShaderParameters();
+                shaderParams.setShaderParameter(0u, 0u, static_cast<gp::UInt32>(sizeof(OrbitMat4)), mvp.m);
+                cmdList.setBatchedShaderParameters(m_vertexShader.get(), shaderParams);
+
+                cmdList.setStreamSource(0u, m_vertexBuffer.get(), 0u);
+                cmdList.drawIndexedPrimitive(m_indexBuffer.get(), 0, 0u, 24u, 0u, 12u, 1u);
             }
 
             cmdList.endRenderPass();
@@ -740,8 +939,8 @@ private:
         cmdList.endFrame();
     }
 
-    /// @brief Waits for GPU idle, releases all temporary Hello Triangle RHI handles, and flushes deletion queues.
-    void shutdownHelloTriangleRenderer() noexcept
+    /// @brief Waits for GPU idle, releases all temporary Cube RHI handles, and flushes deletion queues.
+    void shutdownCubeRenderer() noexcept
     {
         if (isRHIInitialized())
         {
@@ -749,6 +948,9 @@ private:
         }
 
         m_pipelineState.reset();
+        m_vertexBuffer.reset();
+        m_indexBuffer.reset();
+        m_depthTexture.reset();
         m_vertexDeclaration.reset();
         m_vertexShader.reset();
         m_pixelShader.reset();
@@ -761,7 +963,7 @@ private:
         m_viewportWidth = 0u;
         m_viewportHeight = 0u;
         m_viewportFullscreen = false;
-        m_helloTriangleReady = false;
+        m_cubeRendererReady = false;
 
         if (isRHIInitialized())
         {
@@ -853,13 +1055,22 @@ private:
     /// @brief Swapchain presentation viewport bound to the primary editor window.
     gp::rhi::presentation::ViewportRef m_viewport{};
 
-    /// @brief Empty vertex input declaration (positions and colors are generated via `gl_VertexIndex`).
+    /// @brief Interleaved vertex input declaration for `CubeVertex` (`position` + `color`).
     gp::rhi::pipeline::VertexDeclarationRef m_vertexDeclaration{};
 
-    /// @brief Compiled Vulkan vertex shader stage for the Hello Triangle pass.
+    /// @brief Vertex buffer holding the 24 cube vertices.
+    gp::rhi::resource::BufferRef m_vertexBuffer{};
+
+    /// @brief Index buffer holding the 36 cube triangle-list indices.
+    gp::rhi::resource::BufferRef m_indexBuffer{};
+
+    /// @brief Depth buffer texture (`D32_Float`) sized to the swapchain.
+    gp::rhi::resource::TextureRef m_depthTexture{};
+
+    /// @brief Compiled Vulkan vertex shader stage loaded from `game://shaders/Cube.vert.gpvs`.
     gp::rhi::shader::VertexShaderRef m_vertexShader{};
 
-    /// @brief Compiled Vulkan pixel shader stage for the Hello Triangle pass.
+    /// @brief Compiled Vulkan pixel shader stage loaded from `game://shaders/Cube.frag.gpvs`.
     gp::rhi::shader::PixelShaderRef m_pixelShader{};
 
     /// @brief Immutable opaque color blend state.
@@ -868,7 +1079,7 @@ private:
     /// @brief Immutable solid, unculled rasterizer state.
     gp::rhi::pipeline::RasterizerStateRef m_rasterizerState{};
 
-    /// @brief Immutable depth-disabled depth-stencil state.
+    /// @brief Immutable depth-testing (`LessEqual`) depth-stencil state.
     gp::rhi::pipeline::DepthStencilStateRef m_depthStencilState{};
 
     /// @brief Cached monolithic graphics pipeline state matching `m_cachedBackBufferFormat`.
@@ -886,8 +1097,17 @@ private:
     /// @brief Last applied swapchain fullscreen state.
     bool m_viewportFullscreen{ false };
 
-    /// @brief True once all Hello Triangle RHI resources have been created and validated.
-    bool m_helloTriangleReady{ false };
+    /// @brief True once all Cube RHI resources have been created and validated.
+    bool m_cubeRendererReady{ false };
+
+    /// @brief Orbit camera horizontal azimuth in radians.
+    gp::Float32 m_cameraYaw{ 0.65f };
+
+    /// @brief Orbit camera vertical elevation in radians.
+    gp::Float32 m_cameraPitch{ 0.45f };
+
+    /// @brief Orbit camera distance from the cube origin.
+    gp::Float32 m_cameraDistance{ 3.0f };
 };
 
 /// @brief Engine launch entry point invoked by `GP_IMPLEMENT_APPLICATION_ENTRY`.
@@ -899,7 +1119,7 @@ int launch([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     gp::ApplicationDesc desc{};
     desc.backend.appName = "GP Engine Sandbox";
     desc.backend.appVersion = "1.0.0";
-    desc.mainWindow.title = "Graphical Playground - Vulkan Hello Triangle";
+    desc.mainWindow.title = "Graphical Playground - Vulkan Orbit Cube";
     desc.mainWindow.size = gp::hal::Extent2D(1280u, 720u);
     desc.targetForegroundFps = 120.0;
     desc.targetBackgroundFps = 30.0;
