@@ -26,5 +26,8 @@ class VulkanTypedDescriptorPoolSet;
 class VulkanDescriptorPoolSetContainer;
 class VulkanDescriptorPoolsManager;
 class VulkanDescriptorSetWriter;
+class VulkanGenericDescriptorPool;
+class VulkanCachedDescriptorPool;
+class VulkanDescriptorSetCache;
 
 }   // namespace gp::rhi::vulkan
