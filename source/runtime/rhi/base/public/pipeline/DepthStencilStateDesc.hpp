@@ -4,11 +4,14 @@
 
 #pragma once
 
+#include "containers/strings/String.hpp"     // IWYU pragma: keep
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "hashing/HashCombine.hpp"
 #include "hashing/HashOf.hpp"
 #include "pipeline/PipelineEnums.hpp"
 #include "pipeline/PipelineForward.hpp"   // IWYU pragma: keep
+#include "RHIBase.hpp"
 #include <type_traits>
 
 namespace gp::rhi::pipeline
@@ -154,6 +157,15 @@ public:
         hasher.append(stencilReadMask);
         hasher.append(stencilWriteMask);
     }
+
+    /// @brief Serializes all 14 depth and stencil fields into a `<...>` token sequence.
+    /// @return Serialized string representation.
+    [[nodiscard]] GP_RHI_API gp::String toString() const noexcept;
+
+    /// @brief Parses a 14-token `<...>` or whitespace-delimited sequence into this depth-stencil descriptor.
+    /// @param[in] src Serialized depth-stencil descriptor text.
+    /// @return True when all fields parsed within valid bounds; false if `src` is malformed (leaves `*this` unchanged).
+    GP_RHI_API bool fromString(gp::StringView src) noexcept;
 };
 
 static_assert(
