@@ -14,6 +14,7 @@
 #include "RHIBase.hpp"
 #include "sync/SyncEnums.hpp"
 #include "sync/TransitionDesc.hpp"
+#include "validation/ValidationForward.hpp"
 
 namespace gp::rhi::resource
 {
@@ -61,6 +62,15 @@ public:
     {
         return m_name;
     }
+
+#if GP_ENABLE_RHI_VALIDATION
+    /// @brief Returns the barrier/subresource validation tracker attached to this resource (`nullptr` if none).
+    /// @return Pointer to `validation::Resource`, or `nullptr`.
+    [[nodiscard]] virtual validation::Resource* getValidationTrackerResource() noexcept
+    {
+        return nullptr;
+    }
+#endif
 
 protected:
     /// @brief Constructs a viewable resource with its runtime type tag, initial access state, and debug metadata.
