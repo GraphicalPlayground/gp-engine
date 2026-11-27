@@ -5,15 +5,43 @@
 #pragma once
 
 #include "CoreMinimal.hpp"
+#include "diagnostics/AssertionMacros.hpp"
 #include "hashing/HashOf.hpp"
 #include "maths/base/Bitwise.hpp"
+#include "RHIBase.hpp"
 
 namespace gp::rhi
 {
 
+/// @brief Maximum number of explicit physical GPU adapters supported simultaneously for multi-GPU rendering.
+inline constexpr gp::UInt32 kMaxNumGPUs = 8u;
+
+/// @brief Number of explicit physical GPUs active for rendering (`1` on single-GPU configurations).
+GP_RHI_API extern gp::UInt32 g_numExplicitGPUsForRendering;
+
+/// @brief Virtual multi-GPU count (`> 0` simulates multiple logical GPUs on physical GPU node `0`).
+GP_RHI_API extern gp::UInt32 g_virtualMGPU;
+
+/// @brief Returns the active number of explicit GPUs participating in rendering.
+/// @return Active GPU count in `[1, 32]`.
+[[nodiscard]] GP_RHI_API gp::UInt32 getNumExplicitGPUsForRendering() noexcept;
+
+/// @brief Configures the active number of explicit GPUs participating in rendering (clamped to `[1, 32]`).
+/// @param[in] numGPUs Requested GPU count.
+GP_RHI_API void setNumExplicitGPUsForRendering(gp::UInt32 numGPUs) noexcept;
+
+/// @brief Returns the configured virtual multi-GPU simulation count (`0` when disabled).
+/// @return Virtual GPU count (`0` for native hardware node routing).
+[[nodiscard]] GP_RHI_API gp::UInt32 getVirtualMGPU() noexcept;
+
+/// @brief Enables or disables virtual multi-GPU simulation on GPU node `0`.
+/// @param[in] virtualGPUCount Virtual GPU count (`0` disables virtual multi-GPU).
+GP_RHI_API void setVirtualMGPU(gp::UInt32 virtualGPUCount) noexcept;
+
 /// @brief Compact 32-bit bitmask identifying one or more GPU adapter nodes in multi-GPU configurations.
-/// @details Defaults to `gpu0()` on single-GPU systems. Supports bitwise combination, single-index queries, range-based
-///          for-loop iteration over active node indices, and deterministic hashing in a 4-byte footprint.
+/// @details Defaults to `gpu0()` on single-GPU systems while dynamically spanning `[0, g_numExplicitGPUsForRendering)`
+///          via `GPUMask::all()` at runtime. Supports bitwise combination, single-index queries, range-based for-loop
+///          iteration over active node indices, and deterministic hashing in a 4-byte footprint.
 struct GPUMask
 {
     /// @brief Maximum number of GPU nodes addressable by a 32-bit mask.
@@ -124,11 +152,37 @@ struct GPUMask
         return GPUMask(1u);
     }
 
-    /// @brief Returns a mask selecting all active GPU nodes (bit 0 in single-GPU mode).
+    /// @brief Builds a mask covering `numGPUs` contiguous nodes `[0, numGPUs)`.
+    /// @param[in] numGPUs Number of active GPUs (`0` clamps to `gpu0()`, `>= 32` sets all 32 bits).
+    /// @return Contiguous active-GPU mask.
+    [[nodiscard]] static constexpr GPUMask fromCount(const gp::UInt32 numGPUs) noexcept
+    {
+        if (numGPUs <= 1u)
+        {
+            return gpu0();
+        }
+        if (numGPUs >= kMaxGPUs)
+        {
+            return GPUMask(0xFFFFFFFFu);
+        }
+        return GPUMask((1u << numGPUs) - 1u);
+    }
+
+    /// @brief Returns a mask selecting all active GPU nodes (`[0, g_numExplicitGPUsForRendering)` at runtime).
+    /// @details Evaluates to `gpu0()` in compile-time constant expressions before any RHI device can exist, and reads
+    ///          `g_numExplicitGPUsForRendering` at runtime so multi-GPU configurations automatically include every
+    ///          active rendering node.
     /// @return Active-GPU mask.
     [[nodiscard]] static constexpr GPUMask all() noexcept
     {
-        return GPUMask(1u);
+        if consteval
+        {
+            return gpu0();
+        }
+        else
+        {
+            return fromCount(g_numExplicitGPUsForRendering);
+        }
     }
 
     /// @brief Builds a single-GPU mask for adapter index `gpuIndex`.
@@ -152,15 +206,22 @@ struct GPUMask
         return GPUMask(~((1u << gpuIndex) - 1u)) & all();
     }
 
-    /// @brief Returns the underlying 32-bit bitmask representation.
-    /// @return Raw bitmask value.
+    /// @brief Returns the underlying hardware node bitmask (`1` when `g_virtualMGPU != 0` at runtime).
+    /// @return Native hardware bitmask value.
     [[nodiscard]] constexpr gp::UInt32 getNative() const noexcept
     {
-        return mask;
+        if consteval
+        {
+            return mask;
+        }
+        else
+        {
+            return (g_virtualMGPU != 0u) ? 1u : mask;
+        }
     }
 
-    /// @brief Returns the bitmask formatted for diagnostic display and logging.
-    /// @return Raw bitmask value.
+    /// @brief Returns the logical bitmask formatted for diagnostic display and logging (ignores `g_virtualMGPU`).
+    /// @return Raw logical bitmask value.
     [[nodiscard]] constexpr gp::UInt32 getForDisplay() const noexcept
     {
         return mask;
