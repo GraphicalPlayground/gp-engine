@@ -314,4 +314,138 @@ TEST(PipelineStateDescTest, PipelineEnumsConstantsAndBitwiseMasks)
     EXPECT_EQ(kPrimitiveTypeCount, 6u);
 }
 
+TEST(PipelineStateDescTest, ToStringAndFromStringRoundTripAndValidation)
+{
+    // SamplerStateDesc round-trip (including default FLT_MAX maxMipLevel and negative mipBias)
+    const SamplerStateDesc defaultSampler{};
+    SamplerStateDesc parsedSampler(SamplerFilter::Trilinear);
+    ASSERT_TRUE(parsedSampler.fromString(defaultSampler.toString().view()));
+    EXPECT_EQ(parsedSampler, defaultSampler);
+
+    const SamplerStateDesc customSampler(
+        SamplerFilter::AnisotropicLinear,
+        SamplerAddressMode::Clamp,
+        SamplerAddressMode::Mirror,
+        SamplerAddressMode::Border,
+        -1.25f,
+        16,
+        0.5f,
+        11.0f,
+        0x80402010u,
+        SamplerCompareFunction::Less
+    );
+    ASSERT_TRUE(parsedSampler.fromString(customSampler.toString().view()));
+    EXPECT_EQ(parsedSampler, customSampler);
+
+    // Malformed / out-of-bounds sampler strings must return false and leave parsedSampler intact.
+    EXPECT_FALSE(parsedSampler.fromString(""));
+    EXPECT_FALSE(parsedSampler.fromString("<0 0 0>"));
+    EXPECT_FALSE(parsedSampler.fromString("<99 0 0 0 0 0 100 0 0 0>"));
+    EXPECT_FALSE(parsedSampler.fromString("<0 4 0 0 0 0 100 0 0 0>"));
+    EXPECT_FALSE(parsedSampler.fromString("<0 0 0 0 0 0 100 -1 0 0>"));
+    EXPECT_FALSE(parsedSampler.fromString("<0 0 0 0 0 0 100 0 0 2>"));
+    EXPECT_EQ(parsedSampler, customSampler);
+
+    // RasterizerStateDesc round-trip and rejection
+    const RasterizerStateDesc shadowRaster(
+        RasterizerFillMode::Wireframe,
+        RasterizerCullMode::CCW,
+        -0.0025f,
+        1.75f,
+        RasterizerDepthClipMode::DepthClamp,
+        true
+    );
+    RasterizerStateDesc parsedRaster{};
+    ASSERT_TRUE(parsedRaster.fromString(shadowRaster.toString().view()));
+    EXPECT_EQ(parsedRaster, shadowRaster);
+    EXPECT_FALSE(parsedRaster.fromString("<0 0 3 0 0 1>"));
+    EXPECT_FALSE(parsedRaster.fromString("<0 0 0 3 0 1>"));
+    EXPECT_FALSE(parsedRaster.fromString("<0 0 0 0 2 1>"));
+    EXPECT_FALSE(parsedRaster.fromString("<0 0 0 0 0 2>"));
+    EXPECT_EQ(parsedRaster, shadowRaster);
+
+    // DepthStencilStateDesc round-trip and rejection
+    const DepthStencilStateDesc fullStencil(
+        false,
+        CompareFunction::GreaterEqual,
+        true,
+        CompareFunction::NotEqual,
+        StencilOp::Keep,
+        StencilOp::SaturatedIncrement,
+        StencilOp::Replace,
+        true,
+        CompareFunction::Equal,
+        StencilOp::SaturatedDecrement,
+        StencilOp::Increment,
+        StencilOp::Invert,
+        0x3Cu,
+        0xC3u
+    );
+    DepthStencilStateDesc parsedDepth{};
+    ASSERT_TRUE(parsedDepth.fromString(fullStencil.toString().view()));
+    EXPECT_EQ(parsedDepth, fullStencil);
+    EXPECT_FALSE(parsedDepth.fromString("<1 8 0 7 0 0 0 0 7 0 0 0 255 255>"));
+    EXPECT_FALSE(parsedDepth.fromString("<1 1 0 7 8 0 0 0 7 0 0 0 255 255>"));
+    EXPECT_FALSE(parsedDepth.fromString("<1 1 0 7 0 0 0 0 7 0 0 0 256 255>"));
+    EXPECT_EQ(parsedDepth, fullStencil);
+
+    // RenderTargetBlendDesc + BlendStateDesc (58-token current and 57-token legacy format)
+    const RenderTargetBlendDesc rtBlend0(
+        BlendOperation::Subtract,
+        BlendFactor::SourceAlpha,
+        BlendFactor::InverseSourceAlpha,
+        BlendOperation::Max,
+        BlendFactor::One,
+        BlendFactor::Zero,
+        ColorWriteMask::RGB
+    );
+    const RenderTargetBlendDesc rtBlend1(
+        BlendOperation::ReverseSubtract,
+        BlendFactor::Source1Color,
+        BlendFactor::InverseSource1Alpha,
+        BlendOperation::Min,
+        BlendFactor::ConstantBlendFactor,
+        BlendFactor::InverseConstantBlendFactor,
+        ColorWriteMask::BA
+    );
+    RenderTargetBlendDesc parsedRt{};
+    ASSERT_TRUE(parsedRt.fromString(rtBlend0.toString().view()));
+    EXPECT_EQ(parsedRt, rtBlend0);
+    EXPECT_FALSE(parsedRt.fromString("0 1 0 0 1 0 16"));
+    EXPECT_EQ(parsedRt, rtBlend0);
+
+    const gp::Array<RenderTargetBlendDesc, 2u> blendTargets{
+        { rtBlend0, rtBlend1 }
+    };
+    const BlendStateDesc blendDesc(blendTargets, true);
+    BlendStateDesc parsedBlend{};
+    ASSERT_TRUE(parsedBlend.fromString(blendDesc.toString().view()));
+    EXPECT_EQ(parsedBlend, blendDesc);
+
+    // Legacy 57-token BlendStateDesc omits trailing useAlphaToCoverage and defaults it to false.
+    gp::String legacyBlendStr("<");
+    for (gp::USize i = 0u; i < kMaxSimultaneousRenderTargets; ++i)
+    {
+        legacyBlendStr.append(blendDesc.renderTargets[i].toString());
+    }
+    legacyBlendStr.append("1>");
+    BlendStateDesc parsedLegacyBlend(rtBlend0, true);
+    ASSERT_TRUE(parsedLegacyBlend.fromString(legacyBlendStr.view()));
+    EXPECT_TRUE(parsedLegacyBlend.useIndependentRenderTargetBlendStates);
+    EXPECT_FALSE(parsedLegacyBlend.useAlphaToCoverage);
+    EXPECT_EQ(parsedLegacyBlend.renderTargets[0], rtBlend0);
+    EXPECT_EQ(parsedLegacyBlend.renderTargets[1], rtBlend1);
+    EXPECT_FALSE(parsedLegacyBlend.fromString("<0 1 0>"));
+
+    // VertexElement round-trip and bounds validation
+    const VertexElement instancedElem(2u, 24u, VertexElementType::URGB10A2N, 5u, 64u, true);
+    VertexElement parsedElem{};
+    ASSERT_TRUE(parsedElem.fromString(instancedElem.toString().view()));
+    EXPECT_EQ(parsedElem, instancedElem);
+    EXPECT_FALSE(parsedElem.fromString("<0 0 99 0 16 0>"));
+    EXPECT_FALSE(parsedElem.fromString("<256 0 1 0 16 0>"));
+    EXPECT_FALSE(parsedElem.fromString("<0 0 1 0 70000 0>"));
+    EXPECT_EQ(parsedElem, instancedElem);
+}
+
 }   // namespace gp::rhi::pipeline::tests
