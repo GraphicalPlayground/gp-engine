@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "core/ExclusiveDepthStencil.hpp"
 #include "core/Resource.hpp"
 #include "CoreMinimal.hpp"
 #include "pipeline/PipelineForward.hpp"   // IWYU pragma: keep
@@ -52,6 +53,11 @@ public:
     /// @param[in] frequency Graphics `shader::ShaderFrequency` stage to query.
     /// @return Pointer to the bound `shader::GraphicsShader`, or `nullptr` if that stage is unused.
     [[nodiscard]] virtual shader::GraphicsShader* getShader(shader::ShaderFrequency frequency) const noexcept = 0;
+
+#if GP_ENABLE_RHI_VALIDATION
+    /// @brief Stores the active `ExclusiveDepthStencil` mode compiled into this PSO for render-pass DSV validation.
+    resource::ExclusiveDepthStencil dsMode{};
+#endif
 
 private:
     /// @brief Cache-assigned sort key used to order draw calls by pipeline state.
