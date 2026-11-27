@@ -4,12 +4,15 @@
 
 #pragma once
 
+#include "containers/strings/String.hpp"     // IWYU pragma: keep
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "hashing/HashCombine.hpp"
 #include "hashing/HashMix.hpp"
 #include "hashing/HashOf.hpp"
 #include "pipeline/PipelineEnums.hpp"
 #include "pipeline/PipelineForward.hpp"   // IWYU pragma: keep
+#include "RHIBase.hpp"
 
 namespace gp::rhi::pipeline
 {
@@ -105,6 +108,16 @@ public:
         hasher.append(depthClipMode);
         hasher.append(allowMSAA);
     }
+
+    /// @brief Serializes this rasterizer descriptor into `<depthBias slopeScaleDepthBias fillMode cullMode
+    ///        depthClipMode allowMSAA>`.
+    /// @return Serialized string representation.
+    [[nodiscard]] GP_RHI_API gp::String toString() const noexcept;
+
+    /// @brief Parses a `<...>` or whitespace-delimited token sequence into this rasterizer descriptor.
+    /// @param[in] src Serialized rasterizer descriptor text.
+    /// @return True when all fields parsed within valid bounds; false if `src` is malformed (leaves `*this` unchanged).
+    GP_RHI_API bool fromString(gp::StringView src) noexcept;
 };
 
 }   // namespace gp::rhi::pipeline
