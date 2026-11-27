@@ -4,12 +4,15 @@
 
 #pragma once
 
+#include "containers/strings/String.hpp"     // IWYU pragma: keep
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "hashing/HashCombine.hpp"
 #include "hashing/HashMix.hpp"
 #include "hashing/HashOf.hpp"
 #include "pipeline/PipelineEnums.hpp"
 #include "pipeline/PipelineForward.hpp"   // IWYU pragma: keep
+#include "RHIBase.hpp"
 #include "templates/NumericLimits.hpp"
 
 namespace gp::rhi::pipeline
@@ -126,6 +129,15 @@ public:
         hasher.append(borderColor);
         hasher.append(samplerComparisonFunction);
     }
+
+    /// @brief Serializes this sampler descriptor into a compact `<...>` text token sequence.
+    /// @return Serialized string representation.
+    [[nodiscard]] GP_RHI_API gp::String toString() const noexcept;
+
+    /// @brief Parses a `<...>` or whitespace-delimited token sequence into this sampler descriptor.
+    /// @param[in] src Serialized sampler descriptor text.
+    /// @return True when all fields parsed within valid bounds; false if `src` is malformed (leaves `*this` unchanged).
+    GP_RHI_API bool fromString(gp::StringView src) noexcept;
 };
 
 }   // namespace gp::rhi::pipeline
