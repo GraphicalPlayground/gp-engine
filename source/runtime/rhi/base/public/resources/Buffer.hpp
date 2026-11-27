@@ -11,6 +11,9 @@
 #include "resources/BufferDesc.hpp"
 #include "resources/BufferEnums.hpp"
 #include "RHIBase.hpp"
+#if GP_ENABLE_RHI_VALIDATION
+    #include "validation/ValidationResource.hpp"
+#endif
 
 namespace gp::rhi::resource
 {
@@ -70,7 +73,18 @@ public:
     GP_FORCEINLINE_HINT void setName(const gp::Name inName) noexcept
     {
         ViewableResource::setName(inName);
+#if GP_ENABLE_RHI_VALIDATION
+        m_validationResource.setDebugName(inName.toString().view());
+#endif
     }
+
+#if GP_ENABLE_RHI_VALIDATION
+    /// @copydoc ViewableResource::getValidationTrackerResource()
+    [[nodiscard]] virtual validation::Resource* getValidationTrackerResource() noexcept override
+    {
+        return &m_validationResource;
+    }
+#endif
 
 protected:
     /// @brief Adopts tracked barrier state and `BufferDesc` from `other` during backing-allocation transfer.
@@ -83,6 +97,10 @@ protected:
 private:
     /// @brief Layout descriptor describing this buffer's GPU allocation.
     BufferDesc m_desc{};
+
+#if GP_ENABLE_RHI_VALIDATION
+    validation::BufferResource m_validationResource{};
+#endif
 };
 
 }   // namespace gp::rhi::resource

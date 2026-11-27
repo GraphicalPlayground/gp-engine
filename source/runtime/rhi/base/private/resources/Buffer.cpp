@@ -74,7 +74,17 @@ sync::ResourceAccess getDefaultResourceState(const BufferUsageFlags usage, const
 Buffer::Buffer(const BufferCreateDesc& createDesc) noexcept
     : ViewableResource(ResourceType::Buffer, createDesc.initialState, createDesc.debugName, createDesc.ownerName)
     , m_desc(createDesc)
-{}
+{
+#if GP_ENABLE_RHI_VALIDATION
+    if (!m_desc.isNull())
+    {
+        const bool isTransient = (m_desc.usage & BufferUsageFlags::Transient) != BufferUsageFlags::None;
+        m_validationResource.initBarrierTracking(
+            1u, 1u, 1u, createDesc.initialState, createDesc.debugName, isTransient
+        );
+    }
+#endif
+}
 
 Buffer::~Buffer() noexcept = default;
 
@@ -82,12 +92,18 @@ void Buffer::takeOwnership(Buffer& other) noexcept
 {
     ViewableResource::takeOwnership(other);
     m_desc = other.m_desc;
+#if GP_ENABLE_RHI_VALIDATION
+    m_validationResource.takeOwnership(other.m_validationResource);
+#endif
 }
 
 void Buffer::releaseOwnership() noexcept
 {
     ViewableResource::releaseOwnership();
     m_desc = BufferDesc::null();
+#if GP_ENABLE_RHI_VALIDATION
+    m_validationResource.releaseOwnership();
+#endif
 }
 
 StagingBuffer::StagingBuffer() noexcept
