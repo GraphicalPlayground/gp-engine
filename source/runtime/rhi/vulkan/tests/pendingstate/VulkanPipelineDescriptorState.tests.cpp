@@ -336,8 +336,9 @@ TEST_F(VulkanPipelineDescriptorStateTest, SamplersAreTrackedById)
     EXPECT_TRUE(state->setSampler(shader_stage::Stage::Pixel, 0u, asVulkan(m_otherSampler)));
     EXPECT_TRUE(state->isResourcesDirty());
     EXPECT_FALSE(state->setSampler(shader_stage::Stage::Pixel, 0u, asVulkan(m_otherSampler)));
+    // Entry 0 is the layout entry of the empty vertex set; the pixel binding follows it.
     EXPECT_EQ(
-        state->getWriteContainer().hashableDescriptorInfo[0].image.samplerId, asVulkan(m_otherSampler).getSamplerId()
+        state->getWriteContainer().hashableDescriptorInfo[1].image.samplerId, asVulkan(m_otherSampler).getSamplerId()
     );
 }
 
