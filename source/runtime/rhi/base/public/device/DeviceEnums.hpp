@@ -122,11 +122,19 @@ enum class GpuVendorId : gp::UInt32
     Mesa = 0x10005u
 };
 
+/// @brief Alternate ASCII-encoded PCI vendor ID (`'QCOM'`) reported for Qualcomm adapters on desktop APIs.
+inline constexpr gp::UInt32 kQualcommAlternateVendorId = 0x4D4F4351u;
+
 /// @brief Converts a raw PCI vendor ID into a recognized `GpuVendorId`.
 /// @param[in] vendorId Raw 32-bit PCI vendor identifier reported by the driver or OS.
 /// @return Matching `GpuVendorId`, `GpuVendorId::NotQueried` if zero, or `GpuVendorId::Unknown` if unrecognized.
 [[nodiscard]] inline constexpr GpuVendorId convertToGpuVendorId(const gp::UInt32 vendorId) noexcept
 {
+    if (vendorId == kQualcommAlternateVendorId)
+    {
+        return GpuVendorId::Qualcomm;
+    }
+
     switch (static_cast<GpuVendorId>(vendorId))
     {
     case GpuVendorId::NotQueried:
