@@ -12,6 +12,8 @@
 #include "core/ResourceTypes.hpp"
 #include "core/ViewableResource.hpp"
 #include "CoreMinimal.hpp"
+#include "diagnostics/Breadcrumbs.hpp"
+#include "diagnostics/DiagnosticsForward.hpp"
 #include "maths/vector/Vector4.hpp"
 #include "pipeline/PipelineForward.hpp"
 #include "RHIBase.hpp"
@@ -21,6 +23,11 @@
 #include "sync/SyncForward.hpp"
 #include "sync/TransitionDesc.hpp"
 #include "views/ViewForward.hpp"
+
+namespace gp::rhi::validation
+{
+class Tracker;
+}   // namespace gp::rhi::validation
 
 namespace gp::rhi::command
 {
@@ -33,6 +40,14 @@ class GP_RHI_API IPlatformCommandList
 public:
     /// @brief Virtual destructor allowing backend-owned cleanup on submission completion.
     virtual ~IPlatformCommandList() noexcept = default;
+
+#if GP_WITH_RHI_BREADCRUMBS
+    /// @brief Breadcrumb allocators kept alive until this platform command list completes execution/profiling.
+    diagnostics::BreadcrumbAllocatorArray breadcrumbAllocators{};
+
+    /// @brief Inclusive GPU breadcrumb node range recorded into this platform command list.
+    diagnostics::BreadcrumbRange breadcrumbRange{};
+#endif
 };
 
 /// @brief Base tag interface for backend-owned resource upload contexts.
@@ -81,10 +96,85 @@ public:
     }
 
     /// @brief Returns the outermost wrapper context (such as a validation proxy) if attached.
-    /// @return Non-null pointer to the highest-level context (defaults to `this`).
+    /// @return Non-null reference to the highest-level context (defaults to `this`).
     [[nodiscard]] virtual IComputeContext& getHighestLevelContext() noexcept
     {
-        return *this;
+        return (m_wrappingContext != nullptr) ? *m_wrappingContext : *this;
+    }
+
+    /// @brief Links an outer wrapper context (such as `ValidationContext`) around this concrete hardware context.
+    /// @param[in] wrappingContext Outer wrapper context pointer, or `nullptr` to detach.
+    void linkToWrappingContext(IComputeContext* const wrappingContext) noexcept
+    {
+        m_wrappingContext = wrappingContext;
+    }
+
+    /// @brief Returns the attached outer wrapper context, or `nullptr` if unwrapped.
+    /// @return Pointer to the outer wrapper context.
+    [[nodiscard]] GP_FORCEINLINE_HINT IComputeContext* getWrappingContext() const noexcept
+    {
+        return m_wrappingContext;
+    }
+
+#if GP_ENABLE_RHI_VALIDATION
+    /// @brief Attaches the RHI validation state tracker active on this context.
+    /// @param[in] tracker Validation tracker pointer, or `nullptr`.
+    void setValidationTracker(validation::Tracker* const tracker) noexcept
+    {
+        m_tracker = tracker;
+    }
+
+    /// @brief Returns the RHI validation state tracker attached to this context, or `nullptr`.
+    /// @return Active `validation::Tracker*`.
+    [[nodiscard]] GP_FORCEINLINE_HINT validation::Tracker* getValidationTracker() const noexcept
+    {
+        return m_tracker;
+    }
+#endif
+
+    /// @brief Accumulates per-context draw and primitive counters for GPU profiler stats.
+    /// @param[in] numDraws Number of draw calls to add.
+    /// @param[in] numPrimitives Number of primitives rendered to add.
+    GP_FORCEINLINE_HINT void recordDrawStats(const gp::UInt32 numDraws, const gp::UInt32 numPrimitives) noexcept
+    {
+        m_statDraws += numDraws;
+        m_statPrimitives += numPrimitives;
+    }
+
+    /// @brief Accumulates per-context dispatch counters for GPU profiler stats.
+    /// @param[in] numDispatches Number of compute/mesh dispatches to add.
+    GP_FORCEINLINE_HINT void recordDispatchStats(const gp::UInt32 numDispatches = 1u) noexcept
+    {
+        m_statDispatches += numDispatches;
+    }
+
+    /// @brief Resets accumulated per-context draw, primitive, and dispatch stats.
+    GP_FORCEINLINE_HINT void resetContextStats() noexcept
+    {
+        m_statDraws = 0u;
+        m_statPrimitives = 0u;
+        m_statDispatches = 0u;
+    }
+
+    /// @brief Returns the accumulated draw count recorded on this context.
+    /// @return Draw count.
+    [[nodiscard]] GP_FORCEINLINE_HINT gp::UInt32 getContextDrawCount() const noexcept
+    {
+        return m_statDraws;
+    }
+
+    /// @brief Returns the accumulated primitive count recorded on this context.
+    /// @return Primitive count.
+    [[nodiscard]] GP_FORCEINLINE_HINT gp::UInt32 getContextPrimitiveCount() const noexcept
+    {
+        return m_statPrimitives;
+    }
+
+    /// @brief Returns the accumulated dispatch count recorded on this context.
+    /// @return Dispatch count.
+    [[nodiscard]] GP_FORCEINLINE_HINT gp::UInt32 getContextDispatchCount() const noexcept
+    {
+        return m_statDispatches;
     }
 
     /// @brief Associates the `CommandListBase` currently replaying commands into this context.
@@ -268,6 +358,51 @@ public:
     virtual void postExternalCommandsReset() noexcept
     {}
 
+    /// @brief Permits overlapping UAV writes across subsequent dispatches/draws without implicit UAV barriers.
+    virtual void beginUAVOverlap() noexcept
+    {}
+
+    /// @brief Ends global UAV overlap and restores implicit UAV synchronization between dispatches/draws.
+    virtual void endUAVOverlap() noexcept
+    {}
+
+    /// @brief Permits overlapping UAV writes on the explicit set of `uavs` without implicit UAV barriers.
+    /// @param[in] uavs Span of UAVs allowed to overlap across dispatches/draws.
+    virtual void beginUAVOverlap(const gp::ConstVectorView<view::UnorderedAccessView*> uavs) noexcept
+    {
+        static_cast<void>(uavs);
+    }
+
+    /// @brief Ends overlapping UAV writes on the explicit set of `uavs`.
+    /// @param[in] uavs Span of UAVs exiting overlap mode.
+    virtual void endUAVOverlap(const gp::ConstVectorView<view::UnorderedAccessView*> uavs) noexcept
+    {
+        static_cast<void>(uavs);
+    }
+
+#if GP_WITH_RHI_BREADCRUMBS
+    /// @brief Emits a GPU-side entry marker for `node` into the underlying hardware command buffer.
+    /// @param[in] node Non-null breadcrumb node being entered.
+    virtual void beginBreadcrumbGPU(diagnostics::BreadcrumbNode* const node) noexcept
+    {
+        static_cast<void>(node);
+    }
+
+    /// @brief Emits a GPU-side exit marker for `node` into the underlying hardware command buffer.
+    /// @param[in] node Non-null breadcrumb node being exited.
+    virtual void endBreadcrumbGPU(diagnostics::BreadcrumbNode* const node) noexcept
+    {
+        static_cast<void>(node);
+    }
+#endif
+
+    /// @brief Reports whether GPU breadcrumb commands should be emitted into this context.
+    /// @return True when GPU breadcrumb emission is active for this context.
+    [[nodiscard]] virtual bool shouldEmitBreadcrumbs() const noexcept
+    {
+        return true;
+    }
+
     /// @brief Updates tracked access and pipeline state from a `sync::TrackedAccessInfo` descriptor.
     /// @details Virtual so validation wrapper contexts can intercept and audit tracked-access transitions.
     /// @param[in] info Target resource, access mask, and pipeline stage mask.
@@ -312,6 +447,23 @@ public:
 protected:
     /// @brief Command list currently replaying packets into this context, or `nullptr`.
     CommandListBase* m_executingCommandList{ nullptr };
+
+    /// @brief Optional outer wrapper context (e.g., `ValidationContext` / `ValidationComputeContext`).
+    IComputeContext* m_wrappingContext{ nullptr };
+
+#if GP_ENABLE_RHI_VALIDATION
+    /// @brief Optional RHI validation tracker bound to this context.
+    validation::Tracker* m_tracker{ nullptr };
+#endif
+
+    /// @brief Per-context draw call counter accumulated for GPU stats.
+    gp::UInt32 m_statDraws{ 0u };
+
+    /// @brief Per-context primitive counter accumulated for GPU stats.
+    gp::UInt32 m_statPrimitives{ 0u };
+
+    /// @brief Per-context dispatch counter accumulated for GPU stats.
+    gp::UInt32 m_statDispatches{ 0u };
 
     /// @brief Multi-GPU execution mask active on this context.
     GPUMask m_gpuMask{ GPUMask::gpu0() };
