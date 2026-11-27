@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "core/ExclusiveDepthStencil.hpp"
 #include "core/Resource.hpp"
 #include "CoreMinimal.hpp"                // IWYU pragma: keep
 #include "pipeline/PipelineForward.hpp"   // IWYU pragma: keep
@@ -29,6 +30,11 @@ public:
     /// @param[out] outDesc Receives the creation parameters when supported by the concrete backend.
     /// @return True if `outDesc` was populated; false if the backend does not retain creation parameters.
     [[nodiscard]] virtual bool getInitializer(DepthStencilStateDesc& outDesc) const noexcept;
+
+#if GP_ENABLE_RHI_VALIDATION
+    /// @brief Stores the actual depth/stencil read-write mode derived from `DepthStencilStateDesc`.
+    resource::ExclusiveDepthStencil actualDSMode{};
+#endif
 
 protected:
     /// @copydoc resource::Resource::~Resource()
