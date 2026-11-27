@@ -9,6 +9,9 @@
 #include "containers/arrays/Vector.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "device/DeviceForward.hpp"       // IWYU pragma: keep
+#include "diagnostics/DiagnosticsForward.hpp"
+#include "sync/SyncEnums.hpp"
+#include "templates/Optional.hpp"
 
 namespace gp::rhi
 {
@@ -48,6 +51,15 @@ struct EndFrameArgs
 {
     /// @brief Monotonic frame number finishing on the render/RHI timeline.
     gp::UInt64 frameNumber{ 0u };
+
+    /// @brief Active GPU breadcrumb node per execution pipeline at the frame boundary (`nullptr` when none).
+    sync::PipelineArray<diagnostics::BreadcrumbNode*> gpuBreadcrumbs{};
+
+    /// @brief Optional explicit stats frame index associated with GPU profiler events.
+    gp::Optional<gp::Int64> statsFrame{};
+
+    /// @brief True when the GPU profiler requested a full frame capture on the upcoming frame.
+    bool profileNextFrame{ false };
 };
 
 /// @brief Supported display output resolution and refresh rate entry.
