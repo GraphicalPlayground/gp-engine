@@ -224,12 +224,12 @@ public:
         setStaticUniformBuffers(bindings);
     }
 
-    /// @brief Sets a dynamic byte offset applied when sampling uniform buffer `uniformBuffer`.
-    /// @param[in] uniformBuffer Target uniform buffer.
-    /// @param[in] offset Byte offset into `uniformBuffer`.
-    virtual void setUniformBlockOffset(resource::UniformBuffer* const uniformBuffer, const gp::UInt32 offset) noexcept
+    /// @brief Sets a dynamic byte offset applied when reading uniform block `srv`.
+    /// @param[in] srv Shader resource view backing the uniform block.
+    /// @param[in] offset Byte offset into `srv`.
+    virtual void setUniformBlockOffset(view::ShaderResourceView* const srv, const gp::UInt32 offset) noexcept
     {
-        static_cast<void>(uniformBuffer);
+        static_cast<void>(srv);
         static_cast<void>(offset);
     }
 
