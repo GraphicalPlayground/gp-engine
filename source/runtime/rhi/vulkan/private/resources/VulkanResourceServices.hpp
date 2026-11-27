@@ -4,8 +4,9 @@
 
 #pragma once
 
-#include "CoreMinimal.hpp"                       // IWYU pragma: keep
-#include "resources/VulkanResourceForward.hpp"   // IWYU pragma: keep
+#include "CoreMinimal.hpp"                          // IWYU pragma: keep
+#include "renderpass/VulkanRenderPassForward.hpp"   // IWYU pragma: keep
+#include "resources/VulkanResourceForward.hpp"      // IWYU pragma: keep
 #include "RHIVulkan.hpp"
 #include "VulkanForward.hpp"
 #include "VulkanThirdParty.hpp"   // IWYU pragma: keep
@@ -37,6 +38,10 @@ struct GP_RHI_VULKAN_API VulkanResourceServices final
     /// @brief Volatile block allocator for single-draw and single-frame uniform buffers.
     /// @details `nullptr` makes volatile uniform buffers fall back to pooled host-visible memory.
     VulkanTempBlockAllocator* tempBlockAllocator{ nullptr };
+
+    /// @brief Render pass manager told when an attachment image dies, so framebuffers naming it are dropped.
+    /// @details `nullptr` skips the notification (dynamic rendering, standalone resources in tests).
+    VulkanRenderPassManager* renderPassManager{ nullptr };
 
     /// @brief Reports whether the device, memory and staging managers are all bound.
     /// @return True when resources can be allocated.
