@@ -59,6 +59,10 @@ public:
     /// @brief Clears viewports, scissors, streams and the current pipeline.
     void reset() noexcept;
 
+    /// @brief Marks cached vertex streams, extended dynamic states, and descriptor state dirty when recording starts
+    ///        on a new command buffer.
+    void onCommandBufferBegun() noexcept;
+
     /// @brief Sets a single viewport and a scissor rectangle covering it.
     /// @details Vulkan rejects an empty depth range, so `minZ == maxZ` becomes `[minZ, minZ + 1]`.
     /// @param[in] minX Left edge in pixels.
@@ -120,8 +124,9 @@ public:
     /// @param[in,out] commandBuffer Command buffer in the recording state.
     void bind(VulkanCommandBuffer& commandBuffer) noexcept;
 
-    /// @brief Records everything the current pipeline needs before a draw.
-    /// @param[in,out] commandBuffer Command buffer recording a render pass, with the current pipeline bound.
+    /// @brief Records everything the current pipeline needs before a draw, ensuring the pipeline is bound on
+    ///        `commandBuffer`.
+    /// @param[in,out] commandBuffer Command buffer recording a render pass.
     /// @return False when no pipeline is current or the descriptor sets could not be updated.
     [[nodiscard]] bool prepareForDraw(VulkanCommandBuffer& commandBuffer) noexcept;
 

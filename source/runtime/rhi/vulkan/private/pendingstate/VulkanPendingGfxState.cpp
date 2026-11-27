@@ -93,6 +93,16 @@ void VulkanPendingGfxState::reset() noexcept
     m_pipelineDynamicStates = VulkanDynamicStateList{};
 }
 
+void VulkanPendingGfxState::onCommandBufferBegun() noexcept
+{
+    m_hasDirtyVertexStreams = true;
+    m_isPipelineDynamicStateDirty = true;
+    if (m_currentState != nullptr)
+    {
+        m_currentState->markDirty();
+    }
+}
+
 void VulkanPendingGfxState::setViewport(
     const gp::Float32 minX,
     const gp::Float32 minY,
@@ -237,6 +247,8 @@ bool VulkanPendingGfxState::setGfxPipeline(const VulkanGraphicsPipelineState& pi
     if (hasChanged || forceReset)
     {
         m_currentState->reset();
+        m_isPipelineDynamicStateDirty = true;
+        m_hasDirtyVertexStreams = true;
     }
     return hasChanged;
 }
@@ -268,17 +280,21 @@ bool VulkanPendingGfxState::prepareForDraw(VulkanCommandBuffer& commandBuffer) n
         return false;
     }
 
-    // 2. Dynamic states.
+    // 2. Graphics pipeline: bind if not yet active on this command buffer (for example after a command buffer split
+    //    or when prepareForDraw is invoked directly).
+    bind(commandBuffer);
+
+    // 3. Dynamic states.
     updateDynamicStates(commandBuffer);
 
-    // 3. Descriptor sets.
+    // 4. Descriptor sets.
     const VkCommandBuffer handle = commandBuffer.getHandle();
     if (hasDescriptorSets)
     {
         m_currentState->bindDescriptorSets(handle);
     }
 
-    // 4. Vertex buffers.
+    // 5. Vertex buffers.
     if (m_hasDirtyVertexStreams)
     {
         bindVertexStreams(handle);
