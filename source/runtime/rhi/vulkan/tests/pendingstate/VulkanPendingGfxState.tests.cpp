@@ -13,9 +13,12 @@
 #include "device/VulkanDevice.hpp"
 #include "memory/pointers/RefCountedPtr.hpp"   // IWYU pragma: keep
 #include "pendingstate/VulkanGraphicsPipelineDescriptorState.hpp"
+#include "pendingstate/VulkanPendingComputeState.hpp"
 #include "pendingstate/VulkanPendingStateTypes.hpp"
+#include "pipeline/ComputePipelineState.hpp"    // IWYU pragma: keep
 #include "pipeline/GraphicsPipelineState.hpp"   // IWYU pragma: keep
 #include "pipeline/SamplerState.hpp"            // IWYU pragma: keep
+#include "pipeline/VulkanComputePipelineState.hpp"
 #include "pipeline/VulkanGraphicsPipelineState.hpp"
 #include "states/VulkanSamplerState.hpp"
 #include "views/VulkanViewTypes.hpp"
@@ -316,6 +319,63 @@ TEST_F(VulkanPendingStateLiveTest, GfxDrawFlushesDynamicStateOnce)
         state.setStencilRef(6u);
         ASSERT_TRUE(state.prepareForDraw(*commandBuffer));
         EXPECT_EQ(commandBuffer->getDynamicState().stencilRef, 6u);
+    }
+    EXPECT_TRUE(submitAndWait(commandBuffer, new VulkanPayload(*m_queue)));
+}
+
+TEST_F(VulkanPendingStateLiveTest, PrepareForDrawBindsPipelineWithoutExplicitBindAndRebindsAfterCommandBufferSplit)
+{
+    const pipeline::GraphicsPipelineStateRef pipelineRef = createGraphicsPipeline();
+    if (!pipelineRef.isValid())
+    {
+        GTEST_SKIP() << "Device renders through render passes; skipping dynamic rendering pipeline test.";
+    }
+    const VulkanGraphicsPipelineState& pipelineState = *getInnerState(pipelineRef);
+    ASSERT_NE(pipelineState.getPipelineHandle(), VK_NULL_HANDLE);
+
+    VulkanPendingGfxState state(*m_device, *m_context, m_defaults);
+    ASSERT_TRUE(state.setGfxPipeline(pipelineState, false));
+    state.setViewport(0.0f, 0.0f, 0.0f, 32.0f, 32.0f, 1.0f);
+    state.setStreamSource(0u, VK_NULL_HANDLE, 0u);
+
+    // 1. First command buffer: prepareForDraw binds the graphics pipeline automatically even without a prior bind().
+    VulkanCommandBuffer* const firstCmdBuffer = beginCommandBuffer();
+    ASSERT_NE(firstCmdBuffer, nullptr);
+    EXPECT_EQ(firstCmdBuffer->getCurrentGraphicsPipeline(), VK_NULL_HANDLE);
+
+    ASSERT_TRUE(state.prepareForDraw(*firstCmdBuffer));
+    EXPECT_EQ(firstCmdBuffer->getCurrentGraphicsPipeline(), pipelineState.getPipelineHandle());
+    EXPECT_FALSE(state.hasDirtyVertexStreams());
+    EXPECT_TRUE(submitAndWait(firstCmdBuffer, new VulkanPayload(*m_queue)));
+
+    // 2. Second command buffer: onCommandBufferBegun + prepareForDraw re-binds the pipeline and vertex streams.
+    VulkanCommandBuffer* const secondCmdBuffer = beginCommandBuffer();
+    ASSERT_NE(secondCmdBuffer, nullptr);
+    EXPECT_EQ(secondCmdBuffer->getCurrentGraphicsPipeline(), VK_NULL_HANDLE);
+
+    state.onCommandBufferBegun();
+    EXPECT_TRUE(state.hasDirtyVertexStreams());
+    ASSERT_TRUE(state.prepareForDraw(*secondCmdBuffer));
+    EXPECT_EQ(secondCmdBuffer->getCurrentGraphicsPipeline(), pipelineState.getPipelineHandle());
+    EXPECT_FALSE(state.hasDirtyVertexStreams());
+    EXPECT_TRUE(submitAndWait(secondCmdBuffer, new VulkanPayload(*m_queue)));
+}
+
+TEST_F(VulkanPendingStateLiveTest, ComputePrepareForDispatchCachesPipelineHandleOnCommandBuffer)
+{
+    const pipeline::ComputePipelineStateRef computeRef = createComputePipeline();
+    ASSERT_TRUE(computeRef.isValid());
+    const VulkanComputePipelineState& computeState = *getInnerState(computeRef);
+    ASSERT_NE(computeState.getPipelineHandle(), VK_NULL_HANDLE);
+
+    VulkanCommandBuffer* const commandBuffer = beginCommandBuffer();
+    ASSERT_NE(commandBuffer, nullptr);
+    EXPECT_EQ(commandBuffer->getCurrentComputePipeline(), VK_NULL_HANDLE);
+    {
+        VulkanPendingComputeState state(*m_device, *m_context, m_defaults);
+        state.setComputePipeline(computeState);
+        ASSERT_TRUE(state.prepareForDispatch(*commandBuffer));
+        EXPECT_EQ(commandBuffer->getCurrentComputePipeline(), computeState.getPipelineHandle());
     }
     EXPECT_TRUE(submitAndWait(commandBuffer, new VulkanPayload(*m_queue)));
 }
