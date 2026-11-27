@@ -305,15 +305,14 @@ public:
         static_cast<void>(maxDepth);
     }
 
-    /// @brief Sets the per-draw Variable Rate Shading coarse pixel rate and combiner modes.
+    /// @brief Sets the per-draw Variable Rate Shading coarse pixel rate and combiner mode.
     /// @param[in] shadingRate Coarse pixel shading rate.
-    /// @param[in] combiners Two-stage VRS combiner array (per-primitive, screen-space image).
-    virtual void setShadingRate(
-        const pipeline::VRSShadingRate shadingRate, const pipeline::VRSRateCombiner (&combiners)[2]
-    ) noexcept
+    /// @param[in] combiner VRS rate combiner operation.
+    virtual void
+        setShadingRate(const pipeline::VRSShadingRate shadingRate, const pipeline::VRSRateCombiner combiner) noexcept
     {
         static_cast<void>(shadingRate);
-        static_cast<void>(combiners);
+        static_cast<void>(combiner);
     }
 
     /// @brief Begins a graphics render pass with the attachments and actions specified in `inInfo`.
