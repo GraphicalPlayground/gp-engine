@@ -254,6 +254,14 @@ public:
     /// @return True when the copy was recorded and the texture now uses the new image.
     [[nodiscard]] bool onAllocationMoved(const allocator::PoolMoveRequest& request) noexcept;
 
+    /// @brief Drops the views of a wrapped external image now, before the object that owns the image dies.
+    /// @details An `ExternalOwner` texture never frees its image, but its views reference it. Releasing the last
+    ///          reference only marks the texture for deferred deletion, so its views would otherwise be destroyed after
+    ///          the owner (a swapchain) is gone. This queues the views for deletion, notifies the render pass manager
+    ///          and leaves the texture without an image, so the deferred destructor has nothing left to release.
+    /// @note Bottom of pipe. Does nothing for textures that are not `ExternalOwner`.
+    void releaseExternalImage() noexcept;
+
 protected:
     /// @brief Creates a texture that describes an image without having one yet.
     /// @details Computes the image description and formats from `createDesc` but binds no image; derived classes

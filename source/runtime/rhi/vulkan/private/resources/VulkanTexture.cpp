@@ -676,6 +676,15 @@ void VulkanTexture::destroyViews() noexcept
     m_defaultView = VK_NULL_HANDLE;
 }
 
+void VulkanTexture::releaseExternalImage() noexcept
+{
+    if (m_ownerType != VulkanImageOwnerType::ExternalOwner)
+    {
+        return;
+    }
+    releaseStorage();
+}
+
 void VulkanTexture::releaseStorage() noexcept
 {
     // Cached framebuffers name the image by handle; drop them before the handle can be recycled by the driver.
