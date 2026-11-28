@@ -12,6 +12,7 @@
 #include "ImGuiForward.hpp"
 #include "ImGuiLayerDesc.hpp"
 #include "ImGuiPlugin.hpp"
+#include "memory/pointers/UniquePtr.hpp"
 #include "platform/ImGuiHALPlatform.hpp"
 #include "renderer/ImGuiRHIRenderer.hpp"
 
@@ -35,7 +36,8 @@ class GP_PLUGIN_IMGUI_API ImGuiLayer final
 {
 public:
     /// @brief Constructs an inactive layer.
-    ImGuiLayer() noexcept = default;
+    /// @note Defined out of line: `gp::UniquePtr<ImGuiStyle>` needs the complete type, which only the `.cpp` sees.
+    ImGuiLayer() noexcept;
 
     /// @brief Shuts down the layer if it is still active.
     ~ImGuiLayer() noexcept;
@@ -98,6 +100,25 @@ public:
     /// @return `io.WantCaptureKeyboard`, or false when inactive.
     [[nodiscard]] bool wantsKeyboardCapture() const noexcept;
 
+    /// @brief Returns the scale currently applied to ImGui sizes and fonts (DPI scale x multiplier, or the override).
+    /// @return Applied scale; `1.0` before the first `beginFrame()`. Multiply hard-coded pixel sizes (initial window
+    ///         sizes, column widths) by it so layouts match the fonts.
+    [[nodiscard]] gp::Float32 getUIScale() const noexcept
+    {
+        return (m_appliedUIScale > 0.0f) ? m_appliedUIScale : 1.0f;
+    }
+
+    /// @brief Sets the user multiplier applied on top of the DPI scale (see `ImGuiLayerDesc::uiScaleMultiplier`).
+    /// @param[in] multiplier Positive multiplier; takes effect on the next `beginFrame()`.
+    void setUIScaleMultiplier(gp::Float32 multiplier) noexcept;
+
+    /// @brief Re-captures the current style as the unscaled reference used for DPI scaling.
+    /// @details Style *sizes* (padding, rounding, ...) are scaled from a reference snapshot taken at the first
+    ///          `beginFrame()`, so tweaks made after `initialize()` and before that frame are included automatically.
+    ///          Call this after changing sizes later on; the current style is assumed to be scaled by `getUIScale()`.
+    ///          Colors are never scaled and can be edited freely at any time.
+    void rebaseStyle() noexcept;
+
     /// @brief Checks whether the layer is operational.
     /// @return True between a successful `initialize()` and `shutdown()`.
     [[nodiscard]] bool isInitialized() const noexcept
@@ -141,9 +162,21 @@ public:
     }
 
 private:
+    /// @brief Re-derives `ImGui::GetStyle()` from the reference style when the target UI scale changed.
+    /// @note Runs before `ImGui::NewFrame()`, so the font atlas sees the new `FontScaleDpi` in the same frame and,
+    ///       with `ImGuiBackendFlags_RendererHasTextures`, rasterizes glyphs at the exact new size (no blurry upscale).
+    void updateUIScale() noexcept;
+
+private:
     ImGuiContext* m_context{ nullptr };
     ImGuiHALPlatform m_platform;
     ImGuiRHIRenderer m_renderer;
+
+    /// @brief Unscaled style snapshot; heap-allocated so `imgui.h` stays out of this header.
+    gp::UniquePtr<ImGuiStyle> m_referenceStyle;
+    gp::Float32 m_uiScaleOverride{ 0.0f };
+    gp::Float32 m_uiScaleMultiplier{ 1.0f };
+    gp::Float32 m_appliedUIScale{ 0.0f };
     bool m_isFrameOpen{ false };
     bool m_hasPendingFrame{ false };
 };
