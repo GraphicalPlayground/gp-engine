@@ -40,6 +40,9 @@ class VulkanBackBuffer;
 /// @brief Concrete `presentation::Viewport` wrapping a `VulkanSwapChain`.
 class VulkanViewport;
 
+/// @brief Non-owning list of the viewports alive on a device, released by the RHI at shutdown.
+class VulkanViewportRegistry;
+
 /// @brief Owning reference to a `VulkanBackBuffer`.
 using VulkanBackBufferRef = gp::RefCountedPtr<VulkanBackBuffer>;
 
