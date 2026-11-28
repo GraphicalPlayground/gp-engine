@@ -9,6 +9,7 @@
 #include "commands/VulkanQueue.hpp"
 #include "containers/arrays/Vector.hpp"     // IWYU pragma: keep
 #include "contexts/VulkanContextDesc.hpp"   // IWYU pragma: keep
+#include "contexts/VulkanUploadContext.hpp"
 #include "CoreMinimal.hpp"                  // IWYU pragma: keep
 #include "device/DeviceEnums.hpp"
 #include "device/DeviceTypes.hpp"
@@ -30,7 +31,9 @@
 #include "pipeline/VertexDeclaration.hpp"   // IWYU pragma: keep
 #include "pipeline/VertexDeclarationDesc.hpp"
 #include "pipeline/VulkanPipelineDeletionNotifier.hpp"
-#include "presentation/Viewport.hpp"     // IWYU pragma: keep
+#include "presentation/Viewport.hpp"   // IWYU pragma: keep
+#include "presentation/VulkanViewportRegistry.hpp"
+#include "profiling/RHIStats.hpp"
 #include "resources/Buffer.hpp"          // IWYU pragma: keep
 #include "resources/BufferCreateDesc.hpp"
 #include "resources/StagingBuffer.hpp"   // IWYU pragma: keep
@@ -191,6 +194,22 @@ TEST(VulkanDynamicRHITest, UninitializedDeviceFactoriesReturnNull)
     EXPECT_FALSE(rhi.createGPUFence(gp::Name("UninitializedFence")).isValid());
     EXPECT_FALSE(rhi.createViewport(nullptr, 64u, 64u, false, PixelFormat::B8G8R8A8_UNorm).isValid());
     EXPECT_EQ(rhi.getPlatformTextureMaxSampleCount(), 1u);
+}
+
+TEST(VulkanDynamicRHITest, UninitializedRHIHasNoUploadContextsAndZeroMemoryStats)
+{
+    VulkanDynamicRHI rhi{};
+
+    EXPECT_EQ(rhi.acquireUploadContext(), nullptr);
+    EXPECT_EQ(rhi.getUploadContextPool(), nullptr);
+    EXPECT_EQ(rhi.getViewportRegistry(), nullptr);
+
+    profiling::RHIMemoryStats stats{};
+    stats.dedicatedVideoMemory = 42u;
+    rhi.getMemoryStats(stats);
+    EXPECT_EQ(stats.dedicatedVideoMemory, 0u);
+    EXPECT_EQ(stats.totalGraphicsMemory, 0u);
+    EXPECT_EQ(stats.budgetVideoMemory, 0u);
 }
 
 TEST(VulkanDynamicRHITest, DeviceIndependentStatesWorkWithoutInit)
@@ -363,6 +382,67 @@ TEST_F(VulkanDynamicRHILiveTest, FinalizeProducesOneCommandListPerContext)
     EXPECT_EQ(m_rhi->getNumFreeParallelContexts(), 2u);
 }
 
+TEST_F(VulkanDynamicRHILiveTest, AcquiredUploadContextReturnsToThePoolOnFinalize)
+{
+    VulkanUploadContextPool* const pool = m_rhi->getUploadContextPool();
+    ASSERT_NE(pool, nullptr);
+    command::IUploadContext* const uploadContext = m_rhi->acquireUploadContext();
+    ASSERT_NE(uploadContext, nullptr);
+    const gp::USize created = pool->getNumContexts();
+    EXPECT_GE(created, 1u);
+
+    // No command context: the upload context still gets a command list of its own.
+    FinalizeContextsArgs finalizeArgs{};
+    finalizeArgs.uploadContext = uploadContext;
+    FinalizeContextsResult result{};
+    m_rhi->finalizeContexts(std::move(finalizeArgs), result);
+    EXPECT_EQ(result.commandLists.size(), 1u);
+    EXPECT_EQ(result.uploadCommandList, nullptr);
+
+    SubmitCommandListsArgs submitArgs{};
+    submitArgs.commandLists = std::move(result.commandLists);
+    m_rhi->submitCommandLists(std::move(submitArgs));
+
+    EXPECT_EQ(pool->getNumContexts(), created);
+    // Released last, so it sits on top of the free list.
+    EXPECT_GE(pool->getNumFreeContexts(), 1u);
+
+    // The next acquire reuses the warm context instead of creating one.
+    command::IUploadContext* const reused = m_rhi->acquireUploadContext();
+    EXPECT_EQ(reused, uploadContext);
+    EXPECT_EQ(pool->getNumContexts(), created);
+
+    FinalizeContextsArgs secondArgs{};
+    secondArgs.uploadContext = reused;
+    secondArgs.contexts.pushBack(m_rhi->getCommandContext(sync::PipelineStage::Graphics));
+    FinalizeContextsResult secondResult{};
+    m_rhi->finalizeContexts(std::move(secondArgs), secondResult);
+    // Merged into the first context's list: one list per context, no extra one.
+    EXPECT_EQ(secondResult.commandLists.size(), 1u);
+    SubmitCommandListsArgs secondSubmit{};
+    secondSubmit.commandLists = std::move(secondResult.commandLists);
+    m_rhi->submitCommandLists(std::move(secondSubmit));
+    m_rhi->blockUntilGPUIdle();
+}
+
+TEST_F(VulkanDynamicRHILiveTest, MemoryStatsReportTheDeviceHeaps)
+{
+    profiling::RHIMemoryStats stats{};
+    m_rhi->getMemoryStats(stats);
+
+    EXPECT_GT(stats.dedicatedVideoMemory, 0u);
+    EXPECT_EQ(stats.dedicatedSystemMemory, 0u);
+    EXPECT_EQ(stats.totalGraphicsMemory, stats.dedicatedVideoMemory + stats.sharedSystemMemory);
+    EXPECT_GT(stats.budgetVideoMemory, 0u);
+    EXPECT_LE(stats.availableVideoMemory, stats.budgetVideoMemory);
+}
+
+TEST_F(VulkanDynamicRHILiveTest, ViewportServicesCarryTheViewportRegistry)
+{
+    ASSERT_NE(m_rhi->getViewportRegistry(), nullptr);
+    EXPECT_EQ(m_rhi->getViewportRegistry()->getNumViewports(), 0u);
+}
+
 TEST_F(VulkanDynamicRHILiveTest, SubmittedWorkCompletesAfterBlockingOnTheGPU)
 {
     gp::Vector<command::IComputeContext*> contexts{};
@@ -471,6 +551,9 @@ TEST_F(VulkanDynamicRHILiveTest, ShutdownReleasesEverythingAndIsIdempotent)
     EXPECT_EQ(m_rhi->getVulkanGraphicsQueueFamilyIndex(), ~0u);
     EXPECT_EQ(m_rhi->getDefaultContext(), nullptr);
     EXPECT_EQ(getVulkanPipelineDeletionListener(), nullptr);
+    EXPECT_EQ(m_rhi->getViewportRegistry(), nullptr);
+    EXPECT_EQ(m_rhi->getUploadContextPool(), nullptr);
+    EXPECT_EQ(m_rhi->acquireUploadContext(), nullptr);
 
     // `rhiExit()` in TearDown shuts the RHI down a second time.
     m_rhi->shutdown();
