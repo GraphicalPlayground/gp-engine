@@ -263,6 +263,47 @@ TEST_F(VulkanTextureLiveTest, AliasSharesTheSourceImage)
     EXPECT_NE(dest->getDefaultView(), source->getDefaultView());
 }
 
+TEST_F(VulkanTextureLiveTest, ReleaseExternalImageDropsViewsButNotTheImage)
+{
+    const VulkanTextureRef owner = createTexture(makeSampled2D());
+    ASSERT_TRUE(owner->isValid());
+    const VkImage image = owner->getImage();
+
+    // Stands for a swapchain image: the texture wraps an image it does not own.
+    const VulkanTextureRef external(new VulkanTexture(m_services, makeSampled2D(), image));
+    ASSERT_EQ(external->getOwnerType(), VulkanImageOwnerType::ExternalOwner);
+    EXPECT_EQ(external->getImage(), image);
+    EXPECT_NE(external->getDefaultView(), VK_NULL_HANDLE);
+
+    external->releaseExternalImage();
+
+    EXPECT_EQ(external->getImage(), VK_NULL_HANDLE);
+    EXPECT_EQ(external->getDefaultView(), VK_NULL_HANDLE);
+    EXPECT_EQ(external->getNumInternalViews(), 0u);
+    EXPECT_EQ(external->getOwnerType(), VulkanImageOwnerType::None);
+
+    // The wrapped image is untouched and still usable by its real owner.
+    EXPECT_EQ(owner->getImage(), image);
+    EXPECT_NE(owner->getDefaultView(), VK_NULL_HANDLE);
+
+    // Idempotent: a second call (or the deferred destructor) has nothing left to release.
+    external->releaseExternalImage();
+    EXPECT_EQ(external->getOwnerType(), VulkanImageOwnerType::None);
+}
+
+TEST_F(VulkanTextureLiveTest, ReleaseExternalImageIgnoresOwnedTextures)
+{
+    const VulkanTextureRef texture = createTexture(makeSampled2D());
+    ASSERT_TRUE(texture->isValid());
+    const VkImage image = texture->getImage();
+
+    texture->releaseExternalImage();
+
+    EXPECT_EQ(texture->getOwnerType(), VulkanImageOwnerType::LocalOwner);
+    EXPECT_EQ(texture->getImage(), image);
+    EXPECT_NE(texture->getDefaultView(), VK_NULL_HANDLE);
+}
+
 TEST_F(VulkanTextureLiveTest, DefaultInitializerReturnsTextureWithoutWritableData)
 {
     resource::TextureInitializer initializer = createVulkanTextureInitializer(m_services, cmdList(), makeSampled2D());
