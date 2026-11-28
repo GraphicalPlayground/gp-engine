@@ -90,10 +90,8 @@ public:
     /// @copydoc IVulkanSyncContextProvider::getActiveCommandBuffer()
     [[nodiscard]] virtual VkCommandBuffer getActiveCommandBuffer(command::CommandListBase& cmdList) noexcept override;
 
-    /// @brief Finalizes the shared upload context into `outCommandList` and returns it to the pool.
-    /// @param[out] outCommandList Receives the upload payloads; untouched when nothing was recorded.
-    /// @return True when an upload context was active.
-    bool finalizeUploads(VulkanPlatformCommandList& outCommandList) noexcept;
+    /// @copydoc IVulkanCommandContextProvider::finalizeUploads()
+    virtual bool finalizeUploads(VulkanPlatformCommandList& outCommandList) noexcept override;
 
     /// @brief Returns the upload context currently acquired.
     /// @return Upload context, or `nullptr` when none is active.
