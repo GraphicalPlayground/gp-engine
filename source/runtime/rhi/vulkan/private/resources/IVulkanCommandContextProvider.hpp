@@ -9,6 +9,7 @@
 #include "CoreMinimal.hpp"                       // IWYU pragma: keep
 #include "resources/VulkanResourceForward.hpp"   // IWYU pragma: keep
 #include "sync/SyncEnums.hpp"
+#include "VulkanForward.hpp"
 
 namespace gp::rhi::vulkan
 {
@@ -60,6 +61,15 @@ public:
     /// @param[in] cmdList Command list issuing the copy (top of pipe).
     /// @return True when the copy must be followed by a barrier.
     [[nodiscard]] virtual bool needsExtraTransitions(const command::CommandListBase& cmdList) const noexcept = 0;
+
+    /// @brief Finalizes any pending upload work into `outCommandList`.
+    /// @param[out] outCommandList Receives the upload payloads; untouched when nothing was recorded.
+    /// @return True when an upload context was active.
+    virtual bool finalizeUploads(VulkanPlatformCommandList& outCommandList) noexcept
+    {
+        static_cast<void>(outCommandList);
+        return false;
+    }
 };
 
 }   // namespace gp::rhi::vulkan
