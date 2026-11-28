@@ -32,6 +32,12 @@ struct ImGuiLayerDesc
     /// @note The pointer must outlive the layer; ImGui stores it without copying.
     const char* iniFilename{ nullptr };
 
+    /// @brief Fixed UI scale; `0` (default) follows the window's DPI automatically (`ImGuiHALPlatform::getUIScale()`).
+    gp::Float32 uiScaleOverride{ 0.0f };
+
+    /// @brief Extra user multiplier applied on top of the DPI scale (an accessibility "UI size" setting).
+    gp::Float32 uiScaleMultiplier{ 1.0f };
+
     /// @brief Initial color theme.
     ImGuiTheme theme{ ImGuiTheme::Dark };
 
