@@ -9,6 +9,8 @@
 #include "diagnostics/AssertionMacros.hpp"
 #include "memory/pointers/UniquePtr.hpp"
 #include "resources/VulkanCommandBufferTransferRecorder.hpp"
+#include "threading/sync/Mutex.hpp"
+#include "threading/sync/UniqueLock.hpp"
 #include <utility>   // IWYU pragma: keep
 
 namespace gp::rhi::vulkan
@@ -58,6 +60,7 @@ VulkanUploadContextPool::~VulkanUploadContextPool() noexcept
 
 VulkanUploadContext& VulkanUploadContextPool::acquire() noexcept
 {
+    gp::thread::UniqueLock<gp::thread::Mutex> lock(m_mutex);
     if (!m_freeContexts.isEmpty())
     {
         VulkanUploadContext* const context = m_freeContexts.back();
@@ -71,7 +74,21 @@ VulkanUploadContext& VulkanUploadContextPool::acquire() noexcept
 void VulkanUploadContextPool::release(VulkanUploadContext& context) noexcept
 {
     GP_CHECK_SLOW(context.getNumPayloads() == 0u);
+    gp::thread::UniqueLock<gp::thread::Mutex> lock(m_mutex);
+    GP_CHECK_SLOW(!m_freeContexts.contains(&context));
     m_freeContexts.pushBack(&context);
+}
+
+gp::USize VulkanUploadContextPool::getNumContexts() const noexcept
+{
+    gp::thread::UniqueLock<gp::thread::Mutex> lock(m_mutex);
+    return m_contexts.size();
+}
+
+gp::USize VulkanUploadContextPool::getNumFreeContexts() const noexcept
+{
+    gp::thread::UniqueLock<gp::thread::Mutex> lock(m_mutex);
+    return m_freeContexts.size();
 }
 
 }   // namespace gp::rhi::vulkan

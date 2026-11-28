@@ -12,7 +12,8 @@
 #include "memory/pointers/UniquePtr.hpp"
 #include "resources/VulkanResourceForward.hpp"   // IWYU pragma: keep
 #include "RHIVulkan.hpp"
-#include "VulkanForward.hpp"                     // IWYU pragma: keep
+#include "threading/sync/Mutex.hpp"
+#include "VulkanForward.hpp"   // IWYU pragma: keep
 
 namespace gp::rhi::vulkan
 {
@@ -61,7 +62,8 @@ private:
 /// @brief Free list of upload contexts, so every recording thread reuses a warm context and its command pool.
 /// @details Contexts are created on demand and never destroyed before the pool. `release()` returns a context to the
 ///          free list; it must have been finalized (or flushed) first.
-/// @note Thread-safe is not provided: callers serialize access (the RHI keeps one pool per device).
+/// @note Thread-safe: the RHI timeline acquires through the command context provider while any thread may acquire
+///       through `DynamicRHI::acquireUploadContext()`. A context itself is used by one thread at a time.
 class GP_RHI_VULKAN_API VulkanUploadContextPool final
 {
 public:
@@ -88,20 +90,18 @@ public:
 
     /// @brief Returns how many contexts the pool created.
     /// @return Created context count.
-    [[nodiscard]] gp::USize getNumContexts() const noexcept
-    {
-        return m_contexts.size();
-    }
+    [[nodiscard]] gp::USize getNumContexts() const noexcept;
 
     /// @brief Returns how many contexts wait in the free list.
     /// @return Free context count.
-    [[nodiscard]] gp::USize getNumFreeContexts() const noexcept
-    {
-        return m_freeContexts.size();
-    }
+    [[nodiscard]] gp::USize getNumFreeContexts() const noexcept;
 
 private:
     VulkanContextServices m_services{};
+
+    /// @brief Guards both context lists.
+    mutable gp::thread::Mutex m_mutex{};
+
     gp::Vector<gp::UniquePtr<VulkanUploadContext>> m_contexts{};
     gp::Vector<VulkanUploadContext*> m_freeContexts{};
 };
