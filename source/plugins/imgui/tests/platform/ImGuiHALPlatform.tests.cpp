@@ -173,6 +173,11 @@ TEST_F(ImGuiHALPlatformTest, WheelMirrorsHorizontalAxis)
 
 TEST_F(ImGuiHALPlatformTest, KeyPressAndModifiersReachImGui)
 {
+    // ImGui defaults ConfigMacOSXBehaviors to true on __APPLE__, which swaps ImGuiMod_Ctrl and ImGuiMod_Super inside
+    // AddKeyAnalogEvent(). Disable it here so the test verifies the raw HAL -> ImGuiMod_Ctrl forwarding uniformly.
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigMacOSXBehaviors = false;
+
     gp::hal::event::KeyboardEvent key{};
     key.scancode = gp::hal::input::Scancode::A;
     key.state = gp::hal::input::KeyState::Pressed;
@@ -180,7 +185,6 @@ TEST_F(ImGuiHALPlatformTest, KeyPressAndModifiersReachImGui)
     m_platform.processKeyboardEvent(key);
 
     beginFrame();
-    const ImGuiIO& io = ImGui::GetIO();
 
     EXPECT_TRUE(ImGui::IsKeyDown(ImGuiKey_A));
     EXPECT_TRUE(io.KeyCtrl);
