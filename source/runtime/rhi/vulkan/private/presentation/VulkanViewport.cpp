@@ -7,6 +7,7 @@
 #include "commands/CommandListBase.hpp"
 #include "commands/VulkanCommandBuffer.hpp"
 #include "commands/VulkanQueue.hpp"
+#include "commands/VulkanSubmission.hpp"
 #include "contexts/IVulkanPayloadSubmitter.hpp"
 #include "contexts/VulkanCommandContextProvider.hpp"
 #include "contexts/VulkanCommandListContext.hpp"
@@ -323,6 +324,17 @@ bool VulkanViewport::present(
         const VulkanSyncPointRef& frameSyncPoint = context.getContextSyncPoint();
         gp::thread::UniqueLock<gp::thread::Mutex> frameLock(m_frameEventMutex);
         m_lastFrameSyncPoint = frameSyncPoint;
+    }
+
+    if ((m_services.resourceServices.contextProvider != nullptr) && (m_services.submitter != nullptr))
+    {
+        // Texture creation and staged uploads record into the shared upload context; submit them before the frame's
+        // graphics work so layout transitions and copies are visible on the queue.
+        VulkanPlatformCommandList uploadCommandList{};
+        if (m_services.resourceServices.contextProvider->finalizeUploads(uploadCommandList))
+        {
+            m_services.submitter->submitPayloads(uploadCommandList.payloads);
+        }
     }
 
     // The present must reach the queue after the submission signaling the semaphore.
