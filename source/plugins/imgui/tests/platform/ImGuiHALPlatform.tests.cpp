@@ -273,6 +273,42 @@ TEST_F(ImGuiHALPlatformTest, MouseLeftInvalidatesMousePosition)
     EXPECT_FALSE(ImGui::IsMousePosValid());
 }
 
+TEST_F(ImGuiHALPlatformTest, UIScaleDividesContentScaleByFramebufferScale)
+{
+    // macOS-like: 2x framebuffer already absorbs a 2.0 content scale -> no extra UI scaling.
+    m_platform.setContentScale(2.0f);
+    beginFrame();
+    EXPECT_FLOAT_EQ(m_platform.getUIScale(), 1.0f);
+}
+
+TEST_F(ImGuiHALPlatformTest, DPIChangedEventDrivesUIScale)
+{
+    // Windows-like: window units are physical pixels, so a 150 % desktop must scale the UI by 1.5.
+    m_platform.setDisplayOverride(2560.0f, 1600.0f, 1.0f);
+
+    gp::hal::event::WindowEvent dpiChanged{};
+    dpiChanged.action = gp::hal::event::WindowAction::DPIChanged;
+    dpiChanged.dpi.scaleX = 1.5f;
+    dpiChanged.dpi.scaleY = 1.5f;
+    m_platform.processWindowEvent(dpiChanged);
+
+    beginFrame();
+    EXPECT_FLOAT_EQ(m_platform.getUIScale(), 1.5f);
+}
+
+TEST_F(ImGuiHALPlatformTest, UIScaleIsClampedAndInvalidContentScaleResets)
+{
+    m_platform.setDisplayOverride(1280.0f, 720.0f, 1.0f);
+
+    m_platform.setContentScale(32.0f);
+    m_platform.newFrame(1.0f / 60.0f);
+    EXPECT_FLOAT_EQ(m_platform.getUIScale(), 4.0f);
+
+    m_platform.setContentScale(-1.0f);
+    m_platform.newFrame(1.0f / 60.0f);
+    EXPECT_FLOAT_EQ(m_platform.getUIScale(), 1.0f);
+}
+
 TEST_F(ImGuiHALPlatformTest, EventsTargetOwnContextWhenAnotherIsCurrent)
 {
     ImGuiContext* const other = ImGui::CreateContext();
