@@ -28,6 +28,12 @@ constexpr const char* kBackendPlatformName = "gp-engine HAL";
 /// @brief Smallest delta time forwarded to ImGui, which asserts on non-positive values.
 constexpr gp::Float32 kMinimumDeltaSeconds = 1.0f / 10000.0f;
 
+/// @brief Lower bound of the UI scale (guards against bogus OS values and tiny unreadable UI).
+constexpr gp::Float32 kMinimumUIScale = 0.5f;
+
+/// @brief Upper bound of the UI scale (8K at 400 % still fits; prevents runaway sizes on broken drivers).
+constexpr gp::Float32 kMaximumUIScale = 4.0f;
+
 /// @brief Byte capacity of the stack buffer used to null-terminate UTF-8 text chunks for ImGui.
 constexpr gp::USize kTextChunkCapacity = 256u;
 
@@ -69,6 +75,12 @@ bool ImGuiHALPlatform::initialize(gp::hal::IWindow* const window, const ImGuiPla
     m_lastCursorShape = gp::hal::CursorShape::Count;
     m_isCursorHidden = false;
     m_startedTextInput = false;
+    m_contentScale = 1.0f;
+    m_uiScale = 1.0f;
+    if (m_window != nullptr)
+    {
+        setContentScale(m_window->getContentScale());
+    }
 
     io.BackendPlatformName = kBackendPlatformName;
     io.BackendPlatformUserData = this;
@@ -124,6 +136,11 @@ void ImGuiHALPlatform::setDisplayOverride(
     m_hasDisplayOverride = true;
 }
 
+void ImGuiHALPlatform::setContentScale(const gp::Float32 contentScale) noexcept
+{
+    m_contentScale = (contentScale > 0.0f) ? contentScale : 1.0f;
+}
+
 void ImGuiHALPlatform::newFrame(const gp::Float32 deltaSeconds) noexcept
 {
     if (m_context == nullptr)
@@ -162,6 +179,12 @@ void ImGuiHALPlatform::newFrame(const gp::Float32 deltaSeconds) noexcept
             io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
         }
     }
+
+    // Only the DPI factor the coordinate system does not already absorb is applied to ImGui sizes (see getUIScale()).
+    const gp::Float32 framebufferScale = (io.DisplayFramebufferScale.x > 0.0f) ? io.DisplayFramebufferScale.x : 1.0f;
+    const gp::Float32 uiScale = m_contentScale / framebufferScale;
+    m_uiScale =
+        (uiScale < kMinimumUIScale) ? kMinimumUIScale : ((uiScale > kMaximumUIScale) ? kMaximumUIScale : uiScale);
 
     io.DeltaTime = (deltaSeconds > kMinimumDeltaSeconds) ? deltaSeconds : kMinimumDeltaSeconds;
 
@@ -303,6 +326,10 @@ void ImGuiHALPlatform::processWindowEvent(const gp::hal::event::WindowEvent& ev)
         break;
     case gp::hal::event::WindowAction::MouseLeft:
         io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+        break;
+    case gp::hal::event::WindowAction::DPIChanged:
+        // Window dragged to another monitor or desktop scaling changed: the next newFrame() picks up the new factor.
+        setContentScale(ev.dpi.scaleX);
         break;
     default:
         break;

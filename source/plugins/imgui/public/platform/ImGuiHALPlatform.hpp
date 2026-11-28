@@ -94,6 +94,22 @@ public:
     /// @param[in] ev Decoded window event.
     void processWindowEvent(const gp::hal::event::WindowEvent& ev) noexcept;
 
+    /// @brief Overrides the OS content scale (DPI factor, `1.0` = 96 DPI). Also fed by `WindowAction::DPIChanged`.
+    /// @param[in] contentScale Desktop scaling factor (`1.5` for "150 %"); non-positive values reset to `1.0`.
+    void setContentScale(gp::Float32 contentScale) noexcept;
+
+    /// @brief Returns the scale ImGui sizes and fonts must be multiplied by, as computed by the last `newFrame()`.
+    /// @details `contentScale / framebufferScale`. The division removes the part of the DPI factor the OS already
+    ///          applies through the coordinate system:
+    ///          - Windows / X11: window units are physical pixels (framebuffer scale `1`), so 150 % yields `1.5`.
+    ///          - macOS Retina / Wayland: window units are points and the framebuffer is 2x (content scale `2`), so
+    ///            the result is `1.0`; the renderer's `DisplayFramebufferScale` already produces crisp pixels.
+    /// @return UI scale factor, clamped to `[0.5, 4]`.
+    [[nodiscard]] gp::Float32 getUIScale() const noexcept
+    {
+        return m_uiScale;
+    }
+
     /// @brief Checks whether the backend is bound to an ImGui context.
     /// @return True between a successful `initialize()` and `shutdown()`.
     [[nodiscard]] bool isInitialized() const noexcept
@@ -119,6 +135,8 @@ private:
     gp::Float32 m_overrideWidth{ 0.0f };
     gp::Float32 m_overrideHeight{ 0.0f };
     gp::Float32 m_overrideScale{ 1.0f };
+    gp::Float32 m_contentScale{ 1.0f };
+    gp::Float32 m_uiScale{ 1.0f };
     gp::hal::CursorShape m_lastCursorShape{ gp::hal::CursorShape::Count };
     bool m_isCursorHidden{ false };
     bool m_hasDisplayOverride{ false };
