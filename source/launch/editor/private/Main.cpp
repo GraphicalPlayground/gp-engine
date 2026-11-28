@@ -754,7 +754,8 @@ protected:
     }
 
     /// @copydoc gp::Application::onKeyboardEvent()
-    /// @note Forwards to Dear ImGui; engine shortcuts are gated on `ImGuiLayer::wantsKeyboardCapture()` in `onUpdate()`.
+    /// @note Forwards to Dear ImGui; engine shortcuts are gated on `ImGuiLayer::wantsKeyboardCapture()` in
+    /// `onUpdate()`.
     virtual void onKeyboardEvent(const hal::event::KeyboardEvent& ev) noexcept override
     {
         (void)m_imgui.processKeyboardEvent(ev);
