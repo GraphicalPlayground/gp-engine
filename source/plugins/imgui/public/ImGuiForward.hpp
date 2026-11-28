@@ -11,6 +11,7 @@
 struct ImGuiContext;
 struct ImDrawData;
 struct ImTextureData;
+struct ImGuiStyle;
 enum ImGuiKey : int;
 
 namespace gp::imgui
