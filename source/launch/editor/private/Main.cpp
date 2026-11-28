@@ -12,6 +12,7 @@
 #include "console/ConsoleEnums.hpp"
 #include "console/ConsoleTypes.hpp"
 #include "console/IConsoleManager.hpp"
+#include "console/IConsoleVariable.hpp"
 #include "containers/arrays/Vector.hpp"      // IWYU pragma: keep
 #include "containers/strings/CharTraits.hpp"
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
@@ -23,6 +24,13 @@
 #include "device/DynamicRHI.hpp"
 #include "device/RHIGlobals.hpp"
 #include "device/RHIModuleDiscovery.hpp"
+#include "event/data/TextInputEvent.hpp"   // IWYU pragma: keep
+#include "event/input/KeyboardEvent.hpp"   // IWYU pragma: keep
+#include "event/input/MouseEvent.hpp"      // IWYU pragma: keep
+#include "event/system/WindowEvent.hpp"    // IWYU pragma: keep
+#include "imgui.h"
+#include "ImGuiLayer.hpp"
+#include "ImGuiLayerDesc.hpp"
 #include "Launch.hpp"
 #include "logging/LogMacros.hpp"
 #include "maths/base/Arithmetic.hpp"
@@ -44,6 +52,7 @@
 #include "presentation/Viewport.hpp"   // IWYU pragma: keep
 #include "profiling/Profiler.hpp"
 #include "profiling/ProfilingControl.hpp"
+#include "renderer/ImGuiRendererDesc.hpp"
 #include "resources/Buffer.hpp"   // IWYU pragma: keep
 #include "resources/BufferCreateDesc.hpp"
 #include "resources/Texture.hpp"
@@ -474,6 +483,8 @@ protected:
             return false;
         }
 
+        initializeEditorUI();
+
         GP_LOG_INFO(
             LogEditor,
             "Controls: Arrow keys / Mouse left-drag orbit cube | Mouse wheel zoom | 'Space' wireframe | 'ESC'/'Q' exit | 'F1'/'`' console shell."
@@ -492,10 +503,17 @@ protected:
             "EditorApplication::OnUpdate", GP_U32_COLOR_GREEN, profiling::ProfilingControl::isZonesEnabled()
         );
 
+        // Dear ImGui frame: built first so `wantsMouseCapture()` / `wantsKeyboardCapture()` below reflect this frame's
+        // hover and focus state, and so early returns further down never leave an ImGui frame open.
+        updateEditorUI(timeStats);
+        const bool isUIMouseCaptured = m_imgui.wantsMouseCapture();
+        const bool isUIKeyboardCaptured = m_imgui.wantsKeyboardCapture();
+
         const gp::hal::input::IInputSystem& input = getInput();
 
-        // Check for exit commands using keyboard Scancodes or Keycodes
-        if (input.isScancodeDown(gp::hal::input::Scancode::Escape) || input.isScancodeDown(gp::hal::input::Scancode::Q))
+        // Check for exit commands (suppressed while an ImGui widget owns the keyboard, e.g. typing 'q' in a text field)
+        if (!isUIKeyboardCaptured && (input.isScancodeDown(gp::hal::input::Scancode::Escape) ||
+                                      input.isScancodeDown(gp::hal::input::Scancode::Q)))
         {
             GP_LOG_INFO(LogEditor, "Exit key detected. Requesting shutdown...");
             requestQuit();
@@ -503,8 +521,8 @@ protected:
         }
 
         // TEMP: Switch terminal stdin into an interactive console command shell on F1 or Grave (` / ~).
-        if (input.wasScancodeJustPressed(gp::hal::input::Scancode::F1) ||
-            input.wasScancodeJustPressed(gp::hal::input::Scancode::Grave))
+        if (!isUIKeyboardCaptured && (input.wasScancodeJustPressed(gp::hal::input::Scancode::F1) ||
+                                      input.wasScancodeJustPressed(gp::hal::input::Scancode::Grave)))
         {
             runTemporaryStdinShell();
             return;
@@ -532,9 +550,9 @@ protected:
 
         // Orbit camera controls (Arrow keys + Mouse left-drag + Mouse wheel zoom) and wireframe toggle
         const gp::Float32 dt = timeStats.unscaledDeltaTime;
-        m_elapsedTime += dt;
+        m_elapsedTime += dt * m_animationSpeed;
 
-        if (input.wasKeyJustPressed(gp::hal::input::Keycode::Space))
+        if (!isUIKeyboardCaptured && input.wasKeyJustPressed(gp::hal::input::Keycode::Space))
         {
             m_wireframeEnabled = !m_wireframeEnabled;
             GP_LOG_INFO(LogEditor, "[TEMP] Wireframe mode: {}", m_wireframeEnabled ? "ON" : "OFF");
@@ -544,34 +562,37 @@ protected:
         constexpr gp::Float32 kWheelZoomSpeed = 0.35f;
         constexpr gp::Float32 kMaxPitchRadians = 1.48f;
 
-        if (input.isScancodeDown(gp::hal::input::Scancode::Left))
+        if (!isUIKeyboardCaptured)
         {
-            m_cameraYaw -= kKeyOrbitSpeed * dt;
-        }
-        if (input.isScancodeDown(gp::hal::input::Scancode::Right))
-        {
-            m_cameraYaw += kKeyOrbitSpeed * dt;
-        }
-        if (input.isScancodeDown(gp::hal::input::Scancode::Up))
-        {
-            m_cameraPitch += kKeyOrbitSpeed * dt;
-        }
-        if (input.isScancodeDown(gp::hal::input::Scancode::Down))
-        {
-            m_cameraPitch -= kKeyOrbitSpeed * dt;
+            if (input.isScancodeDown(gp::hal::input::Scancode::Left))
+            {
+                m_cameraYaw -= kKeyOrbitSpeed * dt;
+            }
+            if (input.isScancodeDown(gp::hal::input::Scancode::Right))
+            {
+                m_cameraYaw += kKeyOrbitSpeed * dt;
+            }
+            if (input.isScancodeDown(gp::hal::input::Scancode::Up))
+            {
+                m_cameraPitch += kKeyOrbitSpeed * dt;
+            }
+            if (input.isScancodeDown(gp::hal::input::Scancode::Down))
+            {
+                m_cameraPitch -= kKeyOrbitSpeed * dt;
+            }
         }
 
         const gp::hal::input::IMouse& mouse = input.getMouse();
         const gp::hal::input::Stick2D mousePos = mouse.getPosition();
         const gp::hal::input::Stick2D mouseDelta = mouse.getDelta();
-        if (mouse.isButtonDown(gp::hal::input::MouseButton::Left))
+        if (!isUIMouseCaptured && mouse.isButtonDown(gp::hal::input::MouseButton::Left))
         {
             m_cameraYaw -= mouseDelta.x * kMouseSensitivity;
             m_cameraPitch += mouseDelta.y * kMouseSensitivity;
         }
 
         const gp::hal::input::Stick2D wheelDelta = mouse.getWheelDelta();
-        if (wheelDelta.y != 0.0f)
+        if (!isUIMouseCaptured && wheelDelta.y != 0.0f)
         {
             m_cameraDistance = gp::math::clamp(m_cameraDistance - wheelDelta.y * kWheelZoomSpeed, 1.5f, 12.0f);
         }
@@ -639,7 +660,7 @@ protected:
         }
 
         // Trigger a themed 3-button custom modal message box when pressing 'M'
-        if (getInput().wasKeyJustPressed(gp::hal::input::Keycode::M))
+        if (!isUIKeyboardCaptured && getInput().wasKeyJustPressed(gp::hal::input::Keycode::M))
         {
             using namespace gp::hal;
             const DialogButtonDesc buttons[] = {
@@ -664,7 +685,7 @@ protected:
 
         // Copy text to clipboard on Ctrl+C, and paste on Ctrl+V
         const gp::hal::input::IKeyboard& kb = getInput().getKeyboard();
-        if (kb.hasModifiers(gp::hal::input::KeyModifier::Ctrl))
+        if (!isUIKeyboardCaptured && kb.hasModifiers(gp::hal::input::KeyModifier::Ctrl))
         {
             if (kb.wasKeyJustPressed(gp::hal::input::Keycode::C))
             {
@@ -678,7 +699,7 @@ protected:
         }
 
         // Open an asynchronous native File Picker when pressing 'O'
-        if (getInput().wasKeyJustPressed(gp::hal::input::Keycode::O))
+        if (!isUIKeyboardCaptured && getInput().wasKeyJustPressed(gp::hal::input::Keycode::O))
         {
             using namespace gp::hal;
             static constexpr DialogFileFilter kFilters[] = { DialogFileFilter("3D Models (glTF/FBX)", "gltf;glb;fbx"),
@@ -726,11 +747,281 @@ protected:
             "EditorApplication::OnShutdown", GP_U32_COLOR_RED, profiling::ProfilingControl::isZonesEnabled()
         );
 
+        // ImGui owns RHI textures and buffers: release them before the cube renderer flushes the deletion queues.
+        m_imgui.shutdown();
         shutdownCubeRenderer();
         GP_LOG_INFO(LogEditor, "Application shut down cleanly.");
     }
 
+    /// @copydoc gp::Application::onKeyboardEvent()
+    /// @note Forwards to Dear ImGui; engine shortcuts are gated on `ImGuiLayer::wantsKeyboardCapture()` in `onUpdate()`.
+    virtual void onKeyboardEvent(const hal::event::KeyboardEvent& ev) noexcept override
+    {
+        (void)m_imgui.processKeyboardEvent(ev);
+    }
+
+    /// @copydoc gp::Application::onMouseEvent()
+    /// @note Forwards to Dear ImGui; camera orbit/zoom is gated on `ImGuiLayer::wantsMouseCapture()` in `onUpdate()`.
+    virtual void onMouseEvent(const hal::event::MouseEvent& ev) noexcept override
+    {
+        (void)m_imgui.processMouseEvent(ev);
+    }
+
+    /// @copydoc gp::Application::onTextInputEvent()
+    virtual void onTextInputEvent(const hal::event::TextInputEvent& ev, StringView utf8Text) noexcept override
+    {
+        (void)m_imgui.processTextInputEvent(ev, utf8Text);
+    }
+
+    /// @copydoc gp::Application::onWindowEvent()
+    virtual void onWindowEvent(const hal::event::WindowEvent& ev) noexcept override
+    {
+        m_imgui.processWindowEvent(ev);
+    }
+
 private:
+    /// @brief Creates the Dear ImGui layer bound to the main window and the active DynamicRHI.
+    /// @note Non-fatal: the editor keeps running without UI when the RHI cannot host the ImGui renderer.
+    void initializeEditorUI() noexcept
+    {
+        if (!m_cubeRendererReady)
+        {
+            GP_LOG_INFO(LogEditor, "Editor UI skipped (no active Vulkan presentation).");
+            return;
+        }
+
+        gp::imgui::ImGuiLayerDesc uiDesc{};
+        uiDesc.theme = gp::imgui::ImGuiTheme::Dark;
+        uiDesc.enableDocking = true;
+        uiDesc.iniFilename = nullptr;   // Demo layout is rebuilt every launch; nothing is written to the CWD.
+        if (!m_imgui.initialize(getMainWindow(), uiDesc))
+        {
+            GP_LOG_WARNING(LogEditor, "Dear ImGui layer failed to initialize; continuing without editor UI.");
+            return;
+        }
+
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.WindowRounding = 6.0f;
+        style.FrameRounding = 4.0f;
+        style.GrabRounding = 4.0f;
+        GP_LOG_INFO(LogEditor, "Dear ImGui {} editor UI ready.", gp::StringView(ImGui::GetVersion()));
+    }
+
+    /// @brief Builds this frame's editor UI: dockspace, main menu, scene controls, statistics and optional demos.
+    /// @param[in] timeStats Frame timing metrics for the statistics panel.
+    void updateEditorUI(const gp::time::FrameTimeStats& timeStats) noexcept
+    {
+        if (!m_imgui.isInitialized())
+        {
+            return;
+        }
+
+        m_frameTimeHistory[m_frameTimeHistoryOffset] = timeStats.unscaledDeltaTime * 1000.0f;
+        m_frameTimeHistoryOffset = (m_frameTimeHistoryOffset + 1u) % kFrameTimeHistorySize;
+
+        m_imgui.beginFrame(timeStats.unscaledDeltaTime);
+
+        // Pass-through central node: the 3D viewport stays visible and interactive behind docked panels.
+        ImGui::DockSpaceOverViewport(0u, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+
+        drawMainMenuBar();
+        if (m_showScenePanel)
+        {
+            drawScenePanel();
+        }
+        if (m_showStatsPanel)
+        {
+            drawStatsPanel(timeStats);
+        }
+        if (m_showImGuiDemo)
+        {
+            ImGui::ShowDemoWindow(&m_showImGuiDemo);
+        }
+        if (m_showImGuiMetrics)
+        {
+            ImGui::ShowMetricsWindow(&m_showImGuiMetrics);
+        }
+
+        m_imgui.endFrame();
+    }
+
+    /// @brief Draws the editor main menu bar (file actions and panel visibility toggles).
+    void drawMainMenuBar() noexcept
+    {
+        if (!ImGui::BeginMainMenuBar())
+        {
+            return;
+        }
+
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Quit", "Esc"))
+            {
+                requestQuit();
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View"))
+        {
+            ImGui::MenuItem("Scene", nullptr, &m_showScenePanel);
+            ImGui::MenuItem("Statistics", nullptr, &m_showStatsPanel);
+            ImGui::Separator();
+            ImGui::MenuItem("Dear ImGui Demo", nullptr, &m_showImGuiDemo);
+            ImGui::MenuItem("Dear ImGui Metrics", nullptr, &m_showImGuiMetrics);
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
+
+    /// @brief Draws interactive controls for the orbit camera, animation, rasterization mode and UI accent.
+    void drawScenePanel() noexcept
+    {
+        ImGui::SetNextWindowPos(ImVec2(16.0f, 40.0f), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(320.0f, 0.0f), ImGuiCond_FirstUseEver);
+        if (ImGui::Begin("Scene", &m_showScenePanel))
+        {
+            ImGui::SeparatorText("Orbit Camera");
+            ImGui::SliderAngle("Yaw", &m_cameraYaw, -360.0f, 360.0f);
+            ImGui::SliderAngle("Pitch", &m_cameraPitch, -84.0f, 84.0f);
+            ImGui::SliderFloat("Distance", &m_cameraDistance, 1.5f, 12.0f, "%.2f");
+            if (ImGui::Button("Reset Camera"))
+            {
+                m_cameraYaw = 0.65f;
+                m_cameraPitch = 0.45f;
+                m_cameraDistance = 3.0f;
+            }
+
+            ImGui::SeparatorText("Rendering");
+            ImGui::Checkbox("Wireframe (Space)", &m_wireframeEnabled);
+            ImGui::SliderFloat("Animation Speed", &m_animationSpeed, 0.0f, 4.0f, "%.2fx");
+
+            ImGui::SeparatorText("Theme");
+            if (ImGui::ColorEdit3("Accent", m_accentColor))
+            {
+                ImGuiStyle& style = ImGui::GetStyle();
+                const ImVec4 accent(m_accentColor[0], m_accentColor[1], m_accentColor[2], 1.0f);
+                style.Colors[ImGuiCol_CheckMark] = accent;
+                style.Colors[ImGuiCol_SliderGrab] = accent;
+                style.Colors[ImGuiCol_SliderGrabActive] = accent;
+            }
+
+            ImGui::SeparatorText("Text Input");
+            ImGui::InputTextWithHint(
+                "##note", "Type here: Esc/Q/Space stay inside ImGui", m_noteBuffer, sizeof(m_noteBuffer)
+            );
+        }
+        ImGui::End();
+    }
+
+    /// @brief Draws frame timing, RHI identity and ImGui renderer statistics.
+    /// @param[in] timeStats Frame timing metrics.
+    void drawStatsPanel(const gp::time::FrameTimeStats& timeStats) noexcept
+    {
+        const ImGuiViewport* const viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(
+            ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - 16.0f, viewport->WorkPos.y + 16.0f),
+            ImGuiCond_FirstUseEver,
+            ImVec2(1.0f, 0.0f)
+        );
+        ImGui::SetNextWindowSize(ImVec2(340.0f, 0.0f), ImGuiCond_FirstUseEver);
+        if (ImGui::Begin("Statistics", &m_showStatsPanel))
+        {
+            const gp::rhi::DynamicRHI* const activeRHI = getDynamicRHI();
+            const gp::StringView rhiName = (activeRHI != nullptr) ? activeRHI->getName() : gp::StringView("None");
+            ImGui::Text("RHI: %.*s", static_cast<int>(rhiName.size()), rhiName.data());
+            ImGui::Text("Viewport: %u x %u", m_viewportWidth, m_viewportHeight);
+
+            ImGui::SeparatorText("Frame");
+            ImGui::Text(
+                "%.1f FPS (%.2f ms)",
+                static_cast<gp::Float64>(timeStats.smoothedFps),
+                static_cast<gp::Float64>(timeStats.unscaledDeltaTime * 1000.0f)
+            );
+            ImGui::Text("Frame index: %llu", static_cast<unsigned long long>(timeStats.frameIndex));
+            ImGui::PlotLines(
+                "##frametimes",
+                m_frameTimeHistory,
+                static_cast<int>(kFrameTimeHistorySize),
+                static_cast<int>(m_frameTimeHistoryOffset),
+                "frame time (ms)",
+                0.0f,
+                33.3f,
+                ImVec2(-1.0f, 64.0f)
+            );
+
+            drawPresentationControls();
+
+            ImGui::SeparatorText("Dear ImGui Renderer");
+            const gp::imgui::ImGuiRendererStats& uiStats = m_imgui.getRenderer().getStats();
+            if (ImGui::BeginTable("##uistats", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
+            {
+                const auto addRow = [](const char* const label, const gp::UInt32 value) -> void
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(label);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%u", value);
+                };
+                addRow("Draw calls", uiStats.drawCalls);
+                addRow("Vertices", uiStats.vertexCount);
+                addRow("Indices", uiStats.indexCount);
+                addRow("Vertex capacity", uiStats.vertexCapacity);
+                addRow("Index capacity", uiStats.indexCapacity);
+                addRow("Resident textures", uiStats.residentTextures);
+                addRow("Texture requests", uiStats.textureRequests);
+                ImGui::EndTable();
+            }
+
+            const ImGuiIO& io = ImGui::GetIO();
+            ImGui::Text(
+                "Capture: mouse=%s keyboard=%s",
+                io.WantCaptureMouse ? "yes" : "no",
+                io.WantCaptureKeyboard ? "yes" : "no"
+            );
+        }
+        ImGui::End();
+    }
+
+    /// @brief Draws live presentation controls: window VSync and the `app.TargetFps` foreground frame cap.
+    /// @details Diagnostic aid for latency and frame-cap investigations. With VSync on, the swapchain uses MAILBOX/FIFO
+    ///          and the observed rate is bounded by the display refresh and by DWM composition; with VSync off it uses
+    ///          IMMEDIATE and only the CPU pacer (`app.TargetFps`) limits the loop.
+    void drawPresentationControls() noexcept
+    {
+        ImGui::SeparatorText("Presentation");
+
+        gp::hal::IWindow* const mainWindow = getMainWindow();
+        if (mainWindow != nullptr)
+        {
+            bool isVSyncEnabled = mainWindow->isVSyncEnabled();
+            if (ImGui::Checkbox("VSync", &isVSyncEnabled))
+            {
+                mainWindow->setVSyncEnabled(isVSyncEnabled);
+            }
+            ImGui::SameLine();
+            ImGui::TextDisabled("(%s)", mainWindow->isMaximized() ? "maximized" : "windowed");
+        }
+
+        gp::console::IConsoleVariable* const targetFpsVar =
+            gp::console::IConsoleManager::get().findConsoleVariable("app.TargetFps");
+        if (targetFpsVar != nullptr)
+        {
+            gp::Float32 targetFps = static_cast<gp::Float32>(targetFpsVar->getFloat64());
+            if (ImGui::SliderFloat("Target FPS", &targetFps, 0.0f, 480.0f, targetFps <= 0.0f ? "Unlimited" : "%.0f"))
+            {
+                // Rejected only when a higher-priority source (command line, console) already owns the value.
+                const gp::console::ConsoleResult result = targetFpsVar->set(targetFps);
+                if (result != gp::console::ConsoleResult::Success)
+                {
+                    GP_LOG_WARNING(LogEditor, "app.TargetFps update rejected by priority rules.");
+                }
+            }
+        }
+    }
+
     /// @brief Creates or recreates the depth buffer matching `width x height` and transitions it to `DSVWrite`.
     /// @param[in] width Target width in pixels.
     /// @param[in] height Target height in pixels.
@@ -955,6 +1246,9 @@ private:
                 )
             );
 
+            // ImGui upload phase (texture streaming + geometry copy) must be recorded outside the render pass.
+            m_imgui.prepareRender(cmdList);
+
             const gp::rhi::command::RenderPassInfo renderPassInfo(
                 backBuffer.get(),
                 gp::rhi::command::RenderTargetActions::ClearStore,
@@ -1045,6 +1339,9 @@ private:
                     cmdList.drawIndexedPrimitive(m_indexBuffer.get(), 0, 0u, 24u, 0u, 12u, 1u);
                 }
             }
+
+            // Overlay: ImGui draws last into the scene pass, compositing over the cube without an extra load/store.
+            m_imgui.renderInPass(cmdList);
 
             cmdList.endRenderPass();
 
@@ -1242,6 +1539,39 @@ private:
 
     /// @brief Orbit camera distance from the cube origin.
     gp::Float32 m_cameraDistance{ 3.0f };
+
+    /// @brief Multiplier applied to `m_elapsedTime` progression (cube spin and light orbit).
+    gp::Float32 m_animationSpeed{ 1.0f };
+
+    /// @brief Number of frame-time samples kept for the statistics plot.
+    static constexpr gp::USize kFrameTimeHistorySize = 120u;
+
+    /// @brief Ring buffer of recent frame times in milliseconds.
+    gp::Float32 m_frameTimeHistory[kFrameTimeHistorySize]{};
+
+    /// @brief Next write index into `m_frameTimeHistory`.
+    gp::USize m_frameTimeHistoryOffset{ 0u };
+
+    /// @brief Accent color edited in the Scene panel and applied to ImGui check marks and sliders.
+    gp::Float32 m_accentColor[3]{ 0.26f, 0.59f, 0.98f };
+
+    /// @brief Scratch UTF-8 buffer for the Scene panel text field.
+    char m_noteBuffer[128]{};
+
+    /// @brief Scene panel visibility.
+    bool m_showScenePanel{ true };
+
+    /// @brief Statistics panel visibility.
+    bool m_showStatsPanel{ true };
+
+    /// @brief Dear ImGui demo window visibility.
+    bool m_showImGuiDemo{ false };
+
+    /// @brief Dear ImGui metrics/debugger window visibility.
+    bool m_showImGuiMetrics{ false };
+
+    /// @brief Dear ImGui integration (context + HAL platform + DynamicRHI renderer).
+    gp::imgui::ImGuiLayer m_imgui{};
 };
 
 /// @brief Engine launch entry point invoked by `GP_IMPLEMENT_APPLICATION_ENTRY`.
