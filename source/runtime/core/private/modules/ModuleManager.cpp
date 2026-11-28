@@ -9,6 +9,7 @@
 #include "containers/strings/CharTraits.hpp"
 #include "containers/strings/FixedString.hpp"
 #include "logging/LogFormatter.hpp"
+#include "logging/Logger.hpp"
 #include "logging/LogMacros.hpp"
 #include "memory/GlobalMemory.hpp"
 #include "platforms/base/Platform.hpp"
@@ -31,6 +32,21 @@ namespace gp::modules
 
 namespace
 {
+
+/// @brief Flushes the asynchronous logger before unmapping a dynamically loaded shared library.
+/// @details Draining queued log records before `FreeLibrary`/`dlclose` ensures no background logger worker or sink
+///          touches memory or resources owned by the outgoing module image.
+/// @param[in] libraryHandle Native OS shared-library handle to release.
+void flushLoggerAndFreeLibrary(void* const libraryHandle) noexcept
+{
+    if (libraryHandle == nullptr)
+    {
+        return;
+    }
+
+    gp::log::Logger::instance().flush();
+    gp::platform::SharedLibrary::freeHandle(libraryHandle);
+}
 
 /// @brief Global `constinit` spinlock protecting the `.bss` intrusive static registrant list before `main()`.
 constinit gp::thread::AtomicFlag g_staticRegistrantListLock{};
@@ -595,7 +611,7 @@ IModule* ModuleManager::loadModuleWithDesc(const ModuleDesc& desc, ModuleLoadRes
 
             if (rawInitSym == nullptr || rawDestroySym == nullptr)
             {
-                gp::platform::SharedLibrary::freeHandle(loadedLibHandle);
+                flushLoggerAndFreeLibrary(loadedLibHandle);
                 loadedLibHandle = nullptr;
                 loadStatus = ModuleLoadResult::EntryPointMissing;
             }
@@ -624,7 +640,7 @@ IModule* ModuleManager::loadModuleWithDesc(const ModuleDesc& desc, ModuleLoadRes
                     {
                         dynamicDestroyFn(handshake.moduleInstance);
                     }
-                    gp::platform::SharedLibrary::freeHandle(loadedLibHandle);
+                    flushLoggerAndFreeLibrary(loadedLibHandle);
                     loadedLibHandle = nullptr;
                     dynamicDestroyFn = nullptr;
                     loadStatus = ModuleLoadResult::EntryPointMissing;
@@ -639,14 +655,14 @@ IModule* ModuleManager::loadModuleWithDesc(const ModuleDesc& desc, ModuleLoadRes
                     {
                         dynamicDestroyFn(handshake.moduleInstance);
                     }
-                    gp::platform::SharedLibrary::freeHandle(loadedLibHandle);
+                    flushLoggerAndFreeLibrary(loadedLibHandle);
                     loadedLibHandle = nullptr;
                     dynamicDestroyFn = nullptr;
                     loadStatus = ModuleLoadResult::AbiVersionMismatch;
                 }
                 else if (handshake.result != ModuleLoadResult::Success || handshake.moduleInstance == nullptr)
                 {
-                    gp::platform::SharedLibrary::freeHandle(loadedLibHandle);
+                    flushLoggerAndFreeLibrary(loadedLibHandle);
                     loadedLibHandle = nullptr;
                     dynamicDestroyFn = nullptr;
                     loadStatus = ModuleLoadResult::InstantiationFailed;
@@ -681,7 +697,7 @@ IModule* ModuleManager::loadModuleWithDesc(const ModuleDesc& desc, ModuleLoadRes
 
             if (loadedLibHandle != nullptr)
             {
-                gp::platform::SharedLibrary::freeHandle(loadedLibHandle);
+                flushLoggerAndFreeLibrary(loadedLibHandle);
                 loadedLibHandle = nullptr;
             }
 
@@ -838,7 +854,7 @@ ModuleUnloadResult ModuleManager::unloadModule(const gp::StringView name, const 
 
     if (libraryHandleToFree != nullptr)
     {
-        gp::platform::SharedLibrary::freeHandle(libraryHandleToFree);
+        flushLoggerAndFreeLibrary(libraryHandleToFree);
     }
 
     {
