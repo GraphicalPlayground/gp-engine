@@ -597,6 +597,21 @@ void Window::setKeyboardGrabbed(bool grabbed) noexcept
     }
 }
 
+void Window::setTextInputActive(bool active) noexcept
+{
+    if (m_window == nullptr || m_desc.useHeadless || active == isTextInputActive())
+    {
+        gp::hal::generic::Window::setTextInputActive(active);
+        return;
+    }
+
+    const bool succeeded = active ? SDL_StartTextInput(m_window) : SDL_StopTextInput(m_window);
+    if (succeeded)
+    {
+        gp::hal::generic::Window::setTextInputActive(active);
+    }
+}
+
 void Window::setCursorShape(CursorShape shape) noexcept
 {
     gp::hal::generic::Window::setCursorShape(shape);
