@@ -468,6 +468,7 @@ TEST(ApplicationLifecycleTest, HeadlessJobSystemAndDoubleBufferedFrameArenas)
 
     ApplicationDesc desc{};
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.targetForegroundFps = 0.0;
     desc.targetBackgroundFps = 0.0;
     desc.frameArenaBytes = 256ULL * 1024ULL;
@@ -492,6 +493,7 @@ TEST(ApplicationFrameGraphTest, ExecutesUpdateAndRenderDAGPhasesAcrossFrames)
 
     ApplicationDesc desc{};
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.targetForegroundFps = 0.0;
     desc.targetBackgroundFps = 0.0;
     desc.frameArenaBytes = 256ULL * 1024ULL;
@@ -514,6 +516,7 @@ TEST(ApplicationCommandLineTest, AppliesThreadsAndNoJobSystemOverrides)
 {
     ApplicationDesc desc{};
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.targetForegroundFps = 0.0;
     desc.targetBackgroundFps = 0.0;
     desc.frameArenaBytes = 128ULL * 1024ULL;
@@ -546,6 +549,7 @@ TEST(ApplicationLifecycleTest, AbortOnInitializeReturnsNegativeExitCodeAndCleans
 
     ApplicationDesc desc{};
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.jobSystem.workerThreadCount = 2u;
     desc.jobSystem.standardFiberCount = 8u;
     desc.jobSystem.largeFiberCount = 2u;
@@ -573,6 +577,7 @@ TEST(ApplicationLoggingTest, InitializesLoggerRoutesLifecycleLogsAndCleansUpSink
     desc.backend.appName = "TestLoggingHost";
     desc.backend.appVersion = "2.0.0";
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.enableJobSystem = false;
     desc.enableConsoleLogSink = false;
     desc.enableFileLogSink = false;
@@ -603,6 +608,7 @@ TEST(ApplicationConsoleWiringTest, FrameSyncLatchFlushSinksAndRuntimeControls)
     ApplicationDesc desc{};
     desc.backend.appName = "ConsoleWiringApp";
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.enableLogging = false;
     desc.targetForegroundFps = 0.0;
     desc.targetBackgroundFps = 0.0;
@@ -782,6 +788,7 @@ TEST(ApplicationConsoleWiringTest, CommandLineOverridesApplyToAppAndClockOnBoots
 {
     ApplicationDesc desc{};
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.enableLogging = false;
     desc.enableJobSystem = false;
     desc.targetForegroundFps = 120.0;
@@ -845,6 +852,7 @@ TEST(ApplicationThreadRoleWiringTest, SingleThreadedModeClaimsAllRolesAndPumpsPe
 
     ApplicationDesc desc{};
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.enableLogging = false;
     desc.enableJobSystem = false;
     desc.singleThreadedRenderAndRHI = true;
@@ -976,6 +984,7 @@ TEST(ApplicationThreadRoleWiringTest, DedicatedRenderModeLeavesRenderAndRHIUncla
 
     ApplicationDesc desc{};
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.enableLogging = false;
     desc.enableJobSystem = false;
     desc.singleThreadedRenderAndRHI = false;
@@ -1042,6 +1051,7 @@ TEST(ApplicationThreadRoleWiringTest, FailsInitIfAnotherThreadAlreadyOwnsGameRol
 
     ApplicationDesc desc{};
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.enableLogging = false;
     desc.enableJobSystem = false;
 
@@ -1072,6 +1082,7 @@ TEST(ApplicationVfsWiringTest, DefaultMountsLifecycleAndConsoleDiagnostics)
     ApplicationDesc desc{};
     desc.backend.appName = "GPAppVfsLifecycleUnitTest";
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.enableLogging = false;
     desc.enableJobSystem = false;
     desc.targetForegroundFps = 0.0;
@@ -1162,6 +1173,7 @@ TEST(ApplicationVfsWiringTest, CommandLineNoVfsDisablesDefaultMountsAndPreserves
     {
         ApplicationDesc desc{};
         desc.createMainWindow = false;
+        desc.rhi.forceNullRHI = true;
         desc.enableLogging = false;
         desc.enableJobSystem = false;
         desc.targetForegroundFps = 0.0;
@@ -1208,6 +1220,7 @@ TEST(ApplicationVfsWiringTest, CommandLineNoVfsDisablesDefaultMountsAndPreserves
     {
         ApplicationDesc desc{};
         desc.createMainWindow = false;
+        desc.rhi.forceNullRHI = true;
         desc.enableLogging = false;
         desc.enableJobSystem = false;
         desc.targetForegroundFps = 0.0;
@@ -1271,6 +1284,7 @@ TEST(ApplicationVfsWiringTest, CommandLineVfsAppAndVfsLogFileUriResolution)
 
     ApplicationDesc desc{};
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.enableLogging = true;
     desc.enableConsoleLogSink = false;
     desc.enableDebugOutputLogSink = false;
@@ -1484,6 +1498,7 @@ TEST(ApplicationModuleWiringTest, FailingRequiredStartupModuleAbortsRunAndRollsB
 
     ApplicationDesc desc{};
     desc.createMainWindow = false;
+    desc.rhi.forceNullRHI = true;
     desc.enableLogging = false;
     desc.enableJobSystem = false;
     desc.failOnStartupModuleLoadError = true;
