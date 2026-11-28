@@ -75,6 +75,9 @@ struct VulkanViewportServices
     /// @brief Framebuffer cache notified when swapchain images are destroyed.
     VulkanRenderPassManager* renderPassManager{ nullptr };
 
+    /// @brief Registry the viewport registers with, so the RHI can release it at shutdown even if still referenced.
+    VulkanViewportRegistry* viewportRegistry{ nullptr };
+
     /// @brief Reports whether the required services are present.
     /// @return True with valid resource services and a graphics queue.
     [[nodiscard]] bool isValid() const noexcept
