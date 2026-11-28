@@ -112,7 +112,9 @@ AGENTS/
 skills/
 .agents/
 GEMINI.md
+.code-review-graph/
 graphify-out/
+/*.json
 
 # ====================
 # Compiler Output
