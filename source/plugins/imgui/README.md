@@ -21,6 +21,7 @@ official ImGui platform or renderer backends.
 |----------------------|----------------------------------------------------------------------------------------------|
 | `ImGuiLayer`         | Single object that owns the ImGui context and both backends. Most applications only need this. |
 | `ImGuiHALPlatform`   | Turns HAL keyboard, mouse, text and window events into ImGui IO. Also drives the cursor shape and starts/stops text input (IME). |
+| `ImGuiConsole`       | Optional Unreal-style CVar/command console. Call `draw()` inside the ImGui frame; `` ` `` / `²` toggles it. Suggestions are ranked exact > prefix > substring; Tab completes; Up/Down browses suggestions or history. |
 | `ImGuiRHIRenderer`   | Renders `ImDrawData` through `CommandListImmediate`. It streams ImGui 1.92+ textures, packs all draw lists into one vertex buffer and one index buffer, and caches a PSO for each render-pass attachment signature. |
 
 Rendering happens in two phases, because RHI uploads are not allowed inside a render pass:
