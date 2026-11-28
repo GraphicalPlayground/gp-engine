@@ -24,13 +24,15 @@
 #include "memory/pointers/UniquePtr.hpp"
 #include "pendingstate/VulkanPendingStateTypes.hpp"
 #include "pipeline/IVulkanPipelineDeletionListener.hpp"
-#include "pipeline/PipelineForward.hpp"             // IWYU pragma: keep
-#include "pipeline/VulkanPipelineForward.hpp"       // IWYU pragma: keep
+#include "pipeline/PipelineForward.hpp"                 // IWYU pragma: keep
+#include "pipeline/VulkanPipelineForward.hpp"           // IWYU pragma: keep
 #include "presentation/PresentArgs.hpp"
-#include "presentation/PresentationForward.hpp"     // IWYU pragma: keep
+#include "presentation/PresentationForward.hpp"         // IWYU pragma: keep
 #include "presentation/VulkanPresentationDesc.hpp"
-#include "queries/VulkanQueryForward.hpp"           // IWYU pragma: keep
-#include "renderpass/VulkanRenderPassForward.hpp"   // IWYU pragma: keep
+#include "presentation/VulkanPresentationForward.hpp"   // IWYU pragma: keep
+#include "profiling/ProfilingForward.hpp"               // IWYU pragma: keep
+#include "queries/VulkanQueryForward.hpp"               // IWYU pragma: keep
+#include "renderpass/VulkanRenderPassForward.hpp"       // IWYU pragma: keep
 #include "resources/BufferCreateDesc.hpp"
 #include "resources/BufferInitializer.hpp"
 #include "resources/TextureCreateDesc.hpp"
@@ -525,9 +527,20 @@ public:
     ///       back to `getDefaultAsyncComputeContext()`.
     [[nodiscard]] virtual command::IComputeContext* getCommandContext(sync::PipelineStage pipeline) noexcept override;
 
+    /// @copydoc DynamicRHI::acquireUploadContext()
+    /// @note Pops a warm context from the upload pool (thread-safe). It must come back through
+    ///       `FinalizeContextsArgs::uploadContext`, which finalizes it and returns it to the pool.
+    [[nodiscard]] virtual command::IUploadContext* acquireUploadContext() noexcept override;
+
+    /// @copydoc DynamicRHI::getMemoryStats()
+    /// @note Reads the memory budget extension when available, the heap sizes otherwise.
+    virtual void getMemoryStats(profiling::RHIMemoryStats& outStats) noexcept override;
+
     /// @copydoc DynamicRHI::finalizeContexts()
-    /// @note Produces one platform command list per context, in order. Pending uploads are prepended to the first one
-    ///       so they execute before any work that reads the uploaded data. Pooled contexts go back to the pool.
+    /// @note Produces one platform command list per context, in order. Pending uploads (the provider's, then
+    ///       `args.uploadContext`) are prepended to the first one so they execute before any work that reads the
+    ///       uploaded data; with no context they get a list of their own. `outResult.uploadCommandList` stays null.
+    ///       Pooled contexts go back to the pool.
     virtual void finalizeContexts(FinalizeContextsArgs&& args, FinalizeContextsResult& outResult) noexcept override;
 
     /// @copydoc DynamicRHI::submitCommandLists()
@@ -612,6 +625,20 @@ public:
     [[nodiscard]] VulkanRenderPassManager* getRenderPassManager() const noexcept
     {
         return m_renderPassManager.get();
+    }
+
+    /// @brief Returns the registry of the live viewports.
+    /// @return Registry, or `nullptr` when uninitialized.
+    [[nodiscard]] VulkanViewportRegistry* getViewportRegistry() const noexcept
+    {
+        return m_viewportRegistry.get();
+    }
+
+    /// @brief Returns the pool upload contexts are acquired from.
+    /// @return Pool, or `nullptr` when uninitialized.
+    [[nodiscard]] VulkanUploadContextPool* getUploadContextPool() const noexcept
+    {
+        return m_uploadPool.get();
     }
 
     /// @brief Returns the pipeline state cache.
@@ -759,6 +786,9 @@ private:
 
     /// @brief Services handed to viewports.
     VulkanViewportServices m_viewportServices{};
+
+    /// @brief Live viewports, stripped of their native objects at shutdown before the device dies.
+    gp::UniquePtr<VulkanViewportRegistry> m_viewportRegistry{};
 
     /// @brief Services handed to graphics contexts and upload contexts.
     VulkanContextServices m_contextServices{};

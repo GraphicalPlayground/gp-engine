@@ -25,6 +25,7 @@
 #include "memory/VulkanDeferredDeletionQueue.hpp"
 #include "memory/VulkanDeviceMemory.hpp"
 #include "memory/VulkanMemoryManager.hpp"
+#include "memory/VulkanMemoryStatsTranslation.hpp"
 #include "memory/VulkanStagingManager.hpp"
 #include "memory/VulkanTempBlockAllocator.hpp"
 #include "pendingstate/VulkanPendingComputeState.hpp"
@@ -34,6 +35,8 @@
 #include "pipeline/VulkanPipelineDeletionNotifier.hpp"
 #include "pipeline/VulkanPipelineSettings.hpp"
 #include "pipeline/VulkanPipelineStateCacheManager.hpp"
+#include "presentation/VulkanViewportRegistry.hpp"
+#include "profiling/RHIStats.hpp"
 #include "queries/VulkanQueryPoolManager.hpp"
 #include "renderpass/VulkanRenderPassManager.hpp"
 #include "renderpass/VulkanRenderPassSettings.hpp"
@@ -329,7 +332,24 @@ void VulkanDynamicRHI::finalizeContexts(FinalizeContextsArgs&& args, FinalizeCon
         return;
     }
 
-    outResult.commandLists.reserve(args.contexts.size());
+    // An upload context handed out by `acquireUploadContext()`; the RHI owns it, the caller only recorded into it.
+    VulkanUploadContext* const callerUploadContext = static_cast<VulkanUploadContext*>(args.uploadContext);
+    args.uploadContext = nullptr;
+
+    // Uploads were recorded before any of these contexts' commands were translated, so they run first. Keeping them
+    // in the first list (rather than a separate upload list, which the executor does not submit) preserves the index
+    // mapping wrappers rely on.
+    const auto finalizeUploadsInto = [this, callerUploadContext](VulkanPlatformCommandList& commandList) -> void
+    {
+        static_cast<void>(m_contextProvider->finalizeUploads(commandList));
+        if (callerUploadContext != nullptr)
+        {
+            callerUploadContext->finalize(commandList);
+            m_uploadPool->release(*callerUploadContext);
+        }
+    };
+
+    outResult.commandLists.reserve(args.contexts.size() + 1u);
     for (gp::USize index = 0u; index < args.contexts.size(); ++index)
     {
         command::IComputeContext* const context = args.contexts[index];
@@ -340,12 +360,9 @@ void VulkanDynamicRHI::finalizeContexts(FinalizeContextsArgs&& args, FinalizeCon
 
         VulkanCommandListContext& vulkanContext = toVulkanContext(*context);
         VulkanPlatformCommandList* const commandList = new VulkanPlatformCommandList();
-
-        // Uploads were recorded before any of these contexts' commands were translated, so they run first. Keeping
-        // one list per context (rather than a separate upload list) preserves the index mapping wrappers rely on.
         if (outResult.commandLists.isEmpty())
         {
-            static_cast<void>(m_contextProvider->finalizeUploads(*commandList));
+            finalizeUploadsInto(*commandList);
         }
 
         m_lastSubmittedSyncPoint = vulkanContext.getContextSyncPoint();
@@ -353,6 +370,37 @@ void VulkanDynamicRHI::finalizeContexts(FinalizeContextsArgs&& args, FinalizeCon
         outResult.commandLists.pushBack(commandList);
         releaseParallelContext(vulkanContext);
     }
+
+    // No context recorded anything, but the caller's upload context must still be submitted and returned to the pool.
+    if (outResult.commandLists.isEmpty() && (callerUploadContext != nullptr))
+    {
+        VulkanPlatformCommandList* const commandList = new VulkanPlatformCommandList();
+        finalizeUploadsInto(*commandList);
+        outResult.commandLists.pushBack(commandList);
+    }
+}
+
+command::IUploadContext* VulkanDynamicRHI::acquireUploadContext() noexcept
+{
+    if (!m_isInitialized || (m_uploadPool == nullptr))
+    {
+        return nullptr;
+    }
+    return &m_uploadPool->acquire();
+}
+
+void VulkanDynamicRHI::getMemoryStats(profiling::RHIMemoryStats& outStats) noexcept
+{
+    if (!m_isInitialized || (m_deviceMemoryManager == nullptr))
+    {
+        outStats = profiling::RHIMemoryStats{};
+        return;
+    }
+    outStats = makeVulkanRHIMemoryStats(
+        m_deviceMemoryManager->getMemoryStats(),
+        m_deviceMemoryManager->getTotalMemory(true),
+        m_deviceMemoryManager->getTotalMemory(false)
+    );
 }
 
 void VulkanDynamicRHI::submitCommandLists(SubmitCommandListsArgs&& args) noexcept
@@ -611,6 +659,8 @@ bool VulkanDynamicRHI::initServices() noexcept
     m_viewportServices.computeQueue = m_computeQueue.get();
     m_viewportServices.submitter = m_submitter.get();
     m_viewportServices.renderPassManager = m_renderPassManager.get();
+    m_viewportRegistry = gp::makeUnique<VulkanViewportRegistry>();
+    m_viewportServices.viewportRegistry = m_viewportRegistry.get();
     return true;
 }
 
@@ -678,6 +728,21 @@ void VulkanDynamicRHI::releaseAll() noexcept
         m_device->waitUntilIdle();
     }
     pollQueues();
+
+    // Viewports are owned by the application and may outlive the RHI. Their swapchains, surfaces and image views
+    // must not: strip them now, while the device, the instance and the deletion queue still exist.
+    if (m_viewportRegistry != nullptr)
+    {
+        const gp::USize numLiveViewports = m_viewportRegistry->releaseAll();
+        if (numLiveViewports > 0u)
+        {
+            GP_LOG_WARNING(
+                LogVulkanRHI,
+                "{} viewport(s) still referenced at RHI shutdown; their swapchains were released.",
+                numLiveViewports
+            );
+        }
+    }
 
     // 2. Contexts reference pipelines and descriptor pools; they go first, after the listener stops pointing at them.
     if (m_isPipelineListener)
@@ -772,6 +837,7 @@ void VulkanDynamicRHI::releaseAll() noexcept
 
     m_resourceServices = VulkanResourceServices{};
     m_viewportServices = VulkanViewportServices{};
+    m_viewportRegistry.reset();
     m_contextServices = VulkanContextServices{};
 
     // 7. Device, instance and loader.
