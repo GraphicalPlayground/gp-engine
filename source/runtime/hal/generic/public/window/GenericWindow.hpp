@@ -40,6 +40,7 @@ protected:
     bool m_isFocused{ false };
     bool m_isHovered{ false };
     bool m_isHDREnabled{ false };
+    bool m_isTextInputActive{ false };
 
     // Owned null-terminated UTF-8 title buffer so `m_desc.title` never dangles
     char m_titleBuffer[kMaxTitleBytes]{ "Graphical Playground" };
@@ -202,6 +203,12 @@ public:
     [[nodiscard]] constexpr bool isKeyboardGrabbed() const noexcept override
     {
         return m_desc.grabKeyboard;
+    }
+
+    /// @copydoc IWindow::isTextInputActive()
+    [[nodiscard]] constexpr bool isTextInputActive() const noexcept override
+    {
+        return m_isTextInputActive;
     }
 
     /// @copydoc IWindow::isCursorVisible()
@@ -498,6 +505,13 @@ public:
     constexpr void setKeyboardGrabbed(bool grabbed) noexcept override
     {
         m_desc.grabKeyboard = grabbed;
+    }
+
+    /// @copydoc IWindow::setTextInputActive()
+    /// @note Generic implementation only records shadow state; platform backends override it to drive the OS.
+    constexpr void setTextInputActive(bool active) noexcept override
+    {
+        m_isTextInputActive = active;
     }
 
     /// @copydoc IWindow::setCursorShape()
