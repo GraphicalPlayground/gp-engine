@@ -182,6 +182,7 @@
       "fmod": "audio",
       "openal": "audio",
       "xaudio2": "audio",
+      "imgui": "interface",
       "sdl3": "components",
       "compilers": "tools",
       "clang": "assembly",
