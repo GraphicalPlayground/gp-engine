@@ -129,6 +129,10 @@ public:
     /// @copydoc IWindow::setKeyboardGrabbed()
     void setKeyboardGrabbed(bool grabbed) noexcept override;
 
+    /// @copydoc IWindow::setTextInputActive()
+    /// @note Calls `SDL_StartTextInput()` / `SDL_StopTextInput()`; must be executed on the main OS thread.
+    void setTextInputActive(bool active) noexcept override;
+
     /// @copydoc IWindow::setCursorShape()
     void setCursorShape(CursorShape shape) noexcept override;
 
