@@ -211,6 +211,13 @@ public:
         return m_recreateCount;
     }
 
+    /// @brief Destroys the swapchain, its surface and image views, and detaches the back buffers, keeping the object.
+    /// @details Used when the device shuts down while the application still references the viewport. The viewport is
+    ///          inert afterwards: acquiring renders into nothing and presenting is skipped. It also forgets its
+    ///          registry, which may be destroyed before the viewport itself.
+    /// @note Called by `VulkanViewportRegistry::releaseAll()` with the device idle. Idempotent.
+    void releaseNativeResources() noexcept;
+
 protected:
     /// @brief Releases the back buffer binding, the swapchain and its surface.
     virtual ~VulkanViewport() noexcept override;

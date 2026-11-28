@@ -23,6 +23,7 @@
 #include "presentation/VulkanPresentationSettings.hpp"
 #include "presentation/VulkanSwapChain.hpp"
 #include "presentation/VulkanSwapChainSelection.hpp"
+#include "presentation/VulkanViewportRegistry.hpp"
 #include "renderpass/VulkanRenderPassManager.hpp"
 #include "resources/TextureEnums.hpp"
 #include "resources/VulkanTexture.hpp"
@@ -92,11 +93,21 @@ VulkanViewport::VulkanViewport(
       )
     , m_isFullscreen(isFullscreen)
     , m_lockToVsync(m_config.lockToVsync)
-{}
+{
+    if (m_services.viewportRegistry != nullptr)
+    {
+        m_services.viewportRegistry->add(this);
+    }
+}
 
 VulkanViewport::~VulkanViewport() noexcept
 {
     gp::thread::UniqueLock<gp::thread::Mutex> lock(m_mutex);
+    if (m_services.viewportRegistry != nullptr)
+    {
+        static_cast<void>(m_services.viewportRegistry->remove(this));
+        m_services.viewportRegistry = nullptr;
+    }
     releaseAcquiredImage();
     if (m_rhiBackBuffer)
     {
@@ -107,6 +118,35 @@ VulkanViewport::~VulkanViewport() noexcept
         m_backBuffer->detachViewport();
     }
     destroySwapChain(nullptr);
+}
+
+void VulkanViewport::releaseNativeResources() noexcept
+{
+    gp::thread::UniqueLock<gp::thread::Mutex> lock(m_mutex);
+    // The registry already dropped this viewport and may die first: never touch it again.
+    m_services.viewportRegistry = nullptr;
+
+    releaseAcquiredImage();
+    if (m_rhiBackBuffer)
+    {
+        m_rhiBackBuffer->detachViewport();
+    }
+    if (m_backBuffer && (m_backBuffer != m_rhiBackBuffer))
+    {
+        m_backBuffer->detachViewport();
+    }
+    destroySwapChain(nullptr);
+
+    // The off-screen fallbacks own device memory: drop them now so the RHI shutdown flush destroys them while the
+    // device is alive. The back buffers own nothing but are dropped too, leaving the viewport fully inert.
+    m_rhiRenderingBackBuffer.reset();
+    m_renderingBackBuffer.reset();
+    m_rhiBackBuffer.reset();
+    m_backBuffer.reset();
+    {
+        gp::thread::UniqueLock<gp::thread::Mutex> frameLock(m_frameEventMutex);
+        m_lastFrameSyncPoint.reset();
+    }
 }
 
 bool VulkanViewport::initialize(command::CommandListBase& cmdList) noexcept
@@ -200,6 +240,13 @@ bool VulkanViewport::acquireBackBufferImage(
     if (backBuffer.hasAcquiredImage())
     {
         return m_acquiredImageIndex >= 0;
+    }
+
+    // A different back buffer still bound to the previous image (replaced by a resize before it presented) must not
+    // keep a reference to a swapchain image it will never present.
+    if (m_acquiredBackBuffer && (m_acquiredBackBuffer.get() != &backBuffer))
+    {
+        releaseAcquiredImage();
     }
 
     gp::UInt32 imageIndex = 0u;
@@ -490,12 +537,19 @@ void VulkanViewport::destroySwapChain(VulkanSwapChainRecreateInfo* const outRecr
     // Acquired images and their views may still be in flight.
     device.waitUntilIdle();
 
+    // Dropping the last reference only marks a texture for deferred deletion, so its views would outlive the
+    // swapchain. Release them explicitly: the views are queued (and the cached framebuffers dropped) right now.
     for (const SwapChainImage& slot: m_images)
     {
-        if (slot.texture && (m_services.renderPassManager != nullptr))
+        if (!slot.texture)
+        {
+            continue;
+        }
+        if ((slot.texture->getServices().renderPassManager == nullptr) && (m_services.renderPassManager != nullptr))
         {
             m_services.renderPassManager->notifyDeletedImage(slot.texture->getImage(), slot.texture->getDesc().flags);
         }
+        slot.texture->releaseExternalImage();
     }
     m_images.clear();
 
