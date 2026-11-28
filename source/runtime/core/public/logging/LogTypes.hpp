@@ -121,8 +121,10 @@ using FatalLogHandlerFn = void (*)(const LogSourceLocation& location) noexcept;
 
 /// @brief Trivially copyable, 64-byte cache-line-aligned log record stored in the lock-free `MPMCRingQueue`
 ///        ([ADR-0054]).
-/// @details Total size is `512` bytes (`8` hardware cache lines): `72` bytes of header metadata plus `440` bytes of
-///          inline UTF-8 message storage (`439` characters + null terminator), with zero heap pointers.
+/// @details Total size is `512` bytes (`8` hardware cache lines): `64` bytes of header metadata plus `440` bytes of
+///          inline UTF-8 message storage (`439` characters + null terminator) and `8` bytes of alignment tail padding,
+///          with zero heap or raw module pointers. Category, source file, and function strings are stored as 32-bit
+///          `gp::NameEntryId` handles into `gp::NamePool` so queued entries remain valid across dynamic module unloads.
 struct alignas(64) LogEntry
 {
     /// @brief Monotonic timestamp in nanoseconds (`8` bytes).
@@ -134,14 +136,14 @@ struct alignas(64) LogEntry
     /// @brief Interned category `gp::Name` (`8` bytes).
     gp::Name category{};
 
-    /// @brief Static category name literal pointer (`8` bytes).
-    const char* categoryLiteral = "";
+    /// @brief Interned category display name handle in `gp::NamePool` (`4` bytes).
+    gp::NameEntryId categoryNameId = gp::kNameNoneId;
 
-    /// @brief Static source file literal pointer (`8` bytes).
-    const char* file = "";
+    /// @brief Interned source file path handle in `gp::NamePool` (`4` bytes).
+    gp::NameEntryId fileId = gp::kNameNoneId;
 
-    /// @brief Static function name literal pointer (`8` bytes).
-    const char* function = "";
+    /// @brief Interned source function name handle in `gp::NamePool` (`4` bytes).
+    gp::NameEntryId functionId = gp::kNameNoneId;
 
     /// @brief 1-based source line number (`4` bytes).
     gp::UInt32 line = 0u;
@@ -155,33 +157,37 @@ struct alignas(64) LogEntry
     /// @brief Byte length of the formatted UTF-8 string stored in `message` (`2` bytes).
     gp::UInt16 messageLength = 0u;
 
-    /// @brief Byte length of `categoryLiteral` (`1` byte).
-    gp::UInt8 categoryLength = 0u;
-
     /// @brief Severity level (`1` byte).
     LogLevel level = LogLevel::Info;
+
+    /// @brief Explicit padding aligning `message` to the second 64-byte hardware cache line (`5` bytes).
+    gp::UInt8 reserved[5]{};
 
     /// @brief Null-terminated UTF-8 formatted message payload (`440` bytes).
     char message[kMaxLogMessageLength + 1u]{};
 
-    /// @brief Produces a non-owning `LogRecordView` referencing this entry's inline storage.
+    /// @brief Produces a non-owning `LogRecordView` referencing this entry's inline storage and permanent `NamePool`
+    ///        entries.
     /// @return `LogRecordView` spanning this entry.
     [[nodiscard]] LogRecordView toView() const noexcept
     {
+        gp::NamePool& namePool = gp::NamePool::instance();
         LogRecordView view{};
         view.timestamp = gp::time::Timestamp(timestampNs);
         view.dateTime = dateTime;
         view.category = category;
-        if (categoryLiteral != nullptr && categoryLength > 0u)
+        if (categoryNameId != gp::kNameNoneId)
         {
-            view.categoryName = gp::StringView(categoryLiteral, static_cast<gp::USize>(categoryLength));
+            view.categoryName = namePool.resolveView(categoryNameId);
         }
         else if (!category.isNone())
         {
             view.categoryName = category.baseView();
         }
         view.message = gp::StringView(message, static_cast<gp::USize>(messageLength));
-        view.location = LogSourceLocation(file, function, line);
+        const char* const resolvedFile = (fileId != gp::kNameNoneId) ? namePool.resolveCString(fileId) : "";
+        const char* const resolvedFunction = (functionId != gp::kNameNoneId) ? namePool.resolveCString(functionId) : "";
+        view.location = LogSourceLocation(resolvedFile, resolvedFunction, line);
         view.threadId = threadId;
         view.fiberId = fiberId;
         view.level = level;
