@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "containers/views/StringView.hpp"
+#include "containers/views/StringView.hpp"   // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "event/system/WindowEvent.hpp"
 #include "HALBase.hpp"
@@ -123,6 +123,10 @@ public:
     /// @brief Checks if the window has keyboard input grabbed.
     /// @return True if the window has keyboard input grabbed, false otherwise.
     [[nodiscard]] virtual bool isKeyboardGrabbed() const noexcept = 0;
+
+    /// @brief Checks if OS text input (committed UTF-8 text and IME composition events) is active for this window.
+    /// @return True if the window currently receives `TextInputEvent` packets, false otherwise.
+    [[nodiscard]] virtual bool isTextInputActive() const noexcept = 0;
 
     /// @brief Checks if the system cursor is currently visible when over the window.
     /// @return True if the cursor is visible, false otherwise.
@@ -309,6 +313,13 @@ public:
     /// @brief Sets whether system keyboard shortcuts (e.g., Alt+Tab, Win key) are grabbed by this window.
     /// @param[in] grabbed True to grab keyboard input, false to release.
     virtual void setKeyboardGrabbed(bool grabbed) noexcept = 0;
+
+    /// @brief Starts or stops OS text input (UTF-8 character and IME composition events) for this window.
+    /// @details Text input is opt-in: keyboard key events are always delivered, but layout-aware committed text is only
+    ///          produced while active. UI layers toggle it while a text field has keyboard focus so that on-screen
+    ///          keyboards and IME candidate windows only appear when needed.
+    /// @param[in] active True to start receiving `TextInputEvent` packets, false to stop.
+    virtual void setTextInputActive(bool active) noexcept = 0;
 
     /// @brief Sets the cursor shape to be used when the cursor is over the window.
     /// @param[in] shape The cursor shape to use when the cursor is over the window.
