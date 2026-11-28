@@ -13,6 +13,8 @@
 #include "console/ConsoleTypes.hpp"
 #include "console/IConsoleManager.hpp"
 #include "console/IConsoleVariable.hpp"
+#include "console/ImGuiConsole.hpp"
+#include "console/ImGuiConsoleDesc.hpp"
 #include "containers/arrays/Vector.hpp"      // IWYU pragma: keep
 #include "containers/strings/CharTraits.hpp"
 #include "containers/views/VectorView.hpp"   // IWYU pragma: keep
@@ -511,18 +513,21 @@ protected:
 
         const gp::hal::input::IInputSystem& input = getInput();
 
-        // Check for exit commands (suppressed while an ImGui widget owns the keyboard, e.g. typing 'q' in a text field)
-        if (!isUIKeyboardCaptured && (input.isScancodeDown(gp::hal::input::Scancode::Escape) ||
-                                      input.isScancodeDown(gp::hal::input::Scancode::Q)))
+        // Check for exit commands (suppressed while an ImGui widget owns the keyboard, e.g. typing 'q' in a text
+        // field). Edge-triggered: Esc also closes the console, and a key still held on the next frame must not quit.
+        if (!isUIKeyboardCaptured && (input.wasScancodeJustPressed(gp::hal::input::Scancode::Escape) ||
+                                      input.wasScancodeJustPressed(gp::hal::input::Scancode::Q)))
         {
             GP_LOG_INFO(LogEditor, "Exit key detected. Requesting shutdown...");
             requestQuit();
             return;
         }
 
-        // TEMP: Switch terminal stdin into an interactive console command shell on F1 or Grave (` / ~).
-        if (!isUIKeyboardCaptured && (input.wasScancodeJustPressed(gp::hal::input::Scancode::F1) ||
-                                      input.wasScancodeJustPressed(gp::hal::input::Scancode::Grave)))
+        // TEMP: Switch terminal stdin into an interactive console command shell on F1 (Grave now toggles the ImGui
+        // console, or falls back to the stdin shell when the editor UI is unavailable).
+        if (!isUIKeyboardCaptured &&
+            (input.wasScancodeJustPressed(gp::hal::input::Scancode::F1) ||
+             (!m_imgui.isInitialized() && input.wasScancodeJustPressed(gp::hal::input::Scancode::Grave))))
         {
             runTemporaryStdinShell();
             return;
@@ -748,6 +753,7 @@ protected:
         );
 
         // ImGui owns RHI textures and buffers: release them before the cube renderer flushes the deletion queues.
+        m_console.shutdown();
         m_imgui.shutdown();
         shutdownCubeRenderer();
         GP_LOG_INFO(LogEditor, "Application shut down cleanly.");
@@ -805,6 +811,9 @@ private:
         style.WindowRounding = 6.0f;
         style.FrameRounding = 4.0f;
         style.GrabRounding = 4.0f;
+
+        // Unreal-style drop-down console bound to the process-wide console manager (` / ² toggles it).
+        m_console.initialize(&getConsoleManager(), gp::imgui::ImGuiConsoleDesc{});
         GP_LOG_INFO(LogEditor, "Dear ImGui {} editor UI ready.", gp::StringView(ImGui::GetVersion()));
     }
 
@@ -843,6 +852,9 @@ private:
             ImGui::ShowMetricsWindow(&m_showImGuiMetrics);
         }
 
+        // Last, so the console stacks above every other panel.
+        m_console.draw();
+
         m_imgui.endFrame();
     }
 
@@ -867,6 +879,10 @@ private:
         {
             ImGui::MenuItem("Scene", nullptr, &m_showScenePanel);
             ImGui::MenuItem("Statistics", nullptr, &m_showStatsPanel);
+            if (ImGui::MenuItem("Console", "`", m_console.isOpen()))
+            {
+                m_console.toggle();
+            }
             ImGui::Separator();
             ImGui::MenuItem("Dear ImGui Demo", nullptr, &m_showImGuiDemo);
             ImGui::MenuItem("Dear ImGui Metrics", nullptr, &m_showImGuiMetrics);
@@ -879,8 +895,10 @@ private:
     /// @brief Draws interactive controls for the orbit camera, animation, rasterization mode and UI accent.
     void drawScenePanel() noexcept
     {
-        ImGui::SetNextWindowPos(ImVec2(16.0f, 40.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(320.0f, 0.0f), ImGuiCond_FirstUseEver);
+        // Initial layout sizes are authored at 100 % and multiplied by the DPI-driven UI scale.
+        const gp::Float32 uiScale = m_imgui.getUIScale();
+        ImGui::SetNextWindowPos(ImVec2(16.0f * uiScale, 40.0f * uiScale), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(320.0f * uiScale, 0.0f), ImGuiCond_FirstUseEver);
         if (ImGui::Begin("Scene", &m_showScenePanel))
         {
             ImGui::SeparatorText("Orbit Camera");
@@ -920,13 +938,14 @@ private:
     /// @param[in] timeStats Frame timing metrics.
     void drawStatsPanel(const gp::time::FrameTimeStats& timeStats) noexcept
     {
+        const gp::Float32 uiScale = m_imgui.getUIScale();
         const ImGuiViewport* const viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(
-            ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - 16.0f, viewport->WorkPos.y + 16.0f),
+            ImVec2(viewport->WorkPos.x + viewport->WorkSize.x - 16.0f * uiScale, viewport->WorkPos.y + 16.0f * uiScale),
             ImGuiCond_FirstUseEver,
             ImVec2(1.0f, 0.0f)
         );
-        ImGui::SetNextWindowSize(ImVec2(340.0f, 0.0f), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(340.0f * uiScale, 0.0f), ImGuiCond_FirstUseEver);
         if (ImGui::Begin("Statistics", &m_showStatsPanel))
         {
             const gp::rhi::DynamicRHI* const activeRHI = getDynamicRHI();
@@ -949,7 +968,7 @@ private:
                 "frame time (ms)",
                 0.0f,
                 33.3f,
-                ImVec2(-1.0f, 64.0f)
+                ImVec2(-1.0f, 64.0f * uiScale)
             );
 
             drawPresentationControls();
@@ -1573,6 +1592,9 @@ private:
 
     /// @brief Dear ImGui integration (context + HAL platform + DynamicRHI renderer).
     gp::imgui::ImGuiLayer m_imgui{};
+
+    /// @brief Drop-down CVar/command console with auto-completion (drawn inside the ImGui frame).
+    gp::imgui::ImGuiConsole m_console{};
 };
 
 /// @brief Engine launch entry point invoked by `GP_IMPLEMENT_APPLICATION_ENTRY`.
