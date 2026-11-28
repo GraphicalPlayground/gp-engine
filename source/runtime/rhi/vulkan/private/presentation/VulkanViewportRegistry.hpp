@@ -7,6 +7,7 @@
 #include "containers/arrays/Vector.hpp"                 // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "presentation/VulkanPresentationForward.hpp"   // IWYU pragma: keep
+#include "RHIVulkan.hpp"
 #include "threading/sync/Mutex.hpp"
 
 namespace gp::rhi::vulkan
@@ -20,7 +21,7 @@ namespace gp::rhi::vulkan
 ///          while the device still exists. The viewport objects themselves die later, when their last reference goes.
 /// @note Thread-safe. `releaseAll()` empties the list under the lock and releases the viewports outside of it, so a
 ///       viewport locking its own mutex then this registry (its destructor) cannot deadlock against it.
-class VulkanViewportRegistry final
+class GP_RHI_VULKAN_API VulkanViewportRegistry final
 {
 public:
     /// @brief Creates an empty registry.
