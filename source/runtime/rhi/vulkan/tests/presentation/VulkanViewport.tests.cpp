@@ -5,6 +5,7 @@
 #include "presentation/VulkanViewport.hpp"
 #include "../resources/VulkanResourceTestFakes.hpp"
 #include "containers/arrays/Vector.hpp"   // IWYU pragma: keep
+#include "core/ResourceDeletionQueue.hpp"
 #include "core/ResourceForward.hpp"       // IWYU pragma: keep
 #include "CoreMinimal.hpp"
 #include "device/DeviceTypes.hpp"
@@ -18,6 +19,7 @@
 #include "presentation/VulkanPresentationTypes.hpp"
 #include "presentation/VulkanSwapChain.hpp"
 #include "presentation/VulkanSwapChainSelection.hpp"
+#include "presentation/VulkanViewportRegistry.hpp"
 #include "presentation/VulkanViewportRHI.hpp"
 #include "RHIForward.hpp"
 #include "sync/VulkanSemaphore.hpp"
@@ -183,6 +185,48 @@ TEST_F(VulkanViewportLiveTest, InitializeFailsWithoutWindow)
     EXPECT_FALSE(viewport->initialize(cmdList()));
     EXPECT_EQ(viewport->getBackBuffer(), nullptr);
     EXPECT_EQ(viewport->getSwapChain(), nullptr);
+}
+
+TEST_F(VulkanViewportLiveTest, ViewportRegistersAndUnregistersItself)
+{
+    VulkanViewportRegistry registry{};
+    VulkanViewportServices services = makeServices();
+    services.viewportRegistry = &registry;
+
+    VulkanViewportRef viewport(new VulkanViewport(
+        services, VulkanPlatformWindowContext{}, kViewportSize, kViewportSize, false, PixelFormat::Unknown
+    ));
+    EXPECT_EQ(registry.getNumViewports(), 1u);
+    EXPECT_TRUE(registry.contains(viewport.get()));
+
+    // Releasing the reference only marks the viewport; the destructor (and the unregistration) runs on flush.
+    viewport.reset();
+    resource::ResourceDeletionQueue::flushPendingDeletes(true);
+    EXPECT_EQ(registry.getNumViewports(), 0u);
+}
+
+TEST_F(VulkanViewportLiveTest, RegistryReleaseAllStripsSurvivingViewports)
+{
+    VulkanViewportRegistry registry{};
+    VulkanViewportServices services = makeServices();
+    services.viewportRegistry = &registry;
+
+    VulkanViewportRef viewport(new VulkanViewport(
+        services, VulkanPlatformWindowContext{}, kViewportSize, kViewportSize, false, PixelFormat::Unknown
+    ));
+    ASSERT_EQ(registry.getNumViewports(), 1u);
+
+    EXPECT_EQ(registry.releaseAll(), 1u);
+    EXPECT_EQ(registry.getNumViewports(), 0u);
+    EXPECT_EQ(viewport->getSwapChain(), nullptr);
+    EXPECT_EQ(viewport->getBackBuffer(), nullptr);
+    EXPECT_EQ(viewport->getAcquiredImageIndex(), -1);
+
+    // Idempotent, and the viewport forgot the registry: destroying it later must not touch it.
+    viewport->releaseNativeResources();
+    viewport.reset();
+    resource::ResourceDeletionQueue::flushPendingDeletes(true);
+    EXPECT_EQ(registry.getNumViewports(), 0u);
 }
 
 TEST_F(VulkanViewportLiveTest, CustomPresentDefaultsToNone)
