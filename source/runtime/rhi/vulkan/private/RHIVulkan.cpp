@@ -2,7 +2,17 @@
 // For more information, see https://graphical-playground/legal
 // mailto:support AT graphical-playground DOT com
 
-#include "RHIVulkan.hpp"   // IWYU pragma: keep
+#include "RHIVulkan.hpp"
+#include "device/VulkanDynamicRHIModule.hpp"
+#include "logging/LogEnums.hpp"
 #include "modules/ModuleMacros.hpp"
 
-GP_IMPLEMENT_DEFAULT_MODULE("rhi/vulkan")
+namespace gp
+{
+
+GP_DEFINE_LOG_CATEGORY(LogVulkanRHI, gp::log::LogLevel::Info, gp::log::LogLevel::Trace);
+GP_DEFINE_LOG_CATEGORY(LogVulkan, gp::log::LogLevel::Info, gp::log::LogLevel::Trace);
+
+}   // namespace gp
+
+GP_IMPLEMENT_MODULE(gp::rhi::vulkan::VulkanDynamicRHIModule, "rhi/vulkan")

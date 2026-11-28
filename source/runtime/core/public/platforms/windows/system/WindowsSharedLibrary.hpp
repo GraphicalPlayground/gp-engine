@@ -28,7 +28,7 @@ namespace gp::platform::windows
 ///            `LdrpLoaderLock` and `DllMain`.
 ///          - **Modal Error-Box Suppression:** Scopes `SetThreadErrorMode()` to suppress blocking OS DLL error dialogs
 ///            by default (honoring `-dllerrors` and `-unattended` command-line flags).
-struct SharedLibrary final : public gp::platform::generic::SharedLibrary
+struct GP_CORE_API SharedLibrary final : public gp::platform::generic::SharedLibrary
 {
 public:
     SharedLibrary() = delete;
@@ -42,30 +42,30 @@ public:
     /// @copydoc gp::platform::generic::SharedLibrary::getHandle()
     /// @note Suppresses Win32 missing-DLL error dialog boxes via `SetThreadErrorMode()` unless `-dllerrors` is set on
     ///       the command line. Thread-safe; never holds internal locks across Win32 loader calls.
-    [[nodiscard]] static GP_CORE_API void* getHandle(const gp::StringView filename) noexcept;
+    [[nodiscard]] static void* getHandle(const gp::StringView filename) noexcept;
 
     /// @copydoc gp::platform::generic::SharedLibrary::getExport()
     /// @note Safely null-terminates `procName` on the stack before invoking Win32 `GetProcAddress()`.
-    [[nodiscard]] static GP_CORE_API void* getExport(void* const handle, const gp::StringView procName) noexcept;
+    [[nodiscard]] static void* getExport(void* const handle, const gp::StringView procName) noexcept;
 
     /// @copydoc gp::platform::generic::SharedLibrary::freeHandle()
     /// @note Invokes Win32 `FreeLibrary()`. Passing `nullptr` is a safe no-op.
-    static GP_CORE_API void freeHandle(void* const handle) noexcept;
+    static void freeHandle(void* const handle) noexcept;
 
     /// @copydoc gp::platform::generic::SharedLibrary::addDirectory()
     /// @note Normalizes and deduplicates `directory` (case-insensitively), then indexes all immediate `.dll` files into
     ///       the internal SoA search-path cache outside the mutex lock.
-    static GP_CORE_API void addDirectory(const gp::StringView directory) noexcept;
+    static void addDirectory(const gp::StringView directory) noexcept;
 
     /// @copydoc gp::platform::generic::SharedLibrary::pushDirectory()
     /// @note Pushes the normalized directory onto the LIFO stack and updates Win32 `SetDllDirectoryW()`.
-    static GP_CORE_API void pushDirectory(const gp::StringView directory) noexcept;
+    static void pushDirectory(const gp::StringView directory) noexcept;
 
     /// @copydoc gp::platform::generic::SharedLibrary::popDirectory()
     /// @note Verifies the stack is non-empty and its top matches `directory` (after normalization, case-insensitively),
     ///       pops the entry, and restores the previous directory via `SetDllDirectoryW()` (or `L""` when empty to keep
     ///       the current working directory out of the DLL search order).
-    static GP_CORE_API void popDirectory(const gp::StringView directory) noexcept;
+    static void popDirectory(const gp::StringView directory) noexcept;
 
     /// @copydoc gp::platform::generic::SharedLibrary::getDefaultExtension()
     [[nodiscard]] static constexpr gp::StringView getDefaultExtension() noexcept
@@ -74,20 +74,20 @@ public:
     }
 
     /// @copydoc gp::platform::generic::SharedLibrary::getDirectoryStackDepth()
-    [[nodiscard]] static GP_CORE_API gp::USize getDirectoryStackDepth() noexcept;
+    [[nodiscard]] static gp::USize getDirectoryStackDepth() noexcept;
 
     /// @copydoc gp::platform::generic::SharedLibrary::getActiveDirectory()
-    [[nodiscard]] static GP_CORE_API PathBuffer getActiveDirectory() noexcept;
+    [[nodiscard]] static PathBuffer getActiveDirectory() noexcept;
 
     /// @copydoc gp::platform::generic::SharedLibrary::getRegisteredDirectoryCount()
-    [[nodiscard]] static GP_CORE_API gp::USize getRegisteredDirectoryCount() noexcept;
+    [[nodiscard]] static gp::USize getRegisteredDirectoryCount() noexcept;
 
     /// @copydoc gp::platform::generic::SharedLibrary::getCachedLibraryCount()
-    [[nodiscard]] static GP_CORE_API gp::USize getCachedLibraryCount() noexcept;
+    [[nodiscard]] static gp::USize getCachedLibraryCount() noexcept;
 
     /// @copydoc gp::platform::generic::SharedLibrary::resetSearchPaths()
     /// @note Also resets the Win32 process DLL directory via `SetDllDirectoryW(L"")`.
-    static GP_CORE_API void resetSearchPaths() noexcept;
+    static void resetSearchPaths() noexcept;
 
 private:
     /// @brief Resolves and loads a shared library across the active search-path stack, cached search directories, and

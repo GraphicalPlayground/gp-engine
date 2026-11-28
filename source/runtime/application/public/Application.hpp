@@ -14,7 +14,8 @@
 #include "containers/queues/SPSCRingBuffer.hpp"   // IWYU pragma: keep
 #include "containers/views/StringView.hpp"        // IWYU pragma: keep
 #include "CoreMinimal.hpp"
-#include "display/Display.hpp"                    // IWYU pragma: keep
+#include "device/DeviceForward.hpp"
+#include "display/Display.hpp"   // IWYU pragma: keep
 #include "event/data/ClipboardEvent.hpp"
 #include "event/data/DropEvent.hpp"
 #include "event/data/TextInputEvent.hpp"
@@ -89,6 +90,7 @@ private:
         console::IConsoleCommand* quitCmd{ nullptr };
         console::IConsoleCommand* statsCmd{ nullptr };
         console::IConsoleCommand* jobsStatsCmd{ nullptr };
+        console::IConsoleCommand* rhiStatusCmd{ nullptr };
         gp::DelegateHandle sinkHandle{};
     };
 
@@ -119,6 +121,7 @@ private:
     bool m_ownsGameThreadRole{ false };
     bool m_ownsRenderThreadRole{ false };
     bool m_ownsRHIThreadRole{ false };
+    bool m_ownsRHIInitialization{ false };
 
 public:
     /// @brief Constructs the application with injected HAL backend and optional custom input system.
@@ -333,6 +336,18 @@ public:
     /// @return True if currently in `ModuleState::Loaded`, false otherwise.
     [[nodiscard]] bool isModuleLoaded(gp::StringView name) const noexcept;
 
+    /// @brief Returns the active global `rhi::DynamicRHI` device instance, or `nullptr` if RHI is not initialized.
+    /// @return Non-owning pointer to the active `rhi::DynamicRHI`.
+    [[nodiscard]] static rhi::DynamicRHI* getDynamicRHI() noexcept;
+
+    /// @brief Checks whether the RHI subsystem has been initialized and has an active `rhi::DynamicRHI` device.
+    /// @return True if `rhi::hasValidDynamicRHI()` and `rhi::getRHIGlobals().isRHIInitialized` are both true.
+    [[nodiscard]] static bool isRHIInitialized() noexcept;
+
+    /// @brief Returns the canonical module identifier of the active RHI backend (for example `"rhi/null"`).
+    /// @return Loaded RHI module identifier, or an empty view if RHI is not initialized.
+    [[nodiscard]] static gp::StringView getLoadedRHIModuleName() noexcept;
+
     /// @brief Executes a console variable assignment, query, or command string on the global console manager.
     /// @param[in] commandLine Raw UTF-8 command or CVar assignment line (e.g., `"app.TargetFps 60"` or `"t.Paused=1"`).
     /// @param[in] output Optional callback receiving formatted diagnostic lines (`nullptr` logs to `LogConsole`).
@@ -509,9 +524,9 @@ protected:
     {}
 
 private:
-    /// @brief Applies command-line concurrency, logging, and VFS overrides (`-threads`, `-workers`, `-no-jobsystem`,
-    ///        `-core-affinity`, `-no-log`, `-no-console-log`, `-log-file`, `-no-vfs`, `-vfs-app`) from
-    ///        `gp::CommandLine` to `m_desc`.
+    /// @brief Applies command-line concurrency, logging, VFS, module, and RHI overrides (`-threads`, `-workers`,
+    ///        `-no-jobsystem`, `-core-affinity`, `-no-log`, `-no-console-log`, `-log-file`, `-no-vfs`, `-vfs-app`,
+    ///        `-no-modules`, `-module-dir`, `-load-module`, `-modules`, `-no-rhi`) from `gp::CommandLine` to `m_desc`.
     void applyCommandLineOverrides() noexcept;
 
     /// @brief Mounts the six default ADR-0044 VFS schemes when `m_desc.enableVirtualFileSystem` is true and no mounts
@@ -559,6 +574,14 @@ private:
     /// @brief Unloads modules in reverse-LIFO order after `JobSystem` workers and named-thread queues have drained,
     ///        while `Logger` and `VirtualFileSystem` remain active ([ADR-0061]).
     void shutdownModulesInternal() noexcept;
+
+    /// @brief Discovers an `IDynamicRHIModule` backend and runs `rhiInit()` followed by `rhiPostInit()`.
+    /// @details Preserves any `DynamicRHI` already installed prior to `Application::run()`.
+    /// @return True if RHI is ready (or disabled via `m_desc.enableRHI == false`); false on initialization failure.
+    [[nodiscard]] bool initializeRHIInternal() noexcept;
+
+    /// @brief Calls `rhiExit()` before module unloading when this `Application` owns RHI initialization.
+    void shutdownRHIInternal() noexcept;
 
     /// @brief Pulls runtime CVar values from `m_consoleBindings` into `m_desc` and `m_clock`.
     void syncConsoleControlValues() noexcept;

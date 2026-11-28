@@ -10,6 +10,9 @@
 #include "console/IConsoleManager.hpp"
 #include "console/IConsoleVariable.hpp"
 #include "containers/strings/FixedString.hpp"
+#include "device/DynamicRHI.hpp"
+#include "device/RHIGlobals.hpp"
+#include "device/RHIModuleDiscovery.hpp"
 #include "input/GenericInputSystem.hpp"
 #include "logging/LogFormatter.hpp"
 #include "memory/GlobalMemory.hpp"
@@ -289,6 +292,12 @@ void Application::applyCommandLineOverrides() noexcept
     if (optModulesList.hasValue() && !optModulesList->isEmpty())
     {
         appendCsvModules(*optModulesList);
+    }
+
+    const Optional<bool> optRHI = CommandLine::tryGetBool("rhi");
+    if (optRHI.hasValue() && !*optRHI)
+    {
+        m_desc.enableRHI = false;
     }
 }
 
@@ -684,6 +693,35 @@ void Application::initializeConsoleInternal() noexcept
         console::ConsoleVarFlags::None
     );
 
+    m_consoleBindings.rhiStatusCmd = console.registerConsoleCommand(
+        "rhi.Status",
+        "Prints the active RHI backend name, loaded module identifier, feature level, and null-RHI state.",
+        console::ConsoleCommandWithArgsDelegate::createLambda(
+            [](const console::ConsoleCommandArgs& args) noexcept -> void
+    {
+        rhi::DynamicRHI* const activeRHI = rhi::getDynamicRHI();
+        if (activeRHI == nullptr)
+        {
+            args.writeLine("RHI is not initialized.");
+            return;
+        }
+        const rhi::RHIGlobals& globals = rhi::getRHIGlobals();
+        gp::FixedString<383> line{};
+        (void)log::formatTo(
+            line,
+            "RHI[backend='{}' module='{}' featureLevel='{}' nullRHI={} initialized={}]",
+            activeRHI->getName(),
+            rhi::getLoadedRHIModuleName(),
+            rhi::getFeatureLevelName(globals.maxSupportedFeatureLevel),
+            globals.usingNullRHI,
+            globals.isRHIInitialized
+        );
+        args.writeLine(line.view());
+    }
+        ),
+        console::ConsoleVarFlags::None
+    );
+
     m_consoleBindings.sinkHandle = console.registerConsoleVariableSink(
         console::ConsoleSinkDelegate::createLambda(
             [this]() noexcept -> void
@@ -706,7 +744,8 @@ void Application::shutdownConsoleInternal() noexcept
         m_consoleBindings.sinkHandle.reset();
     }
 
-    console::IConsoleObject* const objects[] = { m_consoleBindings.jobsStatsCmd,
+    console::IConsoleObject* const objects[] = { m_consoleBindings.rhiStatusCmd,
+                                                 m_consoleBindings.jobsStatsCmd,
                                                  m_consoleBindings.statsCmd,
                                                  m_consoleBindings.quitCmd,
                                                  m_consoleBindings.stepCmd,
@@ -730,7 +769,7 @@ bool Application::initializeModulesInternal() noexcept
 {
     gp::memory::setupLocalShadowMalloc();
 
-    if (!m_desc.enableModuleSystem)
+    if (!m_desc.enableModuleSystem && !m_desc.enableRHI)
     {
         return true;
     }
@@ -751,6 +790,11 @@ bool Application::initializeModulesInternal() noexcept
     }
 
     moduleMgr.drainPendingStaticRegistrants();
+
+    if (!m_desc.enableModuleSystem)
+    {
+        return true;
+    }
 
     for (gp::UInt32 i = 0u; i < m_desc.startupModuleCount; ++i)
     {
@@ -788,6 +832,16 @@ void Application::shutdownModulesInternal() noexcept
 {
     if (!m_desc.enableModuleSystem || !m_desc.unloadModulesOnShutdown)
     {
+        return;
+    }
+
+    // Never unmap loaded backend DLLs while an externally initialized DynamicRHI is still alive.
+    if (!m_ownsRHIInitialization && rhi::hasValidDynamicRHI())
+    {
+        GP_LOG_WARNING(
+            LogApplication,
+            "Skipping automatic module unload because an externally initialized DynamicRHI is still active."
+        );
         return;
     }
 
@@ -1102,6 +1156,33 @@ bool Application::initializeInternal() noexcept
         return false;
     }
 
+    if (!initializeRHIInternal()) [[unlikely]]
+    {
+        shutdownRHIInternal();
+        shutdownModulesInternal();
+        shutdownConsoleInternal();
+        if (m_jobSystem.isInitialized())
+        {
+            m_jobSystem.shutdown();
+        }
+        m_namedThreadDispatcher.shutdown();
+        m_frameGraph.shutdown();
+        m_frameArenas[1].shutdown();
+        m_frameArenas[0].shutdown();
+        if (m_mainWindow.isValid())
+        {
+            m_mainWindow->close();
+            m_mainWindow.reset();
+        }
+        m_inputSystem.reset();
+        m_backend->shutdown();
+        m_eventStream.shutdown();
+        detachThreadRolesInternal();
+        shutdownLoggingInternal();
+        shutdownVirtualFileSystemInternal();
+        return false;
+    }
+
     m_clock.reset();
     m_isInitialized = true;
     GP_LOG_INFO(LogApplication, "Application core subsystems initialized.");
@@ -1131,8 +1212,13 @@ void Application::shutdownInternal() noexcept
     pumpOwnedNamedThreadQueuesInternal();
     m_namedThreadDispatcher.shutdown();
 
-    // Unload dynamically and statically loaded modules in reverse-LIFO order AFTER all JobSystem fibers and
-    // NamedThreadDispatcher queues have drained, and BEFORE frame arenas, HAL, logging, and VFS shut down.
+    // Shut down and destroy DynamicRHI BEFORE unloading backend DLLs so virtual shutdown() and destructor calls
+    // execute while the backend shared library is still mapped in memory.
+    shutdownRHIInternal();
+
+    // Unload dynamically and statically loaded modules in reverse-LIFO order AFTER all JobSystem fibers,
+    // NamedThreadDispatcher queues, and RHI resources have drained, and BEFORE frame arenas, HAL, logging, and VFS
+    // shut down.
     shutdownModulesInternal();
 
     m_frameArenas[1].shutdown();

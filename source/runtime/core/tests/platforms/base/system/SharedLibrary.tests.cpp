@@ -74,6 +74,18 @@ TEST_F(SharedLibraryBaseTest, PlatformAliasResolvesToWindowsSharedLibrary)
     EXPECT_TRUE((std::is_same_v<SharedLibrary, gp::platform::windows::SharedLibrary>));
     EXPECT_EQ(SharedLibrary::getDefaultExtension(), gp::StringView(".dll"));
 }
+#elif GP_PLATFORM_LINUX
+TEST_F(SharedLibraryBaseTest, PlatformAliasResolvesToLinuxSharedLibrary)
+{
+    EXPECT_TRUE((std::is_same_v<SharedLibrary, gp::platform::linux::SharedLibrary>));
+    EXPECT_EQ(SharedLibrary::getDefaultExtension(), gp::StringView(".so"));
+}
+#elif GP_PLATFORM_MACOS
+TEST_F(SharedLibraryBaseTest, PlatformAliasResolvesToMacOSSharedLibrary)
+{
+    EXPECT_TRUE((std::is_same_v<SharedLibrary, gp::platform::macos::SharedLibrary>));
+    EXPECT_EQ(SharedLibrary::getDefaultExtension(), gp::StringView(".dylib"));
+}
 #endif
 
 }   // namespace gp::platform::tests

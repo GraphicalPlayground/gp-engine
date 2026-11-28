@@ -23,17 +23,23 @@ void MemoryRingSink::write(const LogRecordView& record) noexcept
     const gp::USize slotIndex = currentWrite & (kCapacity - 1u);
     LogEntry& dst = m_entries[slotIndex];
 
+    gp::NamePool& namePool = gp::NamePool::instance();
     dst.timestampNs = record.timestamp.nanoseconds;
     dst.threadId = record.threadId;
     dst.category = !record.category.isNone()
                        ? record.category
                        : (!record.categoryName.isEmpty() ? gp::Name(record.categoryName) : gp::Name{});
-    dst.categoryLiteral = !dst.category.isNone() ? dst.category.baseCString() : "";
-    const gp::StringView resolvedCatView = !dst.category.isNone() ? dst.category.baseView() : gp::StringView{};
-    dst.categoryLength =
-        (resolvedCatView.size() > 255u) ? static_cast<gp::UInt8>(255u) : static_cast<gp::UInt8>(resolvedCatView.size());
-    dst.file = (record.location.file != nullptr) ? record.location.file : "";
-    dst.function = (record.location.function != nullptr) ? record.location.function : "";
+    const gp::StringView resolvedCatView = !record.categoryName.isEmpty()
+                                               ? record.categoryName
+                                               : (!dst.category.isNone() ? dst.category.baseView() : gp::StringView{});
+    dst.categoryNameId =
+        !resolvedCatView.isEmpty() ? namePool.findOrAdd(resolvedCatView, gp::NameFindMode::Add) : gp::kNameNoneId;
+    dst.fileId = (record.location.file != nullptr && record.location.file[0] != '\0')
+                     ? namePool.findOrAdd(gp::StringView(record.location.file), gp::NameFindMode::Add)
+                     : gp::kNameNoneId;
+    dst.functionId = (record.location.function != nullptr && record.location.function[0] != '\0')
+                         ? namePool.findOrAdd(gp::StringView(record.location.function), gp::NameFindMode::Add)
+                         : gp::kNameNoneId;
     dst.line = record.location.line;
     dst.fiberId = record.fiberId;
     dst.dateTime = record.dateTime;

@@ -678,4 +678,54 @@ TEST(LoggerTest, ConsoleCVarsAndCommandsControlGlobalMinLevelFlushAndStats)
     globalLogger.shutdown();
 }
 
+TEST(LoggerTest, AsyncLogEntrySurvivesOverwrittenOriginStrings)
+{
+    Logger logger{};
+    LoggerDesc desc{};
+    desc.mode = LogExecutionMode::AsyncRing;
+    desc.overflowPolicy = LogOverflowPolicy::FlushSynchronously;
+    desc.asyncFlushIntervalMicroseconds = 50000u;
+    desc.applyCommandLineOverrides = false;
+    ASSERT_EQ(logger.initialize(desc), LogResult::Success);
+
+    MemoryRingSink ringSink(LogLevel::Trace);
+    ASSERT_EQ(logger.addSink(&ringSink), LogResult::Success);
+
+    // Simulate strings residing in a dynamically loaded module's .rdata section that is unmapped/overwritten
+    // before the background logger worker drains the async MPMC queue.
+    char ephemeralCategoryName[] = "LogDynamicModuleRegression";
+    char ephemeralFile[] = "source/runtime/rhi/vulkan/private/device/Probe.cpp";
+    char ephemeralFunction[] = "probeDynamicModule";
+
+    {
+        LogCategory ephemeralCategory(ephemeralCategoryName, LogLevel::Trace, LogLevel::Trace);
+        const LogSourceLocation location(ephemeralFile, ephemeralFunction, 123u);
+        logger.submit(ephemeralCategory, LogLevel::Info, location, "Queued before module unload");
+    }
+
+    for (gp::USize i = 0u; i + 1u < sizeof(ephemeralCategoryName); ++i)
+    {
+        ephemeralCategoryName[i] = 'X';
+    }
+    for (gp::USize i = 0u; i + 1u < sizeof(ephemeralFile); ++i)
+    {
+        ephemeralFile[i] = 'Y';
+    }
+    for (gp::USize i = 0u; i + 1u < sizeof(ephemeralFunction); ++i)
+    {
+        ephemeralFunction[i] = 'Z';
+    }
+
+    logger.flush();
+    logger.shutdown();
+
+    ASSERT_EQ(ringSink.getSize(), 1u);
+    const LogRecordView view = ringSink.getLastRecord();
+    EXPECT_EQ(view.categoryName, gp::StringView("LogDynamicModuleRegression"));
+    EXPECT_EQ(gp::StringView(view.location.file), gp::StringView("source/runtime/rhi/vulkan/private/device/Probe.cpp"));
+    EXPECT_EQ(gp::StringView(view.location.function), gp::StringView("probeDynamicModule"));
+    EXPECT_EQ(view.location.line, 123u);
+    EXPECT_EQ(view.message, gp::StringView("Queued before module unload"));
+}
+
 }   // namespace gp::log::tests

@@ -113,6 +113,8 @@ void onInvalidLogFormatString([[maybe_unused]] const char* const reason) noexcep
 
 Logger::Logger() noexcept
 {
+    // Ensure NamePool is constructed before Logger so ~Logger() always drains before ~NamePool() runs at exit.
+    (void)gp::NamePool::instance();
     (void)m_asyncQueue.initializeWithExternalBuffer(m_ringSlots, kDefaultAsyncLogQueueCapacity);
 }
 
@@ -378,14 +380,18 @@ void Logger::submit(
     }
 
     // AsyncRing path: pack a self-contained 512-byte LogEntry and enqueue lock-free.
+    gp::NamePool& namePool = gp::NamePool::instance();
     LogEntry entry{};
     entry.timestampNs = nowNs;
     entry.threadId = callerThreadId;
     entry.category = internedCategory;
-    entry.categoryLiteral = category.getNameCString();
-    entry.categoryLength = category.getNameLength();
-    entry.file = location.file;
-    entry.function = location.function;
+    entry.categoryNameId = namePool.findOrAdd(category.getName(), gp::NameFindMode::Add);
+    entry.fileId = (location.file != nullptr && location.file[0] != '\0')
+                       ? namePool.findOrAdd(gp::StringView(location.file), gp::NameFindMode::Add)
+                       : gp::kNameNoneId;
+    entry.functionId = (location.function != nullptr && location.function[0] != '\0')
+                           ? namePool.findOrAdd(gp::StringView(location.function), gp::NameFindMode::Add)
+                           : gp::kNameNoneId;
     entry.line = location.line;
     entry.fiberId = callerFiberId;
     entry.dateTime = nowDt;

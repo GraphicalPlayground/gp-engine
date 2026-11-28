@@ -1,0 +1,252 @@
+// Copyright (c) - Graphical Playground. All rights reserved.
+// For more information, see https://graphical-playground/legal
+// mailto:support AT graphical-playground DOT com
+
+#include "commands/CommandListExecutor.hpp"
+#include "commands/CommandListBase.hpp"
+#include "commands/CommandListImmediate.hpp"
+#include "core/ResourceDeletionQueue.hpp"
+#include "device/DynamicRHI.hpp"
+#include <utility>
+
+namespace gp::rhi::command
+{
+
+namespace
+{
+
+void appendUniqueContext(gp::Vector<IComputeContext*>& outContexts, IComputeContext* const ctx) noexcept
+{
+    if (ctx == nullptr)
+    {
+        return;
+    }
+    for (IComputeContext* const existing: outContexts)
+    {
+        if (existing == ctx)
+        {
+            return;
+        }
+    }
+    outContexts.emplaceBack(ctx);
+}
+
+}   // namespace
+
+void CommandListExecutor::latchBypass() noexcept
+{
+    if (m_bypass == m_bypassRequested)
+    {
+        return;
+    }
+
+    if (m_commandListImmediate.hasCommands())
+    {
+        submit({}, SubmitFlags::SubmitToGPU);
+    }
+    m_bypass = m_bypassRequested;
+}
+
+void CommandListExecutor::setBypass(const bool enableBypass) noexcept
+{
+    m_bypassRequested = enableBypass;
+    latchBypass();
+}
+
+void CommandListExecutor::executeList(CommandListBase& cmdList) noexcept
+{
+    cmdList.execute();
+    ++m_executedListCount;
+}
+
+void CommandListExecutor::submit(
+    const gp::ConstVectorView<CommandListBase*> additionalCommandLists, const SubmitFlags submitFlags
+) noexcept
+{
+    FinalizeContextsArgs finalizeArgs{};
+    bool executedImmediate = false;
+#if GP_WITH_RHI_BREADCRUMBS
+    diagnostics::BreadcrumbAllocatorArray submittedBreadcrumbAllocators{};
+    sync::PipelineArray<diagnostics::BreadcrumbRange> submittedBreadcrumbRanges{};
+    const auto captureBreadcrumbs = [&submittedBreadcrumbAllocators,
+                                     &submittedBreadcrumbRanges](CommandListBase& list) noexcept -> void
+    {
+        submittedBreadcrumbAllocators.appendUnique(list.m_breadcrumbAllocatorRefs);
+        const sync::PipelineStage kStages[sync::kPipelineStageCount] = { sync::PipelineStage::Graphics,
+                                                                         sync::PipelineStage::AsyncCompute };
+        for (const sync::PipelineStage stage: kStages)
+        {
+            const diagnostics::BreadcrumbRange range = list.exportBreadcrumbRange(stage);
+            if (range)
+            {
+                submittedBreadcrumbRanges[stage].insertAfter(range, submittedBreadcrumbRanges[stage].last);
+            }
+        }
+    };
+#endif
+
+    if (m_commandListImmediate.hasCommands())
+    {
+#if GP_WITH_RHI_BREADCRUMBS
+        captureBreadcrumbs(m_commandListImmediate);
+#endif
+        executeList(m_commandListImmediate);
+        executedImmediate = true;
+    }
+#if GP_WITH_RHI_BREADCRUMBS
+    else if (m_commandListImmediate.m_activePipelines != sync::PipelineStage::None)
+    {
+        captureBreadcrumbs(m_commandListImmediate);
+        m_commandListImmediate.m_breadcrumbAllocatorRefs.clear();
+        m_commandListImmediate.m_breadcrumbAllocator.reset();
+        for (CommandListBase::GPUBreadcrumbPipelineState& gpuState: m_commandListImmediate.m_gpuBreadcrumbs)
+        {
+            gpuState.list = diagnostics::BreadcrumbList{};
+        }
+    }
+#endif
+
+    // Gather active contexts from the immediate list in both queued and bypass modes.
+    if (executedImmediate || m_commandListImmediate.m_activePipelines != sync::PipelineStage::None)
+    {
+        for (IComputeContext* const ctx: m_commandListImmediate.m_contexts)
+        {
+            appendUniqueContext(finalizeArgs.contexts, ctx);
+        }
+        m_commandListImmediate.detachContexts();
+    }
+
+    for (CommandListBase* const cmdList: additionalCommandLists)
+    {
+        if (cmdList != nullptr && cmdList->hasCommands())
+        {
+#if GP_WITH_RHI_BREADCRUMBS
+            if (cmdList->m_breadcrumbAllocator.isValid() && cmdList->m_unattachedSubTreeRoots.first != nullptr)
+            {
+                m_commandListImmediate.attachBreadcrumbSubTree(
+                    *cmdList->m_breadcrumbAllocator, cmdList->m_unattachedSubTreeRoots
+                );
+            }
+            captureBreadcrumbs(*cmdList);
+#endif
+            executeList(*cmdList);
+            for (IComputeContext* const ctx: cmdList->m_contexts)
+            {
+                appendUniqueContext(finalizeArgs.contexts, ctx);
+            }
+            cmdList->detachContexts();
+        }
+    }
+
+    DynamicRHI* const rhi = getDynamicRHI();
+    if (rhi != nullptr)
+    {
+        if (!finalizeArgs.contexts.isEmpty())
+        {
+            FinalizeContextsResult finalizeResult{};
+            rhi->finalizeContexts(std::move(finalizeArgs), finalizeResult);
+            if (!finalizeResult.commandLists.isEmpty())
+            {
+#if GP_WITH_RHI_BREADCRUMBS
+                for (IPlatformCommandList* const platformCmdList: finalizeResult.commandLists)
+                {
+                    if (platformCmdList != nullptr)
+                    {
+                        platformCmdList->breadcrumbAllocators.appendUnique(submittedBreadcrumbAllocators);
+                        if (!platformCmdList->breadcrumbRange &&
+                            submittedBreadcrumbRanges[sync::PipelineStage::Graphics])
+                        {
+                            platformCmdList->breadcrumbRange = submittedBreadcrumbRanges[sync::PipelineStage::Graphics];
+                        }
+                        else if (
+                            !platformCmdList->breadcrumbRange &&
+                            submittedBreadcrumbRanges[sync::PipelineStage::AsyncCompute]
+                        )
+                        {
+                            platformCmdList->breadcrumbRange =
+                                submittedBreadcrumbRanges[sync::PipelineStage::AsyncCompute];
+                        }
+                    }
+                }
+#endif
+                SubmitCommandListsArgs submitArgs{};
+                submitArgs.commandLists = std::move(finalizeResult.commandLists);
+                submitArgs.flags = submitFlags;
+                rhi->submitCommandLists(std::move(submitArgs));
+            }
+        }
+    }
+
+    if ((submitFlags & SubmitFlags::DeleteResources) != SubmitFlags::None)
+    {
+        const bool includeExtended = resource::ResourceDeletionQueue::shouldIncludeExtendedLifetimeResources();
+        resource::ResourceDeletionQueue::flushPendingDeletes(includeExtended);
+        if (rhi != nullptr)
+        {
+            rhi->processDeleteQueue();
+        }
+    }
+
+    if ((submitFlags & SubmitFlags::EndFrame) != SubmitFlags::None && rhi != nullptr)
+    {
+        rhi->endFrameRenderThread();
+    }
+
+    if ((submitFlags & SubmitFlags::EnableBypass) != SubmitFlags::None)
+    {
+        m_bypassRequested = true;
+        m_bypass = true;
+    }
+    else if ((submitFlags & SubmitFlags::DisableBypass) != SubmitFlags::None)
+    {
+        m_bypassRequested = false;
+        m_bypass = false;
+    }
+
+    ++m_submitCount;
+}
+
+void CommandListExecutor::immediateFlush(const ImmediateFlushType type, const SubmitFlags submitFlags) noexcept
+{
+    switch (type)
+    {
+    case ImmediateFlushType::WaitForOutstandingTasksOnly:
+        return;
+
+    case ImmediateFlushType::DispatchToRHIThread:
+        submit({}, submitFlags | SubmitFlags::SubmitToGPU);
+        break;
+
+    case ImmediateFlushType::FlushRHIThread:
+        submit({}, submitFlags | SubmitFlags::SubmitToGPU | SubmitFlags::FlushRHIThread);
+        break;
+
+    case ImmediateFlushType::FlushRHIThreadFlushResources:
+        submit({}, submitFlags | SubmitFlags::SubmitToGPU | SubmitFlags::FlushRHIThread | SubmitFlags::DeleteResources);
+        break;
+
+    default:
+        break;
+    }
+}
+
+void CommandListExecutor::reset() noexcept
+{
+    m_commandListImmediate.reset();
+    m_commandListImmediate.detachContexts();
+    m_commandListImmediate.m_activePipeline = sync::PipelineStage::Graphics;
+    m_commandListImmediate.m_initialPipeline = sync::PipelineStage::Graphics;
+    m_commandListImmediate.m_persistentState = CommandListBase::PersistentState{};
+    m_executedListCount = 0u;
+    m_submitCount = 0u;
+    m_bypass = false;
+    m_bypassRequested = false;
+}
+
+CommandListExecutor& getCommandListExecutor() noexcept
+{
+    static CommandListExecutor s_executor{};
+    return s_executor;
+}
+
+}   // namespace gp::rhi::command

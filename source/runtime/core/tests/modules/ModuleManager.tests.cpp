@@ -816,7 +816,11 @@ TEST_F(ModuleManagerTest, RealExternalBackendDllLoadBindsShadowMallocAcrossProce
     EXPECT_NE(status.flags & ModuleFlags::ShadowMallocBound, ModuleFlags::None);
     EXPECT_EQ(status.flags & ModuleFlags::IsStaticLinked, ModuleFlags::None);
 
-    EXPECT_EQ(m_manager.unloadModule("rhi/null"), ModuleUnloadResult::Success);
+    if (!nullRhiModule->supportsDynamicReloading())
+    {
+        EXPECT_EQ(m_manager.unloadModule("rhi/null", ModuleShutdownPhase::Normal), ModuleUnloadResult::NotReloadable);
+    }
+    EXPECT_EQ(m_manager.unloadModule("rhi/null", ModuleShutdownPhase::Exit), ModuleUnloadResult::Success);
     EXPECT_FALSE(m_manager.isModuleLoaded("rhi/null"));
 }
 

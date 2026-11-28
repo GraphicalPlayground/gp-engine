@@ -5,7 +5,10 @@
 include(gp-build-tool)
 
 gpStartModule(rhi/base)
+  gpEnableTests()
+
   gpAddDependency(PUBLIC core)
+  gpAddDependency(PUBLIC hal/base)
 
   gpAddDependency(DYNAMIC rhi/null)
 

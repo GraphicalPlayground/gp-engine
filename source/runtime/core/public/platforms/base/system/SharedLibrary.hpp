@@ -11,6 +11,10 @@
     #include "platforms/linux/system/LinuxSharedLibrary.hpp"
 #elif GP_PLATFORM_MACOS
     #include "platforms/macos/system/MacOSSharedLibrary.hpp"
+#elif GP_PLATFORM_APPLE
+    #include "platforms/apple/system/AppleSharedLibrary.hpp"
+#elif GP_PLATFORM_UNIX
+    #include "platforms/unix/system/UnixSharedLibrary.hpp"
 #else
     #include "platforms/generic/system/GenericSharedLibrary.hpp"
 #endif
@@ -24,6 +28,10 @@ using SharedLibrary = gp::platform::windows::SharedLibrary;
 using SharedLibrary = gp::platform::linux::SharedLibrary;
 #elif GP_PLATFORM_MACOS
 using SharedLibrary = gp::platform::macos::SharedLibrary;
+#elif GP_PLATFORM_APPLE
+using SharedLibrary = gp::platform::apple::SharedLibrary;
+#elif GP_PLATFORM_UNIX
+using SharedLibrary = gp::platform::unix::SharedLibrary;
 #else
 using SharedLibrary = gp::platform::generic::SharedLibrary;
 #endif
